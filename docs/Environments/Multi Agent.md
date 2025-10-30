@@ -1,7 +1,9 @@
 # Multi Agent
+For Multi Agent environments, we use the **PettingZoo** API for environment interfaces instead of Gymnasium.
 
 ```{toctree}
 :hidden:
 
-multi_agent/Markov Stag Hunt
+Multi Agent/Parallel/Parallel
+Multi Agent/Turn Based/Turn Based
 ```
