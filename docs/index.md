@@ -14,8 +14,8 @@ Developer Notes:
 - we could add a **Tutorials** section with walked examples of applying a labelling/cost function on an environment, applying the relevant constraint wrappers, using some of the algorithms and possibly automated hyperparameter tuning to get full results
 
 ```{toctree}
-:hidden:
 :caption: Environments
+:hidden:
 
 Environments/Multi Agent
 Environments/Single Agent
@@ -23,6 +23,7 @@ Environments/Single Agent
 
 ```{toctree}
 :caption: Constraints
+:hidden:
 
 Constraints/Multi Agent
 Constraints/Constrained Markov Decision Process (CMDP)
@@ -34,13 +35,8 @@ Constraints/Stepwise Probabilistic
 
 ```{toctree}
 :caption: Algorithms
+:hidden:
 
 Algorithms/PPO Lagrangian
 Algorithms/CPO
-```
-
-```{Benchmarks}
-:caption: Benchmarks
-
-Benchmarks/Benchmarks
 ```
