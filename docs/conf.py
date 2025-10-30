@@ -11,6 +11,8 @@ copyright = '2025, Alexander Goodall, Edwin Hamel De Le Court, Omar Adalat, Fran
 author = 'Alexander Goodall, Edwin Hamel De Le Court, Omar Adalat, Francesco Belardinelli'
 release = 'v0'
 
+html_title = "Multi and Single Agent Safe Reinforcement Learning"
+
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
@@ -31,7 +33,13 @@ html_static_path = ['_static']
 
 # html_logo = "_static/logo.png"  # single logo for both modes
 # html_static_path = ["_static"]
-# html_theme_options = {
-#     "top_of_page_buttons": ["view", "edit"],  # toolbar buttons
-#     "sidebar_hide_name": True,
-# }
+html_theme_options = {
+    # "light_logo": "img/masa_black.svg",
+    # "dark_logo": "img/masa_white.svg",
+
+    "top_of_page_buttons": ["view", "edit"],
+    "source_repository": "https://github.com/sacktock/MASA-Safe-RL",
+    "source_branch": "main",
+    "source_directory": "docs/",
+    
+}
