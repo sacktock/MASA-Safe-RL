@@ -22,9 +22,16 @@ templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 
-
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = 'furo'
 html_static_path = ['_static']
+
+
+# html_logo = "_static/logo.png"  # single logo for both modes
+# html_static_path = ["_static"]
+# html_theme_options = {
+#     "top_of_page_buttons": ["view", "edit"],  # toolbar buttons
+#     "sidebar_hide_name": True,
+# }
