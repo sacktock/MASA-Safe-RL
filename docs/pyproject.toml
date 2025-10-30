@@ -8,4 +8,5 @@ dependencies = [
     "furo>=2025.9.25",
     "myst-parser>=4.0.1",
     "sphinx>=8.2.3",
+    "sphinx-autobuild>=2025.8.25",
 ]
