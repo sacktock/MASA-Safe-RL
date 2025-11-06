@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Any, Dict
 from pettingzoo.utils import BaseParallelEnv
-from .base import LabelFn
+from masa.common.label_fn import LabelFn
 
 
 class LabelledParallelEnv(BaseParallelEnv):

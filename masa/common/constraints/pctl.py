@@ -1,18 +1,19 @@
 from __future__ import annotations
 from typing import Any, Dict
-from .base import ConstraintEnv, CostFn
+from masa.common.constraints import Constraint, BaseConstraintEnv, CostFn
 
-class PCTLEnv(ConstraintEnv):
-    """Probabilistic CTL constraint (on the initial states): monitors the undiscounetd probability of being safe"""
+class PCTL(Constraint):
+    """Probabilistic CTL constraint (on the initial states): monitors the undiscounetd probability of being safe."""
 
-    def __init__(self, env: gym.Env, cost_fn: CostFn, alpha: float):
-        super().__init__(env, cost_fn=cost_fn)
+    def __init__(self, cost_fn: CostFn, alpha: float):
+        self.cost_fn = cost_fn
+        self.alpha = alpha
 
-    def _reset(self):
+    def reset(self):
         self.safe = True
-
-    def _udpate(self, info):
-        cost = self.cost_fn(info)
+    
+    def update(self, labels):
+        cost = self.cost_fn(labels)
         unsafe = float(cost >= 0.5)
         self.safe = self.safe and (not unsafe)
 
@@ -21,4 +22,13 @@ class PCTLEnv(ConstraintEnv):
 
     def episode_metric(self) -> Dict[str, float]:
         return {"satisfied": float(self.satisfied())}
+    @property
+    def constraint_type(self) -> str:
+        return "pctl"
+
+class PCTLEnv(BaseConstraintEnv):
+    """ Gymnasium wrapper for Probabilistic CTL constraint."""
+
+    def __init__(self, env: gym.Env, cost_fn: CostFn, alpha: float):
+        super().__init__(env, PCTL(cost_fn=cost_fn, alpha=alpha))
 

@@ -1,28 +1,38 @@
 from __future__ import annotations
 from typing import Any, Dict
-from .base import ConstraintEnv, CostFn
+from masa.common.constraints import Constraint, BaseConstraintEnv
 
-class ReachAvoidEnv(ConstraintEnv):
-    """Reach target set while avoiding unsafe labels (cost==1)."""
+class ReachAvoid(Constraint):
+    """Reach target label set while avoiding unsafe label set."""
 
-    def __init__(self, env: gym.Env, cost_fn: CostFn, target_label: str):
-        super().__init__(env, cost_fn=cost_fn)
-        self.target_label = target_label
+    def __init__(avoid_label: str, reach_label: str):
+        self.avoid_label = avoid_label
+        self.reach_label = reach_label
 
-    def _reset(self):
+    def reset(self):
         self.reached = False
-        self.violated = False   
+        self.violated = False  
 
-    def _update(self, info):
-        cost = self.cost_fn(info)
-        violated = float(cost) >= 0.5
-        self.reached = self.target_label in info["labels"]
+    def update(self, labels):
+        self.violated = self.avoid_label in lables
+        self.reached = self.reach_label in labels
 
     def satisfied(self) -> bool:
         return self.reached and not self.violated
 
     def episode_metric(self) -> Dict[str, float]:
         return {"reached": self.reached, "violated": self.violated, "satisfied": float(self.satisfied())}
+
+    @property
+    def constraint_type(self) -> str:
+        return "reach_avoid"
+
+
+class ReachAvoidEnv(BaseConstraintEnv):
+    """Gymansium wrapper for Reach-avoid."""
+
+    def __init__(self, env: gym.Env, avoid_label: str, reach_label: str):
+        super().__init__(env, ReachAvoid(avoid_label=avoid_label, reach_label=reach_label))
 
 
     

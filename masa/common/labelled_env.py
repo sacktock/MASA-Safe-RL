@@ -1,8 +1,7 @@
 from __future__ import annotations
 from typing import Any, Dict
 import gymnasium as gym
-from .base import LabelFn
-
+from masa.common.label_fn import LabelFn
 
 class LabelledEnv(gym.Wrapper):
     """Gymnasium wrapper that attaches the labelling function"""
@@ -13,13 +12,12 @@ class LabelledEnv(gym.Wrapper):
 
     def reset(self, *, seed: int | None = None, options: Dict[str, Any] | None = None):
         obs, info = self.env.reset(seed=seed, options=options)
-        assert isinstance(info, dict)
+        info = dict(info or {})
         info["labels"] = set(self.label_fn(obs))
         return obs, info
 
     def step(self, action):
         obs, reward, terminated, truncated, info = self.env.step(action)
-        labels = set(self.label_fn(obs))
-        assert isinstance(info, dict)
-        info.update({"labels": labels})
+        info = dict(info or {})
+        info["labels"] = set(self.label_fn(obs))
         return obs, reward, terminated, truncated, info

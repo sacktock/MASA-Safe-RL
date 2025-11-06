@@ -1,0 +1,58 @@
+
+defaults:
+  env:
+    id: cartpole
+    max_episode_steps: 200
+    label_fn: masa.examples.dummy:label_fn
+    cost_fn: masa.examples.dummy:cost_fn
+
+  constraint:
+    type: cmdp
+    cost_budget: 25
+    alpha: 0.01
+    avoid_label: unsafe
+    reach_label: target
+    dfa: masa.examples.dummy:dfa
+
+  q_learning:
+    alpha: 0.1
+    gamma: 0.9
+    exploration: boltzmann
+    boltzmann_temp: 0.05
+    initial_epsilon: 1.0
+    final_epsilon: 0.1
+    epsilon_decay: linear
+    epsilon_decay_frames: 10000
+
+  run:
+    seed: 0
+    total_timesteps: 100000
+    eval_every: 0
+    eval_episodes: 10
+    log_every: 1000
+    prefill: 0
+    save_every: 0
+    stats_window_size: 100
+    logdir: runs/masa
+    device: auto
+    verbose: 0
+
+colour_grid_world:
+  env:
+    id: colour_grid_world
+    max_episode_steps: 100
+    label_fn: masa.envs.colour_grid_world:label_fn
+    cost_fn: masa.envs.colour_grid_world:cost_fn
+  
+  constraint:
+    type: cmdp
+    cost_budget: 1
+
+  run:
+    total_timesteps: 25000
+    eval_every: 1000
+    eval_episodes: 10
+    log_every: 1000
+    stats_window_size: 100
+    logdir: runs/masa
+    device: cpu

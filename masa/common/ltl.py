@@ -56,7 +56,7 @@ class Implies:
     def sat(self, labels):
         return Or(Neg(self.subformula_1), self.subformula_2).sat(labels)
 
-def dfa_to_costfn(dfa)
+def dfa_to_costfn(dfa):
     return DFACostFn(dfa)
 
 class DFA:
@@ -121,6 +121,11 @@ class DFA:
         next_state = self.transition(self.state, labels)
         self.state = next_state
         return self.state in self.accepting, self.state
+
+    @property
+    def num_aumomaton_states(self):
+        """returns the number of automaton states"""
+        return len(self.states)
 
 class DFACostFn(DFA):
 
