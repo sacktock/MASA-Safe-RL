@@ -1,7 +1,8 @@
-
+from __future__ import annotations
 from typing import Any, Optional, TypeVar, Union, Callable
 from masa.common.base_class import Base_Algorithm
 from masa.common.metrics import TrainLogger
+from masa.algorithms.tabular.base import Tabular_Algorithm
 from gymnasium import spaces
 import gymnasium as gym
 import numpy as np
@@ -10,7 +11,7 @@ import jax.random as jr
 from jax import jit
 from functools import partial
 
-class QL(Base_Algorithm):
+class QL(Tabular_Algorithm):
 
     def __init__(
         self,
@@ -39,8 +40,6 @@ class QL(Base_Algorithm):
             monitor=monitor,
             device=device,
             verbose=verbose,
-            supported_action_spaces=(spaces.Discrete,),
-            supported_observation_spaces=(spaces.Discrete,),
             env_fn=env_fn,
             eval_env=eval_env,
         )
@@ -71,8 +70,14 @@ class QL(Base_Algorithm):
         self.buffer = tuple()
 
     def _setup_decay_schedule(self):
-        self.epsilon = self.initial_epsilon
-        # TODO
+        self._epsilon = self.initial_epsilon
+        self._step = 0
+        if self.epsilon_decay == "linear":
+            self._epsilon_decay_schedule = lambda step: self.final_epsilon + \
+                (self.initial_epsilon - self.final_epsilon) * \
+                max(0, (self.epsilon_decay_frames - step) / self.epsilon_decay_frames)
+        else:
+            raise NotImplementedError(f"epsilon decay schedule: {self.epsilon_decay}")
 
     def optimize(self, step, logger: Optional[TrainLogger] = None):
         """Update the Q tabkle with one tuple of experience"""
@@ -89,7 +94,7 @@ class QL(Base_Algorithm):
             if self.exploration == "boltzmann":
                 logger.add("train/stats", {"temp": self.boltzmann_temp})
             if self.exploration == "epsilon-greedy":
-                logger.add("train/stats", {"epsilon": self.epsilon})
+                logger.add("train/stats", {"epsilon": self._epsilon})
 
     def rollout(self, step, logger: Optional[TrainLogger] = None):
 
@@ -103,6 +108,9 @@ class QL(Base_Algorithm):
         else:
             self._last_obs = next_obs
 
+        self._step += 1
+        self._epsilon = self._epsilon_decay_schedule(self._step)
+
         if logger:
             logger.add("train/rollout", info)
 
@@ -114,7 +122,7 @@ class QL(Base_Algorithm):
                 key, 
                 jnp.asarray(self.Q[obs], dtype=jnp.float32), 
                 self.boltzmann_temp, 
-                self.epsilon, 
+                self._epsilon, 
                 exploration=self.exploration
             )
         return self.prepare_act(action)

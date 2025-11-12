@@ -5,6 +5,7 @@ from gymnasium import spaces
 import numpy as np
 from masa.common.label_fn import LabelFn
 from collections import defaultdict 
+from masa.envs.tabular.base import TabularEnv
 
 START_STATE = 0
 GOAL_STATE = 80
@@ -69,9 +70,10 @@ def create_transition_matrix(grid_size: int, n_states: int, n_actions: int, slip
     return matrix
             
 
-class ColourGridWorld(gym.Env):
+class ColourGridWorld(TabularEnv):
 
     def __init__(self):
+        super().__init__()
 
         self._grid_size = 9
         self._ncol = self._grid_size
