@@ -8,7 +8,7 @@ defaults:
 
   constraint:
     type: cmdp
-    cost_budget: 25
+    cost_budget: 20.0
     alpha: 0.01
     avoid_label: unsafe
     reach_label: target
@@ -41,9 +41,169 @@ colour_grid_world:
   env:
     id: colour_grid_world
     max_episode_steps: 100
-    label_fn: masa.envs.colour_grid_world:label_fn
-    cost_fn: masa.envs.colour_grid_world:cost_fn
+    label_fn: masa.envs.tabular.colour_grid_world:label_fn
+    cost_fn: masa.envs.tabular.colour_grid_world:cost_fn
   
+  constraint:
+    type: cmdp
+    cost_budget: 1
+
+  run:
+    total_timesteps: 25000
+    eval_every: 1000
+    eval_episodes: 10
+    log_every: 1000
+    stats_window_size: 10
+    logdir: runs/masa
+    device: cpu
+
+colour_bomb_grid_world:
+  env:
+    id: colour_bomb_grid_world
+    max_episode_steps: 100
+    label_fn: masa.envs.tabular.colour_bomb_grid_world:label_fn
+    cost_fn: masa.envs.tabular.colour_bomb_grid_world:cost_fn
+  
+  constraint:
+    type: cmdp
+    cost_budget: 1
+
+  run:
+    total_timesteps: 100000
+    eval_every: 1000
+    eval_episodes: 10
+    log_every: 1000
+    stats_window_size: 100
+    logdir: runs/masa
+    device: cpu
+
+colour_bomb_grid_world_v2:
+  env:
+    id: colour_bomb_grid_world_v2
+    max_episode_steps: 250
+    label_fn: masa.envs.tabular.colour_bomb_grid_world_v2:label_fn
+    cost_fn: masa.envs.tabular.colour_bomb_grid_world_v2:cost_fn
+  
+  constraint:
+    type: cmdp
+    cost_budget: 1
+
+  run:
+    total_timesteps: 250000
+    eval_every: 5000
+    eval_episodes: 10
+    log_every: 5000
+    stats_window_size: 100
+    logdir: runs/masa
+    device: cpu
+
+colour_bomb_grid_world_v3:
+  env:
+    id: colour_bomb_grid_world_v3
+    max_episode_steps: 250
+    label_fn: masa.envs.tabular.colour_bomb_grid_world_v3:label_fn
+    cost_fn: masa.envs.tabular.colour_bomb_grid_world_v3:cost_fn
+  
+  constraint:
+    type: cmdp
+    cost_budget: 1
+
+  run:
+    total_timesteps: 250000
+    eval_every: 5000
+    eval_episodes: 10
+    log_every: 5000
+    stats_window_size: 100
+    logdir: runs/masa
+    device: cpu
+
+mini_pacman:
+  env:
+    id: mini_pacman
+    max_episode_steps: 100
+    label_fn: masa.envs.tabular.mini_pacman:label_fn
+    cost_fn: masa.envs.tabular.mini_pacman:cost_fn
+
+  constraint:
+    type: cmdp
+    cost_budget: 1
+
+  run:
+    total_timesteps: 250000
+    eval_every: 5000
+    eval_episodes: 10
+    log_every: 5000
+    stats_window_size: 100
+    logdir: runs/masa
+    device: cpu
+
+pacman:
+  env:
+    id: pacman
+    max_episode_steps: 1000
+    label_fn: masa.envs.tabular.pacman:label_fn
+    cost_fn: masa.envs.tabular.pacman:cost_fn
+
+  constraint:
+    type: cmdp
+    cost_budget: 1
+
+  run:
+    total_timesteps: 10000000
+    eval_every: 100000
+    eval_episodes: 10
+    log_every: 100000
+    stats_window_size: 100
+    logdir: runs/masa
+    device: cpu
+
+bridge_crossing:
+  env:
+    id: bridge_crossing
+    max_episode_steps: 400
+    label_fn: masa.envs.tabular.bridge_crossing:label_fn
+    cost_fn: masa.envs.tabular.bridge_crossing:cost_fn
+
+  constraint:
+    type: cmdp
+    cost_budget: 1
+
+  run:
+    total_timesteps: 100000
+    eval_every: 5000
+    eval_episodes: 10
+    log_every: 5000
+    stats_window_size: 100
+    logdir: runs/masa
+    device: cpu
+
+bridge_crossing_v2:
+  env:
+    id: bridge_crossing_v2
+    max_episode_steps: 400
+    label_fn: masa.envs.tabular.bridge_crossing_v2:label_fn
+    cost_fn: masa.envs.tabular.bridge_crossing_v2:cost_fn
+
+  constraint:
+    type: cmdp
+    cost_budget: 1
+
+  run:
+    total_timesteps: 100000
+    eval_every: 5000
+    eval_episodes: 10
+    log_every: 5000
+    stats_window_size: 100
+    logdir: runs/masa
+    device: cpu
+
+media_streaming:
+  env:
+    id: media_streaming
+    max_episode_steps: 40
+    label_fn: masa.envs.tabular.media_streaming:label_fn
+    cost_fn: masa.envs.tabular.media_streaming:cost_fn
+
   constraint:
     type: cmdp
     cost_budget: 1

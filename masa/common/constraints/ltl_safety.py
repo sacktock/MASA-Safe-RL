@@ -6,6 +6,7 @@ from gymnasium import spaces
 
 from masa.common.constraints import Constraint, BaseConstraintEnv
 from masa.common.ltl import DFA, dfa_to_costfn
+from masa.examples.dummy import dfa as dummy_dfa
 
 class LTLSafety(Constraint):
 
@@ -37,7 +38,7 @@ class LTLSafety(Constraint):
 
 class LTLSafetyEnv(BaseConstraintEnv):
 
-    def __init__(self, env: gym.Env, dfa: DFA):
+    def __init__(self, env: gym.Env, dfa: DFA = dummy_dfa):
         super().__init__(env, LTLSafety(dfa=dfa))
         self._num_automaton_states = int(dfa.num_aumomaton_states)
         if self._num_automaton_states <= 0:

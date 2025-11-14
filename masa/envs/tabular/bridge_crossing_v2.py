@@ -7,27 +7,27 @@ from collections import defaultdict
 from masa.envs.tabular.base import TabularEnv
 from masa.envs.tabular.utils import create_transition_matrix
 
-GRID_SIZE = 9
+GRID_SIZE = 20
 N_ACTIONS = 5
-START_STATE = 0
-GOAL_STATE = 80
-BLUE_STATE = 36
-GREEN_STATE = 40
-PURPLE_STATE = 4
-SLIP_PROB = 0.1
+GRID = np.arange(GRID_SIZE**2).reshape(GRID_SIZE, GRID_SIZE)
+START_STATE = int(GRID[-1, 0])
+GOAL_STATES = list(GRID[:7, :].flatten())
+LAVA_STATES = list(GRID[8:12, 2:16].flatten()) + list([GRID[11, 1]])
+SLIP_PROB = 0.04
 
 LABEL_DICT = defaultdict(set)
 LABEL_DICT[START_STATE] = {"start"}
-LABEL_DICT[GOAL_STATE] = {"goal"}
-LABEL_DICT[GREEN_STATE] = {"green"}
-LABEL_DICT[PURPLE_STATE] = {"purple"}
-LABEL_DICT[BLUE_STATE] = {"blue"}
+for _state in GOAL_STATES:
+    LABEL_DICT[_state] = {"goal"}
+for _state in LAVA_STATES:
+    LABEL_DICT[_state] = {"lava"}
 
 label_fn = lambda obs: LABEL_DICT[obs] 
 
-cost_fn = lambda labels: 1.0 if "blue" in labels else 0.0
+cost_fn = lambda labels: 1.0 if "lava" in labels else 0.0
 
-class ColourGridWorld(TabularEnv):
+class BridgeCrossingV2(TabularEnv):
+
 
     def __init__(self):
         super().__init__()
@@ -43,12 +43,16 @@ class ColourGridWorld(TabularEnv):
         self.action_space = spaces.Discrete(self._n_actions)
 
         self._start_state = START_STATE
-        self._goal_state = GOAL_STATE
+        self._goal_states = GOAL_STATES
+        self._lava_states = LAVA_STATES
 
-        self._transition_matrix = create_transition_matrix(self._grid_size, self._n_states, self._n_actions, slip_prob=SLIP_PROB, terminal_states=[self._goal_state])
+        self._terminal_states = self._goal_states + self._lava_states
+
+        self._transition_matrix = create_transition_matrix(self._grid_size, self._n_states, self._n_actions, slip_prob=SLIP_PROB, terminal_states=self._terminal_states)
 
         self.np_random = None
         self._state = None
+
 
     def reset(self, *, seed: int | None = None, options: Dict[str, Any] | None = None):
         super().reset(seed=seed)
@@ -63,20 +67,17 @@ class ColourGridWorld(TabularEnv):
         self._state = self._start_state
         return self._state, {}
 
+
     def step(self, action):
         assert self.action_space.contains(action), f"Invalid action {action}!"
         self._state = self.np_random.choice(self._n_states, p=self._transition_matrix[:, self._state, action])
 
-        terminated = bool(self._state == self._goal_state)
-        reward = 1.0 if self._state == self._goal_state else 0.0
+        terminated = bool(self._state in self._terminal_states)
+        reward = 1.0 if self._state in self._goal_states else 0.0
 
         return self._state, reward, terminated, False, {}
 
     @property
     def safe_end_component(self):
-        return [self._goal_state]
-
-
-        
-        
+        return list(self._goal_states)
 

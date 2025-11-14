@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Any, Optional, TypeVar, Union, Callable
 from masa.common.base_class import Base_Algorithm
 import gymnasium as gym
+from gymnasium import spaces
 
 
 class Tabular_Algorithm(Base_Algorithm):
@@ -16,7 +17,7 @@ class Tabular_Algorithm(Base_Algorithm):
         verbose: int = 0,
         env_fn: Optional[Callable[[], gym.Env]] = None,
         eval_env: Optional[gym.Env] = None, 
-    )
+    ):
 
         super().__init__(
             env, 

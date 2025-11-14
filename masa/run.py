@@ -21,7 +21,7 @@ def load_callable(path: str):
         warnings.warn(f"Could not load object from path: {path}")
         return None
 
-def make_env(env_id: str, constraint: str, max_episode_steps: int, *, label_fn: LabelFn | None = None, **kwargs):
+def make_env(env_id: str, constraint: str, max_episode_steps: int, *, label_fn: LabelFn | None = None, **constraint_kwargs):
     env_ctor = ENV_REGISTRY.get(env_id)
     constraint_ctor = CONSTRAINT_REGISTRY.get(constraint)
     env = env_ctor()
@@ -29,7 +29,7 @@ def make_env(env_id: str, constraint: str, max_episode_steps: int, *, label_fn: 
     env = TimeLimit(env, max_episode_steps)
     if label_fn is not None:
         env = LabelledEnv(env, label_fn)
-    env = constraint_ctor(env, **kwargs)
+    env = constraint_ctor(env, **constraint_kwargs)
     env = ConstraintMonitor(env)
     env = RewardMonitor(env)
     return env
@@ -51,7 +51,8 @@ def parse_config(args, unknown) -> Config:
         config = config.update({"env.cost_fn": args.cost_fn})
     if args.dfa is not None:
         config = config.update({"constraint.dfa", args.dfa})
-    config = config.update({"run.total_timesteps": args.total_timesteps})
+    if args.total_timesteps is not None:
+        config = config.update({"run.total_timesteps": args.total_timesteps})
     config = config.update({"run.seed": args.seed})
     return config
 
@@ -79,7 +80,7 @@ def build_argparser() -> argparse.ArgumentParser:
                    help="Which algorithm to run (used to pick section from YAML).")
     parser.add_argument("--algo-configs", type=str, nargs='+', default=[],
                    help="algorithm configs to use from configs file.")
-    parser.add_argument("--total-timesteps", type=int, default=100000,
+    parser.add_argument("--total-timesteps", type=int, default=None,
                    help="Override run total_timesteps (otherwise from YAML).")
     parser.add_argument("--seed", type=int, default=0)
     return parser

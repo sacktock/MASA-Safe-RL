@@ -44,8 +44,8 @@ class QL(Tabular_Algorithm):
             eval_env=eval_env,
         )
 
-        assert exploration in ["boltzmann", "epsilon-greedy"], f"Unsupported exploration type {exploration}"
-        assert epsilon_decay in ["linear"], f"Unsupported epsilon decay type {epsilon_decay}"
+        assert exploration in ["boltzmann", "epsilon-greedy"], f"Unsupported exploration type: {exploration}"
+        assert epsilon_decay in ["linear"], f"Unsupported epsilon decay schedule: {epsilon_decay}"
 
         self.n_states = env.observation_space.n
         self.n_actions = env.action_space.n

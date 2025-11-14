@@ -1,5 +1,7 @@
-from typing import Callable, Dict
+from typing import Callable, Dict, Union
+import importlib
 
+Factory = Union[Callable, str]
 
 class Registry:
     def __init__(self):
@@ -12,15 +14,15 @@ class Registry:
         self._items[name] = ctor
         return ctor
 
-
     def get(self, name: str) -> Callable:
         if name not in self._items:
             raise KeyError(f"{name} not found. Available: {list(self._items)}")
-        return self._items[name]
-
-
-    def list(self):
-        return sorted(self._items.keys())
+        ctor = self._items[name]
+        if isinstance(ctor, str):
+            mod, obj = ctor.split(":", 1)
+            ctor = getattr(importlib.import_module(mod), obj)
+            self._items[name] = ctor
+        return ctor
 
 ENV_REGISTRY = Registry()
 ALGO_REGISTRY = Registry()

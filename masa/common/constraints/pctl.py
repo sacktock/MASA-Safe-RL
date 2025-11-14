@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Any, Dict
 from masa.common.constraints import Constraint, BaseConstraintEnv, CostFn
+from masa.examples.dummy import cost_fn as dummy_cost_fn
 
 class PCTL(Constraint):
     """Probabilistic CTL constraint (on the initial states): monitors the undiscounetd probability of being safe."""
@@ -29,6 +30,6 @@ class PCTL(Constraint):
 class PCTLEnv(BaseConstraintEnv):
     """ Gymnasium wrapper for Probabilistic CTL constraint."""
 
-    def __init__(self, env: gym.Env, cost_fn: CostFn, alpha: float):
+    def __init__(self, env: gym.Env, cost_fn: CostFn = dummy_cost_fn, alpha: float = 0.01):
         super().__init__(env, PCTL(cost_fn=cost_fn, alpha=alpha))
 
