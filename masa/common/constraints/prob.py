@@ -36,6 +36,6 @@ class ProbabilisticSafety(Constraint):
 class ProbabilisticSafetyEnv(BaseConstraintEnv):
     """Gymnasium wrapper for probabilistic constraint."""
 
-    def __init__(self, env: gym.Env, cost_fn: CostFn = dummy_cost_fn, alpha: float = 0.01):
-        super().__init__(env, ProbabilisticSafety(cost_fn=cost_fn, alpha=alpha))
+    def __init__(self, env: gym.Env, cost_fn: CostFn = dummy_cost_fn, alpha: float = 0.01, **kw):
+        super().__init__(env, ProbabilisticSafety(cost_fn=cost_fn, alpha=alpha), **kw)
 

@@ -30,8 +30,8 @@ class CumulativeCost(Constraint):
 class CumulativeCostEnv(BaseConstraintEnv):
     """Gymnasium wrapper for CMDP-style constraint."""
 
-    def __init__(self, env: gym.Env, cost_fn: CostFn = dummy_cost_fn, budget: float = 20.0):
-        super().__init__(env, CumulativeCost(cost_fn=cost_fn, budget=budget))
+    def __init__(self, env: gym.Env, cost_fn: CostFn = dummy_cost_fn, budget: float = 20.0, **kw):
+        super().__init__(env, CumulativeCost(cost_fn=cost_fn, budget=budget), **kw)
 
 
 

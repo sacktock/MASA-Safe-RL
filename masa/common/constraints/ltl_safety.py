@@ -38,8 +38,8 @@ class LTLSafety(Constraint):
 
 class LTLSafetyEnv(BaseConstraintEnv):
 
-    def __init__(self, env: gym.Env, dfa: DFA = dummy_dfa):
-        super().__init__(env, LTLSafety(dfa=dfa))
+    def __init__(self, env: gym.Env, dfa: DFA = dummy_dfa, **kw):
+        super().__init__(env, LTLSafety(dfa=dfa), **kw)
         self._num_automaton_states = int(dfa.num_aumomaton_states)
         if self._num_automaton_states <= 0:
             raise ValueError("dfa.num_automaton_states must be positive")

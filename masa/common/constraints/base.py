@@ -37,7 +37,7 @@ class BaseConstraintEnv(gym.Wrapper, Constraint):
     step/episode metric behavior and a place to hold the underlying object.
     """
 
-    def __init__(self, env: gym.Env, constraint: Constraint):
+    def __init__(self, env: gym.Env, constraint: Constraint, **kw):
         if not isinstance(env, LabelledEnv):
             raise TypeError(
                 f"{self.__class__.__name__} must wrap a LabelledEnv, "

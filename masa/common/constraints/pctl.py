@@ -30,6 +30,6 @@ class PCTL(Constraint):
 class PCTLEnv(BaseConstraintEnv):
     """ Gymnasium wrapper for Probabilistic CTL constraint."""
 
-    def __init__(self, env: gym.Env, cost_fn: CostFn = dummy_cost_fn, alpha: float = 0.01):
-        super().__init__(env, PCTL(cost_fn=cost_fn, alpha=alpha))
+    def __init__(self, env: gym.Env, cost_fn: CostFn = dummy_cost_fn, alpha: float = 0.01, **kw):
+        super().__init__(env, PCTL(cost_fn=cost_fn, alpha=alpha), **kw)
 

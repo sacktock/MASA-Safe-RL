@@ -31,8 +31,8 @@ class ReachAvoid(Constraint):
 class ReachAvoidEnv(BaseConstraintEnv):
     """Gymansium wrapper for Reach-avoid."""
 
-    def __init__(self, env: gym.Env, avoid_label: str = "unsafe", reach_label: str = "target"):
-        super().__init__(env, ReachAvoid(avoid_label=avoid_label, reach_label=reach_label))
+    def __init__(self, env: gym.Env, avoid_label: str = "unsafe", reach_label: str = "target", **kw):
+        super().__init__(env, ReachAvoid(avoid_label=avoid_label, reach_label=reach_label), **kw)
 
 
     

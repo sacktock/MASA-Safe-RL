@@ -99,7 +99,7 @@ def main():
 
     constraint_kwargs = dict(
         cost_fn=cost_fn,
-        cost_budget=config.constraint.cost_budget,
+        budget=config.constraint.cost_budget,
         alpha=config.constraint.alpha,
         avoid_label=config.constraint.avoid_label,
         reach_label=config.constraint.reach_label,
