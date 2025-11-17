@@ -24,6 +24,17 @@ defaults:
     epsilon_decay: linear
     epsilon_decay_frames: 10000
 
+  q_learning_lambda:
+    alpha: 0.1
+    cost_lambda: 1.0
+    gamma: 0.9
+    exploration: boltzmann
+    boltzmann_temp: 0.05
+    initial_epsilon: 1.0
+    final_epsilon: 0.1
+    epsilon_decay: linear
+    epsilon_decay_frames: 10000
+
   run:
     seed: 0
     total_timesteps: 100000
@@ -36,7 +47,7 @@ defaults:
     logdir: runs/masa
     device: auto
     verbose: 0
-
+    
 colour_grid_world:
   env:
     id: colour_grid_world

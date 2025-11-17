@@ -15,12 +15,14 @@ class LTLSafety(Constraint):
 
     def reset(self):
         self.safe = True
+        self.step_cost = 0.0
+        self.total_unsafe = 0.0
         self.cost_fn.reset()
 
     def update(self, labels):
-        cost = self.cost(labels)
-        unsafe = float(cost >= 0.5)
-        self.safe = self.safe and (not unsafe)
+        self.step_cost = self.cost(labels)
+        self.total_unsafe = float(self.step_cost >= 0.5)
+        self.safe = self.safe and (not self.total_unsafe)
 
     def get_automaton_state(self):
         return self.cost_fn.automaton_state
@@ -29,7 +31,10 @@ class LTLSafety(Constraint):
         return self.safe
 
     def episode_metric(self) -> Dict[str, float]:
-        return {"satisfied": float(self.satisfied())}
+        return {"cum_unsafe": float(self.total_unsafe), "satisfied": float(self.satisfied())}
+
+    def step_metric(self) -> Dict[str, float]:
+        return {"cost": self.step_cost, "cum_unsafe": float(self.total_unsafe), "satisfied": float(self.satisfied())}
 
     @property
     def constraint_type(self) -> str:

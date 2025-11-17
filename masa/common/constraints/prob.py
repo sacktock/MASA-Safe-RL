@@ -11,22 +11,26 @@ class ProbabilisticSafety(Constraint):
         self.alpha = alpha
 
     def reset(self):
-        self.unsafe = 0
         self.total = 0
+        self.total_unsafe = 0.0
+        self.step_cost = 0.0
 
     def update(self, labels):
-        cost = self.cost_fn(labels)
-        self.unsafe = float(cost >= 0.5)
+        self.step_cost = self.cost_fn(labels)
+        self.total_unsafe += float(self.step_cost >= 0.5)
         self.total += 1
 
     def prob_unsafe(self) -> float:
-        return (self.unsafe / self.total)
+        return (self.total_unsafe / self.total)
 
     def satisfied(self) -> bool:
         return self.prob_unsafe() <= self.alpha
 
     def episode_metric(self) -> Dict[str, float]:
-        return {"p_unsafe": self.prob_unsafe(), "satisfied": float(self.satisfied())}
+        return {"cum_unsafe": float(self.total_unsafe), "p_unsafe": self.prob_unsafe(), "satisfied": float(self.satisfied())}
+
+    def step_metric(self) -> Dict[str, float]:
+        return {"cost": self.step_cost, "cum_unsafe": float(self.total_unsafe), "p_unsafe": self.prob_unsafe(), "satisfied": float(self.satisfied())}
     
     @property
     def constraint_type(self) -> str:

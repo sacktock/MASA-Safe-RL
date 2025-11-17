@@ -78,7 +78,7 @@ class BaseConstraintEnv(gym.Wrapper, Constraint):
         return self._constraint.constraint_type
 
     def constraint_step_metrics(self) -> Dict[str, float]:
-        return self._constraint.episode_metric()
+        return self._constraint.step_metric()
 
     def constraint_episode_metrics(self) -> Dict[str, float]:
         return self._constraint.episode_metric()

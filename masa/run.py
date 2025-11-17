@@ -76,7 +76,7 @@ def build_argparser() -> argparse.ArgumentParser:
     parser.add_argument("--configs", type=str, default="configs.yaml",
                    help="Path to YAML with env/algo/run configs.")
     parser.add_argument("--algo", type=str, default="q_learning",
-                   choices=["q_learning"],
+                   choices=ALGO_REGISTRY.keys(),
                    help="Which algorithm to run (used to pick section from YAML).")
     parser.add_argument("--algo-configs", type=str, nargs='+', default=[],
                    help="algorithm configs to use from configs file.")

@@ -23,6 +23,9 @@ class ReachAvoid(Constraint):
     def episode_metric(self) -> Dict[str, float]:
         return {"reached": self.reached, "violated": self.violated, "satisfied": float(self.satisfied())}
 
+    def step_metric(self) -> Dict[str, float]:
+        return {"reached": self.reached, "violated": self.violated, "satisfied": float(self.satisfied())}
+
     @property
     def constraint_type(self) -> str:
         return "reach_avoid"

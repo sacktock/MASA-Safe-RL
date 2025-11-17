@@ -24,6 +24,10 @@ class Registry:
             self._items[name] = ctor
         return ctor
 
+    def keys(self) -> list[str]:
+        return list([str(key) for key in self._items.keys()])
+
+
 ENV_REGISTRY = Registry()
 ALGO_REGISTRY = Registry()
 CONSTRAINT_REGISTRY = Registry()
