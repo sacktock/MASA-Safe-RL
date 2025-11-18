@@ -20,12 +20,15 @@ class LTLSafety(Constraint):
         self.cost_fn.reset()
 
     def update(self, labels):
-        self.step_cost = self.cost(labels)
+        self.step_cost = self.cost_fn(labels)
         self.total_unsafe = float(self.step_cost >= 0.5)
         self.safe = self.safe and (not self.total_unsafe)
 
     def get_automaton_state(self):
         return self.cost_fn.automaton_state
+
+    def get_dfa(self):
+        return self.cost_fn.dfa
 
     def satisfied(self) -> bool:
         return self.safe
@@ -45,7 +48,7 @@ class LTLSafetyEnv(BaseConstraintEnv):
 
     def __init__(self, env: gym.Env, dfa: DFA = dummy_dfa, **kw):
         super().__init__(env, LTLSafety(dfa=dfa), **kw)
-        self._num_automaton_states = int(dfa.num_aumomaton_states)
+        self._num_automaton_states = int(dfa.num_automaton_states)
         if self._num_automaton_states <= 0:
             raise ValueError("dfa.num_automaton_states must be positive")
         self._orig_obs_space = env.observation_space

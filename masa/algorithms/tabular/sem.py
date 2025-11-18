@@ -1,8 +1,8 @@
 from __future__ import annotations
-from typing import Any, Optional, TypeVar, Union, Callable, Dict
+from typing import Any, Optional, TypeVar, Union, Callable
 from masa.common.base_class import Base_Algorithm
 from masa.common.metrics import TrainLogger
-from masa.algorithms.tabular.base import Tabular_Algorithm
+from masa.algorithms.tabular.q_learning import QL
 from masa.common.ltl import DFACostFn, DFA
 from gymnasium import spaces
 import gymnasium as gym
@@ -12,8 +12,7 @@ import jax.random as jr
 from jax import jit
 from functools import partial
 
-
-class QL(Tabular_Algorithm):
+class SEM(QL):
 
     def __init__(
         self,
@@ -25,8 +24,13 @@ class QL(Tabular_Algorithm):
         verbose: int = 0,
         env_fn: Optional[Callable[[], gym.Env]] = None,
         eval_env: Optional[gym.Env] = None, 
-        alpha: float = 0.1,
-        gamma: float = 0.9,
+        ql_alpha: float = 0.1,
+        ql_gamma: float = 0.9,
+        dm_alpha: float = 0.1,
+        dm_gamma: float = 0.99,
+        cm_alpha: float = 0.05,
+        cm_gamma: float = 0.999,
+        r_min: float = 0.0,
         exploration: str = 'boltzmann',
         boltzmann_temp: float = 0.05,
         initial_epsilon: float = 1.0,
@@ -44,64 +48,60 @@ class QL(Tabular_Algorithm):
             verbose=verbose,
             env_fn=env_fn,
             eval_env=eval_env,
+            alpha=ql_alpha,
+            gamma=ql_gamma,
+            exploration=exploration,
+            boltzmann_temp=boltzmann_temp,
+            initial_epsilon=initial_epsilon,
+            final_epsilon=final_epsilon,
+            epsilon_decay=epsilon_decay,
+            epsilon_decay_frames=epsilon_decay_frames,
         )
 
-        assert exploration in ["boltzmann", "epsilon-greedy"], f"Unsupported exploration type: {exploration}"
-        assert epsilon_decay in ["linear"], f"Unsupported epsilon decay schedule: {epsilon_decay}"
-
-        self.n_states = env.observation_space.n
-        self.n_actions = env.action_space.n
-        self.alpha = alpha
-        self.gamma = gamma
-        self.exploration = exploration
-        self.boltzmann_temp = boltzmann_temp
-        self.initial_epsilon = initial_epsilon
-        self.final_epsilon = final_epsilon
-        self.epsilon_decay = epsilon_decay
-        self.epsilon_decay_frames = epsilon_decay_frames
-
-        self._setup_q_table()
-        self._setup_buffer()
-        self._setup_decay_schedule()
+        self.dm_alpha = dm_alpha
+        self.dm_gamma = dm_gamma
+        self.cm_alpha = cm_alpha
+        self.cm_gamma = cm_gamma
+        self.r_min = r_min
         
     def _setup_q_table(self):
         self.Q = np.zeros((self.n_states, self.n_actions), dtype=np.float32)
+        self.D = np.zeros((self.n_states, self.n_actions), dtype=np.float32)
+        self.C = np.zeros((self.n_states, self.n_actions), dtype=np.float32)
 
-    def _setup_buffer(self):
-        """Setup a simple buffer that stores one tuple to update"""
-        self.buffer = []
-
-    def _setup_decay_schedule(self):
-        self._epsilon = self.initial_epsilon
-        self._step = 0
-        if self.epsilon_decay == "linear":
-            self._epsilon_decay_schedule = lambda step: self.final_epsilon + \
-                (self.initial_epsilon - self.final_epsilon) * \
-                max(0, (self.epsilon_decay_frames - step) / self.epsilon_decay_frames)
-        else:
-            raise NotImplementedError(f"epsilon decay schedule: {self.epsilon_decay}")
-
-    def optimize(self, step: int, logger: Optional[TrainLogger] = None):
-        """Update the Q table with tuples of experience"""
+    def optimize(self, step, logger: Optional[TrainLogger] = None):
+        """Update the Q tables with tuples of experience"""
         if len(self.buffer) == 0:
             return
 
-        for (state, action, reward, next_state, terminal) in self.buffer:
+        for (state, action, reward, cost, next_state, terminal) in self.buffer:
+
+            penalty = 1.0 if cost else 0.0
 
             current = self.Q[next_state]
             self.Q[state, action] = (1 - self.alpha) * self.Q[state, action] \
-            + self.alpha * (reward + (1 - terminal) * self.gamma * np.max(current))
+            + self.alpha * ((reward - self.r_min) + (1 - terminal) * self.gamma * np.max(current))
+
+            current = self.D[next_state]
+            self.D[state, action] = (1 - self.dm_alpha) * self.D[state, action] \
+            + self.dm_alpha * (penalty + (1 - terminal) * (1 - bool(cost)) * self.dm_gamma * np.max(current))
+
+            current = self.C[next_state]
+            self.C[state, action] = (1 - self.cm_alpha) * self.C[state, action] \
+            + self.cm_alpha * (-penalty + (1 - terminal) * (1 - bool(cost)) * self.cm_gamma * np.max(current))
 
         self.buffer.clear()
 
         if logger:
             logger.add("train/stats", {"alpha": self.alpha})
+            logger.add("train/stats", {"dm_alpha": self.dm_alpha})
+            logger.add("train/stats", {"cm_alpha": self.cm_alpha})
             if self.exploration == "boltzmann":
                 logger.add("train/stats", {"temp": self.boltzmann_temp})
             if self.exploration == "epsilon-greedy":
                 logger.add("train/stats", {"epsilon": self._epsilon})
 
-    def rollout(self, step: int, logger: Optional[TrainLogger] = None):
+    def rollout(self, step, logger: Optional[TrainLogger] = None):
 
         self.key, subkey = jr.split(self.key)
         action = self.act(subkey, self._last_obs)
@@ -113,7 +113,8 @@ class QL(Tabular_Algorithm):
                 self._last_obs, action, reward, next_obs, terminated, info, getattr(self.env._constraint, "cost_fn", None)
             )
         else:
-            self.buffer.append((self._last_obs, action, reward, next_obs, terminated))
+            cost = info["constraint"]["step"].get("cost", 0.0)
+            self.buffer.append((self._last_obs, action, reward, cost, next_obs, terminated))
 
         if terminated or truncated:
             self._last_obs, _ = self.env.reset()
@@ -143,10 +144,12 @@ class QL(Tabular_Algorithm):
         for _i, counter_fac_automaton_state in enumerate(dfa.states):
             next_counter_fac_automaton_state = dfa.transition(counter_fac_automaton_state, _labels)
             _j = dfa.states.index(next_counter_fac_automaton_state)
+            cost = float(next_counter_fac_automaton_state in dfa.accepting)
             counter_fac_exp.append(
                 (_obs + _n * _i,
                 action,
                 reward,
+                cost,
                 _next_obs + _n * _j,
                 terminated,)
             )
@@ -155,37 +158,50 @@ class QL(Tabular_Algorithm):
 
     def act(self, key, obs, deterministic=False):
         if deterministic:
-            action = self.select_action(self.Q[obs])
+            action = self.select_action(
+                jnp.asarray(self.Q[obs], dtype=jnp.float32), 
+                jnp.asarray(self.D[obs], dtype=jnp.float32),
+                jnp.asarray(self.C[obs], dtype=jnp.float32),
+            )
         else:
             action = self.sample_action(
                 key, 
                 jnp.asarray(self.Q[obs], dtype=jnp.float32), 
+                jnp.asarray(self.D[obs], dtype=jnp.float32),
+                jnp.asarray(self.C[obs], dtype=jnp.float32),
                 self.boltzmann_temp, 
                 self._epsilon, 
                 exploration=self.exploration
             )
         return self.prepare_act(action)
-            
-    def prepare_act(self, act: Any):
-        return int(np.asarray(act).item())
 
     @staticmethod
-    def select_action(q_values: np.ndarray):
-        return np.argmax(q_values)
+    @jit
+    def select_action(q_values, d_values, c_values):
+        c_values = jnp.clip(c_values, -1.0, 0.0)
+        d_values = jnp.clip(-d_values, -1.0, 0.0)
+        X = jnp.exp(jnp.minimum(c_values, d_values))
+        q_X = q_values * X
+        return np.argmax(q_X)
 
     @staticmethod
     @partial(jit, static_argnames=["exploration"])
-    def sample_action(key, q_values, tmp, eps, exploration="boltzmann"):
+    def sample_action(key, q_values, d_values, c_values, tmp, eps, exploration="boltzmann"):
+        c_values = jnp.clip(c_values, -1.0, 0.0)
+        d_values = jnp.clip(-d_values, -1.0, 0.0)
+        X = jnp.exp(jnp.minimum(c_values, d_values))
+        q_X = q_values * X
+        #q_X = q_X / (jnp.sum(q_X) + 1e-6)
+        #probs = q_X / (jnp.sum(q_X) + 1e-6)
+        #return jr.choice(key, q_values.shape[0], p=probs)
         if exploration == "boltzmann":
-            scaled_q = q_values - jnp.max(q_values)
-            exp = jnp.exp(scaled_q / tmp)
+            probs = q_X / (jnp.sum(q_X) + 1e-6)
+            log_probs = jnp.log(probs)
+            scaled_log_probs = log_probs - log_probs
+            exp = jnp.exp(scaled_log_probs / tmp)
             probs = exp / (jnp.sum(exp) + 1e-6)
-        if exploration == "epsilon_greedy":
-            probs = jnp.zeros(q_values.shape[0])
-            probs = probs.at[jnp.argmax(q_values)].set(1.0 - eps)
-            probs += (eps / q_values.shape[0])
+        if exploration == "epsilon-greedy":
+            probs = jnp.zeros(q_X.shape[0])
+            probs = probs.at[jnp.argmax(q_X)].set(1.0 - eps)
+            probs += eps * (q_X / (jnp.sum(q_X) + 1e-6))
         return jr.choice(key, q_values.shape[0], p=probs)
-
-    @property
-    def train_ratio(self):
-        return 1

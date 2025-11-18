@@ -74,6 +74,13 @@ class BaseConstraintEnv(gym.Wrapper, Constraint):
         return obs, reward, terminated, truncated, info
 
     @property
+    def cost_fn(self):
+        if self._constraint is not None:
+            return getattr(self.env._constraint, "cost_fn", None)
+        else:
+            return None
+
+    @property
     def constraint_type(self) -> str:
         return self._constraint.constraint_type
 

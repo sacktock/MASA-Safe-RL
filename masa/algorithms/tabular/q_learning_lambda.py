@@ -3,6 +3,7 @@ from typing import Any, Optional, TypeVar, Union, Callable
 from masa.common.base_class import Base_Algorithm
 from masa.common.metrics import TrainLogger
 from masa.algorithms.tabular.q_learning import QL
+from masa.common.ltl import DFACostFn, DFA
 from gymnasium import spaces
 import gymnasium as gym
 import numpy as np
@@ -56,18 +57,42 @@ class QL_Lambda(QL):
         self.cost_lambda = cost_lambda
 
     def optimize(self, step, logger: Optional[TrainLogger] = None):
-        super().optimize(step, logger)
+        """Update the Q table with tuples of experience"""
+        if len(self.buffer) == 0:
+            return
+
+        for (state, action, reward, cost, next_state, terminal) in self.buffer:
+
+            penalty = -self.cost_lambda * cost
+
+            current = self.Q[next_state]
+            self.Q[state, action] = (1 - self.alpha) * self.Q[state, action] \
+            + self.alpha * ((reward + penalty) + (1 - terminal) * self.gamma * np.max(current))
+
+        self.buffer.clear()
+
         if logger:
+            logger.add("train/stats", {"alpha": self.alpha})
             logger.add("train/stats", {"cost_lambda": self.cost_lambda})
+            if self.exploration == "boltzmann":
+                logger.add("train/stats", {"temp": self.boltzmann_temp})
+            if self.exploration == "epsilon-greedy":
+                logger.add("train/stats", {"epsilon": self._epsilon})
 
     def rollout(self, step, logger: Optional[TrainLogger] = None):
 
         self.key, subkey = jr.split(self.key)
         action = self.act(subkey, self._last_obs)
         next_obs, reward, terminated, truncated, info = self.env.step(action)
-        cost = info["constraint"]["step"].get("cost", 0.0)
-        penalty = -self.cost_lambda * cost
-        self.buffer = (self._last_obs, action, reward + penalty, next_obs, terminated)
+
+        if hasattr(self.env, "cost_fn") and isinstance(self.env.cost_fn, DFACostFn):
+            # if the cost function associated with the constraint is a DFA, by default use counter factual experiences
+            self.buffer += self.generate_counter_factuals(
+                self._last_obs, action, reward, next_obs, terminated, info, getattr(self.env._constraint, "cost_fn", None)
+            )
+        else:
+            cost = info["constraint"]["step"].get("cost", 0.0)
+            self.buffer.append((self._last_obs, action, reward, cost, next_obs, terminated))
 
         if terminated or truncated:
             self._last_obs, _ = self.env.reset()
@@ -79,3 +104,33 @@ class QL_Lambda(QL):
 
         if logger:
             logger.add("train/rollout", info)
+
+    def generate_counter_factuals(
+        self, obs: int, action: int, reward: float, next_obs: int, terminated: bool, info: Dict[str, Any], cost_fn: DFACostFn
+    ) -> List[Tuple[int, int, float, int, bool]]:
+
+        dfa: DFA = cost_fn.dfa
+        counter_fac_exp = []
+
+        _n = self.n_states // dfa.num_automaton_states
+
+        _labels = info.get("labels", set())
+
+        _obs = obs % _n
+        _next_obs = next_obs % _n
+
+        for _i, counter_fac_automaton_state in enumerate(dfa.states):
+            next_counter_fac_automaton_state = dfa.transition(counter_fac_automaton_state, _labels)
+            _j = dfa.states.index(next_counter_fac_automaton_state)
+            cost = cost_fn.cost(counter_fac_automaton_state, _labels)
+            
+            counter_fac_exp.append(
+                (_obs + _n * _i,
+                action,
+                reward,
+                cost,
+                _next_obs + _n * _j,
+                terminated,)
+            )
+
+        return counter_fac_exp

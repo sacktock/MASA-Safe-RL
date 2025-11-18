@@ -22,3 +22,5 @@ CONSTRAINT_REGISTRY.register("pctl", "masa.common.constraints:PCTLEnv")
 # Register supported algorithms
 ALGO_REGISTRY.register("q_learning", "masa.algorithms.tabular:QL")
 ALGO_REGISTRY.register("q_learning_lambda", "masa.algorithms.tabular:QL_Lambda")
+ALGO_REGISTRY.register("sem", "masa.algorithms.tabular:SEM")
+ALGO_REGISTRY.register("lcrl", "masa.algorithms.tabular:LCRL")
