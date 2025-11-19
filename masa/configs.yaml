@@ -62,6 +62,24 @@ defaults:
     epsilon_decay: linear
     epsilon_decay_frames: 10000
 
+  recreg:
+    task_alpha: 0.1
+    task_gamma: 0.9
+    safe_alpha: 0.1
+    safe_gamma: 0.9
+    model_impl: model-free
+    model_checking: sample
+    samples: 512
+    horizon: 10
+    step_wise_prob: 0.01
+    model_prior: identity
+    exploration: boltzmann
+    boltzmann_temp: 0.05
+    initial_epsilon: 1.0
+    final_epsilon: 0.1
+    epsilon_decay: linear
+    epsilon_decay_frames: 10000
+
   run:
     seed: 0
     total_timesteps: 100000
