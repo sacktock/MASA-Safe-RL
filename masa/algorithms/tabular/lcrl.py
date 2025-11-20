@@ -56,17 +56,17 @@ class LCRL(QL):
 
         self.r_min = r_min
 
-    def optimize(self, step, logger: Optional[TrainLogger] = None):
+    def optimize(self, step: int, logger: Optional[TrainLogger] = None):
         """Update the Q table with tuples of experience"""
         if len(self.buffer) == 0:
             return
 
-        for (state, action, reward, cost, next_state, terminal) in self.buffer:
+        for (state, action, reward, violation, next_state, terminal) in self.buffer:
 
             current = self.Q[next_state]
             self.Q[state, action] = (1 - self.alpha) * self.Q[state, action] \
-            + self.alpha * (reward * (1 - bool(cost)) + bool(cost) * (self.r_min / self.gamma) \
-            + (1 - terminal) * (1 - bool(cost)) * self.gamma * np.max(current))
+            + self.alpha * (reward * (1 - violation) + float(violation) * (self.r_min / self.gamma) \
+            + (1 - violation) * (1 - terminal) * self.gamma * np.max(current))
 
         self.buffer.clear()
 
@@ -77,7 +77,7 @@ class LCRL(QL):
             if self.exploration == "epsilon-greedy":
                 logger.add("train/stats", {"epsilon": self._epsilon})
 
-    def rollout(self, step, logger: Optional[TrainLogger] = None):
+    def rollout(self, step: int, logger: Optional[TrainLogger] = None):
 
         self.key, subkey = jr.split(self.key)
         action = self.act(subkey, self._last_obs)
@@ -89,8 +89,8 @@ class LCRL(QL):
                 self._last_obs, action, reward, next_obs, terminated, info, getattr(self.env._constraint, "cost_fn", None)
             )
         else:
-            cost = info["constraint"]["step"].get("cost", 0.0)
-            self.buffer.append((self._last_obs, action, reward, cost, next_obs, terminated))
+            violation = info["constraint"]["step"].get("violation", False)
+            self.buffer.append((self._last_obs, action, reward, violation, next_obs, terminated))
 
         if terminated or truncated:
             self._last_obs, _ = self.env.reset()
@@ -120,12 +120,12 @@ class LCRL(QL):
         for _i, counter_fac_automaton_state in enumerate(dfa.states):
             next_counter_fac_automaton_state = dfa.transition(counter_fac_automaton_state, _labels)
             _j = dfa.states.index(next_counter_fac_automaton_state)
-            cost = float(next_counter_fac_automaton_state in dfa.accepting)
+            violation = bool(next_counter_fac_automaton_state in dfa.accepting)
             counter_fac_exp.append(
                 (_obs + _n * _i,
                 action,
                 reward,
-                cost,
+                violation,
                 _next_obs + _n * _j,
                 terminated,)
             )

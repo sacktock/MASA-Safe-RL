@@ -61,7 +61,7 @@ class BaseConstraintEnv(gym.Wrapper, Constraint):
         self._constraint.update(labels)
         return obs, info
 
-    def step(self, action):
+    def step(self, action: Any):
         obs, reward, terminated, truncated, info = self.env.step(action)
 
         labels = info.get("labels", set())

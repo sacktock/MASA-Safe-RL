@@ -141,8 +141,8 @@ colour_bomb_grid_world_v2:
     cost_fn: masa.envs.tabular.colour_bomb_grid_world_v2:cost_fn
   
   constraint:
-    type: cmdp
-    cost_budget: 1
+    type: ltl_dfa
+    dfa: masa.examples.colour_bomb_grid_world.property_3:dfa
 
   run:
     total_timesteps: 250000

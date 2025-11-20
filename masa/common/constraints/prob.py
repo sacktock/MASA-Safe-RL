@@ -15,7 +15,7 @@ class ProbabilisticSafety(Constraint):
         self.total_unsafe = 0.0
         self.step_cost = 0.0
 
-    def update(self, labels):
+    def update(self, labels: Iterable[str]):
         self.step_cost = self.cost_fn(labels)
         self.total_unsafe += float(self.step_cost >= 0.5)
         self.total += 1
@@ -30,7 +30,7 @@ class ProbabilisticSafety(Constraint):
         return {"cum_unsafe": float(self.total_unsafe), "p_unsafe": self.prob_unsafe(), "satisfied": float(self.satisfied())}
 
     def step_metric(self) -> Dict[str, float]:
-        return {"cost": self.step_cost, "cum_unsafe": float(self.total_unsafe), "p_unsafe": self.prob_unsafe(), "satisfied": float(self.satisfied())}
+        return {"cost": self.step_cost, "violation": float(self.step_cost >= 0.5)}
     
     @property
     def constraint_type(self) -> str:

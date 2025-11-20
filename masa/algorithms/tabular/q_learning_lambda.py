@@ -56,18 +56,18 @@ class QL_Lambda(QL):
 
         self.cost_lambda = cost_lambda
 
-    def optimize(self, step, logger: Optional[TrainLogger] = None):
+    def optimize(self, step: int, logger: Optional[TrainLogger] = None):
         """Update the Q table with tuples of experience"""
         if len(self.buffer) == 0:
             return
 
-        for (state, action, reward, cost, next_state, terminal) in self.buffer:
+        for (state, action, reward, cost, violation, next_state, terminal) in self.buffer:
 
             penalty = -self.cost_lambda * cost
 
             current = self.Q[next_state]
             self.Q[state, action] = (1 - self.alpha) * self.Q[state, action] \
-            + self.alpha * ((reward + penalty) + (1 - terminal) * self.gamma * np.max(current))
+            + self.alpha * ((reward + penalty) + (1 - violation) * (1 - terminal) * self.gamma * np.max(current))
 
         self.buffer.clear()
 
@@ -79,7 +79,7 @@ class QL_Lambda(QL):
             if self.exploration == "epsilon-greedy":
                 logger.add("train/stats", {"epsilon": self._epsilon})
 
-    def rollout(self, step, logger: Optional[TrainLogger] = None):
+    def rollout(self, step: int, logger: Optional[TrainLogger] = None):
 
         self.key, subkey = jr.split(self.key)
         action = self.act(subkey, self._last_obs)
@@ -92,7 +92,8 @@ class QL_Lambda(QL):
             )
         else:
             cost = info["constraint"]["step"].get("cost", 0.0)
-            self.buffer.append((self._last_obs, action, reward, cost, next_obs, terminated))
+            violation = info["constraint"]["step"].get("violation", False)
+            self.buffer.append((self._last_obs, action, reward, cost, violation, next_obs, terminated))
 
         if terminated or truncated:
             self._last_obs, _ = self.env.reset()
@@ -123,12 +124,13 @@ class QL_Lambda(QL):
             next_counter_fac_automaton_state = dfa.transition(counter_fac_automaton_state, _labels)
             _j = dfa.states.index(next_counter_fac_automaton_state)
             cost = cost_fn.cost(counter_fac_automaton_state, _labels)
-            
+            violation = bool(next_counter_fac_automaton_state in dfa.accepting)
             counter_fac_exp.append(
                 (_obs + _n * _i,
                 action,
                 reward,
                 cost,
+                violation,
                 _next_obs + _n * _j,
                 terminated,)
             )

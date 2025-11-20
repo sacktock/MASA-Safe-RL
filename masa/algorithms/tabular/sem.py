@@ -69,14 +69,14 @@ class SEM(QL):
         self.D = np.zeros((self.n_states, self.n_actions), dtype=np.float32)
         self.C = np.zeros((self.n_states, self.n_actions), dtype=np.float32)
 
-    def optimize(self, step, logger: Optional[TrainLogger] = None):
+    def optimize(self, step: int, logger: Optional[TrainLogger] = None):
         """Update the Q tables with tuples of experience"""
         if len(self.buffer) == 0:
             return
 
-        for (state, action, reward, cost, next_state, terminal) in self.buffer:
+        for (state, action, reward, violation, next_state, terminal) in self.buffer:
 
-            penalty = 1.0 if cost else 0.0
+            penalty = 1.0 if violation else 0.0
 
             current = self.Q[next_state]
             self.Q[state, action] = (1 - self.alpha) * self.Q[state, action] \
@@ -84,11 +84,11 @@ class SEM(QL):
 
             current = self.D[next_state]
             self.D[state, action] = (1 - self.dm_alpha) * self.D[state, action] \
-            + self.dm_alpha * (penalty + (1 - terminal) * (1 - bool(cost)) * self.dm_gamma * np.max(current))
+            + self.dm_alpha * (penalty + (1 - terminal) * (1 - violation) * self.dm_gamma * np.max(current))
 
             current = self.C[next_state]
             self.C[state, action] = (1 - self.cm_alpha) * self.C[state, action] \
-            + self.cm_alpha * (-penalty + (1 - terminal) * (1 - bool(cost)) * self.cm_gamma * np.max(current))
+            + self.cm_alpha * (-penalty + (1 - terminal) * (1 - violation) * self.cm_gamma * np.max(current))
 
         self.buffer.clear()
 
@@ -101,7 +101,7 @@ class SEM(QL):
             if self.exploration == "epsilon-greedy":
                 logger.add("train/stats", {"epsilon": self._epsilon})
 
-    def rollout(self, step, logger: Optional[TrainLogger] = None):
+    def rollout(self, step: int, logger: Optional[TrainLogger] = None):
 
         self.key, subkey = jr.split(self.key)
         action = self.act(subkey, self._last_obs)
@@ -113,8 +113,8 @@ class SEM(QL):
                 self._last_obs, action, reward, next_obs, terminated, info, getattr(self.env._constraint, "cost_fn", None)
             )
         else:
-            cost = info["constraint"]["step"].get("cost", 0.0)
-            self.buffer.append((self._last_obs, action, reward, cost, next_obs, terminated))
+            violation = info["constraint"]["step"].get("violation", False)
+            self.buffer.append((self._last_obs, action, reward, violation, next_obs, terminated))
 
         if terminated or truncated:
             self._last_obs, _ = self.env.reset()
@@ -144,12 +144,12 @@ class SEM(QL):
         for _i, counter_fac_automaton_state in enumerate(dfa.states):
             next_counter_fac_automaton_state = dfa.transition(counter_fac_automaton_state, _labels)
             _j = dfa.states.index(next_counter_fac_automaton_state)
-            cost = float(next_counter_fac_automaton_state in dfa.accepting)
+            violation = bool(next_counter_fac_automaton_state in dfa.accepting)
             counter_fac_exp.append(
                 (_obs + _n * _i,
                 action,
                 reward,
-                cost,
+                violation,
                 _next_obs + _n * _j,
                 terminated,)
             )

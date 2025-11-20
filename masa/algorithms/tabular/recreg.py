@@ -109,7 +109,6 @@ class RECREG(QL):
         self._setup_models()
 
     def _setup_models(self):
-
         if self.model_impl == "exact":
             assert self.env.has_transition_matrix(), f"Cannot instantiate RecReg with 'exact' model implementation for an environment that does not expose its transtion matrix"
             raise NotImplementedError("TODO: implelemt penalty_array and unsafe_array")
@@ -129,12 +128,12 @@ class RECREG(QL):
         else:
             raise NotImplementedError(f"Unexpected model_impl: {self.model_impl}")
 
-    def optimize(self, step, logger: Optional[TrainLogger] = None):
+    def optimize(self, step: int, logger: Optional[TrainLogger] = None):
         """Update the Q table with tuples of experience"""
         if len(self.buffer) == 0:
             return
 
-        for (state, action, reward, cost, next_state, terminal) in self.buffer:
+        for (state, action, reward, cost, violation, next_state, terminal) in self.buffer:
 
             penalty = -float(cost)
 
@@ -145,7 +144,7 @@ class RECREG(QL):
             else:
                 self.Q[state, action] = (1 - self.alpha) * self.Q[state, action]
 
-            safe_gamma = self.safe_gamma if cost else 1.0
+            safe_gamma = self.safe_gamma if violation else 1.0
             current = self.B[next_state]
             self.B[state, action] = (1 - self.safe_alpha) * self.B[state, action] \
             + self.safe_alpha * (penalty + (1 - terminal) * safe_gamma * np.max(current))
@@ -157,9 +156,9 @@ class RECREG(QL):
                 current = self.B[next_state]
                 for t in reversed(range(self.horizon)):
                     if t == self.horizon - 1:
-                        next_S = min(1.0, float(cost))
+                        next_S = min(1.0, float(violation))
                     else:
-                        next_S = min(1.0, float(cost) + (1 - terminal) * self.S[t+1, next_state, np.argmax(current)])
+                        next_S = min(1.0, float(violation) + (1 - terminal) * self.S[t+1, next_state, np.argmax(current)])
                     self.S[t, state, action] = (1 - self.safe_alpha) * self.S[t, state, action] + self.safe_alpha * next_S
 
         self.buffer.clear()
@@ -172,7 +171,7 @@ class RECREG(QL):
             if self.exploration == "epsilon-greedy":
                 logger.add("train/stats", {"epsilon": self._epsilon})
 
-    def rollout(self, step, logger: Optional[TrainLogger] = None):
+    def rollout(self, step: int, logger: Optional[TrainLogger] = None):
 
         self.key, subkey = jr.split(self.key)
         action = self.act(subkey, self._last_obs)
@@ -185,7 +184,8 @@ class RECREG(QL):
             )
         else:
             cost = info["constraint"]["step"].get("cost", 0.0)
-            self.buffer.append((self._last_obs, action, reward, cost, next_obs, terminated))
+            violation = info["constraint"]["step"].get("violation", False)
+            self.buffer.append((self._last_obs, action, reward, cost, violation, next_obs, terminated))
 
         if terminated or truncated:
             self._last_obs, _ = self.env.reset()
@@ -216,12 +216,13 @@ class RECREG(QL):
             next_counter_fac_automaton_state = dfa.transition(counter_fac_automaton_state, _labels)
             _j = dfa.states.index(next_counter_fac_automaton_state)
             cost = cost_fn.cost(counter_fac_automaton_state, _labels)
-
+            violation = bool(next_counter_fac_automaton_state in dfa.accepting)
             counter_fac_exp.append(
                 (_obs + _n * _i,
                 action,
                 reward,
                 cost,
+                violation,
                 _next_obs + _n * _j,
                 terminated,)
             )

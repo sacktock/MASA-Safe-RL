@@ -15,7 +15,7 @@ class PCTL(Constraint):
         self.step_cost = 0.0
         self.total_unsafe = 0.0
     
-    def update(self, labels):
+    def update(self, labels: Iterable[str]):
         self.step_cost = self.cost_fn(labels)
         self.total_unsafe = float(self.step_cost >= 0.5)
         self.safe = self.safe and (not self.total_unsafe)
@@ -27,7 +27,7 @@ class PCTL(Constraint):
         return {"cum_unsafe": float(self.total_unsafe), "satisfied": float(self.satisfied())}
 
     def step_metric(self) -> Dict[str, float]:
-        return {"cost": self.step_cost, "cum_unsafe": float(self.total_unsafe), "satisfied": float(self.satisfied())}
+        return {"cost": self.step_cost, "violation": float(self.step_cost >= 0.5)}
 
     @property
     def constraint_type(self) -> str:

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, Dict
+from typing import Any, Dict, Iterable
 from masa.common.constraints import Constraint, BaseConstraintEnv
 
 class ReachAvoid(Constraint):
@@ -11,25 +11,27 @@ class ReachAvoid(Constraint):
 
     def reset(self):
         self.reached = False
-        self.violated = False  
+        self.violated = False
+        self.satisfied = False
 
-    def update(self, labels):
-        self.violated = self.avoid_label in lables
-        self.reached = self.reach_label in labels
+    def update(self, labels: Iterable[str]):
+        self.reach = self.reach_label in labels
+        self.avoid = self.avoid_label not in labels
 
-    def satisfied(self) -> bool:
-        return self.reached and not self.violated
+        self.reached = self.reached or self.reach
+        self.violated = self.violated or bool(not self.avoid)
+
+        self.satisfied = self.satisfied or (self.reached and bool(not self.violated))
 
     def episode_metric(self) -> Dict[str, float]:
-        return {"reached": self.reached, "violated": self.violated, "satisfied": float(self.satisfied())}
+        return {"reached": self.reached, "violated": self.violated, "satisfied": float(self.satisfied)}
 
     def step_metric(self) -> Dict[str, float]:
-        return {"reached": self.reached, "violated": self.violated, "satisfied": float(self.satisfied())}
+        return {"cost": float(not self.avoid), "violation": bool(not self.avoid), "reached": self.reach}
 
     @property
     def constraint_type(self) -> str:
         return "reach_avoid"
-
 
 class ReachAvoidEnv(BaseConstraintEnv):
     """Gymansium wrapper for Reach-avoid."""
