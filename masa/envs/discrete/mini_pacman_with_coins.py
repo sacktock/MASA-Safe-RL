@@ -115,7 +115,7 @@ class MiniPacmanWithCoins(DiscreteEnv):
         self._state = self._start_state
         return self._obs(), {}
 
-    def step(self, action):
+    def step(self, action: Any):
         assert self.action_space.contains(action), f"Invalid action {action}!"
         self._state = self.np_random.choice(self._n_states, p=self._transition_matrix[:, self._state, action])
 
