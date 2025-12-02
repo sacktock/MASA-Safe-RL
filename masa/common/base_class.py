@@ -12,7 +12,7 @@ from tqdm import tqdm
 def _allowed_names(allowed: tuple[type[spaces.Space], ...]) -> str:
     return ", ".join(t.__name__ for t in allowed)
 
-class Base_Algorithm(ABC):
+class BaseAlgorithm(ABC):
 
     def __init__(
         self,
@@ -55,6 +55,9 @@ class Base_Algorithm(ABC):
                 f"Allowed types: { _allowed_names(self.supported_observation_spaces) }."
             )
 
+        self.observation_space = env.observation_space
+        self.action_space = env.action_space
+
         self._env_fn = env_fn
         self._eval_env = eval_env
 
@@ -62,7 +65,7 @@ class Base_Algorithm(ABC):
 
     def train(self, 
         num_frames: int,
-        num_eval_episodes: Optional[int] = None,
+        num_eval_episodes: int = 0,
         eval_freq: int = 0,
         log_freq: int = 1,
         prefill: Optional[int] = None,
@@ -76,10 +79,10 @@ class Base_Algorithm(ABC):
             summary_writer = None
 
         logger = TrainLogger(
-            {"train/rollout": RolloutLogger, "eval/rollout": RolloutLogger, "train/stats": StatsLogger},
+            [("train/rollout", RolloutLogger), ("train/stats", StatsLogger), ("eval/rollout", RolloutLogger)],
             tensorboard=bool(summary_writer is not None),
             summary_writer=summary_writer, 
-            stats_window_size=stats_window_size,
+            stats_window_size=[stats_window_size, stats_window_size, num_eval_episodes],
             prefix='',
         )
 
@@ -91,7 +94,8 @@ class Base_Algorithm(ABC):
 
         self._last_obs, _ = self.env.reset(seed=self.seed)
 
-        for step in tqdm(range(math.ceil((num_frames)/self.train_ratio))):
+        for iteration in tqdm(range(math.ceil((num_frames)/self.train_ratio))):
+            step = iteration*self.train_ratio
             self.rollout(step, logger=logger)
             self.optimize(step, logger=logger)
 
@@ -107,7 +111,7 @@ class Base_Algorithm(ABC):
 
             if log_freq and (total_steps >= next_log):
                 next_log += log_freq
-                logger.log(step*self.train_ratio)
+                logger.log(step)
 
     def _get_eval_env(self) -> gym.Env:
         if self._eval_env is not None:
@@ -176,3 +180,12 @@ class Base_Algorithm(ABC):
         """How often to do an update step during training"""
         raise NotImplementedError
 
+class BaseJaxPolicy(ABC):
+
+    def __init__(
+        self,
+        observation_space: spaces.Space,
+        action_space: spaces.Space,
+    ):
+        self.observation_space = observation_space
+        self.action_space = action_space

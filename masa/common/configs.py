@@ -484,7 +484,7 @@ class Config(dict):
     result = json.loads(json.dumps(mapping))
     for key, value in result.items():
       if isinstance(value, list):
-        value = tuple(value)
+        value = list(value)
       if isinstance(value, tuple):
         if len(value) == 0:
           message = 'Empty lists are disallowed because their type is unclear.'

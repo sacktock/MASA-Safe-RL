@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Any, Optional, TypeVar, Union, Callable, Dict
 from masa.common.base_class import Base_Algorithm
 from masa.common.metrics import TrainLogger
-from masa.algorithms.tabular.base import Tabular_Algorithm
+from masa.algorithms.tabular.base import TabularAlgorithm
 from masa.common.ltl import DFACostFn, DFA
 from gymnasium import spaces
 import gymnasium as gym
@@ -13,7 +13,7 @@ from jax import jit
 from functools import partial
 
 
-class QL(Tabular_Algorithm):
+class QL(TabularAlgorithm):
 
     def __init__(
         self,
@@ -49,8 +49,8 @@ class QL(Tabular_Algorithm):
         assert exploration in ["boltzmann", "epsilon-greedy"], f"Unsupported exploration type: {exploration}"
         assert epsilon_decay in ["linear"], f"Unsupported epsilon decay schedule: {epsilon_decay}"
 
-        self.n_states = env.observation_space.n
-        self.n_actions = env.action_space.n
+        self.n_states = self.observation_space.n
+        self.n_actions = self.action_space.n
         self.alpha = alpha
         self.gamma = gamma
         self.exploration = exploration

@@ -2,13 +2,17 @@ from __future__ import annotations
 from typing import Any
 from gymnasium import spaces
 import numpy as np
+import math
 from masa.common.label_fn import LabelFn
 from masa.envs.discrete.base import DiscreteEnv
 
+THETA_THESHOLD_RADIANS = 0.2095 # ~ 3/4 pi radians
+X_THRESHOLD = 2.4
+
 def label_fn(obs):
     x, x_dot, theta, theta_dot = obs
-    if np.abs(theta) <= self._theta_threshold_radians \
-            and np.abs(x) <= self._x_threshold:
+    if np.abs(theta) <= THETA_THESHOLD_RADIANS \
+            and np.abs(x) <= X_THRESHOLD:
         return {"stable"}
     else:
         return set()
@@ -29,8 +33,8 @@ class DiscreteCartPole(DiscreteEnv):
         self._tau = 0.02
         self._kinematics_integrator = "euler"
 
-        self._theta_threshold_radians = 0.2095 # ~ 3/4 pi radians
-        self._x_threshold = 2.4
+        self._theta_threshold_radians = THETA_THESHOLD_RADIANS
+        self._x_threshold = X_THRESHOLD
 
         self._x_vel_threshold = 2.0
         self._theta_vel_threshold = 0.5
@@ -72,8 +76,8 @@ class DiscreteCartPole(DiscreteEnv):
     def step(self, action: Any):
         assert self.action_space.contains(action), f"Invalid action {action}!"
 
-        x, x_dot, theta, theta_dot = state
-        force = self._force_mag if action else -self.force_mag
+        x, x_dot, theta, theta_dot = self._state
+        force = self._force_mag if action else -self._force_mag
         costheta = math.cos(theta)
         sintheta = math.sin(theta)
 
@@ -100,7 +104,7 @@ class DiscreteCartPole(DiscreteEnv):
 
         self._state = np.array([x, x_dot, theta, theta_dot], dtype=np.float32)
 
-        terminated = np.abs(theta) <= self._theta_threshold_radians \
+        stable = np.abs(theta) <= self._theta_threshold_radians \
             and np.abs(x) <= self._x_threshold
 
-        return self._obs(), 1.0, terminated, False, {}
+        return self._obs(), 1.0, not stable, False, {}

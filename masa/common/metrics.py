@@ -5,7 +5,7 @@ import warnings
 import time 
 from tqdm import tqdm
 from collections import deque
-
+from typing import Any, Optional, TypeVar, Union, Callable, Dict, List, Tuple
 
 class Stats:
 
@@ -170,7 +170,7 @@ class StatsLogger(BaseLogger):
                 else:
                     self.stats[key] = deque([val], maxlen=self.stats_window_size)
             else:
-                raise NotImplementedError("StatsLogger.add() does only supports types: Stats, Dist and Float")
+                raise NotImplementedError("StatsLogger.add() only supports types: Stats, Dist and Float")
 
     def log(self, step):
         self._create_logs()
@@ -250,7 +250,7 @@ class RolloutLogger(BaseLogger):
             if k in self.stats.keys():
                 self.stats[k].append(v)
             else:
-                self.stats[k] = deque([v], maxlen=self.stats_window_size)
+                self.stats[k] = deque([v], maxlen=self.stats_window_size+1)
                     
     def _create_stats_to_log(self):
         self.stats_to_log = {}
@@ -289,23 +289,41 @@ class RolloutLogger(BaseLogger):
 
 class TrainLogger(BaseLogger):
 
-    def __init__(self, loggers_ctor, stdout=True, tqdm=True, tensorboard=False, summary_writer=None, stats_window_size=100, prefix=''):
+    def __init__(
+        self, 
+        loggers: List[Tuple[str, BaseLogger]],
+        stdout: bool = True, 
+        tqdm: bool = True,
+        tensorboard: bool = False,
+        summary_writer: bool = None,
+        stats_window_size: Union[int, List[int]] = 100,
+        prefix: str = ''
+    ):
         self.loggers = {}
         self.stdout = stdout
         self.tqdm = tqdm
         self.tensorboard = tensorboard
         self.summary_writer = summary_writer
-        self.stats_window_size = stats_window_size
         self.prefix = prefix
-        
-        for key, ctor in loggers_ctor.items():
+
+        if isinstance(stats_window_size, int):
+            self.stats_window_size = [stats_window_size]*len(loggers)
+        elif isinstance(stats_window_size, list):
+            self.stats_window_size = stats_window_size
+        else:
+            raise RuntimeError(
+                "Expected type int or List[int] for stats_window_size"
+            )
+
+        for idx, (key, ctor) in enumerate(loggers):
             self.loggers[key] = ctor(
                 stdout=self.stdout, 
                 tqdm=self.tqdm, 
                 tensorboard=self.tensorboard, 
                 summary_writer=self.summary_writer, 
-                stats_window_size=self.stats_window_size,
+                stats_window_size=self.stats_window_size[idx],
                 prefix=key,
+                
             )
 
         self.start_time = None

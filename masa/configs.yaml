@@ -80,6 +80,20 @@ defaults:
     epsilon_decay: linear
     epsilon_decay_frames: 10000
 
+  ppo:
+    learning_rate: 3e-4
+    n_steps: 2048
+    batch_size: 64
+    n_epochs: 10
+    gamma: 0.99
+    gae_lambda: 0.95
+    clip_range: 0.2
+    normalize_advantage: True
+    ent_coef: 0.0
+    vf_coef: 1.0
+    max_grad_norm: 0.5
+    policy_kwargs: {net_arch: [64, 64], log_std_init: 0.0}
+
   run:
     seed: 0
     total_timesteps: 100000
@@ -92,6 +106,46 @@ defaults:
     logdir: runs/masa
     device: auto
     verbose: 0
+
+continuous_cartpole:
+  env:
+    id: cont_cartpole
+    max_episode_steps: 500
+    label_fn: masa.envs.continuous.cartpole:label_fn
+    cost_fn: masa.envs.continuous.cartpole:cost_fn
+
+  constraint:
+    type: cmdp
+    cost_budget: 0
+
+  run:
+    total_timesteps: 50000
+    eval_every: 2048
+    eval_episodes: 1
+    log_every: 2048
+    stats_window_size: 10
+    logdir: runs/masa
+    device: gpu
+
+discrete_cartpole:
+  env:
+    id: disc_cartpole
+    max_episode_steps: 500
+    label_fn: masa.envs.discrete.cartpole:label_fn
+    cost_fn: masa.envs.discrete.cartpole:cost_fn
+
+  constraint:
+    type: cmdp
+    cost_budget: 0
+
+  run:
+    total_timesteps: 50000
+    eval_every: 2048
+    eval_episodes: 1
+    log_every: 2048
+    stats_window_size: 10
+    logdir: runs/masa
+    device: gpu
     
 colour_grid_world:
   env:

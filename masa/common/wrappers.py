@@ -2,6 +2,7 @@ from __future__ import annotations
 import gymnasium as gym
 from masa.common.constraints import BaseConstraintEnv
 from masa.common.ltl import DFACostFn, DFA, ShapedCostFn
+from masa.common.running_mean_std import RunningMeanStd
 import numpy as np
 from collections import deque
 from tqdm import tqdm
@@ -226,7 +227,7 @@ class RewardShapingWrapper(ConstraintPersistentWrapper):
         self._last_potential = self.potential_fn(automaton_state)
         return obs, info
 
-    def step(self, action):
+    def step(self, action: Any):
         observation, reward, terminated, truncated, info = self.env.step(action)
         cost = info["constraint"]["step"].get("cost", 0.0)
         automaton_state = info.get("automaton_state", 0)
@@ -238,8 +239,298 @@ class RewardShapingWrapper(ConstraintPersistentWrapper):
     @property
     def cost_fn(self):
         return self.shaped_cost_fn
-        
 
+class NormWrapper(ConstraintPersistentWrapper):
+
+    def __init__(
+        self, 
+        env: gym.Env, 
+        norm_obs: bool = True,
+        norm_rew: bool = True,
+        training: bool = True,
+        clip_obs: float = 10.0,
+        clip_rew: float = 10.0,
+        gamma: float = 0.99,
+        eps: float = 1e-8
+    ):
+        assert not isinstance(
+            env, VecEnvWrapperBase
+        ), "NormWrapper does not expect a vectorized environment (DummyVecWrapper / VecWrapper). Please use VecNormWrapper instead"
+
+        super().__init__(env)
+
+        self.norm_obs = norm_obs
+        self.norm_rew = norm_rew
+        self.training = training
+        self.clip_obs = clip_obs
+        self.clip_rew = clip_rew
+        self.gamma = gamma
+        self.eps = eps
+
+        self.obs_rms = RunningMeanStd(shape=self.observation_space.shape)
+        self.rew_rms = RunningMeanStd(shape=())
+
+        self.returns = np.zeros(1, dtype=np.float32)
+
+    def _normalize_obs(self, obs: np.ndarray) -> np.ndarray:
+        return np.clip(
+            (obs - self.obs_rms.mean) / np.sqrt(self.obs_rms.var + self.eps),
+            -self.clip_obs,
+            self.clip_obs
+        )
+
+    def _normalize_rew(self, rew: float) -> float:
+        return np.clip(
+            rew / np.sqrt(self.rew_rms.var + self.eps),
+            -self.clip_rew,
+            self.clip_rew,
+        )
+
+    def reset(self, *, seed: int | None = None, options: Dict[str, Any] | None = None):
+        obs, info = self.env.reset(seed=seed, options=options)
+
+        if self.norm_obs and self.training:
+            self.obs_rms.update(obs)
+
+        if self.norm_rew and self.training:
+            self.returns[:] = 0.0
+
+        if self.norm_obs:
+            obs = self._normalize_obs(obs)
+
+        return obs, info
+
+    def step(self, action):
+        obs, rew, term, trunc, info = self.env.step(action)
+
+        if self.norm_obs and self.training:
+            self.obs_rms.update(obs)
+
+        if self.norm_rew:
+            self.returns = self.returns * self.gamma + rew
+            if self.training:
+                self.rew_rms.update(self.returns)
+
+            rew = self._normalize_rew(rew)
+
+        if self.norm_obs:
+            obs = self._normalize_obs(obs)
+
+        return obs, rew, term, trunc, info
+
+class VecEnvWrapperBase(ConstraintPersistentWrapper):
+
+    n_envs: int
+
+    def __init__(self, env: gym.Env):
+        # For DummyVecWrapper: env is the single env
+        # For VecWrapper: env is envs[0]
+        # For VecNormWrapper: env is a VecEnvWrapperBase
+        super().__init__(env)
+
+    def reset_done(
+        self, 
+        dones: Union[List[bool], np.ndarray],
+        *, 
+        seed: int | None = None, 
+        options: Dict[str, Any] | None = None
+    ):
+        raise NotImplementedError
         
+class DummyVecWrapper(VecEnvWrapperBase):
+
+    def __init__(self, env: gym.Env):
+        super().__init__(env)
+        self.n_envs = 1
+        self.envs: List[gym.Env] = [env]
+
+    def reset(self, *, seed: int | None = None, options: Dict[str, Any] | None = None):
+        obs, info = self.env.reset(seed=seed, options=options)
+        return [obs], [info]
+
+    def reset_done(
+        self, 
+        dones: Union[List[bool], np.ndarray],
+        *, 
+        seed: int | None = None, 
+        options: Dict[str, Any] | None = None
+    ):
+        dones = list(dones)
+        assert len(dones) == 1
+        if dones[0]:
+            return self.reset(seed=seed, options=options)
+        else:
+            [None], [{}]
+
+    def step(self, action):
+        obs, rew, term, trunc, info = self.env.step(action)
+        return [obs], [rew], [term], [trunc], [info]
+
+class VecWrapper(VecEnvWrapperBase):
+
+    def __init__(self, envs: List[gym.Env]):
+        assert len(envs) > 0, "VecWrapper requires at least one environment"
+        super().__init__(envs[0]) # maintain API compatibility
+        self.envs: List[gym.Env] = envs
+        self.n_envs = len(envs)
+
+    def reset(self, *, seed: int | None = None, options: Dict[str, Any] | None = None):
+        obs_list, info_list = [], []
+        for i, env in enumerate(self.envs):
+            s = None if seed is None else seed + i
+            obs, info = env.reset(seed=s, options=options)
+            obs_list.append(obs)
+            info_list.append(info)
+        return obs_list, info_list
+
+    def reset_done(
+        self, 
+        dones: Union[List[bool], np.ndarray],
+        *, 
+        seed: int | None = None, 
+        options: Dict[str, Any] | None = None
+    ):
+        dones = list(dones)
+        assert len(dones) == self.n_envs
+
+        reset_obs = [None] * self.n_envs
+        reset_infos = [{} for _ in range(self.n_envs)]
+
+        for i, done in enumerate(dones):
+            if done:
+                s = None if seed is None else seed + i
+                obs, info = self.envs[i].reset(seed=s, options=options)
+                reset_obs[i] = obs
+                reset_infos[i] = info
+
+        return reset_obs, reset_infos
+
+    def step(self, action):
+        obs_list, rew_list, term_list, trunc_list, info_list = [], [], [], [], []
+        for env, action in zip(self.envs, actions):
+            obs, rew, term, trunc, info = env.step(action)
+            obs_list.append(obs)
+            rew_list.append(rew)
+            term_list.append(term)
+            trunc_list.append(trunc)
+            info_list.append(info)
+
+        return obs_list, rew_list, term_list, trunc_list, info_list
+
+
+class VecNormWrapper(VecEnvWrapperBase):
+
+    def __init__(
+        self, 
+        env: Union[gym.Env, List[gym.Env]], 
+        norm_obs: bool = True,
+        norm_rew: bool = True,
+        training: bool = True,
+        clip_obs: float = 10.0,
+        clip_rew: float = 10.0,
+        gamma: float = 0.99,
+        eps: float = 1e-8
+    ):
+        assert isinstance(
+            env, VecEnvWrapperBase
+        ), "VecNormWrapper expects a vectorized environment (DummyVecWrapper / VecWrapper)."
+
+        super().__init__(env)
+
+        self.n_envs = env.n_envs
+        self.norm_obs = norm_obs
+        self.norm_rew = norm_rew
+        self.training = training
+        self.clip_obs = clip_obs
+        self.clip_rew = clip_rew
+        self.gamma = gamma
+        self.eps = eps
+
+        self.obs_rms = RunningMeanStd(shape=self.observation_space.shape)
+        self.rew_rms = RunningMeanStd(shape=())
+
+        self.returns = np.zeros(self.n_envs, dtype=np.float32)
+
+    def _normalize_obs(self, obs: List[np.ndarray]) -> List[np.ndarray]:
+        obs_arr = np.asarray(obs_list, dtype=np.float32)
+        norm = (obs_arr - self.obs_rms.mean) / np.sqrt(self.obs_rms.var + self.eps)
+        norm = np.clip(norm, -self.clip_obs, self.clip_obs)
+        return norm.tolist()
+
+    def _normalize_rew(self, rew: List[float]) -> List[float]:
+        rew_arr = np.asarray(rew_list, dtype=np.float32)
+        norm = rew_arr / np.sqrt(self.rew_rms.var + self.eps)
+        norm = np.clip(norm, -self.clip_rew, self.clip_rew)
+        return norm.tolist()
+
+    def reset(self, *, seed: int | None = None, options: Dict[str, Any] | None = None):
+        obs_list, info_list = self.env.reset(seed=seed, options=options)
+
+        if self.norm_obs and self.training:
+            self.obs_rms.update(np.asarray(obs_list, dtype=np.float32))
+
+        self.returns[:] = 0.0
+
+        if self.norm_obs:
+            obs_list = self._normalize_obs(obs_list)
+
+        return obs_list, info_list
+
+    def reset_done(
+        self, 
+        dones: Union[List[bool], np.ndarray],
+        *, 
+        seed: int | None = None, 
+        options: Dict[str, Any] | None = None
+    ):
+        reset_obs, reset_infos = self.env.reset_done(
+            dones, seed=seed, options=options
+        )
+
+        obs_arr = np.asarray(
+            [o for o in reset_obs if o is not None],
+            dtype=np.float32,
+        ) if any(o is not None for o in reset_obs) else None
+
+        if self.norm_obs and self.training and obs_arr is not None:
+            self.obs_rms.update(obs_arr)
+
+        for i, done in enumerate(dones):
+            if done:
+                self.returns[i] = 0.0
+
+        if self.norm_obs:
+            norm_reset_obs: List[Any] = list(reset_obs)
+            # Only normalize indices that were reset
+            for i, done in enumerate(dones):
+                if done and reset_obs[i] is not None:
+                    o = np.asarray(reset_obs[i], dtype=np.float32)
+                    norm = (o - self.obs_rms.mean) / np.sqrt(self.obs_rms.var + self.eps)
+                    norm = np.clip(norm, -self.clip_obs, self.clip_obs)
+                    norm_reset_obs[i] = norm
+            reset_obs = norm_reset_obs
+
+        return reset_obs, reset_infos
+
+    def step(self, action):
+        obs_list, rew_list, term_list, trunc_list, infos = self.env.step(actions)
+
+        obs_arr = np.asarray(obs_list, dtype=np.float32)
+        rew_arr = np.asarray(rew_list, dtype=np.float32)
+
+        if self.norm_obs and self.training:
+            self.obs_rms.update(obs_arr)
+
+        if self.norm_rew:
+            self.returns = self.returns * self.gamma + rew_arr
+            if self.training:
+                self.rew_rms.update(self.returns)
+
+            rew_list = self._normalize_rew(rew_list)
+
+        if self.norm_obs:
+            obs_list = self._normalize_obs(obs_list)
+
+        return obs_list, rew_list, term_list, trunc_list, infos
 
         

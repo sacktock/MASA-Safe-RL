@@ -1,7 +1,8 @@
 from masa.common.utils import ENV_REGISTRY, CONSTRAINT_REGISTRY, ALGO_REGISTRY
 
 # Register supported envs
-ENV_REGISTRY.register("cartpole", "gymnasium.envs.classic_control:CartPoleEnv")
+ENV_REGISTRY.register("cont_cartpole", "masa.envs.continuous.cartpole:ContinuousCartPole")
+ENV_REGISTRY.register("disc_cartpole", "masa.envs.discrete.cartpole:DiscreteCartPole")
 ENV_REGISTRY.register("colour_grid_world", "masa.envs.tabular.colour_grid_world:ColourGridWorld")
 ENV_REGISTRY.register("colour_bomb_grid_world", "masa.envs.tabular.colour_bomb_grid_world:ColourBombGridWorld")
 ENV_REGISTRY.register("colour_bomb_grid_world_v2", "masa.envs.tabular.colour_bomb_grid_world_v2:ColourBombGridWorldV2")
@@ -25,3 +26,4 @@ ALGO_REGISTRY.register("q_learning_lambda", "masa.algorithms.tabular:QL_Lambda")
 ALGO_REGISTRY.register("sem", "masa.algorithms.tabular:SEM")
 ALGO_REGISTRY.register("lcrl", "masa.algorithms.tabular:LCRL")
 ALGO_REGISTRY.register("recreg", "masa.algorithms.tabular:RECREG")
+ALGO_REGISTRY.register("ppo", "masa.algorithms.ppo:PPO")

@@ -1,11 +1,11 @@
 from __future__ import annotations
 from typing import Any, Optional, TypeVar, Union, Callable
-from masa.common.base_class import Base_Algorithm
+from masa.common.base_class import BaseAlgorithm
 import gymnasium as gym
 from gymnasium import spaces
 
 
-class Tabular_Algorithm(Base_Algorithm):
+class TabularAlgorithm(BaseAlgorithm):
 
     def __init__(
         self,
