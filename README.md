@@ -9,3 +9,12 @@ Welcome to the Multi and Single Agent (MASA) Safe Reinforcement Learning library
 conda create --name <env> --file requirements.txt
 ```
 
+## How to run MASA
+- You can run masa with the prebuilt run script. The script is not fully configurable so often it is better to create your own examples.
+```
+python -m masa.run --algo-configs bridge_crossing --algo ppo --seed 
+```
+- You can run examples from the ```\examples``` folder via:
+```
+python -m masa.examples.prob_shield_example
+```
