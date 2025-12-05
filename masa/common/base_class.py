@@ -7,7 +7,7 @@ from masa.common.metrics import RolloutLogger, StatsLogger, TrainLogger
 from abc import ABC, abstractmethod
 import tensorflow as tf
 import math
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 def _allowed_names(allowed: tuple[type[spaces.Space], ...]) -> str:
     return ", ".join(t.__name__ for t in allowed)
@@ -94,24 +94,32 @@ class BaseAlgorithm(ABC):
 
         self._last_obs, _ = self.env.reset(seed=self.seed)
 
-        for iteration in tqdm(range(math.ceil((num_frames)/self.train_ratio))):
-            step = iteration*self.train_ratio
-            self.rollout(step, logger=logger)
-            self.optimize(step, logger=logger)
+        with tqdm(
+            total=num_frames,
+            desc="frames",
+            position=0,
+            leave=True,
+            dynamic_ncols=True,
+        ) as iter_bar:
 
-            total_steps += self.train_ratio
+            for iteration in range(math.ceil((num_frames)/self.train_ratio)):
+                self.rollout(total_steps, logger=logger)
+                self.optimize(total_steps, logger=logger)
 
-            if eval_freq and (total_steps >= next_eval):
-                next_eval += eval_freq
-                self.eval(num_eval_episodes, seed=step, logger=logger)
+                iter_bar.update(self.train_ratio)
+                total_steps += self.train_ratio
 
-            if save_freq and (total_steps >= next_save):
-                next_save += save_freq
-                self.save(step)
+                if eval_freq and (total_steps >= next_eval):
+                    next_eval += eval_freq
+                    self.eval(num_eval_episodes, seed=total_steps, logger=logger)
 
-            if log_freq and (total_steps >= next_log):
-                next_log += log_freq
-                logger.log(step)
+                if save_freq and (total_steps >= next_save):
+                    next_save += save_freq
+                    self.save(total_steps)
+
+                if log_freq and (total_steps >= next_log):
+                    next_log += log_freq
+                    logger.log(total_steps)
 
     def _get_eval_env(self) -> gym.Env:
         if self._eval_env is not None:
@@ -141,33 +149,38 @@ class BaseAlgorithm(ABC):
 
         returns = []
 
-        for ep in range(num_episodes):
-            obs, info = eval_env.reset(seed=eval_seed + ep)
-            done = False
-            ret = 0.0
-            while not done:
-                eval_key, subkey = jr.split(eval_key)
-                action = self.act(subkey, obs, deterministic=False)
-                obs, rew, terminated, truncated, info = eval_env.step(action)
-                ret += float(rew)
-                done = terminated or truncated
+        with tqdm(
+            total=num_episodes,
+            desc="evaluation",
+            position=1,
+            leave=False,
+            dynamic_ncols=True,
+            colour="yellow"
+        ) as pbar:
 
-            returns.append(ret)
+            for ep in range(num_episodes):
+                obs, info = eval_env.reset(seed=eval_seed + ep)
+                done = False
+                ret = 0.0
+                while not done:
+                    eval_key, subkey = jr.split(eval_key)
+                    action = self.act(subkey, obs, deterministic=False)
+                    obs, rew, terminated, truncated, info = eval_env.step(action)
+                    ret += float(rew)
+                    done = terminated or truncated
 
-            if logger is not None:
-                logger.add("eval/rollout", info)
+                returns.append(ret)
+
+                if logger is not None:
+                    logger.add("eval/rollout", info)
 
         return returns
 
-    def act(self, key, obs, deterministic=False):
+    def act(self, key: jax.Array, obs: Any, deterministic: bool = False) -> Any:
         """Implements the agent's policy: action selection (deterministic) or sampling"""
         raise NotImplementedError
 
-    def prepare_act(self, act):
-        """Prepares the action to be used in the environment"""
-        raise NotImplementedError
-
-    def save(self, step):
+    def save(self, step: int):
         """Save the relevant algorithm/model parameters"""
         raise NotImplementedError
     
@@ -176,7 +189,7 @@ class BaseAlgorithm(ABC):
         raise NotImplementedError
 
     @property
-    def train_ratio(self):
+    def train_ratio(self) -> int:
         """How often to do an update step during training"""
         raise NotImplementedError
 

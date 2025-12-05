@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Any, Dict
 from masa.common.constraints import Constraint, BaseConstraintEnv, CostFn
-from masa.examples.dummy import cost_fn as dummy_cost_fn
+from masa.common.dummy import cost_fn as dummy_cost_fn
 
 class ProbabilisticSafety(Constraint):
     """Undiscounted probabilistic constraint: track fraction of unsafe steps and compare to alpha."""

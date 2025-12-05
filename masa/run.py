@@ -1,43 +1,13 @@
 from __future__ import annotations
 from typing import Optional
 import argparse
-import importlib
 import gymnasium as gym
 import ruamel.yaml as yaml
 import warnings
 from masa.plugins.helpers import load_plugins
 from masa.common.configs import Config, Flags, Path
-from masa.common.wrappers import TimeLimit, ConstraintMonitor, RewardMonitor, RewardShapingWrapper
-from masa.common.utils import ENV_REGISTRY, CONSTRAINT_REGISTRY, ALGO_REGISTRY
-from masa.common.labelled_env import LabelledEnv
-
-def load_callable(path: str):
-    """Load a callable from 'module_path:object_name' string."""
-    if ":" not in path:
-        raise ValueError("Expected 'module:callable' for --label-fn/--cost-fn")
-    mod, name = path.split(":", 1)
-    try:
-        return getattr(importlib.import_module(mod), name)
-    except AttributeError:
-        warnings.warn(f"Could not load object from path: {path}")
-        return None
-
-def make_env(
-    env_id: str, constraint: str, max_episode_steps: int, *, label_fn: Optional[LabelFn] = None, reward_shaping: str = "none", gamma: float = 0.99, **constraint_kwargs
-):
-    env_ctor = ENV_REGISTRY.get(env_id)
-    constraint_ctor = CONSTRAINT_REGISTRY.get(constraint)
-    env = env_ctor()
-    # must wrap time limit first
-    env = TimeLimit(env, max_episode_steps)
-    if label_fn is not None:
-        env = LabelledEnv(env, label_fn)
-    env = constraint_ctor(env, **constraint_kwargs)
-    env = ConstraintMonitor(env)
-    env = RewardMonitor(env)
-    if reward_shaping != "none":
-        env = RewardShapingWrapper(env, gamma=gamma, impl=reward_shaping)
-    return env
+from masa.common.utils import make_env, load_callable
+from masa.common.registry import ALGO_REGISTRY
 
 def parse_config(args, unknown) -> Config:
     configs = yaml.YAML(typ='safe').load(
@@ -54,8 +24,6 @@ def parse_config(args, unknown) -> Config:
         config = config.update({"env.label_fn": args.label_fn})
     if args.cost_fn is not None:
         config = config.update({"env.cost_fn": args.cost_fn})
-    if args.reward_shaping is not None:
-        config = config.update({"env.reward_shaping": args.reward_shaping})
     if args.dfa is not None:
         config = config.update({"constraint.dfa": args.dfa})
     if args.total_timesteps is not None:
@@ -80,7 +48,6 @@ def build_argparser() -> argparse.ArgumentParser:
     parser.add_argument("--cost-fn", type=str, default=None, help="module:callable returning 0/1 cost") # "examples.dummy:dummy_cost_fn"
     parser.add_argument("--dfa", type=str, default=None, help="module:callable returning 0/1 cost") # "examples.dummy:dummy_dfa"
     parser.add_argument("--constraint", type=str, default=None)
-    parser.add_argument("--reward-shaping", type=str, default=None)
     parser.add_argument("--configs", type=str, default="configs.yaml",
                    help="Path to YAML with env/algo/run configs.")
     parser.add_argument("--algo", type=str, default="q_learning",
@@ -121,8 +88,6 @@ def main():
         config.constraint.type, 
         config.env.max_episode_steps,
         label_fn=label_fn,
-        reward_shaping=config.env.reward_shaping,
-        gamma=algo_kwargs.get("gamma", 0.99),
         **constraint_kwargs,
     )
 
@@ -152,5 +117,5 @@ def main():
     algo.train(config.run.total_timesteps, **run_kwargs)
 
 if __name__ == "__main__":
-    load_plugins()
+    load_plugins() # required
     main()

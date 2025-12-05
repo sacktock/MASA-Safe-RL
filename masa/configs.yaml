@@ -3,9 +3,10 @@ defaults:
   env:
     id: cartpole
     max_episode_steps: 200
-    label_fn: masa.examples.dummy:label_fn
-    cost_fn: masa.examples.dummy:cost_fn
+    label_fn: masa.common.dummy:label_fn
+    cost_fn: masa.common.dummy:cost_fn
     reward_shaping: none
+    prob_shield_wrapper: False
 
   constraint:
     type: cmdp
@@ -13,7 +14,7 @@ defaults:
     alpha: 0.01
     avoid_label: unsafe
     reach_label: target
-    dfa: masa.examples.dummy:dfa
+    dfa: masa.common.dummy:dfa
 
   q_learning:
     alpha: 0.1
@@ -89,6 +90,17 @@ defaults:
     gae_lambda: 0.95
     clip_range: 0.2
     normalize_advantage: True
+    ent_coef: 0.0
+    vf_coef: 1.0
+    max_grad_norm: 0.5
+    policy_kwargs: {net_arch: [64, 64], log_std_init: 0.0}
+
+  a2c:
+    learning_rate: 7e-4
+    n_steps: 16
+    gamma: 0.99
+    gae_lambda: 1.0
+    normalize_advantage: False
     ent_coef: 0.0
     vf_coef: 1.0
     max_grad_norm: 0.5
@@ -275,8 +287,8 @@ bridge_crossing:
     cost_fn: masa.envs.tabular.bridge_crossing:cost_fn
 
   constraint:
-    type: cmdp
-    cost_budget: 1
+    type: pctl
+    alpha: 0.01
 
   run:
     total_timesteps: 100000

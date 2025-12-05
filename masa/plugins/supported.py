@@ -1,4 +1,4 @@
-from masa.common.utils import ENV_REGISTRY, CONSTRAINT_REGISTRY, ALGO_REGISTRY
+from masa.common.registry import ENV_REGISTRY, CONSTRAINT_REGISTRY, ALGO_REGISTRY
 
 # Register supported envs
 ENV_REGISTRY.register("cont_cartpole", "masa.envs.continuous.cartpole:ContinuousCartPole")
@@ -27,3 +27,4 @@ ALGO_REGISTRY.register("sem", "masa.algorithms.tabular:SEM")
 ALGO_REGISTRY.register("lcrl", "masa.algorithms.tabular:LCRL")
 ALGO_REGISTRY.register("recreg", "masa.algorithms.tabular:RECREG")
 ALGO_REGISTRY.register("ppo", "masa.algorithms.ppo:PPO")
+ALGO_REGISTRY.register("a2c", "masa.algorithms.a2c:A2C")

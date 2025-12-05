@@ -1,11 +1,38 @@
 from __future__ import annotations
 import gymnasium as gym
+from gymnasium import spaces
 from masa.common.constraints import BaseConstraintEnv
 from masa.common.ltl import DFACostFn, DFA, ShapedCostFn
 from masa.common.running_mean_std import RunningMeanStd
 import numpy as np
 from collections import deque
 from tqdm import tqdm
+
+def is_wrapped(env, wrapper_class: gym.Wrapper) -> bool:
+    """
+    Check if env is wrapped anywhere in the chain by wrapper_class.
+    Works for both Gymnasium-style wrappers (.env) and VecEnv-style (.venv).
+    """
+    current = env
+    visited = set()
+
+    while True:
+        if id(current) in visited:
+            return False
+        visited.add(id(current))
+
+        if isinstance(current, wrapper_class):
+            return True
+
+        if hasattr(current, "venv"):
+            current = current.venv
+            continue
+
+        if isinstance(current, gym.Wrapper):
+            current = current.env
+            continue
+
+        return False
 
 class ConstraintPersistentWrapper(gym.Wrapper):
 
@@ -22,6 +49,26 @@ class ConstraintPersistentWrapper(gym.Wrapper):
             return getattr(self.env._constraint, "cost_fn", None)
         else:
             return None
+
+    @property
+    def label_fn(self):
+        return getattr(self.env, "label_fn", None)
+
+class ConstraintPersistentObsWrapper(ConstraintPersistentWrapper):
+
+    def __init__(self, env: gym.Env):
+        super().__init__(env)
+
+    def _get_obs(obs: Any) -> Any:
+        raise NotImplementedError
+
+    def reset(self, *, seed: int | None = None, options: Dict[str, Any] | None = None):
+        obs, info = self.env.reset(seed=seed, options=options)
+        return self._get_obs(obs), info
+
+    def step(self, action):
+        obs, rew, term, trunc, info = self.env.step(action)
+        return self._get_obs(obs), rew, term, trunc, info
         
 class TimeLimit(ConstraintPersistentWrapper):
 
@@ -257,6 +304,10 @@ class NormWrapper(ConstraintPersistentWrapper):
             env, VecEnvWrapperBase
         ), "NormWrapper does not expect a vectorized environment (DummyVecWrapper / VecWrapper). Please use VecNormWrapper instead"
 
+        assert self.norm_obs and isinstance(
+            env.observation_space, spaces.Box
+        ), "NormWrapper only supports Box observation spaces when norm_obs=True."
+
         super().__init__(env)
 
         self.norm_obs = norm_obs
@@ -317,6 +368,158 @@ class NormWrapper(ConstraintPersistentWrapper):
             obs = self._normalize_obs(obs)
 
         return obs, rew, term, trunc, info
+
+class OneHotObsWrapper(ConstraintPersistentObsWrapper):
+
+    def __init__(self, env: gym.Env):
+        super().__init__(env)
+
+        self._orig_obs_space = self.env.observation_space
+
+        if isinstance(self._orig_obs_space, spaces.Discrete):
+            self._mode = "discrete"
+            n = self._orig_obs_space.n
+            self.observation_space = spaces.Box(
+                low=0.0,
+                high=1.0,
+                shape=(n,),
+                dtype=np.float32,
+            )
+            
+
+        elif isinstance(self._orig_obs_space, spaces.Dict):
+            self._mode = "dict"
+
+            new_spaces: Dict[str, spaces.Space] = {}
+            for key, subspace in self._orig_obs_space.spaces.items():
+                if isinstance(subspace, spaces.Discrete):
+                    n = subspace.n
+                    new_spaces[key] = spaces.Box(
+                        low=0.0,
+                        high=1.0,
+                        shape=(n,),
+                        dtype=np.float32,
+                    )
+                else:
+                    # Preserve non-Discrete subspace as-is
+                    new_spaces[key] = subspace
+
+            self.observation_space = spaces.Dict(new_spaces)
+
+        else:
+            self._mode = "pass"
+            self.observation_space = self._orig_obs_space
+
+    @staticmethod
+    def _one_hot_scalar(idx: int, n: int) -> np.ndarray:
+        """One-hot encode a single integer index into a 1D vector of length n."""
+        one_hot = np.zeros(n, dtype=np.float32)
+        one_hot[idx] = 1.0
+        return one_hot
+
+    def _get_obs(self, obs: Union[int, Dict[str, Any], np.ndarray]) -> np.ndarray:
+        if self._mode == "discrete":
+            # Original obs_space is Discrete; obs is an int-like
+            idx = int(obs)
+            n = self._orig_obs_space.n
+            return self._one_hot_scalar(idx, n)
+
+        elif self._mode == "dict":
+            assert isinstance(obs, dict), (
+                f"Expected dict observation for Dict space, got {type(obs)}"
+            )
+
+            new_obs: Dict[str, Any] = {}
+            for key, subspace in self._orig_obs_space.spaces.items():
+                value = obs[key]
+
+                if isinstance(subspace, spaces.Discrete):
+                    idx = int(value)
+                    new_obs[key] = self._one_hot_scalar(idx, subspace.n)
+                else:
+                    # Leave non-Discrete parts unchanged
+                    new_obs[key] = value
+
+            return new_obs
+        else: 
+            # pass
+            return obs
+
+class FlattenDictObsWrapper(ConstraintPersistentObsWrapper):
+
+    def __init__(self, env: gym.Env):
+        super().__init__(env)
+
+        self._orig_obs_space = self.env.observation_space
+
+        if not isinstance(self._orig_obs_space, spaces.Dict):
+            raise TypeError(
+                f"FlattenDictObsWrapper requires Dict observation space, got {type(self._orig_obs_space)}"
+            )
+
+        # To be able to reconstruct if needed, keep slices for each key
+        self._key_slices: dict[str, slice] = {}
+
+        low_parts = []
+        high_parts = []
+        offset = 0
+
+        # Sort keys alphabetically for deterministic ordering
+        for key in sorted(self._orig_obs_space.spaces.keys()):
+            subspace = self._orig_obs_space.spaces[key]
+
+            if isinstance(subspace, spaces.Box):
+                # Flatten Box
+                low = np.asarray(subspace.low, dtype=np.float32).reshape(-1)
+                high = np.asarray(subspace.high, dtype=np.float32).reshape(-1)
+                length = low.shape[0]
+
+                low_parts.append(low)
+                high_parts.append(high)
+
+            elif isinstance(subspace, spaces.Discrete):
+                # One-hot will be in [0, 1]
+                length = subspace.n
+                low_parts.append(np.zeros(length, dtype=np.float32))
+                high_parts.append(np.ones(length, dtype=np.float32))
+
+            else:
+                raise TypeError(
+                    f"Unsupported subspace type for key '{key}': {type(subspace)}"
+                )
+
+            self._key_slices[key] = slice(offset, offset + length)
+            offset += length
+
+        low = np.concatenate(low_parts).astype(np.float32)
+        high = np.concatenate(high_parts).astype(np.float32)
+
+        self.observation_space = spaces.Box(
+            low=low,
+            high=high,
+            dtype=np.float32,
+        )
+
+    def _get_obs(self, obs: Dict[str, Any]) -> np.ndarray:
+        assert isinstance(obs, dict), (
+                f"Expected dict observation for Dict space, got {type(obs)}"
+            )
+
+        parts = []
+        for key in sorted(self._orig_obs_space.spaces.keys()):
+            subspace = self._orig_obs_space.spaces[key]
+            value = obs[key]
+
+            if not isinstance(subspace, spaces.Box):
+                raise TypeError(
+                    f"FlattenDictObsWrapper only supports Box subspaces, "
+                    f"got {type(subspace)} for key '{key}'"
+                )
+
+            arr = np.asarray(value, dtype=np.float32).reshape(-1)
+            parts.append(arr)
+
+        return np.concatenate(parts, axis=0).astype(np.float32)
 
 class VecEnvWrapperBase(ConstraintPersistentWrapper):
 
@@ -434,6 +637,10 @@ class VecNormWrapper(VecEnvWrapperBase):
         assert isinstance(
             env, VecEnvWrapperBase
         ), "VecNormWrapper expects a vectorized environment (DummyVecWrapper / VecWrapper)."
+
+        assert self.norm_obs and isinstance(
+            env.observation_space, spaces.Box
+        ), "VecNormWrapper only supports Box observation spaces when norm_obs=True."
 
         super().__init__(env)
 

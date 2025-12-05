@@ -27,10 +27,14 @@ class RolloutBuffer():
         
         self.obs_shape = self.observation_space.shape
 
-        if isinstance(self.action_space, gym.spaces.Box):
+        if isinstance(self.action_space, spaces.Box):
             self.act_dim = int(np.prod(self.action_space.shape))
-        elif isinstance(self.action_space, gym.spaces.Discrete):
+        elif isinstance(self.action_space, spaces.Discrete):
             self.act_dim = 1
+        elif isinstance(self.action_space, spaces.MultiDiscrete):
+            self.act_dim = len(self.action_space.nvec)
+        elif isinstance(self.action_space, spaces.MultiBinary):
+            self.act_dim = self.action_space.n
         else:
             raise NotImplementedError
 

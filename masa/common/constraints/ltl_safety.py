@@ -6,7 +6,7 @@ from gymnasium import spaces
 
 from masa.common.constraints import Constraint, BaseConstraintEnv
 from masa.common.ltl import DFA, dfa_to_costfn
-from masa.examples.dummy import dfa as dummy_dfa
+from masa.common.dummy import dfa as dummy_dfa
 
 class LTLSafety(Constraint):
 
@@ -59,8 +59,7 @@ class LTLSafetyEnv(BaseConstraintEnv):
         if isinstance(orig, spaces.Discrete):
             num_states = int(orig.n)
             aug = spaces.Discrete(num_states * self._num_automaton_states)
-            return aug
-        if isinstance(orig, spaces.Box):
+        elif isinstance(orig, spaces.Box):
             if orig.shape is None or len(orig.shape) != 1:
                 raise TypeError(
                     f"LTLSafetyEnv only supports 1-D Box for augmentation; got shape {orig.shape}"
@@ -71,18 +70,17 @@ class LTLSafetyEnv(BaseConstraintEnv):
             high = np.concatenate([orig.high.astype(self._box_dtype, copy=False),
                                    np.ones(self._num_automaton_states, dtype=self._box_dtype)])
             aug = spaces.Box(low=low, high=high, dtype=self._box_dtype)
-            return aug
-        if isinstance(orig, spaces.Dict):
+        elif isinstance(orig, spaces.Dict):
             automaton_space = spaces.Box(low=0.0, high=1.0, shape=(self._num_automaton_states,), dtype=self._box_dtype)
             new_spaces = dict(orig.spaces)
             new_spaces["automaton"] = automaton_space
             aug = spaces.Dict(new_spaces)
-            return aug
-
-        raise TypeError(
-            f"LTLSafetyEnv does not support observation space type {type(orig).__name__}. "
-            "Supported: Discrete, 1-D Box, Dict."
-        )
+        else:
+            raise TypeError(
+                f"LTLSafetyEnv does not support observation space type {type(orig).__name__}. "
+                "Supported: Discrete, 1-D Box, Dict."
+            )
+        return aug
 
     def _one_hot(self, q: int) -> np.ndarray:
         enc = np.zeros(self._num_automaton_states, dtype=self._box_dtype)
@@ -118,7 +116,7 @@ class LTLSafetyEnv(BaseConstraintEnv):
         info['automaton_state'] = self._constraint.get_automaton_state()
         return self._augment_obs(obs), info
 
-    def step(self, action: Any):
+    def step(self, action):
         obs, reward, terminated, truncated, info = self.env.step(action)
         labels = info.get("labels", set())
         self._constraint.update(labels)

@@ -81,6 +81,10 @@ class BaseConstraintEnv(gym.Wrapper, Constraint):
             return None
 
     @property
+    def label_fn(self):
+        return getattr(self.env, "label_fn", None)
+
+    @property
     def constraint_type(self) -> str:
         return self._constraint.constraint_type
 
