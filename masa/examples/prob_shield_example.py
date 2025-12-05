@@ -25,7 +25,7 @@ def main():
     )
 
     # Intialize the environment (env_id, constraint, max_epsiode_steps)
-    # make_env wraps the environment in TimeLimit -> LabelledEnv -> ConstraintEnv (e.g., CumulativeConstraintEnv, PCTLEnv) -> ConstraintMonitor -> RewardMonitor
+    # make_env wraps the environment in TimeLimit -> LabelledEnv -> PCTLEnv -> ConstraintMonitor -> RewardMonitor
     env = make_env("bridge_crossing", "pctl", 400, label_fn=label_fn, **constraint_kwargs)
 
     # Now we're going to wrap our environment in ProbShieldWrapperDisc
@@ -64,9 +64,12 @@ def main():
     #   policy_class: type[BaseJaxPolicy] = PPOPolicy,
     #   policy_kwargs: Optional[dict[str, Any]] = None,
 
-    # First lets create a function to initialize the eval_env
-
-    env_fn = lambda: env
+    # First lets initialize the eval_env
+    eval_env = ProbShieldWrapperDisc(
+        make_env("bridge_crossing", "pctl", 400, label_fn=label_fn, **constraint_kwargs), 
+        init_safety_bound = 0.01,
+        granularity = 20,
+    )
 
     # Now let's initialize PPO
     # PPO will automatically one-hot encode any discrete observations and flatten any dict observations
@@ -77,7 +80,7 @@ def main():
         monitor=True, # monitors training progress
         device="auto", 
         verbose=0, # verbosity level for monitoring
-        env_fn=env_fn, # lambda function for initializing the evaluation env
+        eval_env=eval_env, # separate environment instance for eval
         # Using the PPO specific defaults after this
     )
 

@@ -1,6 +1,5 @@
 from __future__ import annotations
 from typing import Any, Optional, TypeVar, Union, Callable, Dict
-from masa.common.base_class import Base_Algorithm
 from masa.common.metrics import TrainLogger
 from masa.algorithms.tabular.base import TabularAlgorithm
 from masa.common.ltl import DFACostFn, DFA
