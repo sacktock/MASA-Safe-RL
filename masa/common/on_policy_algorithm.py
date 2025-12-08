@@ -111,7 +111,7 @@ class OnPolicyAlgorithm(BaseAlgorithm):
     def _wrap_env(self, env: gym.Env):
 
         if is_wrapped(env, VecEnvWrapperBase):
-            assert is_wrapped(env, OneHotObsWrapper) and not isinstance(env.observation_space, spaces.Discrete), \
+            assert is_wrapped(env, OneHotObsWrapper) or not isinstance(env.observation_space, spaces.Discrete), \
             "Before wrapping your environment in a DummyVecWrapper / VecWrapper, please wrap your environment in a OneHotObsWrapper if it has type(observation_space)__name__ = Discrete"
             assert not isinstance(env.observation_space, spaces.Dict), \
             "Before wrapping your environment in a DummyVecWrapper / VecWrapper, please wrap your environment in a FlattenDictObsWrapper if it has type(observation_space)__name__ = Dict"

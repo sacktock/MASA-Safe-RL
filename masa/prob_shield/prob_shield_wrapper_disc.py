@@ -4,7 +4,7 @@ from gymnasium import spaces
 from masa.common.wrappers import ConstraintPersistentWrapper
 from masa.envs.tabular.base import TabularEnv
 from masa.envs.discrete.base import DiscreteEnv
-from typing import Union, Any, Tuple, Dict, List
+from typing import Union, Any, Tuple, Dict, List, Optional, Callable
 from masa.common.constraints import CostFn
 from masa.common.label_fn import LabelFn
 from jax import jit
@@ -13,6 +13,8 @@ from jax import lax
 import jax.numpy as jnp
 import numpy as np
 import copy
+
+jax.config.update("jax_enable_x64", True)
 
 @jit
 def vi_one_step(
@@ -35,6 +37,9 @@ def vi_one_step(
 
     v_inf_new = jnp.min(exp_inf, axis=-1)
     v_sup_new = jnp.min(exp_sup, axis=-1)
+
+    v_inf_new = jnp.clip(v_inf_new, 0.0, 1.0)
+    v_sup_new = jnp.clip(v_sup_new, 0.0, 1.0)
 
     delta = jnp.max(jnp.abs(v_sup_new - v_inf_new))
 
@@ -73,20 +78,43 @@ def jax_value_iteration(
     return v_inf, v_sup, delta, steps
 
 def fast_value_iteration(
-    v_inf: np.ndarray,
-    v_sup: np.ndarray,
+    sec: List[int],
+    label_fn: LabelFn,
+    cost_fn: CostFn,
+    n_states: int,
     successor_states_matrix: np.ndarray,
     probabilities: np.ndarray,
     theta: float = 1e-10,
     max_steps: int = 1000,
     device: str = 'auto',
 ):
+    # Copy to edit in-place
+    successor_states_abs = successor_states_matrix.copy()
+    probabilities_abs = probabilities.copy()
+
     print("Initializing value iteration ...")
+
+    # Initial bounds
+    v_inf = np.zeros(n_states, dtype=np.float64)
+    v_sup = np.ones(n_states, dtype=np.float64)
+
+    for s in range(n_states):
+        absorbing = False
+        if cost_fn(label_fn(s)):
+            v_inf[s] = 1.0
+            absorbing = True 
+        if s in sec:
+            v_sup[s] = 0.0
+            absorbing = True 
+        if absorbing:
+            successor_states_abs[:, s] = s
+            probabilities_abs[:, s, :] = 0.0
+            probabilities_abs[0, s, :] = 1.0
 
     v_inf_j = jnp.array(v_inf)
     v_sup_j = jnp.array(v_sup)
-    successor_states_j = jnp.array(successor_states_matrix, dtype=jnp.int32)
-    probabilities_j = jnp.array(probabilities, dtype=jnp.float32)
+    successor_states_j = jnp.array(successor_states_abs, dtype=jnp.int64)
+    probabilities_j = jnp.array(probabilities_abs, dtype=jnp.float64)
     
     v_inf_j, v_sup_j, delta, steps = jax_value_iteration(
         v_inf_j,
@@ -104,11 +132,7 @@ def fast_value_iteration(
 
     return v_inf_final, v_sup_final, delta, int(steps)
 
-def build_successor_state_matrix_and_probabilities(
-    env: TabularEnv,
-    label_fn: LabelFn,
-    cost_fn: CostFn,
-):
+def build_successor_state_matrix_and_probabilities(env: Union[TabularEnv, DiscreteEnv]):
 
     print("Calculating the maximum number of successor states ...")
 
@@ -118,7 +142,9 @@ def build_successor_state_matrix_and_probabilities(
     if use_transition_matrix:
         probs = np.array(env.get_transition_matrix())
         n_states = probs.shape[0]
-        max_successors = np.max(np.count_nonzero(probs, axis=0))
+        reachable = np.any(probs > 0, axis=2)
+        successor_counts = np.count_nonzero(reachable, axis=0)
+        max_successors = successor_counts.max()
 
     if use_successor_states_dict:
         successor_states, probs_dict = env.get_successor_states_dict()
@@ -132,53 +158,31 @@ def build_successor_state_matrix_and_probabilities(
 
     print(f"Calculated maximum number of successor states [{max_successors}] ...")
 
-    # Initial bounds
-    v_inf = np.zeros(n_states, dtype=np.float32)
-    v_sup = np.ones(n_states, dtype=np.float32)
-
     successor_states_matrix = np.zeros((max_successors, n_states), dtype=np.int64)
-    probabilities = np.zeros((max_successors, n_states, n_actions), dtype=np.float32)
+    probabilities = np.zeros((max_successors, n_states, n_actions), dtype=np.float64)
 
     print("Building successor state matrix and probabilities ...")
 
     for s in range(n_states):
-        safe_unsafe_flag = False
-        if cost_fn(label_fn(s)):
-            v_inf[s] = 1.0
-            safe_unsafe_flag = True 
-        if s in env.safe_end_component:
-            v_sup[s] = 0.0
-            safe_unsafe_flag = True 
+        if use_transition_matrix:
+            mask = np.any(probs[:, s, :] > 0.0, axis=1)
+            successors_s = np.nonzero(mask)[0]
+            k = len(successors_s)
+            successor_states_matrix[:k, s] = successors_s
+            probabilities[:k, s, :] = probs[successors_s, s, :]
 
-        if safe_unsafe_flag:  # absorbing
-            successor_states_matrix[:, s] = s
-            probabilities[:, s, :] = 0.0
-            probabilities[0, s, :] = 1.0
-        else:
-            if use_transition_matrix:
-                mask = np.any(probs[:, s, :] > 0.0, axis=1)
-                successors_s = np.nonzero(mask)[0]
-                k = len(successors_s)
+        if use_successor_states_dict:
+            successors_s = np.array(successor_states[s], dtype=np.int64)#
+            k = len(successors_s)
+            successor_states_matrix[:k, s] = successors_s
 
-                successor_states_matrix[:k, s] = successors_s
+            for a in range(n_actions):
+                probabilities[:k, s, a] = np.array(
+                    probs_dict[(s, a)],
+                    dtype=np.float64
+                )
 
-                for a in range(n_actions):
-                    probabilities[:k, s, a] = probs[successors_s, s, a]
-
-            if use_successor_states_dict:
-                successors_s = np.array(successor_states[s], dtype=np.int64)#
-                k = len(successors_s)
-                successor_states_matrix[:k, s] = successors_s
-
-                for a in range(n_actions):
-                    probabilities[:k, s, a] = np.array(
-                        probs_dict[(s, a)],
-                        dtype=np.float32
-                    )
-
-            # remaining slots already zeroed
-
-    return v_inf, v_sup, successor_states_matrix, probabilities, max_successors
+    return successor_states_matrix, probabilities, max_successors, n_states
 
 def projection_bar(intersections: np.ndarray, i: int) -> np.ndarray:
     assert intersections.shape[0] > 0, "No intersections provided."
@@ -201,7 +205,7 @@ def projection_bar(intersections: np.ndarray, i: int) -> np.ndarray:
     weighted_sum = (weights[:, None] * intersections).sum(axis=0)
 
     result_vertex = weighted_sum / total_weight
-    return result_vertex.astype(np.float32)
+    return result_vertex.astype(np.float64)
 
 
 def projection_bar_min(intersections: np.ndarray, i: int, j: int) -> np.ndarray:
@@ -232,13 +236,16 @@ def projection_bar_min(intersections: np.ndarray, i: int, j: int) -> np.ndarray:
     weighted_sum = (weights[:, None] * intersections).sum(axis=0)
     result_vertex = weighted_sum / total_weight
 
-    return result_vertex.astype(np.float32)
+    return result_vertex.astype(np.float64)
 
 class ProbShieldWrapperDisc(ConstraintPersistentWrapper):
 
     def __init__(
         self, 
         env: gym.Env,
+        label_fn: Optional[LabelFn] = None,
+        cost_fn: Optional[CostFn] = None,
+        safety_abstraction: Optional[Callable[[Any], int]] = None,
         theta: float = 1e-10,
         max_vi_steps: int = 1000,
         init_safety_bound: float = 0.5,
@@ -254,8 +261,8 @@ class ProbShieldWrapperDisc(ConstraintPersistentWrapper):
         for method_name in ("has_transition_matrix", "has_successor_states_dict"):
             if not hasattr(env.unwrapped, method_name):
                 raise TypeError(
-                    f"Env of type {type(env.unwrapped).__name__} must define a callable "
-                    f"'{method_name}()' method."
+                    f"Env of type {type(env.unwrapped).__name__} must define a "
+                    f"'{method_name}' property."
                 )
         has_tm = env.unwrapped.has_transition_matrix
         has_ssd = env.unwrapped.has_successor_states_dict
@@ -269,19 +276,19 @@ class ProbShieldWrapperDisc(ConstraintPersistentWrapper):
                 "ProbShieldWrapperDisc expects `env` to be an instance of "
                 f"ConstraintPersistentWrapper, got {type(env).__name__}."
             )
-        if not hasattr(env, "cost_fn"):
+        if not hasattr(env, "cost_fn") and cost_fn is None:
             raise AttributeError(
                 "Environment must define a `cost_fn` attribute."
             )
-        if env.cost_fn is None:
+        if env.cost_fn is None and cost_fn is None:
             raise ValueError(
                 "Environment attribute `cost_fn` must not be None."
             )
-        if not hasattr(env, "label_fn"):
+        if not hasattr(env, "label_fn") and label_fn is None:
             raise AttributeError(
                 "Environment must define a `label_fn` attribute."
             )
-        if env.label_fn is None:
+        if env.label_fn is None and label_fn is None:
             raise ValueError(
                 "Environment attribute `label_fn` must not be None."
             )
@@ -292,10 +299,10 @@ class ProbShieldWrapperDisc(ConstraintPersistentWrapper):
                 "ProbShieldWrapperDisc only supports environments with a "
                 f"Discrete action space, got: {type(env.action_space).__name__}."
             )
-        if not isinstance(env.observation_space, spaces.Discrete): # TODO: or has a safety abstraction
+        if not isinstance(env.observation_space, spaces.Discrete) and safety_abstraction is None:
             raise TypeError(
                 "ProbShieldWrapperDisc only supports environments with a "
-                f"Discrete observation space or discrete safety abstracyion, got: {type(env.observation_space).__name__}"
+                f"Discrete observation space or a discrete safety abstraction, got: {type(env.observation_space).__name__}"
             )
         if not hasattr(env.unwrapped, "safe_end_component"):
             raise AttributeError(
@@ -318,20 +325,24 @@ class ProbShieldWrapperDisc(ConstraintPersistentWrapper):
 
         super().__init__(env)
 
+        self.safety_abstraction = safety_abstraction
         self.theta = theta
         self.max_vi_steps = max_vi_steps
         self.init_safety_bound = init_safety_bound
         self.granularity = granularity
         self._box_dtype = np.float32
 
-        v_inf, v_sup, self.successor_states_matrix, self.probabilities, self.max_successors = \
-            build_successor_state_matrix_and_probabilities(
-                self.env.unwrapped, self.env.label_fn, self.env.cost_fn,
-            )
+        label_fn = label_fn if label_fn else env.label_fn
+        cost_fn = cost_fn if cost_fn else env.cost_fn
 
+        self.successor_states_matrix, self.probabilities, self.max_successors, self.n_states = \
+            build_successor_state_matrix_and_probabilities(self.env.unwrapped)
+        
         v_inf, v_sup, _, _, = fast_value_iteration(
-            v_inf, v_sup, self.successor_states_matrix, self.probabilities, self.theta, self.max_vi_steps
+            sec, label_fn, cost_fn, self.n_states, self.successor_states_matrix, self.probabilities, self.theta, self.max_vi_steps
         )
+
+        print(v_sup[env.unwrapped._start_state])
 
         self.safety_lb = v_sup
 
@@ -342,6 +353,20 @@ class ProbShieldWrapperDisc(ConstraintPersistentWrapper):
 
         self.observation_space = self._make_augmented_obs_space(self._orig_obs_space)
         self.action_space = self._make_augmented_act_space(self._orig_act_space)
+
+    def _abstraction(self, obs: Any) -> int:
+        if isinstance(self._orig_obs_space, spaces.Discrete):
+            return int(obs)
+        else:
+            assert self.safety_abstraction is not None, f"If the env observation space type is {type(orig).__name__}, then you must supply a discrete safety abstraction"
+            abstr_obs = self.safety_abstraction(obs)
+            try:
+                abstr_obs = int(abstr_obs)
+            except:
+                raise TypeError(
+                    f"Could not cast abstracted state as type `int`, given type {type(abstr_obs)} instead."
+                )
+            return abstr_obs
 
     def _make_augmented_obs_space(self, orig: spaces.Space) -> spaces.Space:
         if isinstance(orig, (spaces.Discrete, spaces.Box)):
@@ -354,7 +379,7 @@ class ProbShieldWrapperDisc(ConstraintPersistentWrapper):
             aug["safety_bound"] = spaces.Box(low=0, high=1, shape=(1,), dtype=self._box_dtype)
         else:
             raise TypeError(
-                f"LTLSafetyEnv does not support observation space type {type(orig).__name__}. "
+                f"ProbShieldWrapperDisc does not support observation space type {type(orig).__name__}. "
                 "Supported: Discrete, Box, Dict."
             )
         return aug
@@ -369,26 +394,33 @@ class ProbShieldWrapperDisc(ConstraintPersistentWrapper):
         if isinstance(self._orig_obs_space, (spaces.Discrete, spaces.Box)):
             return dict({
                 "orig_obs": obs,
-                "safety_bound": self._current_safety_bound
+                "safety_bound": float(self._current_safety_bound)
             })
         elif isinstance(self._orig_obs_space, (spaces.Dict)):
             obs = dict(obs)
-            obs["safety_bound"] = self._current_safety_bound
+            obs["safety_bound"] = float(self._current_safety_bound)
             return obs
         else:
             raise TypeError(
-                f"LTLSafetyEnv does not support observation space type {type(orig).__name__}. "
+                f"ProbShieldWrapperDisc does not support observation space type {type(orig).__name__}. "
                 "Supported: Discrete, Box, Dict."
             )
 
     def _one_hot(self, s: int) -> np.ndarray:
         raise NotImplementedError
 
-    def _project_act(self, action: Any, eps: float = 1e-6) -> Tuple[np.ndarray, np.ndarray]:
+    def _project_act(self, action: np.ndarray, eps: float = 1e-6) -> Tuple[np.ndarray, np.ndarray]:
 
-        # betas chosen by the agent
-        betas = action[2:] / self.granularity
-        obs_successor_states = self.successor_states_matrix[:, self._current_obs]
+        # Calculate non-zero successors
+        probs_curr = self.probabilities[:, self._current_obs, :].copy()
+        mask = np.any(probs_curr > 0.0, axis=1)
+        successors_s = np.nonzero(mask)[0]
+        k = len(successors_s)
+        probs_curr = probs_curr[successors_s]
+
+        betas = action[2:] / self.granularity # betas chosen by the agent
+        betas = betas[:k]
+        obs_successor_states = self.successor_states_matrix[successors_s, self._current_obs]
         obs_safety_lb = self.safety_lb[obs_successor_states]
         safety_bounds = obs_safety_lb + (1.0 - obs_safety_lb) * betas
         proj_safety_bounds = safety_bounds.copy()
@@ -396,8 +428,6 @@ class ProbShieldWrapperDisc(ConstraintPersistentWrapper):
         # Project the infeasible or unnecessarily safe alphas
         all_out_and_nonzero_safety_bounds = True
         all_in_and_nonzero_safety_bounds = True 
-
-        probs_curr = self.probabilities[:, self._current_obs, :]  
 
         expected_safety = np.sum(probs_curr * safety_bounds[:, None], axis=0)
         diffs = self._current_safety_bound - expected_safety
@@ -453,11 +483,10 @@ class ProbShieldWrapperDisc(ConstraintPersistentWrapper):
 
         if diag_indices.size > 0:
             # Take corresponding rows of identity: shape (n_diag, n_actions)
-            diag_intersections = np.eye(n_actions, dtype=np.float32)[diag_indices]
+            diag_intersections = np.eye(n_actions, dtype=np.float64)[diag_indices]
             intersections_list.append(diag_intersections)
 
         # For the off diagonals
-
         # Upper triangular indices
         i_idx, j_idx = np.triu_indices(n_actions, k=1) 
 
@@ -482,7 +511,7 @@ class ProbShieldWrapperDisc(ConstraintPersistentWrapper):
 
             # Build intersection matrix: each row is a point in the simplex
             n_valid = i_valid.shape[0]
-            edge_intersections = np.zeros((n_valid, n_actions), dtype=np.float32)
+            edge_intersections = np.zeros((n_valid, n_actions), dtype=np.float64)
 
             rows = np.arange(n_valid)
             edge_intersections[rows, i_valid] = alpha_i
@@ -494,13 +523,13 @@ class ProbShieldWrapperDisc(ConstraintPersistentWrapper):
         if intersections_list:
             intersections = np.vstack(intersections_list)
         else:
-            intersections = np.empty((0, n_actions), dtype=np.float32)
+            intersections = np.empty((0, n_actions), dtype=np.float64)
 
         i = action[0]
         j = action[1]
 
         # Compute the vertex corresponding to the action
-        safe_vertex = np.zeros(n_actions, dtype=np.float32)
+        safe_vertex = np.zeros(n_actions, dtype=np.float64)
 
         diff_act_i = self._current_safety_bound - expected_proj_safety[i]
         diff_act_j = self._current_safety_bound - expected_proj_safety[j]
@@ -519,7 +548,7 @@ class ProbShieldWrapperDisc(ConstraintPersistentWrapper):
                 elif (diff_act_i < -eps and diff_act_j < -eps) or (diff_act_i > eps and diff_act_j > eps):
                     safe_vertex = projection_bar_min(intersections, i, j)
                 else:
-                    safe_vertex = np.zeros(n_actions, dtype=np.float32)
+                    safe_vertex = np.zeros(n_actions, dtype=np.float64)
                     safe_vertex[i] = diff_act_j / (diff_act_j - diff_act_i)
                     safe_vertex[j] = diff_act_i / (diff_act_i - diff_act_j)
 
@@ -528,25 +557,33 @@ class ProbShieldWrapperDisc(ConstraintPersistentWrapper):
     def reset(self, *, seed: int | None = None, options: Dict[str, Any] | None = None):
         obs, info = self.env.reset(seed=seed, options=options)
         self._current_safety_bound = self.init_safety_bound
-        self._current_obs = int(obs)
+        abstr_obs = self._abstraction(obs)
+        self._current_obs = abstr_obs
         return self._augment_obs(obs), info
 
     def step(self, action):
         safe_vertex, proj_safety_bounds = self._project_act(action)
 
+        # Renormalize safe_vertex:
+        #   safe_vertex can often be affected by floating point errors
+        safe_vertex = np.abs(safe_vertex)
+        safe_vertex = safe_vertex / np.sum(safe_vertex)
+
         orig_action = self.np_random.choice(len(safe_vertex), p=safe_vertex)
         orig_obs, reward, terminated, truncated, info = self.env.step(orig_action)
 
+        abstr_obs = self._abstraction(orig_obs)
+
         succ_list = self.successor_states_matrix[:, self._current_obs]
-        matches = np.where(succ_list == orig_obs)[0]
+        matches = np.where(succ_list == abstr_obs)[0]
         if matches.size == 0:
             raise RuntimeError(
-                f"Something went wrong! Next state {orig_obs} is not in successor list for state {self._current_obs}."
+                f"Something went wrong! Next abstract state {abstr_obs} is not in successor list for current abstract state {self._current_obs}."
             )
         next_obs_idx = int(matches[0])
         
         self._current_safety_bound = proj_safety_bounds[next_obs_idx]
-        self._current_obs = int(orig_obs)
+        self._current_obs = abstr_obs
 
         return self._augment_obs(orig_obs), reward, terminated, truncated, info
 

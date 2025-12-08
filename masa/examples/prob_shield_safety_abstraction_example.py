@@ -16,7 +16,7 @@ def main():
     '''
 
     # Import labelling and cost functions for the BridgeCrossing
-    from masa.envs.tabular.mini_pacman import label_fn, cost_fn
+    from masa.envs.discrete.mini_pacman_with_coins import safety_abstraction, abstr_label_fn, label_fn, cost_fn
 
     # We're going to use the PCTL constraint, which has key word args: (cost_fn CostFn: = DummyCostFn, alpha: float = 0.01) 
     constraint_kwargs = constraint_kwargs = dict(
@@ -26,7 +26,7 @@ def main():
 
     # Intialize the environment (env_id, constraint, max_epsiode_steps)
     # make_env wraps the environment in TimeLimit -> LabelledEnv -> PCTLEnv -> ConstraintMonitor -> RewardMonitor
-    env = make_env("mini_pacman", "pctl", 100, label_fn=label_fn, **constraint_kwargs)
+    env = make_env("mini_pacman_with_coins", "pctl", 100, label_fn=label_fn, **constraint_kwargs)
 
     # Now we're going to wrap our environment in ProbShieldWrapperDisc
     # The wrapper takes one arg: env
@@ -37,9 +37,12 @@ def main():
     #   granularity: int = 20,
     env = ProbShieldWrapperDisc(
         env, 
-        init_safety_bound = 0.01, # Safety constraint from the intial state
+        label_fn=abstr_label_fn, # labelling function for the abstract discrete states
+        cost_fn=cost_fn, # the usual cost function for the environment: 1.0 if ghost else 0.0
+        safety_abstraction=safety_abstraction, # discrete safety absraction for the environment: maps observations to concerete discrete states
         theta = 1e-15, # early stopping condition for value iteration
         max_vi_steps= 1_000_000, # number of value iteration steps
+        init_safety_bound = 0.01, # Safety constraint from the intial state
         granularity = 20, # Granulairty with which is discretize the successor state betas
     )
 
@@ -68,10 +71,13 @@ def main():
 
     # First lets initialize the eval_env
     eval_env = ProbShieldWrapperDisc(
-        make_env("mini_pacman", "pctl", 100, label_fn=label_fn, **constraint_kwargs), 
-        init_safety_bound = 0.01,
+        make_env("mini_pacman_with_coins", "pctl", 100, label_fn=label_fn, **constraint_kwargs), 
+        label_fn=abstr_label_fn,
+        cost_fn=cost_fn,
+        safety_abstraction=safety_abstraction,
         theta = 1e-15,
         max_vi_steps= 1_000_000,
+        init_safety_bound = 0.01,
         granularity = 20,
     )
 

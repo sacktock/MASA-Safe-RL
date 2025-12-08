@@ -5,7 +5,7 @@ import numpy as np
 from masa.common.label_fn import LabelFn
 from collections import defaultdict 
 from masa.envs.tabular.base import TabularEnv
-from masa.envs.tabular.utils import create_pacman_transition_dict
+from masa.envs.tabular.utils import create_pacman_transition_dict, create_pacman_end_component
 
 STANDARD_MAP = np.array([
     [1,1,1,1,1,1,1,1,1,1],
@@ -14,13 +14,14 @@ STANDARD_MAP = np.array([
     [1,0,0,0,0,0,0,0,0,1],
     [1,0,1,1,1,1,0,1,0,1],
     [1,0,1,0,0,0,0,1,0,1],
-    [1,1,1,1,1,1,1,1,1,1]])
+    [1,1,1,1,1,1,1,1,0,1]])
 N_GHOSTS = 1
 N_DIRECTIONS = 4
 N_ACTIONS = 5
 FOOD = (7, 3)
 GHOST_RAND_PROB = 0.6
 AGENT_START = (4, 1)
+AGENT_TERM = (8, 6)
 AGENT_DIRECTION = 1
 GHOST_START = (3, 5)
 GHOST_DIRECTION = 1
@@ -51,7 +52,7 @@ cost_fn = lambda labels: 1.0 if "ghost" in labels else 0.0
 class MiniPacman(TabularEnv):
 
     def __init__(self):
-
+        super().__init__()
 
         self._n_row = STANDARD_MAP.shape[0]
         self._n_col = STANDARD_MAP.shape[1]
@@ -71,6 +72,16 @@ class MiniPacman(TabularEnv):
 
         self.observation_space = spaces.Discrete(self._n_states)
         self.action_space = spaces.Discrete(self._n_actions)
+
+        self.safe_end_component = create_pacman_end_component(
+            STANDARD_MAP, 
+            AGENT_TERM[0], 
+            AGENT_TERM[1], 
+            self._state_map, 
+            n_directions=N_DIRECTIONS, 
+            n_ghosts=N_GHOSTS,
+            food=True,
+        )
 
         self._agent_start_x = AGENT_START[0]
         self._agent_start_y = AGENT_START[1]
@@ -118,8 +129,6 @@ class MiniPacman(TabularEnv):
         else:
             reward = 0.0
 
-        return self._state, reward, False, False, {}
+        terminated = True if (agent_x, agent_y) == AGENT_TERM else False
 
-    @property
-    def safe_end_component(self):
-        return []
+        return self._state, reward, terminated, False, {}

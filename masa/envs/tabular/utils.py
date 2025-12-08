@@ -153,7 +153,7 @@ def create_pacman_transition_dict(
     ghost_rand_prob: float = 0.6, 
     food_x: Optional[int] = None, 
     food_y: Optional[int] = None
-    ):
+):
 
     nrow = standard_map.shape[0]
     ncol = standard_map.shape[1]
@@ -164,15 +164,15 @@ def create_pacman_transition_dict(
 
     action_map = {0: (0, -1), # left
                   1: (0, 1), # right
-                  2: (1, 0), # up
-                  3: (-1, 0), # down
+                  2: (1, 0), # down
+                  3: (-1, 0), # up
                   4: (0, 0), # stay
                   }
 
     direction_map = {0: (0, -1), # left
                      1: (0, 1), # right
-                     2: (1, 0), # up
-                     3: (-1, 0), # down
+                     2: (1, 0), # down
+                     3: (-1, 0), # up
                     }
 
     reverse_map = {0: 1,
@@ -257,7 +257,6 @@ def create_pacman_transition_dict(
             next_food = 0
         else:
             next_food = food
-
 
         next_ghost_y = int(np.clip(ghost_y + direction_map[ghost_direction][0], 0, nrow-1))
         next_ghost_x = int(np.clip(ghost_x + direction_map[ghost_direction][1], 0, ncol-1))
@@ -362,3 +361,53 @@ def create_pacman_transition_dict(
     return successor_states, transition_probs, matrix, n_states, state_map, reverse_state_map
 
 
+def create_pacman_end_component(
+    standard_map: np.array, 
+    agent_x_term: int,
+    agent_y_term: int,
+    state_map: Dict[Tuple[int, int, int, int, int, int], int],
+    n_directions: int = 4, 
+    n_ghosts: int = 1, 
+    food: bool = False,
+):
+
+    sec = []
+
+    nrow = standard_map.shape[0]
+    ncol = standard_map.shape[1]
+
+    grid = np.arange(nrow*ncol).reshape(nrow, ncol)
+
+    assert n_ghosts == 1, f"function only supports n_ghosts=1 not {n_ghosts}"
+
+    direction_map = {0: (0, -1), # left
+                    1: (0, 1), # right
+                    2: (1, 0), # down
+                    3: (-1, 0), # up
+                }
+
+    for ghost_y in range(nrow):
+        for ghost_x in range(ncol):
+            for ghost_direction in range(n_directions):
+
+                infront_ghost_y = int(np.clip(ghost_y + direction_map[ghost_direction][0], 0, nrow-1))
+                infront_ghost_x = int(np.clip(ghost_x + direction_map[ghost_direction][1], 0, ncol-1))
+
+                behind_ghost_y = int(np.clip(ghost_y - direction_map[ghost_direction][0], 0, nrow-1))
+                behind_ghost_x = int(np.clip(ghost_x - direction_map[ghost_direction][1], 0, ncol-1))
+
+                if standard_map[infront_ghost_y, infront_ghost_x] == 1 and standard_map[behind_ghost_y, behind_ghost_x] == 1:
+                    continue
+
+                if not(standard_map[agent_y_term, agent_x_term] == 0 and standard_map[ghost_y, ghost_x] == 0):
+                    continue
+
+                if (agent_y_term, agent_x_term) == (ghost_y, ghost_x):
+                    continue
+
+                if food:
+                    sec.append(state_map[(agent_y_term, agent_x_term, 2, ghost_y, ghost_x, ghost_direction, 1)])
+
+                sec.append(state_map[(agent_y_term, agent_x_term, 2, ghost_y, ghost_x, ghost_direction, 0)])
+
+    return sec

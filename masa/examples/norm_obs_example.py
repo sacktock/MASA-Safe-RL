@@ -1,4 +1,4 @@
-from masa.prob_shield.prob_shield_wrapper_disc import ProbShieldWrapperDisc
+from masa.common.wrappers import NormWrapper, VecNormWrapper, DummyVecWrapper
 from masa.algorithms.ppo import PPO
 
 def main():
@@ -16,7 +16,7 @@ def main():
     '''
 
     # Import labelling and cost functions for the BridgeCrossing
-    from masa.envs.tabular.mini_pacman import label_fn, cost_fn
+    from masa.envs.continuous.cartpole import label_fn, cost_fn
 
     # We're going to use the PCTL constraint, which has key word args: (cost_fn CostFn: = DummyCostFn, alpha: float = 0.01) 
     constraint_kwargs = constraint_kwargs = dict(
@@ -26,21 +26,30 @@ def main():
 
     # Intialize the environment (env_id, constraint, max_epsiode_steps)
     # make_env wraps the environment in TimeLimit -> LabelledEnv -> PCTLEnv -> ConstraintMonitor -> RewardMonitor
-    env = make_env("mini_pacman", "pctl", 100, label_fn=label_fn, **constraint_kwargs)
+    env = make_env("cont_cartpole", "pctl", 500, label_fn=label_fn, **constraint_kwargs)
+    # PPO will automatically wrap any env in DummyVecWrapper it is has not already been wrapped
+    # Since we want VecNormWrapper to be the top level we wrap it before passing to PPO
+    env = DummyVecWrapper(env)
 
-    # Now we're going to wrap our environment in ProbShieldWrapperDisc
+    # Now we're going to wrap our environment in NormWrapper
     # The wrapper takes one arg: env
     #   and key word args: 
-    #   theta: float = 1e-10,
-    #   max_vi_steps: int = 1000,
-    #   init_safety_bound: float = 0.5,
-    #   granularity: int = 20,
-    env = ProbShieldWrapperDisc(
+    #   norm_obs: bool = True,
+    #   norm_rew: bool = True,
+    #   training: bool = True,
+    #   clip_obs: float = 10.0,
+    #   clip_rew: float = 10.0,
+    #   gamma: float = 0.99,
+    #   eps: float = 1e-8
+    env = VecNormWrapper(
         env, 
-        init_safety_bound = 0.01, # Safety constraint from the intial state
-        theta = 1e-15, # early stopping condition for value iteration
-        max_vi_steps= 1_000_000, # number of value iteration steps
-        granularity = 20, # Granulairty with which is discretize the successor state betas
+        norm_obs=True, # normalize observations with running mean and std
+        norm_rew=False, # normalize the reward with running mean and std of the returns
+        training=True, # if training=True then the running mean and stds are updated
+        clip_obs= 10.0, # observations are clipped in the range [-10, 10] after normalization for stability
+        clip_rew=10.0, # rewards are clipped in the range [-10, 10] after normalization for stability
+        gamma=0.99, # discount factor
+        eps=1e-8, # small epsilon for divide by zero issues
     )
 
     # PPO is a on-policy algorithm that takes one arg: env
@@ -67,12 +76,16 @@ def main():
     #   policy_kwargs: Optional[dict[str, Any]] = None,
 
     # First lets initialize the eval_env
-    eval_env = ProbShieldWrapperDisc(
-        make_env("mini_pacman", "pctl", 100, label_fn=label_fn, **constraint_kwargs), 
-        init_safety_bound = 0.01,
-        theta = 1e-15,
-        max_vi_steps= 1_000_000,
-        granularity = 20,
+    eval_env = make_env("cont_cartpole", "pctl", 500, label_fn=label_fn, **constraint_kwargs)
+    eval_env = NormWrapper(
+        eval_env,
+        norm_obs=True,
+        norm_rew=False,
+        training=False, # we don't want to update the running means and std during eval episodes
+        clip_obs= 10.0,
+        clip_rew=10.0,
+        gamma=0.99,
+        eps=1e-8,
     )
 
     # Now let's initialize PPO
@@ -90,10 +103,10 @@ def main():
 
     # Now we begin training
     algo.train(
-        num_frames=500_000, # total number of frames (environment interactions)
+        num_frames=100_000, # total number of frames (environment interactions)
         num_eval_episodes=10, # total number of evaluation episodes to run
-        eval_freq=10_000, # how frequently to run evaluation (default=0 => never run evaluation)
-        log_freq=10_000, # how frequenntly to log metrics to stdout or tensorboard
+        eval_freq=5000, # how frequently to run evaluation (default=0 => never run evaluation)
+        log_freq=5000, # how frequenntly to log metrics to stdout or tensorboard
         # prefill: Optional[int] = None (not implemented yet)
         # save_freq: int = 0, (not implemented yet)
         stats_window_size = 100, # sliding window size for metrics logging

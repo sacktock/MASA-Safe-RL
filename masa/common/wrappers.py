@@ -304,7 +304,7 @@ class NormWrapper(ConstraintPersistentWrapper):
             env, VecEnvWrapperBase
         ), "NormWrapper does not expect a vectorized environment (DummyVecWrapper / VecWrapper). Please use VecNormWrapper instead"
 
-        assert self.norm_obs and isinstance(
+        assert norm_obs and isinstance(
             env.observation_space, spaces.Box
         ), "NormWrapper only supports Box observation spaces when norm_obs=True."
 
@@ -638,7 +638,7 @@ class VecNormWrapper(VecEnvWrapperBase):
             env, VecEnvWrapperBase
         ), "VecNormWrapper expects a vectorized environment (DummyVecWrapper / VecWrapper)."
 
-        assert self.norm_obs and isinstance(
+        assert norm_obs and isinstance(
             env.observation_space, spaces.Box
         ), "VecNormWrapper only supports Box observation spaces when norm_obs=True."
 
@@ -658,13 +658,13 @@ class VecNormWrapper(VecEnvWrapperBase):
 
         self.returns = np.zeros(self.n_envs, dtype=np.float32)
 
-    def _normalize_obs(self, obs: List[np.ndarray]) -> List[np.ndarray]:
+    def _normalize_obs(self, obs_list: List[np.ndarray]) -> List[np.ndarray]:
         obs_arr = np.asarray(obs_list, dtype=np.float32)
         norm = (obs_arr - self.obs_rms.mean) / np.sqrt(self.obs_rms.var + self.eps)
         norm = np.clip(norm, -self.clip_obs, self.clip_obs)
         return norm.tolist()
 
-    def _normalize_rew(self, rew: List[float]) -> List[float]:
+    def _normalize_rew(self, rew_list: List[float]) -> List[float]:
         rew_arr = np.asarray(rew_list, dtype=np.float32)
         norm = rew_arr / np.sqrt(self.rew_rms.var + self.eps)
         norm = np.clip(norm, -self.clip_rew, self.clip_rew)
@@ -719,7 +719,7 @@ class VecNormWrapper(VecEnvWrapperBase):
 
         return reset_obs, reset_infos
 
-    def step(self, action):
+    def step(self, actions):
         obs_list, rew_list, term_list, trunc_list, infos = self.env.step(actions)
 
         obs_arr = np.asarray(obs_list, dtype=np.float32)

@@ -9,6 +9,8 @@ ENV_REGISTRY.register("colour_bomb_grid_world_v2", "masa.envs.tabular.colour_bom
 ENV_REGISTRY.register("colour_bomb_grid_world_v3", "masa.envs.tabular.colour_bomb_grid_world_v3:ColourBombGridWorldV3")
 ENV_REGISTRY.register("mini_pacman", "masa.envs.tabular.mini_pacman:MiniPacman")
 ENV_REGISTRY.register("pacman", "masa.envs.tabular.pacman:Pacman")
+ENV_REGISTRY.register("mini_pacman_with_coins", "masa.envs.discrete.mini_pacman_with_coins:MiniPacmanWithCoins")
+ENV_REGISTRY.register("pacman_with_coins", "masa.envs.discrete.pacman_with_coins:PacmanWithCoins")
 ENV_REGISTRY.register("bridge_crossing", "masa.envs.tabular.bridge_crossing:BridgeCrossing")
 ENV_REGISTRY.register("bridge_crossing_v2", " masa.envs.tabular.bridge_crossing_v2:BridgeCrossingV2")
 ENV_REGISTRY.register("media_streaming", "masa.envs.tabular.media_streaming:MediaStreaming")

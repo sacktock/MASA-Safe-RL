@@ -5,7 +5,7 @@ import numpy as np
 from masa.common.label_fn import LabelFn
 from collections import defaultdict 
 from masa.envs.discrete.base import DiscreteEnv
-from masa.envs.tabular.utils import create_pacman_transition_dict
+from masa.envs.tabular.utils import create_pacman_transition_dict, create_pacman_end_component
 
 STANDARD_MAP = np.array([
     [1,1,1,1,1,1,1,1,1,1],
@@ -14,12 +14,13 @@ STANDARD_MAP = np.array([
     [1,0,0,0,0,0,0,0,0,1],
     [1,0,1,1,1,1,0,1,0,1],
     [1,0,1,0,0,0,0,1,0,1],
-    [1,1,1,1,1,1,1,1,1,1]])
+    [1,1,1,1,1,1,1,1,0,1]])
 N_GHOSTS = 1
 N_DIRECTIONS = 4
 N_ACTIONS = 5
 GHOST_RAND_PROB = 0.6
 AGENT_START = (4, 1)
+AGENT_TERM = (8, 6)
 AGENT_DIRECTION = 1
 GHOST_START = (3, 5)
 GHOST_DIRECTION = 1
@@ -34,8 +35,29 @@ create_pacman_transition_dict(
     ghost_rand_prob=GHOST_RAND_PROB
 )
 
-def label_fn(obs):
+def safety_abstraction(obs: np.ndarray) -> int:
+    agent_slice = obs[:, :, 1 : 1 + N_DIRECTIONS]
+    agent_y, agent_x, agent_direction = np.argwhere(agent_slice == 1)[0]
+    start = 1 + N_DIRECTIONS
+    end = start + N_DIRECTIONS
+    ghost_slice = obs[:, :, start:end]
+    ghost_y, ghost_x, ghost_direction = np.argwhere(ghost_slice == 1)[0]
+    return STATE_MAP[(agent_y, agent_x, agent_direction, ghost_y, ghost_x, ghost_direction, 0)]
+
+def abstr_label_fn(obs):
     (agent_y, agent_x, agent_direction, ghost_y, ghost_x, ghost_direction, _) = REVERSE_STATE_MAP[obs]
+    if (agent_y, agent_x) == (ghost_y, ghost_x):
+        return {"ghost"}
+    else:
+        return set()
+
+def label_fn(obs):
+    agent_slice = obs[:, :, 1 : 1 + N_DIRECTIONS]
+    agent_y, agent_x, _ = np.argwhere(agent_slice == 1)[0]
+    start = 1 + N_DIRECTIONS
+    end = start + N_DIRECTIONS
+    ghost_slice = obs[:, :, start:end]
+    ghost_y, ghost_x, _ = np.argwhere(ghost_slice == 1)[0]
     if (agent_y, agent_x) == (ghost_y, ghost_x):
         return {"ghost"}
     else:
@@ -46,7 +68,7 @@ cost_fn = lambda labels: 1.0 if "ghost" in labels else 0.0
 class MiniPacmanWithCoins(DiscreteEnv):
 
     def __init__(self):
-
+        super().__init__()
 
         self._n_row = STANDARD_MAP.shape[0]
         self._n_col = STANDARD_MAP.shape[1]
@@ -62,8 +84,22 @@ class MiniPacmanWithCoins(DiscreteEnv):
         self._n_actions = N_ACTIONS
 
         self._obs_shape = (self._n_row, self._n_col, self._n_directions*2 + 1)
-        self.observation_space = spaces.Box(low=np.zeros(self._obs_shape), high=np.zeros(self._obs_shape), dtype=np.float32)
+        self.observation_space = spaces.Box(
+            low=np.zeros(self._obs_shape, dtype=np.float32), 
+            high=np.zeros(self._obs_shape, dtype=np.float32), 
+            dtype=np.float32
+        )
         self.action_space = spaces.Discrete(self._n_actions)
+
+        self.safe_end_component = create_pacman_end_component(
+            STANDARD_MAP, 
+            AGENT_TERM[0], 
+            AGENT_TERM[1], 
+            self._state_map, 
+            n_directions=N_DIRECTIONS, 
+            n_ghosts=N_GHOSTS,
+            food=False,
+        )
 
         self._agent_start_x = AGENT_START[0]
         self._agent_start_y = AGENT_START[1]
@@ -123,8 +159,21 @@ class MiniPacmanWithCoins(DiscreteEnv):
         reward = float(self._coin_array[agent_y, agent_x])
         self._update_coin_array()
 
-        return self._obs(), reward, False, False, {}
+        terminated = True if (agent_x, agent_y) == AGENT_TERM else False
+
+        return self._obs(), reward, terminated, False, {}
 
     @property
-    def safe_end_component(self):
-        return []
+    def has_transition_matrix(self):
+        return True
+    
+    @property
+    def has_successor_states_dict(self):
+        return False
+
+    def get_transition_matrix(self):
+        return self._transition_matrix
+
+    def get_successor_states_dict(self):
+        return None
+
