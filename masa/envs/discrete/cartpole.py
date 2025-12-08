@@ -22,6 +22,7 @@ cost_fn = lambda labels: 0.0 if "stable" in labels else 1.0
 class DiscreteCartPole(DiscreteEnv):
 
     def __init__(self):
+        super().__init__()
 
         self._gravity = 9.8
         self._masscart = 1.0

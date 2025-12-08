@@ -5,7 +5,7 @@ import numpy as np
 from masa.common.label_fn import LabelFn
 from collections import defaultdict 
 from masa.envs.tabular.base import TabularEnv
-from masa.envs.tabular.utils import create_pacman_transition_dict
+from masa.envs.tabular.utils import create_pacman_transition_dict, create_pacman_end_component
 
 STANDARD_MAP = np.array([
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -14,8 +14,8 @@ STANDARD_MAP = np.array([
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1],
     [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
-    [1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1],
     [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
     [1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1],
@@ -29,6 +29,7 @@ N_ACTIONS = 5
 FOOD = (13, 1)
 GHOST_RAND_PROB = 0.6
 AGENT_START = (1, 7)
+AGENT_TERM = (9, 7)
 AGENT_DIRECTION = 1
 GHOST_START = (12, 7)
 GHOST_DIRECTION = 3
@@ -59,7 +60,7 @@ cost_fn = lambda labels: 1.0 if "ghost" in labels else 0.0
 class Pacman(TabularEnv):
 
     def __init__(self):
-
+        super().__init__()
 
         self._n_row = STANDARD_MAP.shape[0]
         self._n_col = STANDARD_MAP.shape[1]
@@ -80,6 +81,16 @@ class Pacman(TabularEnv):
 
         self.observation_space = spaces.Discrete(self._n_states)
         self.action_space = spaces.Discrete(self._n_actions)
+
+        self.safe_end_component = create_pacman_end_component(
+            STANDARD_MAP,
+            AGENT_TERM[0],
+            AGENT_TERM[1],
+            self._state_map,
+            n_directions=N_DIRECTIONS,
+            n_ghosts=N_GHOSTS,
+            food=True,
+        )
 
         self._agent_start_x = AGENT_START[0]
         self._agent_start_y = AGENT_START[1]
@@ -124,16 +135,9 @@ class Pacman(TabularEnv):
         (agent_y, agent_x, agent_direction, ghost_y, ghost_x, ghost_direction, food) = self._reverse_state_map[self._state]
         if (agent_y == self._food_y) and (agent_x == self._food_x) and (not ((agent_y, agent_x) == (ghost_y, ghost_x))) and food:
             reward = 1.0
-            terminated = True
-        elif (agent_y, agent_x) == (ghost_y, ghost_x):
-            reward = 0.0
-            terminated = True
         else:
             reward = 0.0
-            terminated = False
+
+        terminated = True if (agent_x, agent_y) == AGENT_TERM else False
 
         return self._state, reward, terminated, False, {}
-
-    @property
-    def safe_end_component(self):
-        return []

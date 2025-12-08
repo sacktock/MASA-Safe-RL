@@ -16,7 +16,7 @@ def main():
     '''
 
     # Import labelling and cost functions for the BridgeCrossing
-    from masa.envs.tabular.mini_pacman import label_fn, cost_fn
+    from masa.envs.tabular.pacman import label_fn, cost_fn
 
     # We're going to use the PCTL constraint, which has key word args: (cost_fn CostFn: = DummyCostFn, alpha: float = 0.01) 
     constraint_kwargs = constraint_kwargs = dict(
@@ -26,7 +26,7 @@ def main():
 
     # Intialize the environment (env_id, constraint, max_epsiode_steps)
     # make_env wraps the environment in TimeLimit -> LabelledEnv -> PCTLEnv -> ConstraintMonitor -> RewardMonitor
-    env = make_env("mini_pacman", "pctl", 100, label_fn=label_fn, **constraint_kwargs)
+    env = make_env("pacman", "pctl", 1000, label_fn=label_fn, **constraint_kwargs)
 
     # Now we're going to wrap our environment in ProbShieldWrapperDisc
     # The wrapper takes one arg: env
@@ -39,7 +39,7 @@ def main():
         env, 
         init_safety_bound = 0.01, # Safety constraint from the intial state
         theta = 1e-15, # early stopping condition for value iteration
-        max_vi_steps= 1_000_000, # number of value iteration steps
+        max_vi_steps= 10_000, # number of value iteration steps
         granularity = 20, # Granulairty with which is discretize the successor state betas
     )
 
@@ -68,10 +68,10 @@ def main():
 
     # First lets initialize the eval_env
     eval_env = ProbShieldWrapperDisc(
-        make_env("mini_pacman", "pctl", 100, label_fn=label_fn, **constraint_kwargs), 
+        make_env("pacman", "pctl", 1000, label_fn=label_fn, **constraint_kwargs), 
         init_safety_bound = 0.01,
         theta = 1e-15,
-        max_vi_steps= 1_000_000,
+        max_vi_steps= 10_000,
         granularity = 20,
     )
 

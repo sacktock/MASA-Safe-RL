@@ -170,6 +170,7 @@ class BaseAlgorithm(ABC):
                     done = terminated or truncated
 
                 returns.append(ret)
+                pbar.update(1)
 
                 if logger is not None:
                     logger.add("eval/rollout", info)

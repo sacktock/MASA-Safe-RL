@@ -342,7 +342,9 @@ class ProbShieldWrapperDisc(ConstraintPersistentWrapper):
             sec, label_fn, cost_fn, self.n_states, self.successor_states_matrix, self.probabilities, self.theta, self.max_vi_steps
         )
 
-        print(v_sup[env.unwrapped._start_state])
+        if hasattr(env.unwrapped, "_start_state"):
+            assert v_sup[env.unwrapped._start_state] <= self.init_safety_bound, f"Value iteration could not verify that the initial safety bound {self.init_safety_bound} is achievable from the initial state"
+            print("Initial state lower bound:", v_sup[env.unwrapped._start_state])
 
         self.safety_lb = v_sup
 
