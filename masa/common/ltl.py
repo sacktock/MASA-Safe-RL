@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Iterable, List, Tuple
 from masa.common.constraints.base import CostFn
+from copy import deepcopy
 
 class Formula:
     """Base class for propsoitional formula"""
@@ -86,7 +87,7 @@ class DFA:
         self.initial = initial
         self.accepting = accepting
         self.edges = {s : {} for s in self.states}
-        self.reset()
+        self.state = self.initial
 
     def add_edge(self, parent: int, child: int, condition: Formula):
         """adds an edge from parent to child"""
@@ -136,7 +137,7 @@ class DFA:
         return self.state
 
 def dfa_to_costfn(dfa: DFA):
-    return DFACostFn(dfa)
+    return DFACostFn(deepcopy(dfa))
 
 class DFACostFn(DFA, CostFn):
 
@@ -144,22 +145,16 @@ class DFACostFn(DFA, CostFn):
 
     def __init__(self, dfa: DFA):
         self.dfa = dfa
+        self.states = self.dfa.states
+        self.initial = self.dfa.initial
+        self.accepting = self.dfa.accepting
+        self.edges = self.dfa.edges
 
     def add_edge(self, parent: int, child: int, condition: Formula):
         raise RuntimeError("Please build the DFA before wrapping it as a cost function to avoid unintended side effects")
 
     def reset(self):
         self.dfa.reset()
-
-    def has_edge(self, state_1: int, state_2: int) -> bool:
-        return self.dfa.has_edge(state_1, state_2)
-
-    def check(self, trace: Iterable[Iterable[str]]) -> bool:
-        return self.dfa.check(trace)
-
-    def transition(self, state: int, labels: Iterable[str]) -> int:
-        """compute the next state from a given state and set of labels"""
-        return self.dfa.transition(state, labels)
 
     def step(self, labels: Iterable[str]) -> Tuple[bool, int]:
         raise RuntimeError("Please do not modify the the internal dfa state here, use DFACostFn.__call__ instead for correct functionality")
@@ -172,11 +167,6 @@ class DFACostFn(DFA, CostFn):
         """steps the inetrnal dfa and returns cost=1.0 if accepting"""
         accepting, _ = self.dfa.step(labels)
         return float(accepting)
-
-    @property
-    def num_automaton_states(self):
-        """returns the number of automaton states"""
-        return self.dfa.num_automaton_states
 
     @property
     def automaton_state(self):

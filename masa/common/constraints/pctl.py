@@ -17,7 +17,7 @@ class PCTL(Constraint):
     
     def update(self, labels: Iterable[str]):
         self.step_cost = self.cost_fn(labels)
-        self.total_unsafe = float(self.step_cost >= 0.5)
+        self.total_unsafe += float(self.step_cost >= 0.5)
         self.safe = self.safe and (not self.total_unsafe)
 
     def satisfied(self) -> bool:

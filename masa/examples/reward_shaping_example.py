@@ -15,15 +15,15 @@ def main():
     ):
     '''
 
-    # Import labelling and cost functions for the ColourBombGridWorld
+    # Import the labelling and cost functions for the ColourBombGridWorld
     from masa.envs.tabular.colour_bomb_grid_world import label_fn, cost_fn
 
     # Import example DFA 
-    from masa.examples.colour_bomb_grid_world.property_2 import dfa
+    from masa.examples.colour_bomb_grid_world.property_2 import make_dfa
 
     # We're going to use the LTL safety constraint, which just has one key word args: (dfa: DFA = dummy_dfa) 
     constraint_kwargs = constraint_kwargs = dict(
-        dfa=dfa
+        dfa=make_dfa()
     )
 
     # Intialize the environment (env_id, constraint, max_epsiode_steps)

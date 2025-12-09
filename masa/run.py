@@ -44,9 +44,9 @@ def build_argparser() -> argparse.ArgumentParser:
     parser.add_argument("--env-id", type=str, default=None, help="Override env id (otherwise from YAML).")
     parser.add_argument("--max-episode-steps", type=int, default=None,
                    help="Override max episode steps (otherwise from YAML).")
-    parser.add_argument("--label-fn", type=str, default=None, help="module:callable returning Iterable[str]") # "examples.dummy:dummy_label_fn"
-    parser.add_argument("--cost-fn", type=str, default=None, help="module:callable returning 0/1 cost") # "examples.dummy:dummy_cost_fn"
-    parser.add_argument("--dfa", type=str, default=None, help="module:callable returning 0/1 cost") # "examples.dummy:dummy_dfa"
+    parser.add_argument("--label-fn", type=str, default=None, help="module:callable returning Iterable[str]") # "common.dummy:label_fn"
+    parser.add_argument("--cost-fn", type=str, default=None, help="module:callable returning 0/1 cost") # "common.dummy:cost_fn"
+    parser.add_argument("--dfa", type=str, default=None, help="module:callable returning a DFA object") # "common.dummy:make_dfa"
     parser.add_argument("--constraint", type=str, default=None)
     parser.add_argument("--configs", type=str, default="configs.yaml",
                    help="Path to YAML with env/algo/run configs.")
@@ -72,7 +72,7 @@ def main():
 
     label_fn = load_callable(config.env.label_fn)
     cost_fn = load_callable(config.env.cost_fn)
-    dfa = load_callable(config.constraint.dfa)
+    make_dfa = load_callable(config.constraint.dfa)
 
     constraint_kwargs = dict(
         cost_fn=cost_fn,
@@ -80,7 +80,7 @@ def main():
         alpha=config.constraint.alpha,
         avoid_label=config.constraint.avoid_label,
         reach_label=config.constraint.reach_label,
-        dfa=dfa
+        dfa=make_dfa()
     )
 
     env_fn = lambda: make_env(

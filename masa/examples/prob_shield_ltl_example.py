@@ -15,18 +15,19 @@ def main():
     ):
     '''
 
-    # Import the labelling and cost functions for the PacmanWithCoins
-    from masa.envs.discrete.pacman_with_coins import safety_abstraction, abstr_label_fn, label_fn, cost_fn
+    # Import the labelling function for the ColourBombGridWorldV2 environment
+    from masa.envs.tabular.colour_bomb_grid_world_v2 import label_fn
+    # Import make_dfa for property 3 
+    from masa.examples.colour_bomb_grid_world.property_3 import make_dfa
 
-    # We're going to use the PCTL constraint, which has key word args: (cost_fn CostFn: = DummyCostFn, alpha: float = 0.01) 
+    # We're going to use the LTLSafety constraint, which has key word args: (dfa: DFA) 
     constraint_kwargs = constraint_kwargs = dict(
-        cost_fn=cost_fn,
-        alpha=0.01,
+        dfa=make_dfa(), # creates an instance of the dfa
     )
 
     # Intialize the environment (env_id, constraint, max_epsiode_steps)
-    # make_env wraps the environment in TimeLimit -> LabelledEnv -> PCTLEnv -> ConstraintMonitor -> RewardMonitor
-    env = make_env("pacman_with_coins", "pctl", 1000, label_fn=label_fn, **constraint_kwargs)
+    # make_env wraps the environment in TimeLimit -> LabelledEnv -> LTLSafetyEnv -> ConstraintMonitor -> RewardMonitor
+    env = make_env("colour_bomb_grid_world_v2", "ltl_dfa", 250, label_fn=label_fn, **constraint_kwargs)
 
     # Now we're going to wrap our environment in ProbShieldWrapperDisc
     # The wrapper takes one arg: env
@@ -37,12 +38,9 @@ def main():
     #   granularity: int = 20,
     env = ProbShieldWrapperDisc(
         env, 
-        label_fn=abstr_label_fn, # labelling function for the abstract discrete states
-        cost_fn=cost_fn, # the usual cost function for the environment: 1.0 if ghost else 0.0
-        safety_abstraction=safety_abstraction, # discrete safety absraction for the environment: maps observations to concerete discrete states
+        init_safety_bound = 0.01, # Safety constraint from the intial state
         theta = 1e-15, # early stopping condition for value iteration
         max_vi_steps= 10_000, # number of value iteration steps
-        init_safety_bound = 0.01, # Safety constraint from the intial state
         granularity = 20, # Granulairty with which is discretize the successor state betas
     )
 
@@ -70,14 +68,12 @@ def main():
     #   policy_kwargs: Optional[dict[str, Any]] = None,
 
     # First lets initialize the eval_env
+    # We can reuse constraint kwargs here as dfa_to_costfn internally creates a deepcopy of the dfa
     eval_env = ProbShieldWrapperDisc(
-        make_env("pacman_with_coins", "pctl", 1000, label_fn=label_fn, **constraint_kwargs), 
-        label_fn=abstr_label_fn,
-        cost_fn=cost_fn,
-        safety_abstraction=safety_abstraction,
+        make_env("colour_bomb_grid_world_v2", "ltl_dfa", 250, label_fn=label_fn, **constraint_kwargs),
+        init_safety_bound = 0.01,
         theta = 1e-15,
         max_vi_steps= 10_000,
-        init_safety_bound = 0.01,
         granularity = 20,
     )
 

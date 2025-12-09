@@ -8,7 +8,7 @@ import numpy as np
 from collections import deque
 from tqdm import tqdm
 
-def is_wrapped(env, wrapper_class: gym.Wrapper) -> bool:
+def is_wrapped(env: gym.Env, wrapper_class: gym.Wrapper) -> bool:
     """
     Check if env is wrapped anywhere in the chain by wrapper_class.
     Works for both Gymnasium-style wrappers (.env) and VecEnv-style (.venv).
@@ -33,6 +33,29 @@ def is_wrapped(env, wrapper_class: gym.Wrapper) -> bool:
             continue
 
         return False
+
+def get_wrapped(env: gym.Env, wrapper_class: gym.Wrapper) -> gym.Env:
+
+    current = env
+    visited = set()
+
+    while True:
+        if id(current) in visited:
+            return None
+        visited.add(id(current))
+
+        if isinstance(current, wrapper_class):
+            return current
+
+        if hasattr(current, "venv"):
+            current = current.venv
+            continue
+
+        if isinstance(current, gym.Wrapper):
+            current = current.env
+            continue
+
+        return None
 
 class ConstraintPersistentWrapper(gym.Wrapper):
 
@@ -114,6 +137,7 @@ class ConstraintMonitor(ConstraintPersistentWrapper):
         info = dict(info or {})
         info.setdefault("constraint", {})["type"] = self._constraint_env.constraint_type
         info["constraint"]["step"] = self._step_metrics()
+        info["constraint"]["episode"] = self._episode_metrics()
         if terminated or truncated:
             info["constraint"]["episode"] = self._episode_metrics()
         return observation, reward, terminated, truncated, info

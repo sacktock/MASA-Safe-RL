@@ -15,7 +15,7 @@ def main():
     ):
     '''
 
-    # Import labelling and cost functions for the BridgeCrossing
+    # Import the labelling and cost functions for the Pacman
     from masa.envs.tabular.pacman import label_fn, cost_fn
 
     # We're going to use the PCTL constraint, which has key word args: (cost_fn CostFn: = DummyCostFn, alpha: float = 0.01) 

@@ -15,7 +15,7 @@ def main():
     ):
     '''
 
-    # Import labelling and cost functions for the BridgeCrossing
+    # Import the labelling and cost functions for the ContinuousCartpole
     from masa.envs.continuous.cartpole import label_fn, cost_fn
 
     # We're going to use the PCTL constraint, which has key word args: (cost_fn CostFn: = DummyCostFn, alpha: float = 0.01) 

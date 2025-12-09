@@ -14,7 +14,7 @@ defaults:
     alpha: 0.01
     avoid_label: unsafe
     reach_label: target
-    dfa: masa.common.dummy:dfa
+    dfa: masa.common.dummy:make_dfa
 
   q_learning:
     alpha: 0.1
@@ -137,7 +137,6 @@ continuous_cartpole:
     log_every: 2048
     stats_window_size: 10
     logdir: runs/masa
-    device: gpu
 
 discrete_cartpole:
   env:
@@ -157,7 +156,6 @@ discrete_cartpole:
     log_every: 2048
     stats_window_size: 10
     logdir: runs/masa
-    device: gpu
     
 colour_grid_world:
   env:
@@ -177,7 +175,6 @@ colour_grid_world:
     log_every: 1000
     stats_window_size: 10
     logdir: runs/masa
-    device: cpu
 
 colour_bomb_grid_world:
   env:
@@ -197,7 +194,6 @@ colour_bomb_grid_world:
     log_every: 1000
     stats_window_size: 100
     logdir: runs/masa
-    device: cpu
 
 colour_bomb_grid_world_v2:
   env:
@@ -211,13 +207,12 @@ colour_bomb_grid_world_v2:
     dfa: masa.examples.colour_bomb_grid_world.property_3:dfa
 
   run:
-    total_timesteps: 250000
-    eval_every: 5000
+    total_timesteps: 500000
+    eval_every: 10000
     eval_episodes: 10
-    log_every: 5000
+    log_every: 10000
     stats_window_size: 100
     logdir: runs/masa
-    device: cpu
 
 colour_bomb_grid_world_v3:
   env:
@@ -257,7 +252,6 @@ mini_pacman:
     log_every: 5000
     stats_window_size: 100
     logdir: runs/masa
-    device: cpu
 
 pacman:
   env:
@@ -277,7 +271,6 @@ pacman:
     log_every: 100000
     stats_window_size: 100
     logdir: runs/masa
-    device: cpu
 
 bridge_crossing:
   env:
@@ -297,7 +290,6 @@ bridge_crossing:
     log_every: 5000
     stats_window_size: 100
     logdir: runs/masa
-    device: cpu
 
 bridge_crossing_v2:
   env:
@@ -337,4 +329,3 @@ media_streaming:
     log_every: 1000
     stats_window_size: 100
     logdir: runs/masa
-    device: cpu
