@@ -3,13 +3,13 @@ from typing import Iterable, List, Tuple
 from masa.common.constraints.base import CostFn
 from copy import deepcopy
 
-class Formula:
+class LTLFormula:
     """Base class for propsoitional formula"""
 
     def sat(self, labels: Iterable[str]) -> bool:
         raise NotImplementedError("Propositional formula must implement a satisfaction relation")
 
-class Atom(Formula): 
+class Atom(LTLFormula): 
     """Atom: satisfied when the given atom is in the set of labels"""
 
     def __init__(self, atom: str):
@@ -18,7 +18,7 @@ class Atom(Formula):
     def sat(self, labels: Iterable[str]) -> bool:
         return self.atom in labels
 
-class Truth(Formula): 
+class Truth(LTLFormula): 
     """Truth: always satisfied"""
 
     def __init__(self):
@@ -27,7 +27,7 @@ class Truth(Formula):
     def sat(self, labels: Iterable[str]) -> bool:
         return True
 
-class And(Formula):
+class And(LTLFormula):
     """And: satisfied when both subformulae are satisfied"""
 
     def __init__(self, subformula_1: Formula, subformula_2: Formula):
@@ -37,7 +37,7 @@ class And(Formula):
     def sat(self, labels: Iterable[str]) -> bool:
         return self.subformula_1.sat(labels) and self.subformula_2.sat(labels)
 
-class Or(Formula):
+class Or(LTLFormula):
     """Or: satisfied when either subformulae are satisfied"""
 
     def __init__(self, subformula_1: Formula, subformula_2: Formula):
@@ -47,7 +47,7 @@ class Or(Formula):
     def sat(self, labels: Iterable[str]) -> bool:
         return self.subformula_1.sat(labels) or self.subformula_2.sat(labels)
 
-class Neg(Formula):
+class Neg(LTLFormula):
     """Negation: satisfied when the subformula is not satisfied"""
     
     def __init__(self, subformula: Formula):
@@ -56,7 +56,7 @@ class Neg(Formula):
     def sat(self, labels: Iterable[str]) -> bool:
         return not self.subformula.sat(labels)
 
-class Implies:
+class Implies(LTLFormula):
     """Implies: satisfied when subformula_2 is satisified if subformula_1 is satisfied"""
 
     def __init__(self, subformula_1: Formula, subformula_2: Formula):

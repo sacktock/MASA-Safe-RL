@@ -141,12 +141,9 @@ class BaseAlgorithm(ABC):
 
     def eval(self, num_episodes: int, seed: Optional[int] = None, logger: Optional[TrainLogger] = None) -> List[float]:
         eval_env = self._get_eval_env()
-
         base = 0 if self.seed is None else int(self.seed)
         eval_seed = base + 10_000 if seed is None else int(seed) + 10_000
-
         eval_key = jr.PRNGKey(eval_seed)
-
         returns = []
 
         with tqdm(

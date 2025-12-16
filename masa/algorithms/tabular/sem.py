@@ -73,7 +73,7 @@ class SEM(QL):
         if len(self.buffer) == 0:
             return
 
-        for (state, action, reward, violation, next_state, terminal) in self.buffer:
+        for (state, action, reward, _, violation, next_state, terminal) in self.buffer:
 
             penalty = 1.0 if violation else 0.0
 
@@ -97,63 +97,8 @@ class SEM(QL):
             logger.add("train/stats", {"cm_alpha": self.cm_alpha})
             if self.exploration == "boltzmann":
                 logger.add("train/stats", {"temp": self.boltzmann_temp})
-            if self.exploration == "epsilon-greedy":
+            if self.exploration == "epsilon_greedy":
                 logger.add("train/stats", {"epsilon": self._epsilon})
-
-    def rollout(self, step: int, logger: Optional[TrainLogger] = None):
-
-        self.key, subkey = jr.split(self.key)
-        action = self.act(subkey, self._last_obs)
-        next_obs, reward, terminated, truncated, info = self.env.step(action)
-
-        if hasattr(self.env, "cost_fn") and isinstance(self.env.cost_fn, DFACostFn):
-            # if the cost function associated with the constraint is a DFA, by default use counter factual experiences
-            self.buffer += self.generate_counter_factuals(
-                self._last_obs, action, reward, next_obs, terminated, info, getattr(self.env._constraint, "cost_fn", None)
-            )
-        else:
-            violation = info["constraint"]["step"].get("violation", False)
-            self.buffer.append((self._last_obs, action, reward, violation, next_obs, terminated))
-
-        if terminated or truncated:
-            self._last_obs, _ = self.env.reset()
-        else:
-            self._last_obs = next_obs
-
-        self._step += 1
-        self._epsilon = self._epsilon_decay_schedule(self._step)
-
-        if logger:
-            logger.add("train/rollout", info)
-
-    def generate_counter_factuals(
-        self, obs: int, action: int, reward: float, next_obs: int, terminated: bool, info: Dict[str, Any], cost_fn: DFACostFn
-    ) -> List[Tuple[int, int, float, int, bool]]:
-
-        dfa: DFA = cost_fn.dfa
-        counter_fac_exp = []
-
-        _n = self.n_states // dfa.num_automaton_states
-
-        _labels = info.get("labels", set())
-
-        _obs = obs % _n
-        _next_obs = next_obs % _n
-
-        for _i, counter_fac_automaton_state in enumerate(dfa.states):
-            next_counter_fac_automaton_state = dfa.transition(counter_fac_automaton_state, _labels)
-            _j = dfa.states.index(next_counter_fac_automaton_state)
-            violation = bool(next_counter_fac_automaton_state in dfa.accepting)
-            counter_fac_exp.append(
-                (_obs + _n * _i,
-                action,
-                reward,
-                violation,
-                _next_obs + _n * _j,
-                terminated,)
-            )
-
-        return counter_fac_exp
 
     def act(self, key, obs, deterministic=False):
         if deterministic:
@@ -199,7 +144,7 @@ class SEM(QL):
             scaled_log_probs = log_probs - log_probs
             exp = jnp.exp(scaled_log_probs / tmp)
             probs = exp / (jnp.sum(exp) + 1e-6)
-        if exploration == "epsilon-greedy":
+        if exploration == "epsilon_greedy":
             probs = jnp.zeros(q_X.shape[0])
             probs = probs.at[jnp.argmax(q_X)].set(1.0 - eps)
             probs += eps * (q_X / (jnp.sum(q_X) + 1e-6))

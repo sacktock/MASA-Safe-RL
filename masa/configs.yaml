@@ -68,12 +68,11 @@ defaults:
     task_gamma: 0.9
     safe_alpha: 0.1
     safe_gamma: 0.9
-    model_impl: model-free
-    model_checking: sample
-    samples: 512
-    horizon: 10
-    step_wise_prob: 0.01
-    model_prior: identity
+    mode: model-free
+    model_checking: statistical
+    samples: 8192
+    horizon: 5
+    step_wise_prob: 0.00001
     exploration: boltzmann
     boltzmann_temp: 0.05
     initial_epsilon: 1.0
@@ -182,10 +181,10 @@ colour_bomb_grid_world:
     max_episode_steps: 100
     label_fn: masa.envs.tabular.colour_bomb_grid_world:label_fn
     cost_fn: masa.envs.tabular.colour_bomb_grid_world:cost_fn
-  
+
   constraint:
     type: ltl_dfa
-    dfa: masa.examples.colour_bomb_grid_world.property_2:dfa
+    dfa: masa.examples.colour_bomb_grid_world.property_2:make_dfa
 
   run:
     total_timesteps: 100000
@@ -204,7 +203,7 @@ colour_bomb_grid_world_v2:
   
   constraint:
     type: ltl_dfa
-    dfa: masa.examples.colour_bomb_grid_world.property_3:dfa
+    dfa: masa.examples.colour_bomb_grid_world.property_3:make_dfa
 
   run:
     total_timesteps: 500000

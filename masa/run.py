@@ -3,7 +3,6 @@ from typing import Optional
 import argparse
 import gymnasium as gym
 import ruamel.yaml as yaml
-import warnings
 from masa.plugins.helpers import load_plugins
 from masa.common.configs import Config, Flags, Path
 from masa.common.utils import make_env, load_callable

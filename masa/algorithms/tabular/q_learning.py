@@ -45,7 +45,7 @@ class QL(TabularAlgorithm):
             eval_env=eval_env,
         )
 
-        assert exploration in ["boltzmann", "epsilon-greedy"], f"Unsupported exploration type: {exploration}"
+        assert exploration in ["boltzmann", "epsilon_greedy"], f"Unsupported exploration type: {exploration}"
         assert epsilon_decay in ["linear"], f"Unsupported epsilon decay schedule: {epsilon_decay}"
 
         self.n_states = self.observation_space.n
@@ -85,7 +85,7 @@ class QL(TabularAlgorithm):
         if len(self.buffer) == 0:
             return
 
-        for (state, action, reward, next_state, terminal) in self.buffer:
+        for (state, action, reward, _, _, next_state, terminal) in self.buffer:
 
             current = self.Q[next_state]
             self.Q[state, action] = (1 - self.alpha) * self.Q[state, action] \
@@ -97,7 +97,7 @@ class QL(TabularAlgorithm):
             logger.add("train/stats", {"alpha": self.alpha})
             if self.exploration == "boltzmann":
                 logger.add("train/stats", {"temp": self.boltzmann_temp})
-            if self.exploration == "epsilon-greedy":
+            if self.exploration == "epsilon_greedy":
                 logger.add("train/stats", {"epsilon": self._epsilon})
 
     def rollout(self, step: int, logger: Optional[TrainLogger] = None):
@@ -112,7 +112,9 @@ class QL(TabularAlgorithm):
                 self._last_obs, action, reward, next_obs, terminated, info, getattr(self.env._constraint, "cost_fn", None)
             )
         else:
-            self.buffer.append((self._last_obs, action, reward, next_obs, terminated))
+            cost = info["constraint"]["step"].get("cost", 0.0)
+            violation = info["constraint"]["step"].get("violation", False)
+            self.buffer.append((self._last_obs, action, reward, cost, violation, next_obs, terminated))
 
         if terminated or truncated:
             self._last_obs, _ = self.env.reset()
@@ -126,31 +128,42 @@ class QL(TabularAlgorithm):
             logger.add("train/rollout", info)
 
     def generate_counter_factuals(
-        self, obs: int, action: int, reward: float, next_obs: int, terminated: bool, info: Dict[str, Any], cost_fn: DFACostFn
-    ) -> List[Tuple[int, int, float, int, bool]]:
+        self, state: int, action: int, reward: float, next_state: int, terminated: bool, info: Dict[str, Any], cost_fn: DFACostFn,
+    ) -> List[Tuple[int, int, float, float, bool, int, bool]]:
 
         dfa: DFA = cost_fn.dfa
         counter_fac_exp = []
 
-        _n = self.n_states // dfa.num_automaton_states
+        base_n = self.n_states // dfa.num_automaton_states
+        labels = info.get("labels", set())
 
-        _labels = info.get("labels", set())
+        base_state = state % base_n
+        base_next_state = next_state % base_n
 
-        _obs = obs % _n
-        _next_obs = next_obs % _n
+        for i, automaton_state in enumerate(dfa.states):
+            next_automaton_state = dfa.transition(automaton_state, labels)
+            j = dfa.states.index(next_automaton_state)
 
-        for _i, counter_fac_automaton_state in enumerate(dfa.states):
-            next_counter_fac_automaton_state = dfa.transition(counter_fac_automaton_state, _labels)
-            _j = dfa.states.index(next_counter_fac_automaton_state)
+            cost_cf = cost_fn.cost(automaton_state, labels)
+            violation_cf = bool(next_automaton_state in dfa.accepting)
+
+            cf_state = base_state + base_n * i
+            cf_next_state = base_next_state + base_n * j
+
             counter_fac_exp.append(
-                (_obs + _n * _i,
-                action,
-                reward,
-                _next_obs + _n * _j,
-                terminated,)
+                (
+                    cf_state,
+                    action,
+                    reward,
+                    cost_cf,
+                    violation_cf,
+                    cf_next_state,
+                    terminated,
+                )
             )
 
         return counter_fac_exp
+
 
     def act(self, key, obs, deterministic=False):
         if deterministic:

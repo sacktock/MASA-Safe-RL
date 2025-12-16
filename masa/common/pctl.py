@@ -1,10 +1,22 @@
 from masa.common.label_fn import LabelFn
-from typing import Any, List, Dict
+from typing import Any, List, Dict, Union, Tuple, Optional
 import jax
 import jax.numpy as jnp
 from jax import jit
 from functools import partial
 import numpy as np
+
+jax.config.update("jax_enable_x64", True)
+
+DenseKernel = np.ndarray
+CompactKernel = Tuple[np.ndarray, np.ndarray]
+Kernel = Union[DenseKernel, CompactKernel]
+
+def kernel_n_states(kernel: Kernel) -> int:
+    if isinstance(kernel, tuple):
+        succ, p = kernel
+        return succ.shape[1]
+    return kernel.shape[1]
 
 class BoundedPCTLFormula:
     def __init__(self) -> None:
@@ -20,7 +32,7 @@ class BoundedPCTLFormula:
 
     def _prob_seq(
         self,
-        matrix: np.ndarray,
+        kernel: Kernel,
         vec_label_fn: np.ndarray,
         atom_dict: Dict[str, int],
         max_k: int | None = None,
@@ -29,16 +41,16 @@ class BoundedPCTLFormula:
         if max_k is None:
             max_k = self.bound
 
-        v = self.sat(matrix, vec_label_fn, atom_dict)
+        v = self.sat(kernel, vec_label_fn, atom_dict)
         return np.repeat(v[None, :], max_k + 1, axis=0)
 
     def sat(
         self,
-        matrix: np.ndarray,
+        kernel: Kernel,
         vec_label_fn: np.ndarray,
         atom_dict: Dict[str, int],
     ) -> np.ndarray:
-        return self._prob_seq(matrix, vec_label_fn, atom_dict, max_k=self.bound)[
+        return self._prob_seq(kernel, vec_label_fn, atom_dict, max_k=self.bound)[
             self.bound
         ]
 
@@ -56,20 +68,26 @@ class Next(BoundedPCTLFormula):
 
     @staticmethod
     @jit
-    def _next_prob_seq_core(
-        matrix: jnp.ndarray,
-        sub_seq: jnp.ndarray,
-    ) -> jnp.ndarray:
-        tail = matrix @ sub_seq.T
+    def _next_prob_seq_core_dense(m: jnp.ndarray, sub_seq: jnp.ndarray) -> jnp.ndarray:
+        tail = (m.T @ sub_seq.T)
         tail = jnp.swapaxes(tail, 0, 1)
-
         zeros = jnp.zeros_like(tail[:1, :])
-        seq = jnp.concatenate([zeros, tail], axis=0)
-        return seq
+        return jnp.concatenate([zeros, tail], axis=0)
+
+    @staticmethod
+    @partial(jit, static_argnames=("K",))
+    def _next_prob_seq_core_compact(succ: jnp.ndarray, p: jnp.ndarray, sub_seq: jnp.ndarray, K: int) -> jnp.ndarray:
+        def one_step(v):
+            v_succ = v[succ]
+            return jnp.sum(p * v_succ, axis=0)
+
+        tail = jax.vmap(one_step)(sub_seq)
+        zeros = jnp.zeros_like(tail[:1, :])
+        return jnp.concatenate([zeros, tail], axis=0)
 
     def _prob_seq(
         self,
-        matrix: np.ndarray,
+        kernel: Kernel,
         vec_label_fn: np.ndarray,
         atom_dict: Dict[str, int],
         max_k: int | None = None,
@@ -78,35 +96,34 @@ class Next(BoundedPCTLFormula):
         if max_k is None:
             max_k = self.bound_param
 
-        n_states = matrix.shape[0]
+        n_states = kernel_n_states(kernel)
         if max_k == 0:
-            return np.zeros((1, n_states), dtype=np.float32)
+            return np.zeros((1, n_states), dtype=np.float64)
 
-        seq = np.zeros((max_k + 1, n_states), dtype=np.float32)
+        sub_seq_np = self.subformula._prob_seq(kernel, vec_label_fn, atom_dict, max_k=max_k - 1)
+        sub_seq_j = jnp.asarray(sub_seq_np, dtype=jnp.float64)
 
-        if max_k == 0:
-            return seq
+        if isinstance(kernel, tuple):
+            succ, p = kernel
+            succ_j = jnp.asarray(succ, dtype=jnp.int64)
+            p_j = jnp.asarray(p, dtype=jnp.float64)
+            seq_j = self._next_prob_seq_core_compact(succ_j, p_j, sub_seq_j, K=succ.shape[0])
+        else:
+            m_j = jnp.asarray(kernel, dtype=jnp.float64)
+            seq_j = self._next_prob_seq_core_dense(m_j, sub_seq_j)
 
-        sub_seq_np = self.subformula._prob_seq(
-            matrix, vec_label_fn, atom_dict, max_k=max_k - 1
-        )
-
-        mat_j = jnp.asarray(matrix, dtype=jnp.float32)
-        sub_seq_j = jnp.asarray(sub_seq_np, dtype=jnp.float32)
-
-        seq_j = self._next_prob_seq_core(mat_j, sub_seq_j)
-        return np.asarray(seq_j, dtype=np.float32)
+        return np.asarray(seq_j, dtype=np.float64)
 
     def sat(
         self,
-        matrix: np.ndarray,
+        kernel: Kernel,
         vec_label_fn: np.ndarray,
         atom_dict: Dict[str, int],
     ) -> np.ndarray:
-        probs = self._prob_seq(matrix, vec_label_fn, atom_dict, max_k=self.bound_param)[
+        probs = self._prob_seq(kernel, vec_label_fn, atom_dict, max_k=self.bound_param)[
             self.bound_param
         ]
-        return (probs >= self.prob).astype(np.float32)
+        return (probs >= self.prob).astype(np.float64)
 
 class Until(BoundedPCTLFormula):
 
@@ -122,29 +139,42 @@ class Until(BoundedPCTLFormula):
         return self.bound_param + self.subformula_1.bound + self.subformula_2.bound
 
     @staticmethod
-    @partial(jit, static_argnames=["max_k"])
-    def _until_prob_seq_core(
-        matrix: jnp.ndarray,
-        sat1: jnp.ndarray,
-        sat2: jnp.ndarray,
-        max_k: int,
-    ) -> jnp.ndarray:
-
+    @partial(jit, static_argnames=("max_k",))
+    def _until_prob_seq_core_dense(m: jnp.ndarray, sat1: jnp.ndarray, sat2: jnp.ndarray, max_k: int) -> jnp.ndarray:
         cont_mask = (1.0 - sat2) * sat1
         prob0 = sat2
 
         def body(prob, _):
-            next_prob = sat2 + cont_mask * (matrix @ prob)
+            exp = m.T @ prob
+            next_prob = sat2 + cont_mask * exp
             return next_prob, next_prob
 
-        _, probs_tail = jax.lax.scan(body, prob0, None, length=max_k)
-        seq0 = prob0[None, :]
-        seq = jnp.concatenate([seq0, probs_tail], axis=0)
-        return seq
+        _, tail = jax.lax.scan(body, prob0, None, length=max_k)
+        return jnp.concatenate([prob0[None, :], tail], axis=0)
+
+    @staticmethod
+    @partial(jit, static_argnames=("max_k", "K"))
+    def _until_prob_seq_core_compact(
+        succ: jnp.ndarray, p: jnp.ndarray, sat1: jnp.ndarray, sat2: jnp.ndarray, max_k: int, K: int
+    ) -> jnp.ndarray:
+        cont_mask = (1.0 - sat2) * sat1
+        prob0 = sat2
+
+        def exp_step(v):
+            v_succ = v[succ]
+            return jnp.sum(p * v_succ, axis=0)
+
+        def body(prob, _):
+            exp = exp_step(prob)
+            next_prob = sat2 + cont_mask * exp
+            return next_prob, next_prob
+
+        _, tail = jax.lax.scan(body, prob0, None, length=max_k)
+        return jnp.concatenate([prob0[None, :], tail], axis=0)
 
     def _prob_seq(
         self,
-        matrix: np.ndarray,
+        kernel: Kernel,
         vec_label_fn: np.ndarray,
         atom_dict: Dict[str, int],
         max_k: int | None = None,
@@ -153,34 +183,33 @@ class Until(BoundedPCTLFormula):
         if max_k is None:
             max_k = self.bound_param
 
-        n_states = matrix.shape[0]
-        sat1 = self.subformula_1.sat(matrix, vec_label_fn, atom_dict).astype(np.float32)
-        sat2 = self.subformula_2.sat(matrix, vec_label_fn, atom_dict).astype(np.float32)
+        sat1_np = self.subformula_1.sat(kernel, vec_label_fn, atom_dict).astype(np.float64)
+        sat2_np = self.subformula_2.sat(kernel, vec_label_fn, atom_dict).astype(np.float64)
 
-        sat1_np = self.subformula_1.sat(
-            matrix, vec_label_fn, atom_dict
-        ).astype(np.float32)
-        sat2_np = self.subformula_2.sat(
-            matrix, vec_label_fn, atom_dict
-        ).astype(np.float32)
+        sat1_j = jnp.asarray(sat1_np, dtype=jnp.float64)
+        sat2_j = jnp.asarray(sat2_np, dtype=jnp.float64)
 
-        mat_j = jnp.asarray(matrix, dtype=jnp.float32)
-        sat1_j = jnp.asarray(sat1_np, dtype=jnp.float32)
-        sat2_j = jnp.asarray(sat2_np, dtype=jnp.float32)
+        if isinstance(kernel, tuple):
+            succ, p = kernel
+            succ_j = jnp.asarray(succ, dtype=jnp.int64)
+            p_j = jnp.asarray(p, dtype=jnp.float64)
+            seq_j = self._until_prob_seq_core_compact(succ_j, p_j, sat1_j, sat2_j, max_k=max_k, K=succ.shape[0])
+        else:
+            m_j = jnp.asarray(kernel, dtype=jnp.float64)
+            seq_j = self._until_prob_seq_core_dense(m_j, sat1_j, sat2_j, max_k=max_k)
 
-        seq_j = self._until_prob_seq_core(mat_j, sat1_j, sat2_j, max_k=max_k)
-        return np.asarray(seq_j, dtype=np.float32)
+        return np.asarray(seq_j, dtype=np.float64)
 
     def sat(
         self,
-        matrix: np.ndarray,
+        kernel: Kernel,
         vec_label_fn: np.ndarray,
         atom_dict: Dict[str, int],
     ) -> np.ndarray:
-        probs = self._prob_seq(matrix, vec_label_fn, atom_dict, max_k=self.bound_param)[
+        probs = self._prob_seq(kernel, vec_label_fn, atom_dict, max_k=self.bound_param)[
             self.bound_param
         ]
-        return (probs >= self.prob).astype(np.float32)
+        return (probs >= self.prob).astype(np.float64)
 
 class Always(BoundedPCTLFormula):
 
@@ -192,7 +221,7 @@ class Always(BoundedPCTLFormula):
 
         self._inner = Neg(
             Until(
-                prob=1.0 - self.prob,
+                prob=1.0-self.prob,
                 bound=self.bound_param,
                 subformula_1=Truth(),
                 subformula_2=Neg(self.subformula),
@@ -203,11 +232,11 @@ class Always(BoundedPCTLFormula):
     def _bound(self) -> int:
         return self._inner.bound
 
-    def _prob_seq(self, matrix, vec_label_fn, atom_dict, max_k=None):
-        return self._inner._prob_seq(matrix, vec_label_fn, atom_dict, max_k)
+    def _prob_seq(self, kernel, vec_label_fn, atom_dict, max_k=None):
+        return self._inner._prob_seq(kernel, vec_label_fn, atom_dict, max_k)
 
-    def sat(self, matrix, vec_label_fn, atom_dict):
-        return self._inner.sat(matrix, vec_label_fn, atom_dict)
+    def sat(self, kernel, vec_label_fn, atom_dict):
+        return self._inner.sat(kernel, vec_label_fn, atom_dict)
 
 class Eventually(BoundedPCTLFormula):
 
@@ -228,11 +257,11 @@ class Eventually(BoundedPCTLFormula):
     def _bound(self) -> int:
         return self._inner.bound
 
-    def _prob_seq(self, matrix, vec_label_fn, atom_dict, max_k=None):
-        return self._inner._prob_seq(matrix, vec_label_fn, atom_dict, max_k)
+    def _prob_seq(self, kernel, vec_label_fn, atom_dict, max_k=None):
+        return self._inner._prob_seq(kernel, vec_label_fn, atom_dict, max_k)
 
-    def sat(self, matrix, vec_label_fn, atom_dict):
-        return self._inner.sat(matrix, vec_label_fn, atom_dict)
+    def sat(self, kernel, vec_label_fn, atom_dict):
+        return self._inner.sat(kernel, vec_label_fn, atom_dict)
 
 class Truth(BoundedPCTLFormula):
 
@@ -242,12 +271,12 @@ class Truth(BoundedPCTLFormula):
 
     def sat(
         self,
-        matrix: np.ndarray,
+        kernel: Kernel,
         vec_label_fn: np.ndarray,
         atom_dict: Dict[str, int],
     ) -> np.ndarray:
-        n_states = matrix.shape[0]
-        return np.ones(n_states, dtype=np.float32)
+        n_states = kernel_n_states(kernel)
+        return np.ones(n_states, dtype=np.float64)
 
 class Atom(BoundedPCTLFormula):
 
@@ -261,7 +290,7 @@ class Atom(BoundedPCTLFormula):
 
     def sat(
         self,
-        matrix: np.ndarray,
+        kernel: Kernel,
         vec_label_fn: np.ndarray,
         atom_dict: Dict[str, int],
     ) -> np.ndarray:
@@ -277,17 +306,17 @@ class Neg(BoundedPCTLFormula):
     def _bound(self):
         return self.subformula.bound
 
-    def _prob_seq(self, matrix, vec_label_fn, atom_dict, max_k=None):
-        seq = self.subformula._prob_seq(matrix, vec_label_fn, atom_dict, max_k)
+    def _prob_seq(self, kernel, vec_label_fn, atom_dict, max_k=None):
+        seq = self.subformula._prob_seq(kernel, vec_label_fn, atom_dict, max_k)
         return 1.0 - seq
 
     def sat(
         self,
-        matrix: np.ndarray,
+        kernel: Kernel,
         vec_label_fn: np.ndarray,
         atom_dict: Dict[str, int],
     ) -> np.ndarray:
-        return 1.0 - self.subformula.sat(matrix, vec_label_fn, atom_dict)
+        return 1.0 - self.subformula.sat(kernel, vec_label_fn, atom_dict)
 
 class And(BoundedPCTLFormula):
 
@@ -300,20 +329,20 @@ class And(BoundedPCTLFormula):
     def _bound(self):
         return max(self.subformula_1.bound, self.subformula_2.bound)
 
-    def _prob_seq(self, matrix, vec_label_fn, atom_dict, max_k=None):
-        seq1 = self.subformula_1._prob_seq(matrix, vec_label_fn, atom_dict, max_k)
-        seq2 = self.subformula_2._prob_seq(matrix, vec_label_fn, atom_dict, max_k)
+    def _prob_seq(self, kernel, vec_label_fn, atom_dict, max_k=None):
+        seq1 = self.subformula_1._prob_seq(kernel, vec_label_fn, atom_dict, max_k)
+        seq2 = self.subformula_2._prob_seq(kernel, vec_label_fn, atom_dict, max_k)
         return seq1 * seq2
 
     def sat(
         self,
-        matrix: np.ndarray,
+        kernel: Kernel,
         vec_label_fn: np.ndarray,
         atom_dict: Dict[str, int],
     ) -> np.ndarray:
         return (
-            self.subformula_1.sat(matrix, vec_label_fn, atom_dict)
-            * self.subformula_2.sat(matrix, vec_label_fn, atom_dict)
+            self.subformula_1.sat(kernel, vec_label_fn, atom_dict)
+            * self.subformula_2.sat(kernel, vec_label_fn, atom_dict)
         )
 
 class Or(BoundedPCTLFormula):
@@ -329,17 +358,17 @@ class Or(BoundedPCTLFormula):
 
     def sat(
         self,
-        matrix: np.ndarray,
+        kernel: Kernel,
         vec_label_fn: np.ndarray,
         atom_dict: Dict[str, int],
     ) -> np.ndarray:
         return Neg(And(Neg(self.subformula_1), Neg(self.subformula_2))).sat(
-            matrix, vec_label_fn, atom_dict
+            kernel, vec_label_fn, atom_dict
         )
 
-    def _prob_seq(self, matrix, vec_label_fn, atom_dict, max_k=None):
-        seq1 = self.subformula_1._prob_seq(matrix, vec_label_fn, atom_dict, max_k)
-        seq2 = self.subformula_2._prob_seq(matrix, vec_label_fn, atom_dict, max_k)
+    def _prob_seq(self, kernel, vec_label_fn, atom_dict, max_k=None):
+        seq1 = self.subformula_1._prob_seq(kernel, vec_label_fn, atom_dict, max_k)
+        seq2 = self.subformula_2._prob_seq(kernel, vec_label_fn, atom_dict, max_k)
         return 1.0 - (1.0 - seq1) * (1.0 - seq2)
 
 class BoundedPCTLModelChecker:
@@ -353,51 +382,86 @@ class BoundedPCTLModelChecker:
     def __init__(
         self,
         formula: BoundedPCTLFormula,
-        transition_matrix: np.ndarray,
         label_fn: LabelFn,
         atomic_predicates: List[str],
+        transition_matrix: Optional[np.ndarray] = None,
+        successor_states: Optional[np.ndarray] = None,
+        probabilities: Optional[np.ndarray] = None,
     ):
-        assert len(transition_matrix.shape) == 3, \
-            "transition_matrix must have shape (n_states, n_states, n_actions)"
-        assert transition_matrix.shape[0] == transition_matrix.shape[1], \
-            "transition_matrix must be square in first two dimensions"
 
         self.formula = formula
-        # expected shape (n_states, n_states, n_actions)
-        self.transition_matrix = np.asarray(transition_matrix, dtype=np.float32)
-        self.n_states, _, self.n_actions = self.transition_matrix.shape
         self.label_fn = label_fn
         self.atomic_predicates = list(atomic_predicates)
 
-        self.atom_dict: Dict[str, int] = {
-            atom: i for i, atom in enumerate(self.atomic_predicates)
-        }
+        self.atom_dict = {atom: i for i, atom in enumerate(self.atomic_predicates)}
+
+        if transition_matrix is not None:
+            tm = np.asarray(transition_matrix, dtype=np.float64)
+            assert tm.ndim == 3
+            S, S2, A = tm.shape
+            assert S == S2
+            self.mode = "full"
+            self.transition_matrix = tm
+            self.successor_states = None
+            self.probabilities = None
+            self.n_states, self.n_actions = S, A
+        else:
+            assert successor_states is not None and probabilities is not None
+            succ = np.asarray(successor_states, dtype=np.int64)
+            probs = np.asarray(probabilities, dtype=np.float64)
+            assert succ.ndim == 2
+            assert probs.ndim == 3
+            K, S = succ.shape
+            K2, S2, A = probs.shape
+            assert K == K2 and S == S2
+            self.mode = "compact"
+            self.transition_matrix = None
+            self.successor_states = succ
+            self.probabilities = probs
+            self.n_states, self.n_actions = S, A
 
         self.vec_label_fn = self._build_vec_label_fn()
 
     def _build_vec_label_fn(self) -> np.ndarray:
-
-        n_states = self.transition_matrix.shape[0]
         n_atoms = len(self.atomic_predicates)
-        vec = np.zeros((n_atoms, n_states), dtype=np.float32)
-
-        for s in range(n_states):
+        vec = np.zeros((n_atoms, self.n_states), dtype=np.float64)
+        for s in range(self.n_states):
             labels = self.label_fn(s) 
-
             for atom, idx in self.atom_dict.items():
                 vec[idx, s] = 1.0 if atom in labels else 0.0
-
         return vec
 
-    def update_transition_matrix(self, transition_matrix: np.ndarray):
-        assert len(transition_matrix.shape) == 3, \
-            "transition_matrix must have shape (n_states, n_states, n_actions)"
-        assert transition_matrix.shape[0] == transition_matrix.shape[1], \
-            "transition_matrix must be square in first two dimensions"
-        assert transition_matrix.shape[0] == self.n_states and transition_matrix.shape[2] == self.n_actions, \
-            f"transition_matrix does not match the original shape ({self.n_states}, {self.n_states}, {self.n_actions}), got f{transition_matrix.shape}"
+    def update_kernel(
+        self,
+        transition_matrix: Optional[np.ndarray] = None,
+        successor_states: Optional[np.ndarray] = None,
+        probabilities: Optional[np.ndarray] = None,
+    ):
 
-        self.transition_matrix = np.asarray(transition_matrix, dtype=np.float32)
+        if transition_matrix is not None:
+            assert self.transition_matrix is not None
+            tm = np.asarray(transition_matrix, dtype=np.float64)
+            assert tm.ndim == 3
+            S, S2, A = tm.shape
+            assert S == S2
+            assert tm.shape == self.transition_matrix.shape
+            self.transition_matrix = tm
+            self.successor_states = None
+            self.probabilities = None
+        else:
+            assert self.successor_states is not None and self.probabilities is not None
+            assert successor_states is not None and probabilities is not None
+            succ = np.asarray(successor_states, dtype=np.int64)
+            probs = np.asarray(probabilities, dtype=np.float64)
+            assert succ.ndim == 2
+            assert probs.ndim == 3
+            K, S = succ.shape
+            K2, S2, A = probs.shape
+            assert K == K2 and S == S2
+            self.transition_matrix = None
+            assert S == self.n_states and A == self.n_actions
+            self.successor_states = succ
+            self.probabilities = probs
 
 class ExactModelChecker(BoundedPCTLModelChecker):
 
@@ -409,12 +473,21 @@ class ExactModelChecker(BoundedPCTLModelChecker):
     def __init__(
         self,
         formula: BoundedPCTLFormula,
-        transition_matrix: np.ndarray,
         label_fn: LabelFn,
         atomic_predicates: List[str],
+        transition_matrix: Optional[np.ndarray] = None,
+        successor_states: Optional[np.ndarray] = None,
+        probabilities: Optional[np.ndarray] = None,
     ):
 
-        super().__init__(formula, transition_matrix, label_fn, atomic_predicates)
+        super().__init__(
+            formula, 
+            label_fn, 
+            atomic_predicates, 
+            transition_matrix=transition_matrix,
+            successor_states=successor_states,
+            probabilities=probabilities,
+        )
 
     def check_state(
         self,
@@ -422,16 +495,15 @@ class ExactModelChecker(BoundedPCTLModelChecker):
         policy: np.array
     ) -> np.ndarray:
 
-        policy = np.asarray(policy, dtype=np.float32)
+        policy = np.asarray(policy, dtype=np.float64)
 
         tm = self.transition_matrix
-        assert tm.ndim == 3, "transition_matrix must be (n_states, n_states, n_actions)"
-        S, S2, A = tm.shape
-        assert S == S2, "transition_matrix must be square in first two dimensions"
 
         if policy.shape == (A, S):
+            policy_sa = policy.T
             m_pi = np.einsum('ija,ai->ij', tm, policy)
         elif policy.shape == (S, A):
+            policy_sa = policy
             m_pi = np.einsum('ija,ia->ij', tm, policy)
         else:
             raise ValueError(
@@ -439,7 +511,19 @@ class ExactModelChecker(BoundedPCTLModelChecker):
                 f"(n_actions, n_states) or (n_states, n_actions)"
             )
 
-        return self.formula.sat(m_pi, self.vec_label_fn, self.atom_dict)
+        if self.mode == "full":
+            tm = self.transition_matrix
+            m_pi = np.einsum("nsa,sa->ns", tm, policy_sa).astype(np.float64)
+            kernel: Kernel = m_pi
+
+        else:
+            succ = self.successor_states
+            probs = self.probabilities
+            p_pi = np.einsum("ksa,sa->ks", probs, policy_sa).astype(np.float64)
+            kernel = (succ, p_pi)
+        
+
+        return self.formula.sat(kernel, self.vec_label_fn, self.atom_dict)
 
     def check_state_action(
         self,
@@ -447,47 +531,64 @@ class ExactModelChecker(BoundedPCTLModelChecker):
         policy: np.ndarray,
     ) -> np.ndarray:
 
-        policy = np.asarray(policy, dtype=np.float32)
+        policy = np.asarray(policy, dtype=np.float64)
 
-        tm = self.transition_matrix
-        assert tm.ndim == 3, "transition_matrix must be (n_states, n_states, n_actions)"
-        S, S2, A = tm.shape
-        assert S == S2, "transition_matrix must be square in first two dimensions"
-
-        if policy.shape == (A, S):
-            m_pi = np.einsum('ija,ai->ij', tm, policy)
-        elif policy.shape == (S, A):
-            m_pi = np.einsum('ija,ia->ij', tm, policy)
+        if policy.shape == (self.n_actions, self.n_states):
+            policy_sa = policy.T
+        elif policy.shape == (self.n_states, self.n_actions):
+            policy_sa = policy
         else:
             raise ValueError(
                 f"Unexpected policy shape {policy.shape}; expected "
                 f"(n_actions, n_states) or (n_states, n_actions)"
             )
 
+        if self.mode == "full":
+            tm = self.transition_matrix
+            m_pi = np.einsum('nsa,sa->ns', tm, policy_sa)
+            kernel: Kernel = m_pi
+        else:
+            succ = self.successor_states
+            probs = self.probabilities
+            p_pi = np.einsum("ksa,sa->ks", probs, policy_sa).astype(np.float64)
+            kernel = (succ, p_pi)
+            
         B = self.formula.bound
+        seq = self.formula._prob_seq(kernel, self.vec_label_fn, self.atom_dict, max_k=B)
+        V_Bm1 = seq[max(B - 1, 0)]
 
-        seq = self.formula._prob_seq(m_pi, self.vec_label_fn, self.atom_dict, max_k=B)
-        V_B_minus_1 = seq[max(B - 1, 0)]
+        if self.mode == "full":
+            tm = self.transition_matrix
+            Q = np.einsum("nsa,n->sa", tm, V_Bm1).astype(np.float64)
+        else:
+            succ = self.successor_states
+            probs = self.probabilities
+            V_succ = V_Bm1[succ]
+            Q = np.sum(probs * V_succ[:, :, None], axis=0).astype(np.float64)
 
-        Q_B = np.einsum('nsa,n->sa', tm, V_B_minus_1)
-
-        return Q_B
+        return Q
 
 class StatisticalModelChecker(BoundedPCTLModelChecker):
 
     def __init__(
         self,
         formula: BoundedPCTLFormula,
-        transition_matrix: np.ndarray,
         label_fn: LabelFn,
         atomic_predicates: List[str],
+        transition_matrix: Optional[np.ndarray] = None,
+        successor_states: Optional[np.ndarray] = None,
+        probabilities: Optional[np.ndarray] = None,
     ):
-        super().__init__(formula, transition_matrix, label_fn, atomic_predicates)
+        super().__init__(
+            formula, 
+            label_fn, 
+            atomic_predicates, 
+            transition_matrix=transition_matrix,
+            successor_states=successor_states,
+            probabilities=probabilities,
+        )
 
-        self.tm_jax = jnp.asarray(self.transition_matrix, dtype=jnp.float32)
-        self.vec_label_fn_jax = jnp.asarray(self.vec_label_fn, dtype=jnp.float32)
-
-        self.n_states, _, self.n_actions = self.tm_jax.shape
+        self.vec_label_fn_jax = jnp.asarray(self.vec_label_fn, dtype=jnp.float64)
 
     def check_state(
         self,
@@ -499,34 +600,56 @@ class StatisticalModelChecker(BoundedPCTLModelChecker):
 
         if not self._is_probabilistic_formula(self.formula):
             val = self._eval_state_formula_python(self.formula, state)
-            return jnp.array(float(val), dtype=jnp.float32)
+            return jnp.array(float(val), dtype=jnp.float64)
 
         start_state = int(state)
         num_samples = int(num_samples)
         max_steps = max(1, int(self.formula.bound))
 
-        policy_probs = self._prepare_policy_probs_jax(
+        policy_sa = self._prepare_policy_probs_jax(
             self.n_states, self.n_actions, policy
         )
 
-        m_pi = self._build_markov_chain_jax(self.tm_jax, policy_probs)
         prob_threshold = self._get_formula_prob(self.formula)
 
-        path_satisfies_batch = jax.vmap(self._path_satisfies_single, in_axes=0)
+        if self.mode == "full":
+            tm = self.transition_matrix
+            m_pi = np.einsum("nsa,sa->ns", tm, policy_sa).astype(np.float64)
+            m_pi_j = jnp.asarray(m_pi, dtype=jnp.float64)
 
-        p_hat = self._estimate_prob(
-            key=key,
-            start_state=start_state,
-            num_samples=num_samples,
-            max_steps=max_steps,
-            m_first=m_pi,
-            m_rest=m_pi,
-            formula=self.formula,
-            vec_labels=self.vec_label_fn_jax,
-            atom_dict=self.atom_dict
-        )
+            p_hat = self._estimate_prob_dense(
+                key=key,
+                start_state=start_state,
+                num_samples=num_samples,
+                max_steps=max_steps,
+                m_first=m_pi_j,
+                m_rest=m_pi_j,
+                formula=self.formula,
+                vec_labels=self.vec_label_fn_jax,
+                atom_dict=self.atom_dict
+            )
+        else:
+            assert self.successor_states is not None and self.probabilities is not None
+            succ = self.successor_states
+            probs = self.probabilities
 
-        return jnp.where(p_hat >= prob_threshold, 1.0, 0.0).astype(jnp.float32)
+            p_pi = np.einsum("ksa,sa->ks", probs, policy_sa).astype(np.float64)
+            p_pi_j = jnp.asarray(p_pi, dtype=jnp.float64)
+
+            p_hat = self._estimate_prob_compact(
+                key=key,
+                start_state=start_state,
+                num_samples=num_samples,
+                max_steps=max_steps,
+                succ=succ_j,
+                p_first=p_pi_j,
+                p_rest=p_pi_j,
+                formula=self.formula,
+                vec_labels=self.vec_label_fn_jax,
+                atom_dict=self.atom_dict
+            )
+
+        return jnp.where(p_hat >= prob_threshold, 1.0, 0.0).astype(jnp.float64)
 
     def check_state_action(
         self,
@@ -539,35 +662,64 @@ class StatisticalModelChecker(BoundedPCTLModelChecker):
 
         if not self._is_probabilistic_formula(self.formula):
             val = self._eval_state_formula_python(self.formula, state)
-            return jnp.array(float(val), dtype=jnp.float32)
+            return jnp.array(float(val), dtype=jnp.float64)
 
         start_state = int(state)
         forced_action = int(action)
         num_samples = int(num_samples)
         max_steps = max(1, int(self.formula.bound))
 
-        policy_probs = self._prepare_policy_probs_jax(
+        policy_sa = self._prepare_policy_probs_jax(
             self.n_states, self.n_actions, policy
         )
 
-        m_a = self._build_forced_action_chain_jax(self.tm_jax, forced_action)
-        m_pi = self._build_markov_chain_jax(self.tm_jax, policy_probs)
-
         prob_threshold = self._get_formula_prob(self.formula)
 
-        p_hat = self._estimate_prob(
-            key=key,
-            start_state=start_state,
-            num_samples=num_samples,
-            max_steps=max_steps,
-            m_first=m_a,
-            m_rest=m_pi,
-            formula=self.formula,
-            vec_labels=self.vec_label_fn_jax,
-            atom_dict=self.atom_dict
-        )
+        if self.mode == "full":
+            tm = self.transition_matrix
+            m_a = tm[:, :, action]
+            m_pi = np.einsum("nsa,sa->ns", tm, policy_sa).astype(np.float64)
+            
+            m_a_j = jnp.asarray(m_a, dtype=jnp.float64)
+            m_pi_j = jnp.asarray(m_pi, dtype=jnp.float64)
 
-        return jnp.where(p_hat >= prob_threshold, 1.0, 0.0).astype(jnp.float32)
+            p_hat = self._estimate_prob_dense(
+                key=key,
+                start_state=start_state,
+                num_samples=num_samples,
+                max_steps=max_steps,
+                m_first=m_a_j,
+                m_rest=m_pi_j,
+                formula=self.formula,
+                vec_labels=self.vec_label_fn_jax,
+                atom_dict=self.atom_dict
+            )
+        else:
+            assert self.successor_states is not None and self.probabilities is not None
+            succ = self.successor_states
+            probs = self.probabilities
+
+            p_a = probs[:, :, action]
+            p_pi = np.einsum("ksa,sa->ks", probs, policy_sa).astype(np.float64)
+
+            succ_j = jnp.asarray(succ, dtype=jnp.int64)
+            p_a_j = jnp.asarray(p_a, dtype=jnp.float64)
+            p_pi_j = jnp.asarray(p_pi, dtype=jnp.float64)
+
+            p_hat = self._estimate_prob_compact(
+                key=key,
+                start_state=start_state,
+                num_samples=num_samples,
+                max_steps=max_steps,
+                succ=succ_j,
+                p_first=p_a_j,
+                p_rest=p_pi_j,
+                formula=self.formula,
+                vec_labels=self.vec_label_fn_jax,
+                atom_dict=self.atom_dict
+            )
+
+        return jnp.where(p_hat >= prob_threshold, 1.0, 0.0).astype(jnp.float64)
 
     def _is_probabilistic_formula(self, formula: BoundedPCTLFormula) -> bool:
         return isinstance(formula, (Next, Until, Eventually, Always))
@@ -611,7 +763,7 @@ class StatisticalModelChecker(BoundedPCTLModelChecker):
     @staticmethod
     @partial(jit, static_argnames=["n_states", "n_actions"])
     def _prepare_policy_probs_jax(n_states: int, n_actions: int, policy: jnp.ndarray) -> jnp.ndarray:
-        policy = jnp.asarray(policy, dtype=jnp.float32)
+        policy = jnp.asarray(policy, dtype=jnp.float64)
         if policy.shape == (n_actions, n_states):
             policy = policy.T
         elif policy.shape == (n_states, n_actions):
@@ -622,16 +774,6 @@ class StatisticalModelChecker(BoundedPCTLModelChecker):
                 f"(n_states, n_actions)=({n_states}, {n_actions})"
             )
         return policy
-
-    @staticmethod
-    @jit
-    def _build_markov_chain_jax(tm: jnp.ndarray, policy_probs: jnp.ndarray) -> jnp.ndarray:
-        return jnp.einsum('nsa,sa->ns', tm, policy_probs)
-
-    @staticmethod
-    @jit
-    def _build_forced_action_chain_jax(tm: jnp.ndarray, action: int) -> jnp.ndarray:
-        return tm[:, :, action]
 
     @staticmethod
     def _eval_state_formula_jax(
@@ -732,7 +874,7 @@ class StatisticalModelChecker(BoundedPCTLModelChecker):
         return eval_state(states_1d[0], formula, vec_labels, atom_dict)
 
     @staticmethod
-    def _estimate_prob(
+    def _estimate_prob_dense(
         key: jax.Array,
         start_state: int,
         num_samples: int,
@@ -744,11 +886,11 @@ class StatisticalModelChecker(BoundedPCTLModelChecker):
         atom_dict: Dict[str, int],
     ) -> jnp.ndarray:
 
-        states_batch = StatisticalModelChecker._sample_trajectories_jax(
+        states_batch = StatisticalModelChecker._sample_trajectories_dense_jax(
             key=key,
             m_first=m_first,
             m_rest=m_rest,
-            start_state=jnp.asarray(start_state, dtype=jnp.float32),
+            start_state=jnp.asarray(start_state, dtype=jnp.float64),
             max_steps=max_steps,
             num_samples=num_samples,
         )
@@ -761,11 +903,45 @@ class StatisticalModelChecker(BoundedPCTLModelChecker):
         )
 
         sat_batch = path_satisfies_batch(states_batch)  # (num_samples,)
-        return jnp.mean(sat_batch.astype(jnp.float32))
+        return jnp.mean(sat_batch.astype(jnp.float64))
+
+    @staticmethod
+    def _estimate_prob_compact(
+        key: jax.Array,
+        start_state: int,
+        num_samples: int,
+        max_steps: int,
+        succ: jnp.ndarray,
+        p_first: jnp.ndarray,
+        p_rest: jnp.ndarray,
+        formula: BoundedPCTLFormula,
+        vec_labels: jnp.ndarray,
+        atom_dict: Dict[str, int],
+    ) -> jnp.ndarray:
+
+        states_batch = StatisticalModelChecker._sample_trajectories_compact_jax(
+            key=key,
+            succ=succ,
+            p_first=p_first,
+            p_rest=p_rest,
+            start_state=jnp.asarray(start_state, dtype=jnp.float64),
+            max_steps=max_steps,
+            num_samples=num_samples,
+        )
+
+        path_satisfies_batch = jax.vmap(
+            lambda s: StatisticalModelChecker._path_satisfies_single(
+                s, formula, vec_labels, atom_dict
+            ),
+            in_axes=0,
+        )
+
+        sat_batch = path_satisfies_batch(states_batch)  # (num_samples,)
+        return jnp.mean(sat_batch.astype(jnp.float64))
 
     @staticmethod
     @partial(jit, static_argnames=["num_samples", "max_steps"])
-    def _sample_trajectories_jax(
+    def _sample_trajectories_dense_jax(
         key: jax.Array,
         m_first: jnp.ndarray,
         m_rest: jnp.ndarray,
@@ -778,7 +954,7 @@ class StatisticalModelChecker(BoundedPCTLModelChecker):
         assert S == S2
         assert (S, S2) == m_first.shape
 
-        states0 = jnp.full((num_samples,), start_state, dtype=jnp.int32)
+        states0 = jnp.full((num_samples,), start_state, dtype=jnp.int64)
 
         def body(carry, t):
             states, key = carry
@@ -809,12 +985,54 @@ class StatisticalModelChecker(BoundedPCTLModelChecker):
             logits = jnp.where(norm_probs > 0, jnp.log(norm_probs), -jnp.inf)
 
             next_states = jax.random.categorical(subkey, logits=logits, axis=-1)
-            next_states = next_states.astype(jnp.int32)
+            next_states = next_states.astype(jnp.int64)
 
             return (next_states, key), next_states
             
         
-        ts = jnp.arange(max_steps, dtype=jnp.int32)
+        ts = jnp.arange(max_steps, dtype=jnp.int64)
         (final_states, _), states_seq = jax.lax.scan(body, (states0, key), ts)
+        states_all = jnp.concatenate([states0[None, :], states_seq], axis=0)
+        return states_all.T # expected output shape (N, T+1)
+
+    @staticmethod
+    @partial(jit, static_argnames=["num_samples", "max_steps"])
+    def _sample_trajectories_compact_jax(
+        key: jax.Array,
+        succ: jnp.ndarray,
+        p_first: jnp.ndarray,
+        p_rest: jnp.ndarray,
+        start_state: jnp.ndarray,
+        max_steps: int,
+        num_samples: int,
+    ) -> jnp.ndarray:
+    
+        states0 = jnp.full((num_samples,), start_state, dtype=jnp.int64)
+
+        def body(carry, t):
+            states, key = carry
+            key, subkey = jax.random.split(key)
+
+            p = jax.lax.cond(t == 0, lambda _: p_first, lambda _: p_rest, operand=None)
+            probs = p[:, states].T
+
+            # normalize rows (keep zeros as zeros; fallback self-loop if all-zero)
+            row_sums = probs.sum(axis=-1, keepdims=True)
+            has_mass = row_sums > 0
+            denom = jnp.where(has_mass, row_sums, 1.0)
+            norm = probs / denom
+
+            # choose successor index k, then map to next state id
+            logits = jnp.where(norm > 0, jnp.log(norm), -jnp.inf)
+            k_idx = jax.random.categorical(subkey, logits, axis=-1).astype(jnp.int64)
+            next_states = succ[k_idx, states]
+
+            # if no mass, stay in place
+            next_states = jnp.where(has_mass[:, 0], next_states, states)
+
+            return (next_states, key), next_states
+
+        ts = jnp.arange(max_steps, dtype=jnp.int64)
+        (_, _), states_seq = jax.lax.scan(body, (states0, key), ts)
         states_all = jnp.concatenate([states0[None, :], states_seq], axis=0)
         return states_all.T # expected output shape (N, T+1)

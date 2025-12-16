@@ -6,7 +6,7 @@ from gymnasium import spaces
 from masa.common.label_fn import LabelFn
 from masa.common.constraints import Constraint, BaseConstraintEnv
 from masa.common.ltl import DFA, dfa_to_costfn
-from masa.common.dummy import dfa as dummy_dfa
+from masa.common.dummy import make_dfa as make_dummy_dfa
 
 State = int
 Action = int
@@ -32,6 +32,7 @@ def create_product_transition_matrix(
     assert n_states == transition_matrix.shape[0], \
     "Something went wrong, the provided n_states does not equal the number of states in transition_matrix"
     f"Got n_states = {n_states} and transition_matrix.shape[0] == {transition_matrix.shape[0]}"
+
     assert n_actions == transition_matrix.shape[2], \
     "Something went wrong, the provided n_actions does not equal the number of states in transition_matrix"
     f"Got n_actions = {n_actions} and transition_matrix.shape[2] == {transition_matrix.shape[2]}"
@@ -60,18 +61,6 @@ def create_product_transition_matrix(
     loop_sat = 1.0 - outgoing_any
     sat[idx, idx, :] = loop_sat
 
-    '''# Accepting states are forced to return to the initial state
-    # Initial state index
-    initial_q = dfa.initial
-    initial_idx = aut_index[dfa.initial]
-
-    # Set of accepting automaton state indices
-    accepting_indices = {aut_index[q] for q in dfa.accepting}
-
-    for i_acc in accepting_indices:
-        sat[i_acc, :, :] = 0.0
-        sat[i_acc, initial_idx, :] = 1.0'''
-
     product = np.einsum('ijs,ska->jsika', sat, transition_matrix.astype(np.float32))
 
     n_prod_states = n_states * n_aut
@@ -93,9 +82,11 @@ def create_product_successor_states_and_probabilities(
 ) -> Tuple[Dict[ProdState, List[ProdState]], Dict[Tuple[ProdState, Action], np.ndarray]]:
 
     base_states = sorted(successor_states.keys())
+
     assert n_states == len(base_states), \
     "Something went wrong, the provided n_states does not equal the numebr of states in successor_states "
     f"Got n_states = {n_states} and len(successor_states) = {len(base_states)}"
+
     state_index = {s: idx for idx, s in enumerate(base_states)}
     
     aut_states = list(dfa.states)
@@ -110,16 +101,6 @@ def create_product_successor_states_and_probabilities(
             q_next = dfa.transition(q, labels)
             j_idx = aut_index[q_next]
             next_aut[q_idx, s] = j_idx
-
-    '''# Accepting states are forced to return to the initial state
-    # Initial state index
-    initial_q = dfa.initial
-    initial_idx = aut_index[initial_q]
-
-    # Set of accepting automaton state indices
-    accepting_indices = {aut_index[q] for q in dfa.accepting}
-    for q_acc_idx in accepting_indices:
-        next_aut[q_acc_idx, :] = initial_idx'''
 
     prod_successor_states: Dict[ProdState, List[ProdState]] = {}
     prod_probabilities: Dict[Tuple[ProdState, Action], np.ndarray] = {}
@@ -172,11 +153,10 @@ def create_product_safe_end_component(
 
     return product_sec
 
-
 def create_product_label_fn(
     n_states: int,
     dfa: DFA,
-) -> Callable[[int], Set[str]]:
+) -> Callable[[ProdState], Set[str]]:
 
     aut_states = list(dfa.states)
     aut_index = {q: i for i, q in enumerate(aut_states)}
@@ -229,7 +209,7 @@ class LTLSafety(Constraint):
 
 class LTLSafetyEnv(BaseConstraintEnv):
 
-    def __init__(self, env: gym.Env, dfa: DFA = dummy_dfa, **kw):
+    def __init__(self, env: gym.Env, dfa: DFA = make_dummy_dfa(), **kw):
         super().__init__(env, LTLSafety(dfa=dfa), **kw)
         self._num_automaton_states = int(dfa.num_automaton_states)
         self._automaton_states_idx = {q: i for i, q in enumerate(dfa.states)}

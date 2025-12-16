@@ -1,208 +1,15 @@
 
 import gymnasium as gym
 from gymnasium import spaces
-from masa.common.wrappers import ConstraintPersistentWrapper, is_wrapped, get_wrapped
+from masa.common.wrappers import ConstraintPersistentWrapper, is_wrapped
 from masa.common.constraints import LTLSafetyEnv
-from masa.envs.tabular.base import TabularEnv
-from masa.envs.discrete.base import DiscreteEnv
 from typing import Union, Any, Tuple, Dict, List, Optional, Callable
 from masa.common.constraints import CostFn
 from masa.common.label_fn import LabelFn
-from jax import jit
-import jax
-from jax import lax
-import jax.numpy as jnp
+from masa.prob_shield.helpers import build_successor_states_matrix
+from masa.prob_shield.interval_bound_vi import interval_bound_value_iteration
 import numpy as np
 import copy
-
-jax.config.update("jax_enable_x64", True)
-
-@jit
-def vi_one_step(
-    v_inf: jnp.ndarray, 
-    v_sup: jnp.ndarray, 
-    successor_states_matrix: jnp.ndarray,
-    probabilities: jnp.ndarray
-)-> Tuple[jnp.ndarray, jnp.ndarray, float, int]:
-    """
-    v_inf, v_sup: (n_states,)
-    successor_states_matrix: (max_successors, n_states) int
-    probabilities: (max_successors, n_states, n_actions)
-    """
-
-    next_v_inf = jnp.take(v_inf, successor_states_matrix, axis=0)
-    next_v_sup = jnp.take(v_sup, successor_states_matrix, axis=0)
-
-    exp_inf = jnp.sum(next_v_inf[..., None] * probabilities, axis=0)
-    exp_sup = jnp.sum(next_v_sup[..., None] * probabilities, axis=0)
-
-    v_inf_new = jnp.min(exp_inf, axis=-1)
-    v_sup_new = jnp.min(exp_sup, axis=-1)
-
-    v_inf_new = jnp.clip(v_inf_new, 0.0, 1.0)
-    v_sup_new = jnp.clip(v_sup_new, 0.0, 1.0)
-
-    delta = jnp.max(jnp.abs(v_sup_new - v_inf_new))
-
-    return v_inf_new, v_sup_new, delta
-
-def jax_value_iteration(
-    v_inf_init: jnp.ndarray,
-    v_sup_init: jnp.ndarray,
-    successor_states_matrix: jnp.ndarray,
-    probabilities: jnp.ndarray,
-    theta: float,
-    max_steps: int,
-) -> Tuple[jnp.ndarray, jnp.ndarray, float, int]:
-
-    v_inf = v_inf_init
-    v_sup = v_sup_init
-    delta = jnp.inf
-    steps = 0
-
-    def cond(carry):
-        v_inf, v_sup, delta, steps = carry
-        return jnp.logical_and(steps < max_steps, delta > theta)
-
-    def body(carry):
-        v_inf, v_sup, _, steps = carry
-        v_inf_new, v_sup_new, delta_new = vi_one_step(
-            v_inf, v_sup, successor_states_matrix, probabilities
-        )
-        return v_inf_new, v_sup_new, delta_new, steps + 1
-
-    v_inf, v_sup, delta, steps = lax.while_loop(
-        cond,
-        body,
-        (v_inf, v_sup, delta, steps)
-    )
-    return v_inf, v_sup, delta, steps
-
-def fast_value_iteration(
-    sec: List[int],
-    label_fn: LabelFn,
-    cost_fn: CostFn,
-    n_states: int,
-    successor_states_matrix: np.ndarray,
-    probabilities: np.ndarray,
-    theta: float = 1e-10,
-    max_steps: int = 1000,
-    device: str = 'auto',
-)-> Tuple[np.ndarray, np.ndarray, float, int]:
-    # Copy to edit in-place
-    successor_states_abs = successor_states_matrix.copy()
-    probabilities_abs = probabilities.copy()
-
-    print("Initializing value iteration ...")
-
-    # Initial bounds
-    v_inf = np.zeros(n_states, dtype=np.float64)
-    v_sup = np.ones(n_states, dtype=np.float64)
-
-    for s in range(n_states):
-        absorbing = False
-        if cost_fn(label_fn(s)):
-            v_inf[s] = 1.0
-            absorbing = True 
-        if s in sec:
-            v_sup[s] = 0.0
-            absorbing = True 
-        if absorbing:
-            successor_states_abs[:, s] = s
-            probabilities_abs[:, s, :] = 0.0
-            probabilities_abs[0, s, :] = 1.0
-
-    v_inf_j = jnp.array(v_inf)
-    v_sup_j = jnp.array(v_sup)
-    successor_states_j = jnp.array(successor_states_abs, dtype=jnp.int64)
-    probabilities_j = jnp.array(probabilities_abs, dtype=jnp.float64)
-    
-    v_inf_j, v_sup_j, delta, steps = jax_value_iteration(
-        v_inf_j,
-        v_sup_j,
-        successor_states_j,
-        probabilities_j,
-        theta,
-        max_steps,
-    )
-
-    print("Completed value iteration ...")
-
-    v_inf_final = np.array(v_inf_j)
-    v_sup_final = np.array(v_sup_j)
-
-    return v_inf_final, v_sup_final, delta, int(steps)
-
-def build_successor_state_matrix_and_probabilities(
-    n_states: int,
-    n_actions: int,
-    transition_matrix: Optional[np.ndarray] = None,
-    successor_states: Optional[Dict[int, List[int]]] = None,
-    probs_dict: Optional[Dict[Tuple[int, int], np.ndarray]] = None,
-) -> Tuple[np.ndarray, np.ndarray, int]:
-
-    assert (transition_matrix is not None) or ((successor_states is not None) and (probs_dict is not None)),\
-    "Something went wrong, you must provide either the transition matrix or both the successor states and probabilities for the environment"
-
-    if transition_matrix is not None:
-        assert n_states == transition_matrix.shape[0], \
-        "Something went wrong, the provided n_states does not equal the number of states in transition_matrix"
-        f"Got n_states = {n_states} and transition_matrix.shape[0] == {transition_matrix.shape[0]}"
-        assert n_actions == transition_matrix.shape[2], \
-        "Something went wrong, the provided n_actions does not equal the number of states in transition_matrix"
-        f"Got n_actions = {n_actions} and transition_matrix.shape[2] == {transition_matrix.shape[2]}"
-
-    if successor_states is not None:
-        base_states = sorted(successor_states.keys())
-        assert n_states == len(base_states), \
-        "Something went wrong, the provided n_states does not equal the numebr of states in successor_states "
-        f"Got n_states = {n_states} and len(successor_states) = {len(base_states)}"
-
-    print("Calculating the maximum number of successor states ...")
-
-    use_transition_matrix = bool(transition_matrix is not None)
-
-    use_successor_states_dict = bool((successor_states is not None) and (probs_dict is not None)) \
-        and not use_transition_matrix
-
-    if use_transition_matrix:
-        probs = np.array(transition_matrix)
-        reachable = np.any(probs > 0, axis=2)
-        successor_counts = np.count_nonzero(reachable, axis=0)
-        max_successors = successor_counts.max()
-
-    if use_successor_states_dict:
-        max_successors = 0
-        for s in successor_states.keys():
-            max_successors = max(max_successors, len(successor_states[s]))
-
-    print(f"Calculated maximum number of successor states [{max_successors}] ...")
-
-    successor_states_matrix = np.zeros((max_successors, n_states), dtype=np.int64)
-    probabilities = np.zeros((max_successors, n_states, n_actions), dtype=np.float64)
-
-    print("Building successor state matrix and probabilities ...")
-
-    for s in range(n_states):
-        if use_transition_matrix:
-            mask = np.any(probs[:, s, :] > 0.0, axis=1)
-            successors_s = np.nonzero(mask)[0]
-            k = len(successors_s)
-            successor_states_matrix[:k, s] = successors_s
-            probabilities[:k, s, :] = probs[successors_s, s, :]
-
-        if use_successor_states_dict:
-            successors_s = np.array(successor_states[s], dtype=np.int64)#
-            k = len(successors_s)
-            successor_states_matrix[:k, s] = successors_s
-
-            for a in range(n_actions):
-                probabilities[:k, s, a] = np.array(
-                    probs_dict[(s, a)],
-                    dtype=np.float64
-                )
-
-    return successor_states_matrix, probabilities, max_successors
 
 def projection_bar(intersections: np.ndarray, i: int) -> np.ndarray:
     assert intersections.shape[0] > 0, "No intersections provided."
@@ -272,143 +79,6 @@ class ProbShieldWrapperDisc(ConstraintPersistentWrapper):
         granularity: int = 20,
     ):
 
-        # Sanity checks
-        if is_wrapped(env, ProbShieldWrapperDisc):
-            raise RuntimeError(
-                "Environment is already wrapped in ProbShieldWrapperDisc. "
-                "Double-wrapping can cause undefined behaviour."
-            )
-
-        for method_name in ("has_transition_matrix", "has_successor_states_dict"):
-            if not hasattr(env.unwrapped, method_name):
-                raise TypeError(
-                    f"Env of type {type(env.unwrapped).__name__} must define a "
-                    f"'{method_name}' property."
-                )
-
-        use_transition_matrix = bool(env.unwrapped.has_transition_matrix)
-        use_successor_states_dict = not use_transition_matrix and bool(env.unwrapped.has_successor_states_dict) 
-
-        if not (use_transition_matrix or use_successor_states_dict):
-            raise ValueError(
-                "Environment must expose either a transition matrix or a "
-                "successor-states dictionary (or both), but neither was found."
-            )
-
-        transition_matrix = env.unwrapped.get_transition_matrix() if use_transition_matrix else None
-        successor_states, probs_dict = env.unwrapped.get_successor_states_dict() if use_successor_states_dict else None, None
-        
-        if not isinstance(env, ConstraintPersistentWrapper):
-            raise TypeError(
-                "ProbShieldWrapperDisc expects `env` to be an instance of "
-                f"ConstraintPersistentWrapper, got {type(env).__name__}."
-            )
-
-        if not hasattr(env, "cost_fn") and cost_fn is None:
-            raise AttributeError(
-                "Environment must define a `cost_fn` attribute."
-            )
-
-        if env.cost_fn is None and cost_fn is None:
-            raise ValueError(
-                "Environment attribute `cost_fn` must not be None."
-            )
-        
-        cost_fn = cost_fn if cost_fn else env.cost_fn
-
-        if not hasattr(env, "label_fn") and label_fn is None:
-            raise AttributeError(
-                "Environment must define a `label_fn` attribute."
-            )
-
-        if env.label_fn is None and label_fn is None:
-            raise ValueError(
-                "Environment attribute `label_fn` must not be None."
-            )
-
-        label_fn = label_fn if label_fn else env.label_fn
-        
-        if not hasattr(env, "action_space"):
-            raise AttributeError("Environment must have an `action_space` attribute.")
-
-
-        if not isinstance(env.action_space, spaces.Discrete):
-            raise TypeError(
-                "ProbShieldWrapperDisc only supports environments with a "
-                f"Discrete action space, got: {type(env.action_space).__name__}."
-            )
-
-        n_actions = env.action_space.n
-
-        start_state = None
-
-        if not isinstance(env.observation_space, spaces.Discrete) and safety_abstraction is None:
-            raise TypeError(
-                "ProbShieldWrapperDisc only supports environments with a "
-                f"Discrete observation space or a discrete safety abstraction, got: {type(env.observation_space).__name__}"
-            )
-
-        if not hasattr(env.unwrapped, "safe_end_component"):
-            raise AttributeError(
-                "Environment must define a `safe_end_component` attribute "
-                "containing terminal safe states."
-            )
-        sec = env.unwrapped.safe_end_component
-        try:
-            iter(sec)
-        except TypeError:
-            raise TypeError(
-                "`env.safe_end_component` must be an iterable (e.g. list, set, tuple) "
-                f"but got type {type(sec).__name__}."
-            )
-        if len(sec) == 0:
-            raise ValueError(
-                "`env.safe_end_component` must be a non-empty iterable. "
-                "The shielding procedure requires at least one absorbing safe state."
-            )
-
-        if is_wrapped(env, LTLSafetyEnv):
-            from masa.common.constraints.ltl_safety import \
-            create_product_transition_matrix, create_product_successor_states_and_probabilities, \
-            create_product_safe_end_component, create_product_label_fn, product_cost_fn
-
-            ltl_safety_env: LTLSafetyEnv | None = get_wrapped(env, LTLSafetyEnv)
-            dfa: DFA = env._constraint.get_dfa()
-            assert ltl_safety_env is not None
-
-            if isinstance(ltl_safety_env._orig_obs_space, spaces.Discrete):
-                n_states = ltl_safety_env._orig_obs_space.n
-            else:
-                if use_transition_matrix:
-                    n_states = transition_matrix.shape[0]
-                if use_successor_states_dict:
-                    n_state = len(successor_states.keys())
-
-            if use_transition_matrix:
-                transition_matrix = create_product_transition_matrix(
-                    n_states, n_actions, transition_matrix, dfa, label_fn
-                )
-            if use_successor_states_dict:
-                successor_states, probs_dict = create_product_successor_states_and_probabilities(
-                    n_states, n_actions, successor_states, probs_dict, dfa, label_fn
-                )
-            sec = create_product_safe_end_component(
-                n_states, n_actions, sec, dfa, label_fn,
-            )
-            label_fn = create_product_label_fn(n_states, dfa)
-            cost_fn = product_cost_fn
-
-            if hasattr(env.unwrapped, "_start_state"):
-                aut_states = list(dfa.states)
-                n_aut = len(aut_states)
-                aut_index = {q: i for i, q in enumerate(aut_states)}
-
-                start_state = aut_index[dfa.initial] * n_states + int(env.unwrapped._start_state)
-
-        else:
-            if hasattr(env.unwrapped, "_start_state"):
-                start_state = int(env.unwrapped._start_state)
-    
         super().__init__(env)
 
         self.safety_abstraction = safety_abstraction
@@ -417,34 +87,45 @@ class ProbShieldWrapperDisc(ConstraintPersistentWrapper):
         self.init_safety_bound = init_safety_bound
         self.granularity = granularity
         self._box_dtype = np.float32
-        
-        if isinstance(self.env.observation_space, spaces.Discrete):
-            n_states = self.env.observation_space.n
-        else:
-            if use_transition_matrix:
-                n_states = transition_matrix.shape[0] # expected shape (n_states, n_states, n_actions)
-            if use_successor_states_dict:
-                n_states = len(successor_states.keys())
 
-        self.successor_states_matrix, self.probabilities, self.max_successors = \
-            build_successor_state_matrix_and_probabilities(
-                n_states,
-                n_actions,
-                transition_matrix,
-                successor_states,
-                probs_dict,
+        # Sanity checks
+        if is_wrapped(self.env, ProbShieldWrapperDisc):
+            raise RuntimeError(
+                "Environment is already wrapped in ProbShieldWrapperDisc. "
+                "Double-wrapping can cause undefined behaviour."
             )
-        
-        v_inf, v_sup, _, _, = fast_value_iteration(
-            sec, 
-            label_fn, 
-            cost_fn, 
-            n_states, 
-            self.successor_states_matrix, 
-            self.probabilities,
-            self.theta, 
-            self.max_vi_steps
+        if not isinstance(self.env, ConstraintPersistentWrapper):
+            raise TypeError(
+                "ProbShieldWrapperDisc expects `env` to be an instance of "
+                f"ConstraintPersistentWrapper, got {type(env).__name__}."
+            )
+        if not isinstance(self.env.observation_space, spaces.Discrete) and safety_abstraction is None:
+            raise TypeError(
+                "ProbShieldWrapperDisc only supports environments with a "
+                f"Discrete observation space or a discrete safety abstraction, got: {type(self.env.observation_space).__name__}"
+            )
+
+        self.successor_states_matrix, self.probabilities, self.max_successors, \
+        label_fn, cost_fn, sec = build_successor_states_matrix(
+            self.env, label_fn=label_fn, cost_fn=cost_fn,
         )
+
+        v_inf, v_sup, _, _, = interval_bound_value_iteration(
+            self.successor_states_matrix, self.probabilities, label_fn, cost_fn, sec, \
+            theta=self.theta, max_steps=self.max_vi_steps
+        )
+
+        start_state = None
+        if is_wrapped(self.env, LTLSafetyEnv):
+            dfa: DFA = self.env._constraint.get_dfa()
+            if hasattr(self.env.unwrapped, "_start_state"):
+                aut_states = list(dfa.states)
+                n_aut = len(aut_states)
+                aut_index = {q: i for i, q in enumerate(aut_states)}
+                start_state = aut_index[dfa.initial] * n_states + int(self.env.unwrapped._start_state)
+        else:
+            if hasattr(self.env.unwrapped, "_start_state"):
+                start_state = int(self.env.unwrapped._start_state)
 
         if start_state is not None:
             assert v_sup[start_state] <= self.init_safety_bound, f"Value iteration could not verify that the initial safety bound {self.init_safety_bound} is achievable from the initial state"
