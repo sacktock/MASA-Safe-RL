@@ -43,7 +43,7 @@ or
 ```bash
 pip install -U "jax[cuda12]"
 ```
--**Windows**: GPU acceletartion is also supported (experimentally) on Windows WSL x86_64. We strongly recommend using [Ubuntu 22.04](https://apps.microsoft.com/detail/9pn20msr04dw?hl=en-GB&gl=BE) or similar. You need to reinstall JAX based on your cuda driver compatibility,
+- **Windows**: GPU acceletartion is also supported (experimentally) on Windows WSL x86_64. We strongly recommend using [Ubuntu 22.04](https://apps.microsoft.com/detail/9pn20msr04dw?hl=en-GB&gl=BE) or similar. You need to reinstall JAX based on your cuda driver compatibility,
 ```bash
 pip install -U "jax[cuda13]"
 ```
@@ -51,8 +51,15 @@ or
 ```bash
 pip install -U "jax[cuda12]"
 ```
--**MAC**: we recommend JAX with CPU. No further action is required if you correctly followed the earlier steps.
+- **MAC**: we recommend JAX with CPU. No further action is required if you correctly followed the earlier steps.
 
+### Testing Your Installation
+
+You can test your installation of masa via the command line,
+
+```bash
+python -m masa.run --env-id mini_pacman --algo q_learning --custom-cfgs mini_pacman --seed 0
+```
 
 
 
