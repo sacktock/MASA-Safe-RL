@@ -40,30 +40,28 @@ If you use MASA-Safe-RL in your research please cite it in your publications.
 
 Developer Notes
 ---------------
-- we could separate out **Benchmarks** into its own section
-- we should add somewhere we discuss how Labelling/Cost functions can be defined (according to the library's way of defining these), perhaps in the **Constraints** section
-- we could add a **Tutorials** section with walked examples of applying a labelling/cost function on an environment, applying the relevant constraint wrappers, using some of the algorithms and possibly automated hyperparameter tuning to get full results
+- We need to add a short introduction to RL with the gymnasium interface and safe RL/RL with constraints in Core Concepts.
+- We will discuss the labelling function and cost function API in core concepts.
+- Tutorials will bed added on a rolling basis as the library is developed.
 
 ```{toctree}
 :caption: Get Started
 :hidden:
 
 Get Started/Quick Start
-Get Started/Labelling Function
-Get Started/Cost Function
+Get Started/Core Concepts
 Get Started/Basic Usage
 ```
 
 ```{toctree}
-:caption: Constraints
+:caption: API
 :hidden:
 
-Constraints/Multi Agent
-Constraints/Constrained Markov Decision Process (CMDP)
-Constraints/Reach Avoid
-Constraints/LTL Safety
-Constraints/PCTL
-Constraints/Stepwise Probabilistic
+API/Constraints
+API/Wrappers
+API/Metrics
+API/DFA
+API/PCTL
 ```
 
 ```{toctree}
@@ -80,6 +78,18 @@ Environments/Single Agent
 
 Algorithms/PPO Lagrangian
 Algorithms/CPO
+```
+
+```{toctree}
+:caption: Tutorials
+:hidden:
+
+Tutorials/Basics
+Tutorials/Constraints
+Tutorials/LTL-Safety
+Tutorials/Wrappers
+Tutorials/Environments
+Tutorials/Algorithms
 ```
 
 ```{toctree}
