@@ -10,6 +10,8 @@ We list the core concepts of the MASA API.
 - [Wrappers](https://sacktock.github.io/MASA-Safe-RL/Get%20Started/Core%20Concepts/Wrappers.html)
 
 ```{toctree}
+:caption: Core Concepts
+:hidden:
 
 Core Concepts/Labelling Function
 Core Concepts/Cost Function

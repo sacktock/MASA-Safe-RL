@@ -1,1 +1,1 @@
-# Probabilistic Computation Tree Logic (PCTL) API
+# Probabilistic Computation Tree Logic

@@ -1,4 +1,4 @@
-# Constraints API
+# Constraints
 
 We list the constrains currently supported by MASA.
 
@@ -12,6 +12,9 @@ We list the constrains currently supported by MASA.
 - [ATL (Multi Agent)](https://sacktock.github.io/MASA-Safe-RL/API/Constraints/Multi%Agent)
 
 ```{toctree}
+:caption: Constraints
+:hidden:
+
 Constraints/Constrained Markov Decision Process (CMDP)
 Constraints/LTL Safety
 Constraints/PCTL

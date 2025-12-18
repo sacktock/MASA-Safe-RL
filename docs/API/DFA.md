@@ -1,1 +1,1 @@
-# Deterministic Finite Automata (DFA) API
+# Deterministic Finite Automata
