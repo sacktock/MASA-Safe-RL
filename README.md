@@ -24,12 +24,6 @@ If you use MASA-Safe-RL in your research please cite it in your publications.
 
 Python 3.8+ is required but we recommend Python 3.10 (later Python versions may not be supported).
 
-#### GPU acceleration with JAX
-
-MASA-Safe-RL also heavily relies on [JAX](https://docs.jax.dev/), which is primarly supported for NVIDIA-GPU acceleration on Linux x86_64/aarch64 and (exprimentally) on Windows WSL x86_64. 
--**Windows**: we recommend using [Ubuntu 22.04](https://apps.microsoft.com/detail/9pn20msr04dw?hl=en-GB&gl=BE).
--**MAC**: we recommend JAX with CPU.
-
 #### Installation with conda
 - Install conda, e.g., via [anaconda](https://anaconda.org/channels/anaconda/packages/conda/overview).
 - Clone the repo:
@@ -67,7 +61,7 @@ or
 ```bash
 pip install -U "jax[cuda12]"
 ```
--**Windows**: GPU acceletartion is also supported (experimentally) on Windows WSL x86_64. We stringly recommend using [Ubuntu 22.04](https://apps.microsoft.com/detail/9pn20msr04dw?hl=en-GB&gl=BE) or similar. You need to reinstall JAX based on your cuda driver compatibility,
+-**Windows**: GPU acceletartion is also supported (experimentally) on Windows WSL x86_64. We strongly recommend using [Ubuntu 22.04](https://apps.microsoft.com/detail/9pn20msr04dw?hl=en-GB&gl=BE) or similar. You need to reinstall JAX based on your cuda driver compatibility,
 ```bash
 pip install -U "jax[cuda13]"
 ```
@@ -75,10 +69,10 @@ or
 ```bash
 pip install -U "jax[cuda12]"
 ```
--**MAC**: we recommond JAX with CPU. No further action is required if you correctly followed the earlier steps.
+-**MAC**: we recommend JAX with CPU. No further action is required if you correctly followed the earlier steps.
 
 ## How to run MASA
-- You can run masa with the prebuilt `run` script. The script is not fully configurable so often it is better to create your own examples.
+- You can run masa with the prebuilt `run` script. The script is not fully configurable so it is often better to create your own examples.
 ```
 python -m masa.run --env-id bridge_crossing --algo ppo --custom-cfgs bridge_crossing --seed 0
 ```
