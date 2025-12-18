@@ -81,3 +81,11 @@ Environments/Single Agent
 Algorithms/PPO Lagrangian
 Algorithms/CPO
 ```
+
+```{toctree}
+:caption: Misc
+
+:hidden:
+
+Misc/Probabilistic Shielding
+```
