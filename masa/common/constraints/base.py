@@ -12,6 +12,12 @@ class Constraint(Protocol):
     expose per-step and per-episode metrics in a uniform way.
     """
 
+    def reset(self):
+        pass
+
+    def update(self, labels: Iterable[str]):
+        pass
+
     @property
     def constraint_type(self) -> str:
         """A stable identifier"""
