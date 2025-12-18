@@ -12,7 +12,7 @@ def parse_config(args, unknown) -> Config:
     configs = yaml.YAML(typ='safe').load(
       (Path(__file__).parent / args.configs).read())
     config = Config(configs["defaults"])
-    for name in args.algo_configs:
+    for name in args.custom_cfgs:
         config = config.update(configs[name])
     config = Flags(config).parse(unknown)
     if args.env_id is not None:
@@ -52,7 +52,7 @@ def build_argparser() -> argparse.ArgumentParser:
     parser.add_argument("--algo", type=str, default="q_learning",
                    choices=ALGO_REGISTRY.keys(),
                    help="Which algorithm to run (used to pick section from YAML).")
-    parser.add_argument("--algo-configs", type=str, nargs='+', default=[],
+    parser.add_argument("--custom-cfgs", type=str, nargs='+', default=[],
                    help="algorithm configs to use from configs file.")
     parser.add_argument("--total-timesteps", type=int, default=None,
                    help="Override run total_timesteps (otherwise from YAML).")
