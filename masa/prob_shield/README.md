@@ -8,7 +8,7 @@ This module provides a **Gymnasium-compatible implementation of Probabilistic Sh
 
 The approach guarantees **probabilistic safety during both training and evaluation**, while remaining **optimality-preserving** among all safe policies.
 
-For technical details please see the [docs]() or full paper on [arXiv](https://arxiv.org/abs/2503.07671)
+For technical details please see the [docs](https://sacktock.github.io/MASA-Safe-RL/Misc/Probabilistic%20Shielding.html) or the full paper on [arXiv](https://arxiv.org/abs/2503.07671)
 
 ## Usage
 
