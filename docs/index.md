@@ -15,13 +15,13 @@ Organization
 
 The docs are currently organised as follows:
 
-- **Get Started**: installation instructions and core API details (e.g., labelling function, cost function, make_env).
+- **Get Started**: installation instructions and core Common details (e.g., labelling function, cost function, make_env).
 - **Constraints**: mathematical and usage details for the constraints currently provided in MASA.
 - **Environments**: benchamrk environments currently provided in MASA.
-- **Algorithms**: algorithm and logging API details and algorithms currently provided in MASA.
+- **Algorithms**: algorithm and logging Common details and algorithms currently provided in MASA.
 - **Other**: auxilliary wrappers, e.g., probabilistic shielding.
 
-We recommend you follow the docs in the provided order starting from **Get Started** to learn about the core API and so on.
+We recommend you follow the docs in the provided order starting from **Get Started** to learn about the core Common and so on.
 
 Citation
 --------
@@ -41,7 +41,7 @@ If you use MASA-Safe-RL in your research please cite it in your publications.
 Developer Notes
 ---------------
 - We need to add a short introduction to RL with the gymnasium interface and safe RL/RL with constraints in Core Concepts.
-- We will discuss the labelling function and cost function API in core concepts.
+- We will discuss the labelling function and cost function Common in core concepts.
 - Tutorials will bed added on a rolling basis as the library is developed.
 
 ```{toctree}
@@ -54,14 +54,14 @@ Get Started/Basic Usage
 ```
 
 ```{toctree}
-:caption: API
+:caption: Common
 :hidden:
 
-API/Constraints
-API/Wrappers
-API/Metrics
-API/DFA
-API/PCTL
+Common/Constraints
+Common/Wrappers
+Common/Metrics
+Common/DFA
+Common/PCTL
 ```
 
 ```{toctree}
