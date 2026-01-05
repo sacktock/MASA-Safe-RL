@@ -4,9 +4,9 @@ from gymnasium import spaces
 from typing import Optional, Tuple
 import numpy as np
 from masa.common.wrappers import is_wrapped, get_wrapped
-from masa.common.constraints import LTLSafetyEnv
+from masa.common.constraints.ltl_safety import LTLSafetyEnv
 from masa.common.ltl import DFA
-from masa.common.constraints import CostFn
+from masa.common.constraints.base import CostFn
 from masa.common.label_fn import LabelFn
 
 def build_successor_states_matrix(

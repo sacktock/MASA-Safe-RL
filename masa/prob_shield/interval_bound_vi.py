@@ -3,7 +3,7 @@ import jax
 from jax import lax
 import jax.numpy as jnp
 import numpy as np
-from masa.common.constraints import CostFn
+from masa.common.constraints.base import CostFn
 from masa.common.label_fn import LabelFn
 from typing import Tuple, List
 

@@ -4,7 +4,7 @@ import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
 from masa.common.label_fn import LabelFn
-from masa.common.constraints import Constraint, BaseConstraintEnv
+from masa.common.constraints.base import Constraint, BaseConstraintEnv
 from masa.common.ltl import DFA, dfa_to_costfn
 from masa.common.dummy import make_dfa as make_dummy_dfa
 

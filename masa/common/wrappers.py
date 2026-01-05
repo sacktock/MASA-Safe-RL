@@ -1,7 +1,7 @@
 from __future__ import annotations
 import gymnasium as gym
 from gymnasium import spaces
-from masa.common.constraints import BaseConstraintEnv
+from masa.common.constraints.base import BaseConstraintEnv
 from masa.common.ltl import DFACostFn, DFA, ShapedCostFn
 from masa.common.running_mean_std import RunningMeanStd
 import numpy as np

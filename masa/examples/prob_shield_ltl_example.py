@@ -27,7 +27,7 @@ def main():
 
     # Intialize the environment (env_id, constraint, max_epsiode_steps)
     # make_env wraps the environment in TimeLimit -> LabelledEnv -> LTLSafetyEnv -> ConstraintMonitor -> RewardMonitor
-    env = make_env("colour_bomb_grid_world_v2", "ltl_dfa", 250, label_fn=label_fn, **constraint_kwargs)
+    env = make_env("colour_bomb_grid_world_v2", "ltl_safety", 250, label_fn=label_fn, **constraint_kwargs)
 
     # Now we're going to wrap our environment in ProbShieldWrapperDisc
     # The wrapper takes one arg: env
@@ -70,7 +70,7 @@ def main():
     # First lets initialize the eval_env
     # We can reuse constraint kwargs here as dfa_to_costfn internally creates a deepcopy of the dfa
     eval_env = ProbShieldWrapperDisc(
-        make_env("colour_bomb_grid_world_v2", "ltl_dfa", 250, label_fn=label_fn, **constraint_kwargs),
+        make_env("colour_bomb_grid_world_v2", "ltl_safety", 250, label_fn=label_fn, **constraint_kwargs),
         init_safety_bound = 0.01,
         theta = 1e-15,
         max_vi_steps= 10_000,

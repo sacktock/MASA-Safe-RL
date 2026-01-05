@@ -14,7 +14,7 @@ from functools import partial
 from tqdm import tqdm
 from masa.prob_shield.helpers import build_successor_states_matrix
 from masa.prob_shield.eventual_discounted_vi import ev_value_iteration
-from masa.common.constraints import LTLSafetyEnv
+from masa.common.constraints.ltl_safety import LTLSafetyEnv
 from masa.common.wrappers import is_wrapped, get_wrapped
 
 def build_pctl_formula(

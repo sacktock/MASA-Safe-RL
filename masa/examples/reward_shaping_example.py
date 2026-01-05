@@ -28,7 +28,7 @@ def main():
 
     # Intialize the environment (env_id, constraint, max_epsiode_steps)
     # make_env wraps the environment in TimeLimit -> LabelledEnv -> LTLSafetyEnv -> ConstraintMonitor -> RewardMonitor
-    env = make_env("colour_bomb_grid_world", "ltl_dfa", 400, label_fn=label_fn, **constraint_kwargs)
+    env = make_env("colour_bomb_grid_world", "ltl_safety", 400, label_fn=label_fn, **constraint_kwargs)
 
     # Now we're going to wrap our environment in RewardShapingWrapper
     # The wrapper takes one arg: env
@@ -71,7 +71,7 @@ def main():
     #   epsilon_decay_frames: int = 10000, 
 
     # First lets initialize the eval_env
-    eval_env = make_env("colour_bomb_grid_world", "ltl_dfa", 400, label_fn=label_fn, **constraint_kwargs)
+    eval_env = make_env("colour_bomb_grid_world", "ltl_safety", 400, label_fn=label_fn, **constraint_kwargs)
 
     # Now let's initialize RECREG
     algo = RECREG(

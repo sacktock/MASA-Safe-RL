@@ -2,9 +2,9 @@
 import gymnasium as gym
 from gymnasium import spaces
 from masa.common.wrappers import ConstraintPersistentWrapper, is_wrapped
-from masa.common.constraints import LTLSafetyEnv
+from masa.common.constraints.ltl_safety import LTLSafetyEnv
 from typing import Union, Any, Tuple, Dict, List, Optional, Callable
-from masa.common.constraints import CostFn
+from masa.common.constraints.base import CostFn
 from masa.common.label_fn import LabelFn
 from masa.prob_shield.helpers import build_successor_states_matrix
 from masa.prob_shield.interval_bound_vi import interval_bound_value_iteration

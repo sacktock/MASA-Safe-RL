@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Any, Dict, Iterable
-from masa.common.constraints import Constraint, BaseConstraintEnv
+from masa.common.constraints.base import Constraint, BaseConstraintEnv
 
 class ReachAvoid(Constraint):
     """Reach target label set while avoiding unsafe label set."""

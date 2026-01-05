@@ -16,11 +16,11 @@ ENV_REGISTRY.register("bridge_crossing_v2", " masa.envs.tabular.bridge_crossing_
 ENV_REGISTRY.register("media_streaming", "masa.envs.tabular.media_streaming:MediaStreaming")
 
 # Register supported constraints
-CONSTRAINT_REGISTRY.register("cmdp", "masa.common.constraints:CumulativeCostEnv")
-CONSTRAINT_REGISTRY.register("prob", "masa.common.constraints:ProbabilisticSafetyEnv")
-CONSTRAINT_REGISTRY.register("reach_avoid", "masa.common.constraints:ReachAvoidEnv")
-CONSTRAINT_REGISTRY.register("ltl_dfa", "masa.common.constraints:LTLSafetyEnv")
-CONSTRAINT_REGISTRY.register("pctl", "masa.common.constraints:PCTLEnv")
+CONSTRAINT_REGISTRY.register("cmdp", "masa.common.constraints.cmdp:CumulativeCostEnv")
+CONSTRAINT_REGISTRY.register("prob", "masa.common.constraints.prob:ProbabilisticSafetyEnv")
+CONSTRAINT_REGISTRY.register("reach_avoid", "masa.common.constraints.reach_avoid:ReachAvoidEnv")
+CONSTRAINT_REGISTRY.register("ltl_safety", "masa.common.constraints.ltl_safety:LTLSafetyEnv")
+CONSTRAINT_REGISTRY.register("pctl", "masa.common.constraints.pctl:PCTLEnv")
 
 # Register supported algorithms
 ALGO_REGISTRY.register("q_learning", "masa.algorithms.tabular:QL")

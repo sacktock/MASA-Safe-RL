@@ -183,7 +183,7 @@ colour_bomb_grid_world:
     cost_fn: masa.envs.tabular.colour_bomb_grid_world:cost_fn
 
   constraint:
-    type: ltl_dfa
+    type: ltl_safety
     dfa: masa.examples.colour_bomb_grid_world.property_2:make_dfa
 
   run:
