@@ -19,6 +19,7 @@ Probabilistic Shielding addresses RL problems of the form:
 > *Maximise discounted reward subject to an undiscounted probabilistic safety constraint.*
 
 Safety is expressed as an **avoidance property**:
+
 .. math::
 
     \mathbb{P}(\text{reach unsafe}) \le p
