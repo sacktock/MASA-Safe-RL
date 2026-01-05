@@ -18,6 +18,8 @@ html_title = "Multi and Single Agent Safe Reinforcement Learning"
 
 extensions = [
     "myst_parser",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.mathjax",
 ]
 
 templates_path = ['_templates']

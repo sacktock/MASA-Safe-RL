@@ -19,9 +19,9 @@ Probabilistic Shielding addresses RL problems of the form:
 > *Maximise discounted reward subject to an undiscounted probabilistic safety constraint.*
 
 Safety is expressed as an **avoidance property**:
-[
-\mathbb{P}(\text{reach unsafe}) \le p
-]
+.. math::
+
+    \mathbb{P}(\text{reach unsafe}) \le p
 
 Rather than constraining the policy directly, the method constructs a **safety-aware augmented MDP** (the *shield*) in which **every policy is provably safe**.
 
