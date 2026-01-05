@@ -41,8 +41,7 @@ Documentation = "https://sacktock.github.io/MASA-Safe-RL/"
 include-package-data = true
 
 [project.scripts]
-masa = "masa:run"
+run_masa = "masa:run"
 
 [tool.setuptools.packages.find]
-where = ["."]
-include = ["masa*"]
+include = ["masa", "masa.*"]

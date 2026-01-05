@@ -17,13 +17,45 @@ html_title = "Multi and Single Agent Safe Reinforcement Learning"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    "myst_parser",
+    "sphinx.ext.napoleon",
     "sphinx.ext.autodoc",
+    "sphinx.ext.githubpages",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.coverage",
     "sphinx.ext.mathjax",
+    "myst_parser",
 ]
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+
+# Napoleon settings
+napoleon_use_ivar = True
+napoleon_attr_annotations = True
+napoleon_use_admonition_for_references = True
+# See https://github.com/sphinx-doc/sphinx/issues/9119
+napoleon_custom_sections = [("Returns", "params_style")]
+
+# Autodoc
+autoclass_content = "both"
+autodoc_preserve_defaults = True
+
+autodoc_typehints = "description"
+
+# This function removes the content before the parameters in the __init__ function.
+# This content is often not useful for the website documentation as it replicates
+# the class docstring.
+def remove_lines_before_parameters(app, what, name, obj, options, lines):
+    if what == "class":
+        # ":param" represents args values
+        first_idx_to_keep = next(
+            (i for i, line in enumerate(lines) if line.startswith(":param")), 0
+        )
+        lines[:] = lines[first_idx_to_keep:]
+
+
+def setup(app):
+    app.connect("autodoc-process-docstring", remove_lines_before_parameters)
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
