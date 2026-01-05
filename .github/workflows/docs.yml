@@ -31,7 +31,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install -U pip
-          python -m pip install -r docs/requirements.txt
+          # python -m pip install -r docs/requirements.txt
           # If your docs import your package (autodoc), also:
           python -m pip install -e .[docs]
 
