@@ -1,6 +1,4 @@
 """
-ltl.py
-
 Lightweight propositional (LTL-style) formula objects and a deterministic finite
 automaton (DFA) whose transitions are guarded by those formulae.
 

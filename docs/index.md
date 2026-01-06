@@ -60,7 +60,7 @@ Get Started/Basic Usage
 Common/Constraints
 Common/Wrappers
 Common/Metrics
-Common/DFA
+Common/LTL
 Common/PCTL
 ```
 
