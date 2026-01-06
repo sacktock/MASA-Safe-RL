@@ -17,6 +17,7 @@ html_title = "Multi and Single Agent Safe Reinforcement Learning"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
+    "myst_parser",
     "sphinx.ext.napoleon",
     "sphinx.ext.autodoc",
     "sphinx.ext.githubpages",
@@ -24,7 +25,10 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.coverage",
     "sphinx.ext.mathjax",
-    "myst_parser",
+]
+
+myst_enable_extensions = [
+    "eval-rst",
 ]
 
 templates_path = ['_templates']
