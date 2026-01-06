@@ -174,4 +174,4 @@ Next Steps
 
    PCTL/Propositional Operators
    PCTL/Temporal Operators
-   PCTl/Model Checking
+   PCTL/Model Checking
