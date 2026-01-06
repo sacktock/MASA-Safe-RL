@@ -1,3 +1,5 @@
-# Probabilistic Computational Tree Logic (PCTL) Constraint
-
-Probabilistic CTL constraint (on the initial states): monitors the undiscounetd probability of being safe.
+```{eval-rst}
+.. automodule:: masa.common.constraints.pctl
+    :members:
+    :show-inheritance:
+```

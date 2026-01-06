@@ -1,3 +1,5 @@
-# Reach-Avoid specification
-
-Here, the goal is to reach a set of target states, while avoiding a set of unsafe states.
+```{eval-rst}
+.. automodule:: masa.common.constraints.reach_avoid
+    :members:
+    :show-inheritance:
+```

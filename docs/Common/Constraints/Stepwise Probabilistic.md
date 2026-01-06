@@ -1,3 +1,5 @@
-# Stepwise Probabilistic
-
-Undiscounted probabilistic constraint: track fraction of unsafe steps and compare to alpha.
+```{eval-rst}
+.. automodule:: masa.common.constraints.prob
+    :members:
+    :show-inheritance:
+```

@@ -1,6 +1,10 @@
 # Constraints
 
-We list the constrains currently supported by MASA.
+```{eval-rst}
+.. automodule:: masa.common.constraints.base
+    :members:
+    :show-inheritance:
+```
 
 #### Next Steps
 
