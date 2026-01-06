@@ -4,7 +4,6 @@
 .. autoclass:: masa.common.ltl.DFACostFn
     :members:
     :show-inheritance:
-    :special-members: __init__
 ```
 
 ```{eval-rst}

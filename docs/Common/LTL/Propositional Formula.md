@@ -5,5 +5,4 @@
    :members:
    :exclude-members: DFA, DFACostFn, dfa_to_costfn, ShapedCostFn
    :show-inheritance:
-   :special-members: __init__
 ```

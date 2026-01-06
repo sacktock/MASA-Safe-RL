@@ -161,7 +161,8 @@ Pure state formulas (``Truth``, ``Atom``, and boolean connectives) can be evalua
 directly without sampling, while probabilistic temporal operators use either the
 exact recurrence or sampled trajectory satisfaction depending on the chosen approach.
 
-#### Next Steps
+Next Steps
+~~~~~~~~~~
 
 - `Propositional Operators <https://sacktock.github.io/MASA-Safe-RL/Common/PCTL/Propositional%20Operators>`_
 - `Temporal Operators <https://sacktock.github.io/MASA-Safe-RL/Common/PCTL/Temporal%20Operators>`_
@@ -171,6 +172,6 @@ exact recurrence or sampled trajectory satisfaction depending on the chosen appr
    :caption: Probabilistic Computation Tree Logic (PCTL)
    :hidden:
 
-   PCTL/Propsotional Operators
-   PCTL/Temporal Opetrators
+   PCTL/Propositional Operators
+   PCTL/Temporal Operators
    PCTl/Model Checking
