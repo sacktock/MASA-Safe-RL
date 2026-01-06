@@ -1,65 +1,52 @@
 # Wrappers
 
+```{eval-rst}
+Environment wrappers for MASA-Safe-RL.
+
+This module contains small, composable :class:`gymnasium.Wrapper` utilities that
+(1) preserve access to constraint-related objects through wrapper chains,
+(2) inject monitoring/metrics into ``info``, (3) apply potential-based reward
+shaping for DFA-based constraints, and (4) provide basic observation/reward
+normalization and light-weight vector-environment helpers.
+
+Key conventions
+~~~~~~~~~~~~~~~
+* Constraint-enabled environments expose a ``_constraint`` object and (often)
+  ``label_fn`` / ``cost_fn`` attributes. See :class:`masa.common.constraints.base.BaseConstraintEnv`.
+* Monitoring wrappers add structured dictionaries under ``info["constraint"]``
+  and/or ``info["metrics"]``.
+* Vector wrappers in this file use a simple Python list API:
+  observations, rewards, terminals, truncations, infos are lists of length
+  :attr:`VecEnvWrapperBase.n_envs`.
+
+Notes
+~~~~~
+
+For potential-based shaping, the shaped *cost* inserted into ``info`` is of the
+form
+
+.. math::
+
+   c'_t \;=\; c_t \;+\; \gamma \Phi(q_{t+1}) \;-\; \Phi(q_t),
+
+where :math:`q_t` is the DFA state, :math:`c_t` is the original constraint cost,
+:math:`\Phi` is the potential function, and :math:`\gamma` is the shaping
+discount factor.
+```
+
 ## Base Classes
 
 ```{eval-rst}
-.. automodule:: masa.common.wrappers
-   :members: ConstraintPersistentWrapper, ConstraintPersistentObsWrapper
-   :special-members: _constraint, _get_obs
+.. autoclass:: masa.common.wrappers.ConstraintPersistentWrapper
+   :members:
+   :special-members: _constraint,
    :private-members:
    :show-inheritance:
-```
-
-## Core Wrappers
-
-```{eval-rst}
-.. autoclass:: masa.common.wrappers.TimeLimit
-    :members:
-    :show-inheritance:
-.. autoclass:: masa.common.wrappers.ConstraintMonitor
-    :members:
-    :show-inheritance:
-    :special-members: _step_metrics, _epsiode_metrics
-    :private-members:
-.. autoclass:: masa.common.wrappers.RewardMonitor
-    :members:
-    :show-inheritance:
-    :special-members: _epsiode_metrics
-    :private-members:
-```
-
-## Other Wrappers
-
-```{eval-rst}
-.. autoclass:: masa.common.wrappers.RewardShapingWrapper
-    :members:
-    :show-inheritance:
-.. autoclass:: masa.common.wrappers.NormWrapper
-    :members:
-    :show-inheritance:
-.. autoclass:: masa.common.wrappers.OneHotObsWrapper
-    :members:
-    :show-inheritance:
-.. autoclass:: masa.common.wrappers.FlattenDictObsWrapper
-    :members:
-    :show-inheritance:
-```
-
-## Vectorized Envs
-
-```{eval-rst}
-.. autoclass:: masa.common.wrappers.VecEnvWrapperBase
-    :members:
-    :show-inheritance:
-.. autoclass:: masa.common.wrappers.DummyVecWrapper
-    :members:
-    :show-inheritance:
-.. autoclass:: masa.common.wrappers.VecWrapper
-    :members:
-    :show-inheritance:
-.. autoclass:: masa.common.wrappers.VecNormWrapper
-    :members:
-    :show-inheritance:
+.. autoclass:: masa.common.wrappers.ConstraintPersistentObsWrapper
+   :members:
+   :special-members: _get_obs
+   :private-members:
+   :show-inheritance:
 ```
 
 ## Helpers
