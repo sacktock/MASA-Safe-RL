@@ -121,7 +121,7 @@ class BoundedPCTLFormula:
         vec_label_fn: np.ndarray,
         atom_dict: Dict[str, int],
     ) -> np.ndarray:
-    """Evaluate the formula at its bound for all states.
+        """Evaluate the formula at its bound for all states.
 
         Args:
             kernel: Transition kernel (dense or compact) of the Markov chain.
