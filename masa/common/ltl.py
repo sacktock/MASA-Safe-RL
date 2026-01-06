@@ -26,7 +26,7 @@ from masa.common.constraints.base import CostFn
 class Formula:
     """Base class for propositional formulae over atomic proposition labels.
 
-    Subclasses must implement `sat`, which defines the satisfaction relation
+    Subclasses must implement ``sat``, which defines the satisfaction relation
     between a formula and a set of labels.
 
     Note:
@@ -57,7 +57,7 @@ class Formula:
 class Atom(Formula):
     """Atomic proposition.
 
-    An `Atom(a)` is satisfied iff the string `a` is present in the provided
+    An ``Atom(a)`` is satisfied iff the string ``a`` is present in the provided
     label set.
     """
 
@@ -70,13 +70,13 @@ class Atom(Formula):
         self.atom = atom
 
     def sat(self, labels: Iterable[str]) -> bool:
-        """Evaluates whether the atom is present in `labels`.
+        """Evaluates whether the atom is present in ``labels``.
 
         Args:
           labels: Iterable of atomic proposition names.
 
         Returns:
-          True iff `self.atom` is in `labels`.
+          True iff ``self.atom`` is in ``labels``.
         """
         return self.atom in labels
 
@@ -126,7 +126,7 @@ class And(Formula):
           labels: Iterable of atomic proposition names.
 
         Returns:
-          True iff both subformulae are satisfied by `labels`.
+          True iff both subformulae are satisfied by ``labels``.
         """
         return self.subformula_1.sat(labels) and self.subformula_2.sat(labels)
 
@@ -154,7 +154,7 @@ class Or(Formula):
           labels: Iterable of atomic proposition names.
 
         Returns:
-          True iff either subformula is satisfied by `labels`.
+          True iff either subformula is satisfied by ``labels``.
         """
         return self.subformula_1.sat(labels) or self.subformula_2.sat(labels)
 
@@ -180,16 +180,16 @@ class Neg(Formula):
           labels: Iterable of atomic proposition names.
 
         Returns:
-          True iff `subformula` is not satisfied by `labels`.
+          True iff ``subformula`` is not satisfied by ``labels``.
         """
         return not self.subformula.sat(labels)
 
 
 class Implies(Formula):
-    """Implication between two subformulae.
+    r"""Implication between two subformulae.
 
-    `Implies(a, b)` is satisfied iff either `a` is false or `b` is true under the
-    given labels, i.e. it is equivalent to `¬a ∨ b`.
+    ``Implies(a, b)`` is satisfied iff either ``a`` is false or ``b`` is true under the
+    given labels, i.e. it is equivalent to :math:`\neg a \lor b``.
     """
 
     def __init__(self, subformula_1: Formula, subformula_2: Formula):
@@ -209,7 +209,7 @@ class Implies(Formula):
           labels: Iterable of atomic proposition names.
 
         Returns:
-          True iff the implication holds under `labels`.
+          True iff the implication holds under ``labels``.
         """
         return Or(Neg(self.subformula_1), self.subformula_2).sat(labels)
 
@@ -226,7 +226,7 @@ class DFA:
       initial: Initial automaton state.
       accepting: List of accepting (final) states.
       edges: Transition structure: edges[parent][child] = condition.
-      state: Current automaton state used by `step`.
+      state: Current automaton state used by ``step``.
 
     Note:
       The transition function is deterministic by convention: if multiple
@@ -250,7 +250,7 @@ class DFA:
         self.state = self.initial
 
     def add_edge(self, parent: int, child: int, condition: Formula):
-        """Adds a guarded transition `parent -> child`.
+        """Adds a guarded transition ``parent -> child``.
 
         Args:
           parent: Source state.
@@ -266,20 +266,20 @@ class DFA:
         """Resets the DFA to its initial state.
 
         Returns:
-          The reset state (i.e., `self.initial`).
+          The reset state (i.e., ``self.initial``).
         """
         self.state = self.initial
         return self.state
 
     def has_edge(self, state_1: int, state_2: int) -> bool:
-        """Checks whether there is an edge `state_1 -> state_2`.
+        """Checks whether there is an edge ``state_1 -> state_2``.
 
         Args:
           state_1: Source state.
           state_2: Destination state.
 
         Returns:
-          True iff an explicit edge from `state_1` to `state_2` exists.
+          True iff an explicit edge from ``state_1`` to ``state_2`` exists.
         """
         try:
             _ = self.edges[state_1][state_2]
@@ -311,7 +311,7 @@ class DFA:
 
         Returns:
           Next DFA state. If no outgoing edge guard is satisfied, returns the
-          original `state` (i.e., a self-loop by default).
+          original ``state`` (i.e., a self-loop by default).
         """
         for next_state in self.edges[state].keys():
             if self.edges[state][next_state].sat(labels):
@@ -321,15 +321,15 @@ class DFA:
     def step(self, labels: Iterable[str]) -> Tuple[bool, int]:
         """Advances the DFA by one step using the provided labels.
 
-        This updates the internal state `self.state`.
+        This updates the internal state ``self.state``.
 
         Args:
           labels: Iterable of atomic proposition names holding at the current
             step.
 
         Returns:
-          A pair (accepting, state) where `accepting` indicates whether the new
-          state is accepting and `state` is the updated DFA state.
+          A pair (accepting, state) where ``accepting`` indicates whether the new
+          state is accepting and ``state`` is the updated DFA state.
         """
         next_state = self.transition(self.state, labels)
         self.state = next_state
@@ -340,7 +340,7 @@ class DFA:
         """Returns the number of states in the automaton.
 
         Returns:
-          `len(self.states)`.
+          ``len(self.states)``.
         """
         return len(self.states)
 
@@ -349,13 +349,13 @@ class DFA:
         """Returns the current internal automaton state.
 
         Returns:
-          The DFA's current state used by `step`.
+          The DFA's current state used by ``step``.
         """
         return self.state
 
 
 def dfa_to_costfn(dfa: DFA):
-    """Wraps a DFA as a `DFACostFn` via a deep copy.
+    """Wraps a DFA as a ``DFACostFn`` via a deep copy.
 
     Args:
       dfa: The DFA to wrap.
@@ -378,10 +378,10 @@ class DFACostFn(DFA, CostFn):
     yields cost 1.0 and otherwise 0.0.
 
     Important:
-      - The internal DFA state is advanced by calling `__call__`.
-      - Use `cost` for counterfactual evaluation from an explicit DFA state
+      - The internal DFA state is advanced by calling ``__call__``.
+      - Use ``cost`` for counterfactual evaluation from an explicit DFA state
         without mutating internal state.
-      - `step` is intentionally disabled to avoid ambiguous state updates via
+      - ``step`` is intentionally disabled to avoid ambiguous state updates via
         the inherited DFA interface.
     """
 
@@ -413,7 +413,7 @@ class DFACostFn(DFA, CostFn):
         """Resets the internal DFA state.
 
         Note:
-          This delegates to the wrapped DFA's `reset`.
+          This delegates to the wrapped DFA's ``reset``.
         """
         self.dfa.reset()
 
@@ -421,7 +421,7 @@ class DFACostFn(DFA, CostFn):
         """Disables stepping via the DFA interface.
 
         Raises:
-          RuntimeError: Always raised. Use `__call__` to advance the internal
+          RuntimeError: Always raised. Use ``__call__`` to advance the internal
             DFA and return the cost signal.
         """
         raise RuntimeError(
@@ -437,7 +437,7 @@ class DFACostFn(DFA, CostFn):
           labels: Iterable of atomic proposition names for the current step.
 
         Returns:
-          1.0 iff the next state reached from `state` under `labels` is
+          1.0 iff the next state reached from ``state`` under ``labels`` is
           accepting; otherwise 0.0.
 
         Note:
@@ -474,11 +474,11 @@ class ShapedCostFn(DFACostFn):
 
     This class implements a potential-based shaping term on top of the base DFA
     cost, intended for counterfactual computations where you explicitly pass a
-    DFA state to `cost`.
+    DFA state to ``cost``.
 
     Important:
       - This cost function is not intended to be used statefully.
-      - `reset` and `__call__` are disabled by design.
+      - ``reset`` and ``__call__`` are disabled by design.
     """
 
     def __init__(self, dfa: DFA, potential_fn: Callable[[int], float], gamma: float = 0.99):
@@ -498,7 +498,7 @@ class ShapedCostFn(DFACostFn):
 
         Raises:
           RuntimeError: Always raised. This object is intended for counterfactual
-            calls to `cost` only.
+            calls to ``cost`` only.
         """
         raise RuntimeError(
             "Shaped cost function is not supposed to be reset only used for counter factual experiences"
@@ -532,7 +532,7 @@ class ShapedCostFn(DFACostFn):
 
         Raises:
           RuntimeError: Always raised. This object is intended for counterfactual
-            calls to `cost` only.
+            calls to ``cost`` only.
         """
         raise RuntimeError(
             "Shaped cost function is not supposed to be called only used for counter factual experiences"

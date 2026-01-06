@@ -51,16 +51,16 @@ At a high level, MASA's LTL pipeline looks like this:
 
 -[Propositional Formula](https://sacktock.github.io/MASA-Safe-RL/Common/LTL/Propositional%20Formula)
 -[Deterministic Finite Automata (DFA)](https://sacktock.github.io/MASA-Safe-RL/Common/LTL/DFA)
--[Cost Function as DFA](https://sacktock.github.io/MASA-Safe-RL/Common/LTL/CostFn%20DFA)
--[Shaped Cost Function](https://sacktock.github.io/MASA-Safe-RL/Common/LTL/Shaped%20CostFn)
+-[Cost Function as DFA](https://sacktock.github.io/MASA-Safe-RL/Common/LTL/Cost%20Function%20as%20DFA)
+-[Shaped Cost Function](https://sacktock.github.io/MASA-Safe-RL/Common/LTL/Shaped%20Cost%20Function)
 
 ```{toctree}
-:caption: Constraints
+:caption: Linear Temporal Logic (LTL)
 :hidden:
 
 LTL/Propositional Formula
 LTL/DFA
-LTL/CostFn DFA
-LTL/Shaped CostFn
+LTL/Cost Function as DFA
+LTL/Shaped Cost Function
 ```
 

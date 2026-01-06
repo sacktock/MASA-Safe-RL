@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "MASA-Safe-RL"
 version = "0.1.0"
-description = "A Safe Reinforcement Library for providing a common interface for different constraints and environments"
+description = "A safe reinforcement library for providing a common interface for different constraints and environments"
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
