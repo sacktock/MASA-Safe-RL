@@ -1,7 +1,4 @@
 """
-masa.common.constraints.cmdp
-============================
-
 Cumulative-cost constraints in the CMDP style.
 
 This module provides a simple *budgeted cumulative cost* constraint, commonly
@@ -83,7 +80,7 @@ class CumulativeCost(Constraint):
         return self.total <= self.budget
 
     def episode_metric(self) -> Dict[str, float]:
-        """Return end-of-episode metrics.
+        """End-of-episode metrics.
 
         Returns:
             A dict containing:
@@ -94,7 +91,7 @@ class CumulativeCost(Constraint):
         return {"cum_cost": self.total, "satisfied": float(self.satisfied())}
 
     def step_metric(self) -> Dict[str, float]:
-        """Return per-step metrics.
+        """Per-step metrics.
 
         Returns:
             A dict containing:

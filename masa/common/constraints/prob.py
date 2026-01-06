@@ -85,11 +85,26 @@ class ProbabilisticSafety(Constraint):
         return self.prob_unsafe() <= self.alpha
 
     def episode_metric(self) -> Dict[str, float]:
-        """End-of-episode metrics."""
+        """End-of-episode metrics.
+
+        Returns:
+            Dict containing:
+
+            - ``"cum_unsafe"``: count of unsafe steps,
+            - ``"p_unsafe"``: proportion of unsafe states in the current trace,
+            - ``"satisfied"``: 1.0 if p_unsafe <= self.alpha else 0.0.
+        """
         return {"cum_unsafe": float(self.total_unsafe), "p_unsafe": self.prob_unsafe(), "satisfied": float(self.satisfied())}
 
     def step_metric(self) -> Dict[str, float]:
-        """Per-step metrics."""
+        """Per-step metrics.
+
+        Returns:
+            Dict containing:
+
+            - ``"cost"``: current step cost,
+            - ``"violation"``: 1.0 if ``cost >= 0.5`` else 0.0.
+        """
         return {"cost": self.step_cost, "violation": float(self.step_cost >= 0.5)}
     
     @property

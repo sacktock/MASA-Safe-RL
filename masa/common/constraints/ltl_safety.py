@@ -1,7 +1,4 @@
 """
-masa.common.constraints.ltl_safety
-==================================
-
 LTL-style safety constraints via DFA monitoring and product constructions.
 
 This module supports *safety constraints* expressed using a deterministic finite

@@ -68,11 +68,25 @@ class PCTL(Constraint):
         return self.safe
 
     def episode_metric(self) -> Dict[str, float]:
-        """End-of-episode metrics."""
+        """End-of-episode metrics.
+
+        Returns:
+            Dict containing:
+
+            - ``"cum_unsafe"``: count of unsafe steps,
+            - ``"satisfied"``: 1.0 if safe else 0.0.
+        """
         return {"cum_unsafe": float(self.total_unsafe), "satisfied": float(self.satisfied())}
 
     def step_metric(self) -> Dict[str, float]:
-        """Per-step metrics."""
+        """Per-step metrics.
+
+        Returns:
+            Dict containing:
+
+            - ``"cost"``: current step cost,
+            - ``"violation"``: 1.0 if ``cost >= 0.5`` else 0.0.
+        """
         return {"cost": self.step_cost, "violation": float(self.step_cost >= 0.5)}
 
     @property
