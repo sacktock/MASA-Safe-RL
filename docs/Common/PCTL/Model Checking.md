@@ -2,6 +2,6 @@
 
 ```{eval-rst}
 .. automodule:: masa.common.pctl
-   :members: BoundedPCTLModelChecker, ExactModelChecker, StatisticalModelChecker
+   :members:
    :show-inheritance:
 ```
