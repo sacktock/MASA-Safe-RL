@@ -446,7 +446,7 @@ class Always(BoundedPCTLFormula):
         probability at least :math:`p`.
 
     This is implemented via duality:
-        :math:`G^{\leq B} \Phi` is equivalent to :math:`\neg ( \Top U^{\leq B} \neg \Phi )`,
+        :math:`G^{\leq B} \Phi` is equivalent to :math:`\neg ( \top U^{\leq B} \neg \Phi )`,
     with an appropriate threshold transformation.
 
     Args:
@@ -496,7 +496,7 @@ class Eventually(BoundedPCTLFormula):
         probability at least :math:`p`.
 
     This is implemented as a bounded until:
-        :\math:`F^{\leq B} \Phi` is :math:`\Top U^{\leq B} \Phi`.
+        :\math:`F^{\leq B} \Phi` is :math:`\top U^{\leq B} \Phi`.
 
     Args:
         prob: Probability threshold in ``[0, 1]``.

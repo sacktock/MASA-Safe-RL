@@ -39,7 +39,7 @@ napoleon_use_ivar = True
 napoleon_attr_annotations = True
 napoleon_use_admonition_for_references = True
 # See https://github.com/sphinx-doc/sphinx/issues/9119
-napoleon_custom_sections = [("Returns", "params_style")]
+# napoleon_custom_sections = [("Returns", "params_style")]
 
 # Autodoc
 autoclass_content = "both"
