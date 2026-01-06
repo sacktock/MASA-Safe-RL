@@ -177,7 +177,7 @@ def create_product_successor_states_and_probabilities(
     automaton transition is determined by the current base state labels.
 
     Product state indexing
-    ----------------------
+    ~~~~~~~~~~~~~~~~~~~~~~
     The code uses the encoding:
 
     .. math::
@@ -188,8 +188,7 @@ def create_product_successor_states_and_probabilities(
         n_states: Number of base MDP states.
         n_actions: Number of actions.
         successor_states: Mapping ``s -> [s_1, s_2, ...]`` listing successors of ``s``.
-        probabilities: Mapping ``(s, a) -> p`` where ``p`` is a 1-D array aligned
-            with ``successor_states[s]`` and sums to 1.
+        probabilities: Mapping ``(s, a) -> p`` where ``p`` is a 1-D array aligned with ``successor_states[s]`` and sums to 1.
         dfa: Deterministic finite automaton.
         label_fn: Labelling function ``L(s) -> set[str]``.
 

@@ -1,7 +1,4 @@
 """
-masa.common.constraints.reach_avoid
-===================================
-
 Reach-avoid constraint monitor.
 
 A reach-avoid property requires eventually reaching a target set while never

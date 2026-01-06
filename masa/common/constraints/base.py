@@ -1,7 +1,4 @@
 """
-masa.common.constraints.base
-============================
-
 Base constraint interfaces and Gymnasium wrappers.
 
 This module defines:
@@ -66,7 +63,7 @@ class Constraint(Protocol):
     after each environment transition using the label set from ``info["labels"]``.
 
     Required interface
-    ------------------
+    ~~~~~~~~~~~~~~~~~~
     Implementations should provide:
 
     - :meth:`reset`: clear any episode state.
@@ -74,7 +71,7 @@ class Constraint(Protocol):
     - :attr:`constraint_type`: a stable identifier string for logging/dispatch.
 
     Metrics interface
-    -----------------
+    ~~~~~~~~~~~~~~~~~
     The protocol declares:
 
     - :meth:`step_metric`

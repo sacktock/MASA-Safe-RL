@@ -13,20 +13,28 @@ CompactKernel = Tuple[np.ndarray, np.ndarray]
 Kernel = Union[DenseKernel, CompactKernel]
 
 def kernel_n_states(kernel: Kernel) -> int:
-    """Return the number of states induced by a transition kernel.
+    r"""Return the number of states induced by a transition kernel.
 
-    This helper supports both:
-      * **Dense kernels**: a 2D Markov-chain transition matrix with shape
-        ``(n_states, n_states)``, where column ``s`` is the distribution over
-        next states from state ``s``.
-      * **Compact kernels**: a tuple ``(succ, p)`` where:
-          - ``succ`` has shape ``(K, n_states)`` and stores the integer ids of up to
-            ``K`` successor states per state.
-          - ``p`` has shape ``(K, n_states)`` and stores the corresponding
-            probabilities for each successor.
+    MASA evaluates bounded PCTL formulas on a Markov-chain transition kernel that
+    can be represented in either a dense or compact form.
+
+    **Dense kernel**
+      A 2D transition matrix ``m`` with shape ``(n_states, n_states)`` where
+      column ``s`` encodes the distribution over next states from state ``s``.
+      (So ``m[:, s]`` is a categorical distribution when state ``s`` has outgoing
+      probability mass.)
+
+    **Compact kernel**
+      A tuple ``(succ, p)`` where:
+
+      - ``succ`` has shape ``(K, n_states)`` and stores up to ``K`` successor
+        state ids per state.
+      - ``p`` has shape ``(K, n_states)`` and stores aligned successor
+        probabilities.
 
     Args:
-        kernel: Dense or compact kernel representation.
+        kernel: The transition kernel, either a dense matrix or a ``(succ, p)``
+            tuple.
 
     Returns:
         The number of states ``n_states``.
@@ -37,50 +45,61 @@ def kernel_n_states(kernel: Kernel) -> int:
     return kernel.shape[1]
 
 class BoundedPCTLFormula:
-    """Base class for bounded PCTL-style formulas.
+    r"""Base class for bounded PCTL-style formulas.
 
-    The formula API is centered around two related operations:
+    MASA represents bounded PCTL formulas as a tree of :class:`BoundedPCTLFormula`
+    objects. A formula is evaluated on a *Markov chain* transition kernel (dense
+    or compact) and a vectorized labeling matrix.
 
-      * ``sat(...)``: evaluate the formula at the **final bound** and return a
-        per-state satisfaction indicator (as ``float64`` in ``{0.0, 1.0}``).
-      * ``_prob_seq(...)``: compute a *sequence* of satisfaction/probability values
-        up to some horizon ``max_k`` (inclusive), returning an array of shape
-        ``(max_k + 1, n_states)``.
+    The formula API centers around two related operations:
 
-    Notes:
-        - This module uses a vectorized labeling representation ``vec_label_fn``
-          of shape ``(n_atoms, n_states)`` where ``vec_label_fn[i, s]`` is 1.0 if
-          atomic predicate ``i`` holds in state ``s`` and 0.0 otherwise.
-        - The evaluation is performed on a **Markov chain** kernel (policy has
-          already been applied if coming from an MDP).
-        - Implementations typically use JAX for accelerated scans and vmap.
+    - :meth:`sat`: evaluate the formula at its final time bound and return a
+      per-state satisfaction indicator (a float array in ``{0.0, 1.0}``).
+    - :meth:`_prob_seq`: compute a time-indexed sequence
+      :math:`P_0(s), \dots, P_K(s)` up to a specified horizon.
+
+    For propositional (state) formulas, the default :meth:`_prob_seq` repeats the
+    time-0 satisfaction vector across all time steps.
+
+    **Vectorized labels**
+      A :class:`~masa.common.label_fn.LabelFn` maps each state to a set of atomic
+      predicates (strings). The model checker precomputes:
+
+      .. math::
+
+         \mathrm{vec\_label\_fn} \in \{0,1\}^{|AP| \times |S|},
+
+      where ``vec_label_fn[i, s] = 1`` iff atomic predicate ``AP[i]`` holds in
+      state ``s``.
 
     Attributes:
-        bound: Total time bound of the formula, including any nested subformula
-            bounds contributed by probabilistic operators.
-    """
+        bound: Total time bound of the formula (including any nested subformula
+            contributions).
 
+    Notes:
+        Implementations of temporal operators typically use JAX (e.g. ``jit``,
+        ``vmap``, ``lax.scan``) to accelerate probability-sequence computation.
+    """
     def __init__(self) -> None:
         pass
 
     @property
     def _bound(self) -> int:
-        """Internal bound implementation for subclasses.
+        """Internal bound implementation.
 
-        Subclasses must implement this property and return the total bound for
-        the formula instance.
+        Subclasses must implement this property.
 
         Returns:
-            Integer bound (>= 0).
+            The non-negative time bound.
 
         Raises:
-            NotImplementedError: If not implemented by a subclass.
+            NotImplementedError: If a subclass does not implement this property.
         """
         raise NotImplementedError
 
     @property
     def bound(self) -> int:
-        """Total bound of this formula (read-only)."""
+        """Total time bound of this formula (read-only)."""
         return self._bound
 
     def _prob_seq(
@@ -90,24 +109,28 @@ class BoundedPCTLFormula:
         atom_dict: Dict[str, int],
         max_k: int | None = None,
     ) -> np.ndarray:
-        """Compute a satisfaction/probability sequence up to horizon ``max_k``.
+        r"""Compute a satisfaction/probability sequence up to horizon ``max_k``.
 
-        Default behavior treats the formula as a *state formula* and simply
-        repeats the time-0 satisfaction vector across time steps.
+        The returned sequence has shape ``(max_k + 1, n_states)`` where row ``k``
+        corresponds to the value at time ``k``.
+
+        For state formulas, the default implementation repeats :meth:`sat` across
+        time, i.e. :math:`P_k(s) = P_0(s)`.
 
         Args:
-            kernel: Transition kernel (dense or compact) of the Markov chain.
-            vec_label_fn: Vectorized labeling matrix of shape ``(n_atoms, n_states)``.
-            atom_dict: Mapping from atomic predicate name to row index in
+            kernel: Markov-chain kernel (dense ``(S,S)`` or compact ``(succ,p)``).
+            vec_label_fn: Vectorized labeling matrix of shape
+                ``(n_atoms, n_states)``.
+            atom_dict: Mapping from atomic predicate string to row index in
                 ``vec_label_fn``.
-            max_k: Optional horizon. If ``None``, defaults to ``self.bound``.
+            max_k: Sequence horizon (inclusive). If ``None``, defaults to
+                :attr:`bound`.
 
         Returns:
-            Array of shape ``(max_k + 1, n_states)``.
+            A float64 array of shape ``(max_k + 1, n_states)``.
 
         Notes:
-            Subclasses implementing temporal/probabilistic operators should
-            override this method.
+            Temporal/probabilistic operators override this method.
         """
         if max_k is None:
             max_k = self.bound
@@ -121,39 +144,44 @@ class BoundedPCTLFormula:
         vec_label_fn: np.ndarray,
         atom_dict: Dict[str, int],
     ) -> np.ndarray:
-        """Evaluate the formula at its bound for all states.
+        r"""Evaluate the formula at its bound for all states.
 
         Args:
-            kernel: Transition kernel (dense or compact) of the Markov chain.
-            vec_label_fn: Vectorized labeling matrix of shape ``(n_atoms, n_states)``.
-            atom_dict: Mapping from atomic predicate name to row index in
-                ``vec_label_fn``.
+            kernel: Markov-chain kernel (dense or compact).
+            vec_label_fn: Vectorized labeling matrix ``(n_atoms, n_states)``.
+            atom_dict: Mapping from atomic predicate string to row index.
 
         Returns:
-            A float64 array of shape ``(n_states,)`` with values in ``{0.0, 1.0}``.
+            Float64 array of shape ``(n_states,)`` with values in ``{0.0, 1.0}``.
         """
         return self._prob_seq(kernel, vec_label_fn, atom_dict, max_k=self.bound)[
             self.bound
         ]
 
 class Next(BoundedPCTLFormula):
-    r"""Bounded PCTL :math:`X` (next) operator with a probability threshold.
+    r"""Bounded PCTL *next* operator :math:`X` with probability threshold.
 
-    Semantics (informal):
-        :math:`\mathbb{P}_{\geq p}[ X \Phi ]` holds in state :math:`s` iff the probability that :math:`\Phi` holds
-        in the next state is at least :math:`p`.
+    This represents:
 
-    This implementation computes the probability sequence for :math:`X \Phi` via one-step
-    expectation under the Markov chain kernel.
+    .. math::
+
+       \mathbb{P}_{\ge p}[X\,\Phi].
+
+    Informally, the formula holds at state :math:`s` iff the probability that
+    :math:`\Phi` holds in the next state is at least :math:`p`.
 
     Args:
-        prob: Probability threshold in ``[0, 1]``.
-        subformula: Subformula :math:`\Phi` evaluated at the next state.
+        prob: Probability threshold :math:`p \in [0,1]`.
+        subformula: The subformula :math:`\Phi` evaluated at the next state.
 
     Attributes:
-        prob: Probability threshold.
-        subformula: The nested formula :math:`\Phi`.
-        bound_param: The local horizon contributed by this operator (fixed to 1).
+        prob: Probability threshold :math:`p`.
+        subformula: Nested formula :math:`\Phi`.
+        bound_param: Local bound contributed by this operator (fixed to 1).
+
+    See Also:
+        :meth:`_prob_seq`: Computes the shifted probability sequence for
+        :math:`X\,\Phi`.
     """
 
     def __init__(self, prob: float, subformula: BoundedPCTLFormula):
@@ -164,23 +192,27 @@ class Next(BoundedPCTLFormula):
 
     @property
     def _bound(self):
-        """Total bound including nested subformula contribution."""
+        r"""Total bound for :class:`Next`.
+
+        Returns:
+            ``1 + subformula.bound``.
+        """
         return self.bound_param + self.subformula.bound
 
     @staticmethod
     @jit
     def _next_prob_seq_core_dense(m: jnp.ndarray, sub_seq: jnp.ndarray) -> jnp.ndarray:
-        """JAX core for next-probability sequences using a dense kernel.
+        r"""JAX core for :class:`Next` on a dense kernel.
 
         Args:
-            m: Dense transition matrix with shape ``(n_states, n_states)``. Column
-                ``s`` is the distribution over successors of ``s``.
-            sub_seq: Sequence for the subformula of shape ``(T, n_states)``.
+            m: Dense Markov-chain transition matrix of shape ``(S, S)``, where
+                column ``s`` is the distribution over next states from state ``s``.
+            sub_seq: Subformula sequence of shape ``(T, S)``.
 
         Returns:
-            Sequence for ``X subformula`` of shape ``(T + 1, n_states)``, with the
-            first row set to zeros (probability at step 0 is defined as 0 for
-            the shifted operator).
+            Sequence of shape ``(T + 1, S)``. Row 0 is all zeros (the shifted
+            operator is defined to have probability 0 at time 0), and rows 1..T
+            contain one-step expectations of ``sub_seq``.
         """
         tail = (m.T @ sub_seq.T)
         tail = jnp.swapaxes(tail, 0, 1)
@@ -192,17 +224,16 @@ class Next(BoundedPCTLFormula):
     def _next_prob_seq_core_compact(
         succ: jnp.ndarray, p: jnp.ndarray, sub_seq: jnp.ndarray, K: int
     ) -> jnp.ndarray:
-        """JAX core for next-probability sequences using a compact kernel.
+        r"""JAX core for :class:`Next` on a compact kernel.
 
         Args:
-            succ: Successor index matrix of shape ``(K, n_states)``.
-            p: Probabilities aligned with ``succ``, shape ``(K, n_states)``.
-            sub_seq: Sequence for the subformula of shape ``(T, n_states)``.
-            K: Maximum number of successors per state (static for JIT).
+            succ: Successor ids of shape ``(K, S)``.
+            p: Successor probabilities of shape ``(K, S)`` aligned with ``succ``.
+            sub_seq: Subformula sequence of shape ``(T, S)``.
+            K: Max successors per state (static argument for JIT).
 
         Returns:
-            Sequence for ``X subformula`` of shape ``(T + 1, n_states)``, with the
-            first row set to zeros.
+            Sequence of shape ``(T + 1, S)`` with row 0 all zeros.
         """
         def one_step(v):
             v_succ = v[succ]
@@ -219,21 +250,19 @@ class Next(BoundedPCTLFormula):
         atom_dict: Dict[str, int],
         max_k: int | None = None,
     ) -> np.ndarray:
-        """Compute probability sequence for the ``Next`` operator.
+        r"""Compute the probability sequence for :math:`X\,\Phi`.
 
         Args:
-            kernel: Markov-chain kernel (dense ``(S,S)`` or compact ``(succ,p)``).
-            vec_label_fn: Vectorized labeling matrix ``(n_atoms, n_states)``.
-            atom_dict: Mapping from atom name to ``vec_label_fn`` row.
-            max_k: Sequence horizon for this operator. If ``None``, defaults to the
-                local bound ``bound_param`` (i.e., 1).
+            kernel: Markov-chain kernel (dense or compact).
+            vec_label_fn: Vectorized labeling matrix ``(n_atoms, S)``.
+            atom_dict: Mapping from atom string to row index.
+            max_k: Local horizon (inclusive). If ``None``, defaults to 1.
 
         Returns:
-            Array of shape ``(max_k + 1, n_states)`` containing probabilities that
-            the subformula holds at the shifted time index.
+            Float64 array of shape ``(max_k + 1, S)``.
 
         Notes:
-            If ``max_k == 0``, this returns a single row of zeros.
+            If ``max_k == 0``, returns a single row of zeros.
         """
         if max_k is None:
             max_k = self.bound_param
@@ -262,16 +291,15 @@ class Next(BoundedPCTLFormula):
         vec_label_fn: np.ndarray,
         atom_dict: Dict[str, int],
     ) -> np.ndarray:
-        r"""Return satisfaction indicator for :math:`\mathbb{P}_{\geq p} [ X \Phi ]` at the bound.
+        r"""Threshold the one-step probability for :math:`\mathbb{P}_{\ge p}[X\,\Phi]`.
 
         Args:
             kernel: Markov-chain kernel (dense or compact).
-            vec_label_fn: Vectorized labeling matrix ``(n_atoms, n_states)``.
-            atom_dict: Mapping from atom name to ``vec_label_fn`` row.
+            vec_label_fn: Vectorized labeling matrix ``(n_atoms, S)``.
+            atom_dict: Mapping from atom string to row index.
 
         Returns:
-            Float64 array ``(n_states,)`` in ``{0.0, 1.0}`` indicating whether the
-            probability meets the threshold.
+            Float64 array of shape ``(S,)`` in ``{0.0, 1.0}``.
         """
         probs = self._prob_seq(kernel, vec_label_fn, atom_dict, max_k=self.bound_param)[
             self.bound_param
@@ -279,29 +307,37 @@ class Next(BoundedPCTLFormula):
         return (probs >= self.prob).astype(np.float64)
 
 class Until(BoundedPCTLFormula):
-    r"""Bounded PCTL :math:`U` (until) operator with a probability threshold.
+    r"""Bounded PCTL *until* operator :math:`U^{\le B}` with probability threshold.
 
-    Semantics (informal):
-        :math:`\mathbb{P}_{\geq p} [ \Phi_1 U^{\leq B} \Phi_2 ]` holds in state :math:`s` iff the probability that
-        :math:`\Phi_2` becomes true within :math:`B` steps while :math:`\Phi_1` holds at all preceding
-        steps is at least :math:`p`.
+    This represents:
 
-    This implementation computes a sequence :math:`P_k(s)` for :math:`k=0 \ldots B` using the
-    standard bounded-until recurrence:
-        - :math:`P_0 = sat2`
-        - :math:`P_{k+1} = sat2 + ((1 - sat2) * sat1) * \mathbb{E}[P_k(next_state)]`
+    .. math::
+
+       \mathbb{P}_{\ge p}[\Phi_1\ U^{\le B}\ \Phi_2].
+
+    Informally, the formula holds at state :math:`s` iff the probability that
+    :math:`\Phi_2` becomes true within :math:`B` steps while :math:`\Phi_1` holds
+    at all preceding steps is at least :math:`p`.
+
+    The bounded-until recurrence computed by :meth:`_prob_seq` is:
+
+    .. math::
+
+       P_0 &= \mathrm{sat}_2, \\\\
+       P_{k+1} &= \mathrm{sat}_2 + \bigl((1-\mathrm{sat}_2)\,\mathrm{sat}_1\bigr)\,
+                 \mathbb{E}[P_k(s')].
 
     Args:
-        prob: Probability threshold in ``[0, 1]``.
-        bound: Local bound :math:`B` (number of steps).
-        subformula_1: :math:`\Phi_1` (continuation condition).
-        subformula_2: :math:`\Phi_2` (target condition).
+        prob: Probability threshold :math:`p \in [0,1]`.
+        bound: Local bound :math:`B`.
+        subformula_1: Continuation condition :math:`\Phi_1`.
+        subformula_2: Target condition :math:`\Phi_2`.
 
     Attributes:
         prob: Probability threshold.
         bound_param: Local bound :math:`B`.
-        subformula_1: Continuation subformula.
-        subformula_2: Target subformula.
+        subformula_1: Continuation formula.
+        subformula_2: Target formula.
     """
 
     def __init__(self, prob: float, bound, subformula_1: BoundedPCTLFormula, subformula_2: BoundedPCTLFormula):
@@ -313,7 +349,11 @@ class Until(BoundedPCTLFormula):
 
     @property
     def _bound(self):
-        """Total bound including nested subformula contributions."""
+        r"""Total bound for :class:`Until`.
+
+        Returns:
+            ``bound_param + subformula_1.bound + subformula_2.bound``.
+        """
         return self.bound_param + self.subformula_1.bound + self.subformula_2.bound
 
     @staticmethod
@@ -321,16 +361,16 @@ class Until(BoundedPCTLFormula):
     def _until_prob_seq_core_dense(
         m: jnp.ndarray, sat1: jnp.ndarray, sat2: jnp.ndarray, max_k: int
     ) -> jnp.ndarray:
-        r"""JAX core for bounded-until probability sequences with a dense kernel.
+        r"""JAX core for bounded-until probabilities using a dense kernel.
 
         Args:
-            m: Dense transition matrix of shape ``(n_states, n_states)``.
-            sat1: Satisfaction mask for :math:`\Phi_1`, shape ``(n_states,)`` in ``{0,1}``.
-            sat2: Satisfaction mask for :math:`\Phi_2`, shape ``(n_states,)`` in ``{0,1}``.
-            max_k: Bound :math:`B` (number of recurrence steps).
+            m: Dense Markov-chain transition matrix of shape ``(S, S)``.
+            sat1: Satisfaction mask for :math:`\Phi_1`, shape ``(S,)`` in ``{0,1}``.
+            sat2: Satisfaction mask for :math:`\Phi_2`, shape ``(S,)`` in ``{0,1}``.
+            max_k: Local bound :math:`B`.
 
         Returns:
-            Probability sequence of shape ``(max_k + 1, n_states)``.
+            Float64 JAX array of shape ``(max_k + 1, S)``.
         """
         cont_mask = (1.0 - sat2) * sat1
         prob0 = sat2
@@ -348,18 +388,18 @@ class Until(BoundedPCTLFormula):
     def _until_prob_seq_core_compact(
         succ: jnp.ndarray, p: jnp.ndarray, sat1: jnp.ndarray, sat2: jnp.ndarray, max_k: int, K: int
     ) -> jnp.ndarray:
-        """JAX core for bounded-until sequences with a compact kernel.
+        r"""JAX core for bounded-until probabilities using a compact kernel.
 
         Args:
-            succ: Successor matrix of shape ``(K, n_states)``.
-            p: Successor probabilities of shape ``(K, n_states)``.
-            sat1: Satisfaction mask for :math:`\Phi_1`, shape ``(n_states,)`` in ``{0,1}``.
-            sat2: Satisfaction mask for :math:`\Phi_2`, shape ``(n_states,)`` in ``{0,1}``.
-            max_k: Bound :math:`B` (number of recurrence steps).
-            K: Max successors per state (static for JIT).
+            succ: Successor ids ``(K, S)``.
+            p: Successor probabilities ``(K, S)``.
+            sat1: Satisfaction mask for :math:`\Phi_1`, shape ``(S,)`` in ``{0,1}``.
+            sat2: Satisfaction mask for :math:`\Phi_2`, shape ``(S,)`` in ``{0,1}``.
+            max_k: Local bound :math:`B`.
+            K: Max successors per state (static argument for JIT).
 
         Returns:
-            Probability sequence of shape ``(max_k + 1, n_states)``.
+            Float64 JAX array of shape ``(max_k + 1, S)``.
         """
         cont_mask = (1.0 - sat2) * sat1
         prob0 = sat2
@@ -383,18 +423,17 @@ class Until(BoundedPCTLFormula):
         atom_dict: Dict[str, int],
         max_k: int | None = None,
     ) -> np.ndarray:
-        """Compute probability sequence for the bounded ``Until`` operator.
+        r"""Compute the bounded-until probability sequence.
 
         Args:
-            kernel: Markov-chain kernel (dense ``(S,S)`` or compact ``(succ,p)``).
-            vec_label_fn: Vectorized labeling matrix ``(n_atoms, n_states)``.
-            atom_dict: Mapping from atom name to ``vec_label_fn`` row.
-            max_k: Local bound to compute up to. If ``None``, defaults to
-                ``self.bound_param``.
+            kernel: Markov-chain kernel (dense or compact).
+            vec_label_fn: Vectorized labeling matrix ``(n_atoms, S)``.
+            atom_dict: Mapping from atom string to row index.
+            max_k: Local horizon (inclusive). If ``None``, defaults to
+                :attr:`bound_param`.
 
         Returns:
-            Array of shape ``(max_k + 1, n_states)`` containing bounded-until
-            satisfaction probabilities.
+            Float64 array of shape ``(max_k + 1, S)``.
         """
         if max_k is None:
             max_k = self.bound_param
@@ -422,16 +461,15 @@ class Until(BoundedPCTLFormula):
         vec_label_fn: np.ndarray,
         atom_dict: Dict[str, int],
     ) -> np.ndarray:
-        r"""Return satisfaction indicator for :math:`\mathbb{P}_{\geq p}[ \Phi_1 U^{\leq B} \Phi_2 ]`.
+        r"""Threshold :math:`\mathbb{P}_{\ge p}[\Phi_1\ U^{\le B}\ \Phi_2]`.
 
         Args:
             kernel: Markov-chain kernel (dense or compact).
-            vec_label_fn: Vectorized labeling matrix ``(n_atoms, n_states)``.
-            atom_dict: Mapping from atom name to ``vec_label_fn`` row.
+            vec_label_fn: Vectorized labeling matrix ``(n_atoms, S)``.
+            atom_dict: Mapping from atom string to row index.
 
         Returns:
-            Float64 array ``(n_states,)`` in ``{0.0, 1.0}`` indicating whether the
-            bounded-until probability meets the threshold.
+            Float64 array of shape ``(S,)`` in ``{0.0, 1.0}``.
         """
         probs = self._prob_seq(kernel, vec_label_fn, atom_dict, max_k=self.bound_param)[
             self.bound_param
@@ -439,25 +477,34 @@ class Until(BoundedPCTLFormula):
         return (probs >= self.prob).astype(np.float64)
 
 class Always(BoundedPCTLFormula):
-    r"""Bounded PCTL :math:`G` (always) operator with a probability threshold.
+    r"""Bounded PCTL *always* operator :math:`G^{\le B}` with probability threshold.
 
-    Semantics (informal):
-        :math:`\mathbb{P}_{\geq p}[ G^{\leq B} \Phi ]` holds if, within the bound, :math:`\Phi` holds at all steps with
-        probability at least :math:`p`.
+    This represents:
 
-    This is implemented via duality:
-        :math:`G^{\leq B} \Phi` is equivalent to :math:`\neg ( \top U^{\leq B} \neg \Phi )`,
-    with an appropriate threshold transformation.
+    .. math::
+
+       \mathbb{P}_{\ge p}[G^{\le B}\,\Phi].
+
+    MASA implements bounded *always* via duality:
+
+    .. math::
+
+       G^{\le B}\Phi \equiv \neg(\top\ U^{\le B}\ \neg\Phi),
+
+    with the threshold transformation :math:`p \mapsto 1-p` applied to the inner
+    until.
 
     Args:
-        prob: Probability threshold in ``[0, 1]``.
+        prob: Probability threshold :math:`p \in [0,1]`.
         bound: Local bound :math:`B`.
         subformula: Subformula :math:`\Phi`.
 
     Attributes:
         prob: Probability threshold.
-        bound_param: Local bound :math:`B`.
-        subformula: Subformula :math:`\Phi`.
+        bound_param: Local bound.
+        subformula: Nested formula.
+        _inner: Desugared formula (internal) built from :class:`Neg`,
+            :class:`Until`, and :class:`Truth`.
     """
 
     def __init__(self, prob: float, bound: int, subformula: BoundedPCTLFormula):
@@ -481,32 +528,39 @@ class Always(BoundedPCTLFormula):
         return self._inner.bound
 
     def _prob_seq(self, kernel, vec_label_fn, atom_dict, max_k=None):
-        """Delegate sequence computation to the desugared inner formula."""
+        """Delegate probability-sequence computation to :attr:`_inner`."""
         return self._inner._prob_seq(kernel, vec_label_fn, atom_dict, max_k)
 
     def sat(self, kernel, vec_label_fn, atom_dict):
-        """Delegate satisfaction evaluation to the desugared inner formula."""
+        """Delegate probability-sequence computation to :attr:`_inner`."""
         return self._inner.sat(kernel, vec_label_fn, atom_dict)
 
 class Eventually(BoundedPCTLFormula):
-    r"""Bounded PCTL :math:`F` (eventually) operator with a probability threshold.
+    r"""Bounded PCTL *eventually* operator :math:`F^{\le B}` with probability threshold.
 
-    Semantics (informal):
-        :math:`\mathbb{P}_{\geq p}[ F^{\leq B} \Phi ]` holds if :math:`\Phi` becomes true within :math:`B` steps with
-        probability at least :math:`p`.
+    This represents:
 
-    This is implemented as a bounded until:
-        :\math:`F^{\leq B} \Phi` is :math:`\top U^{\leq B} \Phi`.
+    .. math::
+
+       \mathbb{P}_{\ge p}[F^{\le B}\,\Phi].
+
+    MASA implements bounded *eventually* as a bounded until:
+
+    .. math::
+
+       F^{\le B}\Phi \equiv \top\ U^{\le B}\ \Phi.
 
     Args:
-        prob: Probability threshold in ``[0, 1]``.
+        prob: Probability threshold :math:`p \in [0,1]`.
         bound: Local bound :math:`B`.
         subformula: Subformula :math:`\Phi`.
 
     Attributes:
         prob: Probability threshold.
-        bound_param: Local bound :math:`B`.
-        subformula: Subformula :math:`\Phi`.
+        bound_param: Local bound.
+        subformula: Nested formula.
+        _inner: Desugared formula (internal) built from :class:`Until` and
+            :class:`Truth`.
     """
 
     def __init__(self, prob: float, bound: int, subformula: BoundedPCTLFormula):
@@ -528,15 +582,15 @@ class Eventually(BoundedPCTLFormula):
         return self._inner.bound
 
     def _prob_seq(self, kernel, vec_label_fn, atom_dict, max_k=None):
-        """Delegate sequence computation to the desugared inner formula."""
+        """Delegate probability-sequence computation to :attr:`_inner`."""
         return self._inner._prob_seq(kernel, vec_label_fn, atom_dict, max_k)
 
     def sat(self, kernel, vec_label_fn, atom_dict):
-        """Delegate satisfaction evaluation to the desugared inner formula."""
+        """Delegate satisfaction evaluation to :attr:`_inner`."""
         return self._inner.sat(kernel, vec_label_fn, atom_dict)
 
 class Truth(BoundedPCTLFormula):
-    """Boolean constant ``True`` formula."""
+    r"""Boolean constant :math:`\top` (true)."""
 
     @property
     def _bound(self):
@@ -549,10 +603,10 @@ class Truth(BoundedPCTLFormula):
         vec_label_fn: np.ndarray,
         atom_dict: Dict[str, int],
     ) -> np.ndarray:
-        """Return 1.0 for all states.
+        """Return ``1.0`` for all states.
 
         Args:
-            kernel: Transition kernel used only to infer ``n_states``.
+            kernel: Transition kernel (used only to infer ``n_states``).
             vec_label_fn: Unused.
             atom_dict: Unused.
 
@@ -563,14 +617,16 @@ class Truth(BoundedPCTLFormula):
         return np.ones(n_states, dtype=np.float64)
 
 class Atom(BoundedPCTLFormula):
-    """Atomic proposition formula.
+    r"""Atomic proposition.
+
+    The atom name is resolved via ``atom_dict`` and selects the corresponding row
+    in ``vec_label_fn``.
 
     Args:
         atom: Name of the atomic predicate.
 
     Attributes:
-        atom: Predicate name, used to look up the row in ``vec_label_fn`` using
-            ``atom_dict``.
+        atom: Atomic predicate name.
     """
 
     def __init__(self, atom: str):
@@ -588,23 +644,26 @@ class Atom(BoundedPCTLFormula):
         vec_label_fn: np.ndarray,
         atom_dict: Dict[str, int],
     ) -> np.ndarray:
-        """Return the per-state truth values of this atom.
+        """Return the per-state truth values of this atomic predicate.
 
         Args:
-            kernel: Unused (present for uniform signature).
+            kernel: Unused (present for signature consistency).
             vec_label_fn: Vectorized labeling matrix ``(n_atoms, n_states)``.
-            atom_dict: Mapping from atom name to ``vec_label_fn`` row index.
+            atom_dict: Mapping from atom string to row index.
 
         Returns:
-            Float64 array ``(n_states,)`` with values in ``{0.0, 1.0}``.
+            Float64 array of shape ``(n_states,)`` in ``{0.0, 1.0}``.
         """
         return vec_label_fn[atom_dict[self.atom]]
 
 class Neg(BoundedPCTLFormula):
-    r"""Logical negation formula :math:`\neq \Phi`.
+    r"""Logical negation :math:`\neg \Phi`.
 
     Args:
-        subformula: The subformula :math:`\Phi` to negate.
+        subformula: Subformula :math:`\Phi`.
+
+    Attributes:
+        subformula: Nested formula :math:`\Phi`.
     """
 
     def __init__(self, subformula: BoundedPCTLFormula):
@@ -617,7 +676,17 @@ class Neg(BoundedPCTLFormula):
         return self.subformula.bound
 
     def _prob_seq(self, kernel, vec_label_fn, atom_dict, max_k=None):
-        """Compute ``1 - sub_seq`` for the negated subformula."""
+        """Compute ``1 -`` the subformula probability sequence.
+
+        Args:
+            kernel: Markov-chain kernel.
+            vec_label_fn: Vectorized labeling matrix.
+            atom_dict: Atom-to-row mapping.
+            max_k: Sequence horizon.
+
+        Returns:
+            Float64 array ``1.0 - sub_seq`` with shape ``(max_k + 1, n_states)``.
+        """
         seq = self.subformula._prob_seq(kernel, vec_label_fn, atom_dict, max_k)
         return 1.0 - seq
 
@@ -627,19 +696,31 @@ class Neg(BoundedPCTLFormula):
         vec_label_fn: np.ndarray,
         atom_dict: Dict[str, int],
     ) -> np.ndarray:
-        """Evaluate ``1 - sat(subformula)`` per state."""
+        """Compute ``1 -`` the subformula satisfaction indicator.
+
+        Args:
+            kernel: Markov-chain kernel.
+            vec_label_fn: Vectorized labeling matrix.
+            atom_dict: Atom-to-row mapping.
+
+        Returns:
+            Float64 array of shape ``(n_states,)`` in ``{0.0, 1.0}``.
+        """
         return 1.0 - self.subformula.sat(kernel, vec_label_fn, atom_dict)
 
 class And(BoundedPCTLFormula):
-    r"""Logical conjunction formula :math:`\Phi_1 \land \Phi_2`.
+    r"""Logical conjunction :math:`\Phi_1 \land \Phi_2`.
+
+    MASA uses multiplication as conjunction for ``{0,1}``-valued satisfaction
+    arrays.
 
     Args:
-        subformula_1: Left conjunct :math:`\Phi_1`.
-        subformula_2: Right conjunct :math:`\Phi_2`.
+        subformula_1: Left operand :math:`\Phi_1`.
+        subformula_2: Right operand :math:`\Phi_2`.
 
-    Notes:
-        This module uses multiplication as conjunction for ``{0,1}``-valued
-        satisfaction arrays.
+    Attributes:
+        subformula_1: Left operand.
+        subformula_2: Right operand.
     """
 
     def __init__(self, subformula_1: BoundedPCTLFormula, subformula_2: BoundedPCTLFormula):
@@ -649,11 +730,21 @@ class And(BoundedPCTLFormula):
 
     @property
     def _bound(self):
-        """Conjunction bound is the max of operand bounds."""
+        """Bound is ``max(bound(subformula_1), bound(subformula_2))``."""
         return max(self.subformula_1.bound, self.subformula_2.bound)
 
     def _prob_seq(self, kernel, vec_label_fn, atom_dict, max_k=None):
-        """Compute the elementwise product of operand sequences."""
+        """Compute the elementwise product of operand sequences.
+
+        Args:
+            kernel: Markov-chain kernel.
+            vec_label_fn: Vectorized labeling matrix.
+            atom_dict: Atom-to-row mapping.
+            max_k: Sequence horizon.
+
+        Returns:
+            Float64 array of shape ``(max_k + 1, n_states)``.
+        """
         seq1 = self.subformula_1._prob_seq(kernel, vec_label_fn, atom_dict, max_k)
         seq2 = self.subformula_2._prob_seq(kernel, vec_label_fn, atom_dict, max_k)
         return seq1 * seq2
@@ -664,23 +755,32 @@ class And(BoundedPCTLFormula):
         vec_label_fn: np.ndarray,
         atom_dict: Dict[str, int],
     ) -> np.ndarray:
-        """Evaluate the conjunction per state."""
+        """Compute the conjunction per state.
+
+        Returns:
+            Float64 array of shape ``(n_states,)`` in ``{0.0, 1.0}``.
+        """
         return (
             self.subformula_1.sat(kernel, vec_label_fn, atom_dict)
             * self.subformula_2.sat(kernel, vec_label_fn, atom_dict)
         )
 
 class Or(BoundedPCTLFormula):
-    r"""Logical disjunction formula :math:`\Phi_1 \lor \Phi_2`.
+    r"""Logical disjunction :math:`\Phi_1 \lor \Phi_2`.
+
+    For ``{0,1}`` satisfaction arrays, MASA uses:
+
+    .. math::
+
+       a \lor b \equiv 1 - (1-a)(1-b).
 
     Args:
         subformula_1: Left operand :math:`\Phi_1`.
         subformula_2: Right operand :math:`\Phi_2`.
 
-    Notes:
-        Satisfaction is computed via De Morgan's law or the probabilistic-style
-        union formula on ``{0,1}`` sequences:
-            ``1 - (1 - a) * (1 - b)``.
+    Attributes:
+        subformula_1: Left operand.
+        subformula_2: Right operand.
     """
 
     def __init__(self, subformula_1: BoundedPCTLFormula, subformula_2: BoundedPCTLFormula):
@@ -690,7 +790,7 @@ class Or(BoundedPCTLFormula):
 
     @property
     def _bound(self):
-        """Disjunction bound is the max of operand bounds."""
+        """Bound is ``max(bound(subformula_1), bound(subformula_2))``."""
         return max(self.subformula_1.bound, self.subformula_2.bound)
 
     def sat(
@@ -699,55 +799,64 @@ class Or(BoundedPCTLFormula):
         vec_label_fn: np.ndarray,
         atom_dict: Dict[str, int],
     ) -> np.ndarray:
-        """Evaluate the disjunction per state."""
+        """Compute the disjunction per state.
+
+        Returns:
+            Float64 array of shape ``(n_states,)`` in ``{0.0, 1.0}``.
+        """
         return Neg(And(Neg(self.subformula_1), Neg(self.subformula_2))).sat(
             kernel, vec_label_fn, atom_dict
         )
 
     def _prob_seq(self, kernel, vec_label_fn, atom_dict, max_k=None):
-        """Compute disjunction sequence using ``1 - (1-a)*(1-b)``."""
+        """Compute the disjunction sequence using ``1 - (1-a)*(1-b)``.
+
+        Returns:
+            Float64 array of shape ``(max_k + 1, n_states)``.
+        """
         seq1 = self.subformula_1._prob_seq(kernel, vec_label_fn, atom_dict, max_k)
         seq2 = self.subformula_2._prob_seq(kernel, vec_label_fn, atom_dict, max_k)
         return 1.0 - (1.0 - seq1) * (1.0 - seq2)
 
 class BoundedPCTLModelChecker:
-    """Shared base for bounded PCTL model checkers.
+    r"""Shared base for bounded PCTL model checkers.
 
     This class stores:
-      * A bounded PCTL formula.
-      * A labeling function (state -> set of atoms) and a vectorized labeling
-        matrix ``vec_label_fn``.
-      * A transition kernel in one of two forms:
 
-        1) **Full / dense MDP kernel** (``mode="full"``):
-           ``transition_matrix`` with shape ``(n_states, n_states, n_actions)``.
-           The first axis is next-state, the second is current-state, and the
-           third is action (consistent with downstream einsum usage).
+    - A bounded PCTL formula (:attr:`formula`).
+    - A labeling function (:attr:`label_fn`) and a precomputed vectorized labeling
+      matrix (:attr:`vec_label_fn`).
+    - A transition representation in one of two forms:
 
-        2) **Compact successor representation** (``mode="compact"``):
-           ``successor_states`` with shape ``(K, n_states)`` and ``probabilities``
-           with shape ``(K, n_states, n_actions)``.
+      **Dense MDP kernel** (``mode="full"``)
+        ``transition_matrix`` with shape ``(n_states, n_states, n_actions)``.
+        The convention used throughout this module is **(next_state, state, action)**.
+
+      **Compact successor kernel** (``mode="compact"``)
+        ``successor_states`` with shape ``(K, n_states)`` and
+        ``probabilities`` with shape ``(K, n_states, n_actions)``.
 
     Args:
         formula: The bounded PCTL formula to evaluate.
-        label_fn: A ``LabelFn`` mapping ``state -> set[str]`` of atomic predicates.
-        atomic_predicates: List of all atom names used by the label function and
-            formulas.
-        transition_matrix: Optional dense transition tensor
+        label_fn: A :class:`~masa.common.label_fn.LabelFn` mapping
+            ``state -> set[str]``.
+        atomic_predicates: List of atom names (strings). These define the row
+            ordering of :attr:`vec_label_fn`.
+        transition_matrix: Optional dense MDP kernel of shape
             ``(n_states, n_states, n_actions)``.
-        successor_states: Optional successor state ids ``(K, n_states)`` (compact).
-        probabilities: Optional successor probabilities ``(K, n_states, n_actions)``
-            (compact).
+        successor_states: Optional compact successor ids of shape ``(K, n_states)``.
+        probabilities: Optional compact probabilities of shape
+            ``(K, n_states, n_actions)``.
 
     Attributes:
-        formula: The stored formula.
-        label_fn: Labeling function.
-        atomic_predicates: List of atom names.
-        atom_dict: Mapping ``atom -> index``.
-        mode: ``"full"`` or ``"compact"``.
+        formula: Stored formula.
+        label_fn: Stored labeling function.
+        atomic_predicates: Atom vocabulary used to build :attr:`atom_dict`.
+        atom_dict: Mapping from atom name to row index in :attr:`vec_label_fn`.
+        mode: Either ``"full"`` or ``"compact"``.
         n_states: Number of states.
         n_actions: Number of actions.
-        vec_label_fn: Vectorized labeling matrix ``(n_atoms, n_states)``.
+        vec_label_fn: Float64 matrix of shape ``(n_atoms, n_states)``.
 
     Raises:
         AssertionError: If kernel shapes are inconsistent.
@@ -797,11 +906,11 @@ class BoundedPCTLModelChecker:
         self.vec_label_fn = self._build_vec_label_fn()
 
     def _build_vec_label_fn(self) -> np.ndarray:
-        """Vectorize ``label_fn`` into a dense ``(n_atoms, n_states)`` array.
+        """Build :attr:`vec_label_fn` from :attr:`label_fn`.
 
         Returns:
-            A float64 array ``vec`` such that ``vec[i, s] == 1.0`` iff atom ``i``
-            holds in state ``s``.
+            Float64 array ``vec`` with shape ``(n_atoms, n_states)`` where
+            ``vec[i, s] == 1.0`` iff atom ``i`` holds in state ``s``.
         """
         n_atoms = len(self.atomic_predicates)
         vec = np.zeros((n_atoms, self.n_states), dtype=np.float64)
@@ -819,22 +928,21 @@ class BoundedPCTLModelChecker:
     ):
         """Update the stored transition representation in-place.
 
-        Exactly one of the following update modes should be used:
+        Exactly one update mode should be used:
 
         - Dense update: provide ``transition_matrix`` with the same shape as the
-          original dense matrix.
+          original.
         - Compact update: provide both ``successor_states`` and ``probabilities``
-          with shapes consistent with the original compact representation and
-          the stored ``(n_states, n_actions)``.
+          with shapes consistent with the original compact representation.
 
         Args:
-            transition_matrix: New dense kernel ``(n_states, n_states, n_actions)``.
-            successor_states: New successor ids ``(K, n_states)`` (compact).
-            probabilities: New successor probabilities ``(K, n_states, n_actions)``.
+            transition_matrix: New dense MDP kernel ``(S, S, A)``.
+            successor_states: New successor ids ``(K, S)``.
+            probabilities: New successor probabilities ``(K, S, A)``.
 
         Raises:
-            AssertionError: If shapes are inconsistent with the originally
-                configured representation.
+            AssertionError: If shapes do not match the originally configured
+                representation.
         """
         if transition_matrix is not None:
             assert self.transition_matrix is not None
@@ -862,19 +970,19 @@ class BoundedPCTLModelChecker:
             self.probabilities = probs
 
 class ExactModelChecker(BoundedPCTLModelChecker):
-    """Exact bounded PCTL model checker for a fixed policy.
+    r"""Exact model checker for bounded PCTL under a fixed policy.
 
-    This checker:
-      1. Collapses an MDP into a Markov chain by applying a stochastic policy.
-      2. Evaluates the stored bounded PCTL formula on the resulting chain.
+    The exact checker collapses an MDP into a Markov chain by applying a
+    stochastic policy, then evaluates the bounded formula on the resulting
+    Markov chain using the formula's internal recurrences.
 
-    Notes:
-        - ``check_state(...)`` returns per-state satisfaction (vector over all
-          states) for the policy-induced chain.
-        - ``check_state_action(...)`` returns a state-action value-like quantity
-          at horizon ``B-1`` (derived from ``_prob_seq``) corresponding to the
-          expected satisfaction after taking an action then following the
-          policy.
+    - :meth:`check_state` returns per-state satisfaction for the policy-induced
+      chain.
+    - :meth:`check_state_action` returns a state-action value-like array derived
+      from the formula probability sequence (using the vector at horizon ``B-1``).
+
+    See Also:
+        :class:`StatisticalModelChecker`: Sampling-based estimation of satisfaction.
     """
 
     def __init__(
@@ -901,21 +1009,20 @@ class ExactModelChecker(BoundedPCTLModelChecker):
         key: jax.Array, 
         policy: np.array
     ) -> np.ndarray:
-        """Evaluate the formula on the policy-induced Markov chain.
+        """Evaluate the stored formula on the policy-induced Markov chain.
 
         Args:
-            key: Unused random key (kept for API symmetry with SMC).
-            policy: Stochastic policy as either:
+            key: Unused PRNG key (kept for API symmetry with
+                :class:`StatisticalModelChecker`).
+            policy: Stochastic policy probabilities, either:
                 - shape ``(n_actions, n_states)`` (action-major), or
                 - shape ``(n_states, n_actions)`` (state-major).
-                Each row/column should sum to 1 for a proper policy.
 
         Returns:
-            Float64 array ``(n_states,)`` in ``{0.0, 1.0}`` indicating which states
-            satisfy the formula under the policy-induced chain.
+            Float64 array of shape ``(n_states,)`` in ``{0.0, 1.0}``.
 
         Raises:
-            ValueError: If the policy shape is not recognized.
+            ValueError: If ``policy`` has an unexpected shape.
         """
 
         policy = np.asarray(policy, dtype=np.float64)
@@ -955,20 +1062,24 @@ class ExactModelChecker(BoundedPCTLModelChecker):
     ) -> np.ndarray:
         """Compute a state-action satisfaction value for the stored formula.
 
-        This method computes the formula probability sequence up to the formula
-        bound ``B``, then uses the ``(B-1)`` vector as a value function and performs
-        one-step expectation under each action to produce a ``(n_states, n_actions)``
-        array.
+        This method:
+        1) Builds the policy-induced Markov chain kernel,
+        2) Computes the formula sequence up to bound ``B = formula.bound``,
+        3) Uses the vector at time ``max(B-1, 0)`` as a value function,
+        4) Computes one-step expectations under each action to produce ``Q``.
 
         Args:
-            key: Unused random key (kept for API symmetry with SMC).
-            policy: Stochastic policy as either ``(n_actions, n_states)`` or
-                ``(n_states, n_actions)``.
+            key: Unused PRNG key (kept for API symmetry with
+                :class:`StatisticalModelChecker`).
+            policy: Stochastic policy probabilities, either ``(A, S)`` or ``(S, A)``.
 
         Returns:
-            Float64 array ``Q`` with shape ``(n_states, n_actions)`` where ``Q[s, a]``
-            is the expected satisfaction value after taking action ``a`` in state
-            ``s`` and then following ``policy``.
+            Float64 array ``Q`` of shape ``(n_states, n_actions)`` where
+            ``Q[s, a]`` is the expected satisfaction value after taking action
+            ``a`` in state ``s`` and then following ``policy``.
+
+        Raises:
+            ValueError: If ``policy`` has an unexpected shape.
         """
 
         policy = np.asarray(policy, dtype=np.float64)
@@ -1009,21 +1120,20 @@ class ExactModelChecker(BoundedPCTLModelChecker):
         return Q
 
 class StatisticalModelChecker(BoundedPCTLModelChecker):
-    """Statistical model checker (SMC) for bounded PCTL formulas.
+    r"""Statistical model checker (SMC) for bounded PCTL formulas.
 
-    This checker estimates satisfaction probabilities by Monte Carlo sampling of
-    trajectories under a policy, then comparing the estimate ``p_hat`` to the
-    formula's probability threshold.
-
-    Supported formulas:
-        - Probabilistic path operators: ``Next``, ``Until``, ``Eventually``, ``Always``.
-        - Pure state formulas (``Truth``, ``Atom``, ``Neg``, ``And``, ``Or``, ``Implies``)
-          are evaluated exactly without sampling.
+    The SMC estimates satisfaction probabilities by Monte Carlo sampling of
+    trajectories under a policy and comparing the estimated probability
+    :math:`\hat{p}` to the formula’s threshold.
 
     Notes:
-        - Nested probabilistic operators inside state formulas are not supported
-          (enforced in ``_eval_state_formula_python`` and ``_eval_state_formula_jax``).
-        - Sampling is implemented in JAX for batching and speed.
+        - Pure state formulas (:class:`Truth`, :class:`Atom`, :class:`Neg`,
+          :class:`And`, :class:`Or`, and :class:`Implies` if present) are evaluated
+          exactly without sampling.
+        - Nested probabilistic operators inside state formulas are not supported.
+
+    Attributes:
+        vec_label_fn_jax: JAX copy of :attr:`~BoundedPCTLModelChecker.vec_label_fn`.
     """
 
     def __init__(
@@ -1053,25 +1163,24 @@ class StatisticalModelChecker(BoundedPCTLModelChecker):
         state: int,
         num_samples: int,
     ) -> np.ndarray:
-        """Estimate whether a given state satisfies the formula under a policy.
+        r"""Estimate whether ``state`` satisfies the formula under ``policy``.
 
-        For probabilistic formulas, this:
-          1) Samples ``num_samples`` trajectories up to ``max_steps``,
-          2) Evaluates path satisfaction,
-          3) Uses the sample mean as ``p_hat``,
-          4) Returns ``1.0`` if ``p_hat >= prob_threshold`` else ``0.0``.
+        For probabilistic temporal formulas, this samples ``num_samples`` paths of
+        length ``max_steps = max(1, formula.bound)`` and estimates
 
-        For non-probabilistic formulas, the state formula is evaluated exactly.
+        .. math::
+
+           \hat{p} = \frac{1}{N}\sum_{i=1}^N \mathbf{1}\{\pi_i \models \varphi\}.
 
         Args:
-            key: PRNG key for sampling.
-            policy: Stochastic policy as ``(n_actions, n_states)`` or
-                ``(n_states, n_actions)``.
+            key: PRNG key used for sampling.
+            policy: Stochastic policy probabilities, either ``(A, S)`` or ``(S, A)``.
             state: Start state index.
             num_samples: Number of trajectories to sample.
 
         Returns:
-            Scalar float64 array, either ``1.0`` (satisfies) or ``0.0`` (does not).
+            Scalar float64 JAX array equal to ``1.0`` if ``\hat{p} >= p`` else
+            ``0.0``, where ``p`` is the formula’s probability threshold.
         """
         if not self._is_probabilistic_formula(self.formula):
             val = self._eval_state_formula_python(self.formula, state)
@@ -1134,22 +1243,21 @@ class StatisticalModelChecker(BoundedPCTLModelChecker):
         action: int,
         num_samples: int,
     ) -> np.ndarray:
-        """Estimate satisfaction when forcing the first action, then following a policy.
+        r"""Estimate satisfaction when forcing the first action, then following ``policy``.
 
-        For probabilistic formulas, the first transition uses action ``action``,
-        and subsequent transitions follow ``policy``. For non-probabilistic state
-        formulas, evaluation is exact and ignores ``action``/sampling.
+        The first transition uses the forced action ``action`` and subsequent
+        steps follow the policy-induced kernel.
 
         Args:
-            key: PRNG key for sampling.
-            policy: Stochastic policy as ``(n_actions, n_states)`` or
-                ``(n_states, n_actions)``.
+            key: PRNG key used for sampling.
+            policy: Stochastic policy probabilities, either ``(A, S)`` or ``(S, A)``.
             state: Start state index.
-            action: Action index to force at the first step.
+            action: Forced first action index.
             num_samples: Number of trajectories to sample.
 
         Returns:
-            Scalar float64 array, either ``1.0`` (satisfies) or ``0.0`` (does not).
+            Scalar float64 JAX array equal to ``1.0`` if the estimated probability
+            meets the formula's threshold, else ``0.0``.
         """
         if not self._is_probabilistic_formula(self.formula):
             val = self._eval_state_formula_python(self.formula, state)

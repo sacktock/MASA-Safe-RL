@@ -1,7 +1,4 @@
 """
-masa.common.constraints.pctl
-============================
-
 Probabilistic CTL (PCTL) style constraint monitor (simplified).
 
 The current implementation mirrors the safety-style structure used elsewhere:

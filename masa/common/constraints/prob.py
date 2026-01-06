@@ -1,7 +1,4 @@
 """
-masa.common.constraints.prob
-============================
-
 Undiscounted probabilistic safety constraint.
 
 This monitor tracks the empirical fraction of unsafe steps in an episode and
