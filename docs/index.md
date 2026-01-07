@@ -84,7 +84,6 @@ Tutorials/Algorithms
 
 ```{toctree}
 :caption: Misc
-
 :hidden:
 
 Misc/Probabilistic Shielding
