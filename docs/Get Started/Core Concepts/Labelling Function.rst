@@ -37,8 +37,6 @@ The labelling function type is:
 
    LabelFn = Callable[[Any], Iterable[str]]
 
-:contentReference[oaicite:0]{index=0}
-
 Formally, MASA treats labelling as a map from observations to predicate sets:
 
 .. math::
@@ -116,8 +114,6 @@ and injects them into the ``info`` dictionary under the key ``"labels"``:
 .. code-block:: python
 
    info["labels"] = set(label_fn(obs))
-
-:contentReference[oaicite:1]{index=1}
 
 Usage
 ~~~~~

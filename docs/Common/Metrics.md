@@ -24,9 +24,9 @@ MASA metrics are designed to make it easy to record and report learning signals 
     :show-inheritance:
 ```
 
-#### Next Steps
+## Next Steps
 
-- [Logging](https://sacktock.github.io/MASA-Safe-RL/Common/Metrics/Logging)
+- **[Logging](Metrics/Logging)**
 
 ```{toctree}
 :caption: Metrics

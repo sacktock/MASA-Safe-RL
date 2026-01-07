@@ -32,17 +32,7 @@ def make_env(
     This helper creates a Gymnasium environment and applies MASA wrappers in the
     **recommended and enforced order**:
 
-    .. math::
-
-        \\texttt{TimeLimit}
-        \\;\\rightarrow\\;
-        \\texttt{LabelledEnv}
-        \\;\\rightarrow\\;
-        \\texttt{BaseConstraintEnv}
-        \\;\\rightarrow\\;
-        \\texttt{ConstraintMonitor}
-        \\;\\rightarrow\\;
-        \\texttt{RewardMonitor}
+    ``TimeLimit`` :math:`\rightarrow` ``LabelledEnv`` :math:`\rightarrow` ``BaseconstraintEnv`` :math:`\rightarrow` ``ConstraintMonitor`` :math:`\rightarrow` ``RewardMonitor``
 
     The resulting environment exposes atomic predicate labels, constraint metrics,
     and reward summaries via the standard Gymnasium ``info`` dictionary.

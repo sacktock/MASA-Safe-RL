@@ -18,8 +18,6 @@ A **cost function** is defined as:
 
    CostFn = Callable[Iterable[str], float]
 
-:contentReference[oaicite:0]{index=0}
-
 Formally, a cost function is a mapping
 
 .. math::
@@ -123,7 +121,7 @@ see the API reference:
 
 .. seealso::
 
-   :doc:`../Common/Constraints`
+  `Contraints API Reference <../Common/Constraints>_`
 
 Summary
 -------

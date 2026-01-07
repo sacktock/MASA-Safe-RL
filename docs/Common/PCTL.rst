@@ -89,7 +89,7 @@ Always (duality)
 .. math::
 
    \mathbb{P}_{\ge p}[\,G^{\le B}\ \Phi\,] \equiv
-   \neg\,\mathbb{P}_{> 1-p}[\,\mathrm{True}\ U^{\le B}\ \neg\Phi\,]
+   \neg\,\mathbb{P}_{\geq 1-p}[\,\mathrm{True}\ U^{\le B}\ \neg\Phi\,]
 
 Probability sequences and bounds
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -164,9 +164,9 @@ exact recurrence or sampled trajectory satisfaction depending on the chosen appr
 Next Steps
 ----------
 
-- **`Propositional Operators <https://sacktock.github.io/MASA-Safe-RL/Common/PCTL/Propositional%20Operators>`_**
-- **`Temporal Operators <https://sacktock.github.io/MASA-Safe-RL/Common/PCTL/Temporal%20Operators>`_**
-- **`Model Checking <https://sacktock.github.io/MASA-Safe-RL/Common/PCTL/Model%20Checking>`_**
+- `**Propositional Operators** </PCTL/Propositional%20Operators>`_
+- `**Temporal Operators** </PCTL/Temporal%20Operators>`_
+- `**Model Checking** </PCTL/Model%20Checking>`_
 
 .. toctree::
    :caption: Probabilistic Computation Tree Logic (PCTL)

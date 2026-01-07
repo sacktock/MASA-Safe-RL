@@ -206,11 +206,11 @@ These specifications are compiled into **monitors** that:
 * emit costs and metrics,
 * integrate seamlessly with RL training loops.
 
-#### Next Steps
+## Next Steps
 
 - **[Labelling Function](Core%20Concepts/Labelling%20Function)** - Learn how observation labelling is handled in MASA.
 - **[Cost Function](Core%20Concepts/Cost%20Function)** - Understand the conventions used for cost functions in MASA.
-- **[Constraints](../Common/Constraints)** - What are constraints in RL?
+- **[Constraints](../Common/Constraints)** - How are different constraints handled in MASA?
 - **[Wrappers](../Common/Wrappers)** - How do environment Wrappers provide a convenient interface for managing constraints?
 
 ```{toctree}

@@ -56,11 +56,11 @@ discount factor.
 .. automethod:: masa.common.wrappers.get_wrapped
 ```
 
-#### Next Steps
+## Next Steps
 
-- [Core Wrappers](https://sacktock.github.io/MASA-Safe-RL/Common/Wrappers/Core%20Wrappers)
-- [Misc Wrappers](https://sacktock.github.io/MASA-Safe-RL/Common/Wrappers/Misc%20Wrappers)
-- [Vectorized Envs](https://sacktock.github.io/MASA-Safe-RL/Common/Wrappers/Vectorized%20Envs)
+- **[Core Wrappers](Wrappers/Core%20Wrappers)**
+- **[Misc Wrappers](Wrappers/Misc%20Wrappers)**
+- **[Vectorized Envs](Wrappers/Vectorized%20Envs)**
 
 ```{toctree}
 :caption: Wrappers

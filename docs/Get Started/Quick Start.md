@@ -61,5 +61,9 @@ You can test your installation of masa via the command line,
 python -m masa.run --env-id mini_pacman --algo q_learning --custom-cfgs mini_pacman --seed 0
 ```
 
+## Next Steps
+
+- **[Core Concepts](Core%20Concepts/)** - Familiarize yourself with the core concepts in MASA.
+- **[Basic Usage](Basic%20Usage)** - Learn how to use MASA.
 
 

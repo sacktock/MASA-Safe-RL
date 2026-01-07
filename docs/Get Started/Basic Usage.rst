@@ -4,26 +4,16 @@ Basic Usage
 This page shows the **minimal** way to use MASA *without* :func:`masa.common.utils.make_env`, by manually
 constructing a Gymnasium environment and wrapping it in the recommended order:
 
-.. math::
+``TimeLimit`` :math:`\rightarrow` ``LabelledEnv`` :math:`\rightarrow` ``BaseconstraintEnv`` :math:`\rightarrow` ``ConstraintMonitor`` :math:`\rightarrow` ``RewardMonitor``
 
-        \\texttt{TimeLimit}
-        \\;\\rightarrow\\;
-        \\texttt{LabelledEnv}
-        \\;\\rightarrow\\;
-        \\texttt{BaseConstraintEnv}
-        \\;\\rightarrow\\;
-        \\texttt{ConstraintMonitor}
-        \\;\\rightarrow\\;
-        \\texttt{RewardMonitor}
-
-This is the same order enforced by :func:`~masa.common.utils.make_env` (notably, **TimeLimit must come first**). :contentReference[oaicite:0]{index=0}
+This is the same order enforced by :func:`~masa.common.utils.make_env` (notably, ``TimeLimit`` must come first).
 
 Overview
 --------
 
 MASA components reason over **labels** (atomic predicates) derived from observations. The wrapper
 :class:`masa.common.labelled_env.LabelledEnv` computes these labels on every :meth:`gymnasium.Env.reset`
-and :meth:`gymnasium.Env.step` and stores them in ``info["labels"]``. :contentReference[oaicite:1]{index=1}
+and :meth:`gymnasium.Env.step` and stores them in ``info["labels"]``.
 
 Constraints then consume these labels and expose consistent metrics, while the monitor wrappers
 attach step/episode summaries to the ``info`` dictionary for logging and debugging.
@@ -131,9 +121,9 @@ Random-agent interaction loop (Gymnasium-style)
         # Episode-end metrics are often attached on the final transition by the monitors.
         # Again, keys vary; print what you care about.
         constraint = info.get("constraint", {})
-        if isinstance(constraint, dict) and "epsiode" in constraint:
-            ep_cost = constraint["epsiode"].get("cum_cost", None)
-            ep_satisfied = constraint["epsiode"].get("satisfied", None)
+        if isinstance(constraint, dict) and "episode" in constraint:
+            ep_cost = constraint["episode"].get("cum_cost", None)
+            ep_satisfied = constraint["episode"].get("satisfied", None)
 
         print(
             f"[episode {ep}] return={ep_return:.2f} len={ep_len} "
@@ -145,7 +135,7 @@ Training with PPO
 
 Below is a minimal example showing how to initialize and train PPO (provided by MASA) using the wrapped environment.
 The specific PPO constructor and train API may include additional options (e.g., logging, eval env,
-saving); the snippet mirrors the general style used in MASA runs. :contentReference[oaicite:2]{index=2}
+saving); the snippet mirrors the general style used in MASA runs.
 
 .. code-block:: python
 
@@ -183,15 +173,12 @@ saving); the snippet mirrors the general style used in MASA runs. :contentRefere
        stats_window_size=100,        # optional
    )
 
-See also
---------
+``make_env(...)`` API Reference
+-------------------------------
 
-- Full constraint API reference: :doc:`../Common/Constraints`
-- Wrapper ordering used by the convenience constructor :func:`masa.common.utils.make_env` 
+.. automethod:: masa.common.utils.make_env
 
+Next Steps
+----------
 
-.. toctree::
-   :caption: Basic Usage
-   :hidden:
-
-   Basic Usage/make_env(...)
+- `**Constraints API Reference** <..Common/Contraints>_`

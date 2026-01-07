@@ -159,10 +159,10 @@ MASA LTL Pipeline (High-Level)
 Next Steps
 ----------
 
-- **`Propositional Formula <https://sacktock.github.io/MASA-Safe-RL/Common/LTL/Propositional%20Formula>_`**
-- **`Deterministic Finite Automata (DFA) <https://sacktock.github.io/MASA-Safe-RL/Common/LTL/DFA>_`**
-- **`Cost Function as DFA <https://sacktock.github.io/MASA-Safe-RL/Common/LTL/Cost%20Function%20as%20DFA>_`**
-- **`Shaped Cost Function <https://sacktock.github.io/MASA-Safe-RL/Common/LTL/Shaped%20Cost%20Function>_`**
+- `**Propositional Formula** <LTL/Propositional%20Formula>_`
+- `**Deterministic Finite Automata (DFA)** <LTL/DFA>_`
+- `**Cost Function as DFA** <LTL/Cost%20Function%20as%20DFA>_`
+- `**Shaped Cost Function** <LTL/Shaped%20Cost%20Function>_`
 
 
 .. toctree::

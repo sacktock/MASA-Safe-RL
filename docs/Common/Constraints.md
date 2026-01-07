@@ -6,14 +6,14 @@
     :show-inheritance:
 ```
 
-#### Next Steps
+## Next Steps
 
-- [Constrained Markov Decision Process (CMDP)](https://sacktock.github.io/MASA-Safe-RL/Common/Constraints/Constrained%20Markov%20Decision%20Process%20(CMDP))
-- [LTL Safety](https://sacktock.github.io/MASA-Safe-RL/Common/Constraints/LTL%20Safety)
-- [PCTL](https://sacktock.github.io/MASA-Safe-RL/Common/Constraints/PCTL)
-- [Stepwise Probabilistic](https://sacktock.github.io/MASA-Safe-RL/Common/Constraints/Stepwise%20Probabilistic)
-- [Reach Avoid](https://sacktock.github.io/MASA-Safe-RL/Common/Constraints/Reach%20Avoid)
-- [ATL (Multi Agent)](https://sacktock.github.io/MASA-Safe-RL/Common/Constraints/Multi%Agent)
+- **[Constrained Markov Decision Process (CMDP)](Constraints/Constrained%20Markov%20Decision%20Process%20(CMDP))**
+- **[LTL Safety](Constraints/LTL%20Safety)**
+- **[PCTL](Constraints/PCTL)**
+- **[Stepwise Probabilistic](Constraints/Stepwise%20Probabilistic)**
+- **[Reach Avoid](Constraints/Reach%20Avoid)**
+- **[ATL (Multi Agent)](Constraints/Multi%Agent)**
 
 ```{toctree}
 :caption: Constraints
