@@ -1,6 +1,6 @@
 /* Make function/class signatures stand out */
 .sig.sig-object {
-  border-left: 3px solid var(--pst-color-primary, #666);
+  border-left: 3px solid var(--pst-color-primary, #9d2121);
   padding-left: .75rem;
   margin-bottom: .25rem;
 }

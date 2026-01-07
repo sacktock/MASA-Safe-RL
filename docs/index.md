@@ -54,7 +54,7 @@ Get Started/Basic Usage
 ```
 
 ```{toctree}
-:caption: Common
+:caption: Common API
 :hidden:
 
 Common/Constraints
