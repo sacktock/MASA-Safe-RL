@@ -1,4 +1,4 @@
-# Documentation 
+# MASA Docs
 
 The docs can be built with:
 ```sh
