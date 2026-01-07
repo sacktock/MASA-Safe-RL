@@ -8,9 +8,7 @@
     var(--color-background-secondary),
     var(--color-brand-primary) 6%
   );
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
-
+  border-radius: 4px;
 
   margin-bottom: .25rem;
 }
