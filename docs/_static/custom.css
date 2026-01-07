@@ -1,8 +1,19 @@
 /* Make function/class signatures stand out */
 .sig.sig-object {
-  border-left: 3px solid var(--pst-color-primary, #9d2121);
-  padding-left: .75rem;
+  border-left: 3px solid var(--color-brand-primary);
+  border-right: 3px solid var(--color-brand-primary);
+
+  background-color: color-mix(
+    in srgb,
+    var(--color-background-secondary),
+    var(--color-brand-primary) 6%
+  );
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+
+
   margin-bottom: .25rem;
+  margin-left: .75rem;
 }
 
 /* Add breathing room between members */

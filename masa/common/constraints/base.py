@@ -62,16 +62,16 @@ class Constraint(Protocol):
     Gymnasium wrappers: call :meth:`reset` at episode start and :meth:`update`
     after each environment transition using the label set from ``info["labels"]``.
 
-    Required interface
-    ~~~~~~~~~~~~~~~~~~
+    **Required interface**
+    
     Implementations should provide:
 
     - :meth:`reset`: clear any episode state.
     - :meth:`update`: incorporate the current label set.
     - :attr:`constraint_type`: a stable identifier string for logging/dispatch.
 
-    Metrics interface
-    ~~~~~~~~~~~~~~~~~
+    **Metrics interface**
+    
     The protocol declares:
 
     - :meth:`step_metric`

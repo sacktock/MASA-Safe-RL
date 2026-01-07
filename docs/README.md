@@ -1,5 +1,9 @@
 # MASA Docs
 
+This folder contains the docmentation for [MASA-Safe-RL](https://github.com/sacktock/MASA-Safe-RL/)
+
+## Building
+
 The docs can be built with:
 ```sh
 # 1. Without uv:
