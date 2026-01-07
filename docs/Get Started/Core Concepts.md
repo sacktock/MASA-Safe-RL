@@ -1,6 +1,6 @@
 # Core Concepts
 
-This page introduces the **core ideas** behind reinforcement learning (RL), safe RL, and how **MASA** builds a *canonical, modular interface* for handling safety constraints—ranging from simple cost budgets to temporal logic specifications.
+This page introduces the **core ideas** behind reinforcement learning (RL), safe RL, and how **MASA** builds a *canonical, modular interface* for handling safety constraints - ranging from simple cost budgets to temporal logic specifications.
 
 ## Reinforcement Learning: the Big Picture
 
@@ -9,15 +9,16 @@ At its core, **reinforcement learning** studies how an *agent* learns to make de
 ### The Agent-Environment Loop
 
 The interaction proceeds in discrete time steps:
-
-1. The environment provides an **observation** ( o_t ) describing the current situation.
-2. The agent chooses an **action** ( a_t ) based on that observation.
+```{eval-rst}
+1. The environment provides an **observation** :math:`o_t` describing the current situation.
+2. The agent chooses an **action** :math:`a_t` based on that observation.
 3. The environment transitions to a new state and returns:
 
-   * a **reward** ( r_t ), and
-   * the next observation ( o_{t+1} ).
+   * a **reward** :math:`r_t`, and
+   * the next observation :math:`o_{t+1}`.
 
-The agent's goal is to learn a *policy* ( \pi(a \mid o) ) that maximises expected cumulative reward over time.
+The agent's goal is to learn a *policy* :math:`\pi(a \mid o)` that maximises expected cumulative reward over time.
+```
 
 Informally:
 
@@ -81,7 +82,9 @@ Examples:
 In a **CMDP**, the agent optimises reward while keeping expected *cost* below a budget:
 
 ```{eval-rst}
-\mathbb{E}_\pi \left[ \sum^{T-1}_{t=0} c_t \right] \leq B
+.. math::
+
+    \mathbb{E}_\pi \left[ \sum^{T-1}_{t=0} c_t \right] \leq B
 ```
 
 Example:
@@ -122,7 +125,7 @@ Characteristics:
 * Violations are *hard* and irreversible.
 * Often modeled via absorbing failure states.
 
-## MASA’s Perspective on Safety
+## MASA's Perspective on Safety
 
 MASA does **not** enforce a single notion of safety.
 
@@ -195,7 +198,7 @@ Beyond scalar costs, MASA supports **formal temporal specifications**, including
 
 * **Bounded PCTL**
 
-  > "The probability of failure within ( T ) steps is at most ( \delta )."
+  > "The probability of failure within `T` steps is at most `p`."
 
 These specifications are compiled into **monitors** that:
 
@@ -205,10 +208,10 @@ These specifications are compiled into **monitors** that:
 
 #### Next Steps
 
-- **[Labelling Function](Core%20Concepts/Labelling%20Function)** - Learn how observation labbeling is handled in MASA.
+- **[Labelling Function](Core%20Concepts/Labelling%20Function)** - Learn how observation labelling is handled in MASA.
 - **[Cost Function](Core%20Concepts/Cost%20Function)** - Understand the conventions used for cost functions in MASA.
-- **[Constraints](Core%20Concepts/Constraints)** - What are constraints in RL?
-- **[Wrappers](Core%20Concepts/Wrappers)** - How do environment Wrappers provide a convenient interace for managing constraints?
+- **[Constraints](../Common/Constraints)** - What are constraints in RL?
+- **[Wrappers](../Common/Wrappers)** - How do environment Wrappers provide a convenient interface for managing constraints?
 
 ```{toctree}
 :caption: Core Concepts
@@ -216,6 +219,4 @@ These specifications are compiled into **monitors** that:
 
 Core Concepts/Labelling Function
 Core Concepts/Cost Function
-Core Concepts/Constraints
-Core Concepts/Wrappers
 ```

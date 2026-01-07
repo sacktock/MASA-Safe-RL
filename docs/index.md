@@ -1,32 +1,28 @@
-MASA Safe RL Docs
-========================================
+# MASA Safe RL Docs
 
-Welcome
--------
+## Welcome
 
 
-Welcome to MASA-Safe-RL, the Multi and Single Agent (MASA) Safe Reinforcement Learning library. The primary goal of this library is to develop a set of common constraints and environments for safe reinforcement learning research, built on top of the popular [gymnasium](https://gymnasium.farama.org/) interface. We span, CMPDs, probabilistic constraints, Reach-Avoid and LTL-Safety (DFA) properties.  
+Welcome to MASA-Safe-RL, the Multi and Single Agent (MASA) Safe Reinforcement Learning library. The primary goal of this library is to develop a set of common constraints and environments for safe reinforcement learning research, built on top of the popular **[Gymnasium API](https://gymnasium.farama.org/)**. We span, CMPDs, probabilistic constraints, Reach-Avoid and LTL-Safety (DFA) properties.  
 
 The library is in very early stage development and we greatly appreciate and encourage feedback from the community about what they would like to see implemented. Currently we provide a set of basic tabular algroithms for safe RL, but we provide a modular and resuable framework for developing more complex algorithms and constraints.
 
 
-Organization
-------------
+## Organization
 
 The docs are currently organised as follows:
 
-- **Get Started**: installation instructions and core Common details (e.g., labelling function, cost function, make_env).
-- **Constraints**: mathematical and usage details for the constraints currently provided in MASA.
-- **Environments**: benchamrk environments currently provided in MASA.
-- **Algorithms**: algorithm and logging Common details and algorithms currently provided in MASA.
-- **Other**: auxilliary wrappers, e.g., probabilistic shielding.
+- **Get Started**: installation instructions and core concepts (e.g., labelling function, cost function, make_env).
+- **Common API**: API references for common constraints, wrappers, metrics logging and temporal logics used in MASA.
+- **Environments**: list of benchmark environments currently provided in MASA.
+- **Algorithms**: list of algorithms currently provided in MASA.
+- **Misc**: auxilliary wrappers, e.g., probabilistic shielding.
 
-We recommend you follow the docs in the provided order starting from **Get Started** to learn about the core Common and so on.
+We recommend you follow the docs in the provided order starting from **Get Started** to learn about the core concepts in MASA and basic usage.
 
-Citation
---------
+## Citation
 
-If you use MASA-Safe-RL in your research please cite it in your publications.
+If you use MASA in your research please cite it in your publications.
 
 ```bibtex
 @misc{Goodall2025MASASafeRL,
@@ -37,12 +33,6 @@ If you use MASA-Safe-RL in your research please cite it in your publications.
   note         = {GitHub repository}
 }
 ```
-
-Developer Notes
----------------
-- We need to add a short introduction to RL with the gymnasium interface and safe RL/RL with constraints in Core Concepts.
-- We will discuss the labelling function and cost function Common in core concepts.
-- Tutorials will bed added on a rolling basis as the library is developed.
 
 ```{toctree}
 :caption: Get Started

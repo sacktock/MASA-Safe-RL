@@ -33,23 +33,11 @@ An LTL formula is interpreted over traces. MASA's implementation uses **proposit
 
 Concretely, a propositional guard `g` is satisfied by labels `L` iff `g.sat(L)` returns `True`.
 
-### Safety fragment
+### Safety fragment -> DFA monitor
 
+```{eval-rst}
 Informally, a property is a **safety property** if "something bad never happens". Equivalently, if the property is violated, there exists a *finite bad prefix* witnessing the violation.
 
-```{eval-rst}
-.. math::
-
-   \varphi \text{ is safety } \iff \forall \rho \not\models \varphi,; \exists k; \forall \rho' \in (2^{AP})^\omega:;
-   (L_0 \ldots L_k \preceq \rho') \Rightarrow \rho' \not\models \varphi.
-
-```
-
-That is: once a finite prefix is "bad", no continuation can repair it. This is the reason safety monitoring works well with automata: you can detect violation after a finite amount of observation.
-
-### Key result: Safety LTL -> DFA monitor
-
-```{eval-rst}
 A standard result in automata-theoretic verification is that LTL formulas can be compiled into automata over :math:`2^AP`. For safety LTL, one can construct a **deterministic** monitor automaton that detects bad prefixes (often phrased as a DFA over finite words, or as a deterministic monitor that reaches a sink "bad" state once violation is inevitable).
 
 MASA assumes (either via downstream tooling or hand-built examples) a DFA:
@@ -104,8 +92,8 @@ This makes DFA construction readable and modular: guards are built from proposit
    - `0.0` otherwise
 
    Two evaluation modes are supported:
-   - **Stateful monitoring** via :meth:`DFACostFn(labels)` which steps the internal DFA.
-   - **Counterfactual / offline evaluation** via :meth:`DFACostFn.cost(state, labels)` which
+   - **Stateful monitoring** via `DFACostFn(labels)` which steps the internal DFA.
+   - **Counterfactual / offline evaluation** via `DFACostFn.cost(state, labels)` which
      computes the one-step cost from an explicit DFA state *without* mutating internal state.
 
 5. **Shaped costs for counterfactual experience**  
