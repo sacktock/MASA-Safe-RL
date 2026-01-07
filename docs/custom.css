@@ -1,0 +1,16 @@
+/* Make function/class signatures stand out */
+.sig.sig-object {
+  border-left: 3px solid var(--pst-color-primary, #666);
+  padding-left: .75rem;
+  margin-bottom: .25rem;
+}
+
+/* Add breathing room between members */
+dl.py.class, dl.py.function, dl.py.method {
+  margin-bottom: 1.5rem;
+}
+
+/* Make method names more prominent */
+dt.sig {
+  font-weight: 600;
+}

@@ -36,15 +36,19 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # Napoleon settings
 napoleon_use_ivar = True
+napoleon_google_docstring = True
+napoleon_numpy_docstring = False
 napoleon_attr_annotations = True
+napoleon_use_param = True
+napoleon_use_rtype = True
 napoleon_use_admonition_for_references = True
 # See https://github.com/sphinx-doc/sphinx/issues/9119
 # napoleon_custom_sections = [("Returns", "params_style")]
 
 # Autodoc
 autoclass_content = "both"
+autodoc_member_order = "bysource"
 autodoc_preserve_defaults = True
-
 autodoc_typehints = "signature"
 
 # -- Options for HTML output -------------------------------------------------
@@ -52,6 +56,7 @@ autodoc_typehints = "signature"
 
 html_theme = 'furo'
 html_static_path = ['_static']
+html_css_files = ["custom.css"]
 
 # html_logo = "_static/logo.png"  # single logo for both modes
 # html_static_path = ["_static"]
