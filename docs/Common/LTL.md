@@ -2,7 +2,7 @@
 
 ## Overview: Safety LTL in MASA (DFA + Costs)
 
-MASA focuses on **safety** specifications expressed in the *safety fragment* of LTL. A safety specification is monitored online by converting it to a **deterministic finite automaton (DFA)** and running that DFA over the environment’s **label trace** (sets of atomic propositions). The same DFA can be wrapped as a **cost function** to provide a scalar safety signal suitable for reinforcement learning.
+MASA focuses on **safety** specifications expressed in the *safety fragment* of LTL. A safety specification is monitored online by converting it to a **deterministic finite automaton (DFA)** and running that DFA over the environment's **label trace** (sets of atomic propositions). The same DFA can be wrapped as a **cost function** to provide a scalar safety signal suitable for reinforcement learning.
 
 In practice, MASA uses:
 - **A labelling function**: environment state/observation -> set of atomic propositions (strings).
@@ -22,14 +22,13 @@ Let :math:`AP` be a finite set of atomic propositions. A *label* is a subset :ma
 .. math::
 
    \rho = L_0 L_1 L_2 \ldots \in (2^{AP})^\omega.
-```
 
 An LTL formula is interpreted over traces. MASA's implementation uses **propositional formulae** as building blocks (edge guards), evaluated at a single step:
 
-```{eval-rst}
 .. math::
 
-g : 2^{AP} \to {\mathsf{true}, \mathsf{false}}.
+   g : 2^{AP} \to {\mathsf{true}, \mathsf{false}}.
+
 ```
 
 Concretely, a propositional guard `g` is satisfied by labels `L` iff `g.sat(L)` returns `True`.
@@ -41,8 +40,9 @@ Informally, a property is a **safety property** if "something bad never happens"
 ```{eval-rst}
 .. math::
 
-\varphi \text{ is safety } \iff \forall \rho \not\models \varphi,; \exists k; \forall \rho' \in (2^{AP})^\omega:;
-(L_0 \ldots L_k \preceq \rho') \Rightarrow \rho' \not\models \varphi.
+   \varphi \text{ is safety } \iff \forall \rho \not\models \varphi,; \exists k; \forall \rho' \in (2^{AP})^\omega:;
+   (L_0 \ldots L_k \preceq \rho') \Rightarrow \rho' \not\models \varphi.
+
 ```
 
 That is: once a finite prefix is "bad", no continuation can repair it. This is the reason safety monitoring works well with automata: you can detect violation after a finite amount of observation.
@@ -56,7 +56,7 @@ MASA assumes (either via downstream tooling or hand-built examples) a DFA:
 
 .. math::
 
-\mathcal{A} = (Q, q_0, F, \delta),
+   \mathcal{A} = (Q, q_0, F, \delta),
 
 where:
 
@@ -64,6 +64,7 @@ where:
 * :math:`q_0 \in Q` is the initial state,
 * :math:`F \subseteq Q` is a set of **accepting states** (interpreted in MASA as *violation states* for safety),
 * :math:`\delta` is a transition function driven by labels.
+
 ```
 
 ### DFA transitions guarded by propositional formulae
@@ -76,28 +77,27 @@ Instead of defining :math:`\delta` as a raw table over :math:`2^AP`, MASA repres
 
 .. math::
 
-\delta(q, L) =
-\begin{cases}
-q' & \text{for the first } q' \text{ such that } g_{q,q'}(L)=\mathsf{true}, \
-q  & \text{if no guard is satisfied (implicit self-loop).}
-\end{cases}
+   \delta(q, L) =
+   \begin{cases}
+   q' & \text{for the first } q' \text{ such that } g_{q,q'}(L)=\mathsf{true}, \
+   q  & \text{if no guard is satisfied (implicit self-loop).}
+   \end{cases}
 
-This makes DFA construction readable and modular: guards are built from propositional connectives, and edges are added with a :class:`Formula` object.
+This makes DFA construction readable and modular: guards are built from propositional connectives, and edges are added with a ``Formula`` object.
 ```
 
 ## MASA LTL pipeline (high-level)
 
-```{eval-rst}
 1. **Environment state -> labels (atomic propositions)**  
    Environments expose a *labelling function* that maps an observation/state to a set of
    atomic proposition names (strings), e.g. `{"unsafe"}`, `{"goal"}`, `{"bomb"}`, etc.
 
 2. **Propositional formulae guard transitions**  
-   MASA represents edge guards in automata via lightweight propositional :class:`Formula` objects:
-   :class:`Atom`, :class:`And`, :class:`Or`, :class:`Neg`, :class:`Implies`, and :class:`Truth`.  
+   MASA represents edge guards in automata via lightweight propositional `Formula` objects:
+   `Atom`, `And`, `Or`, `Neg`, `Implies`, and `Truth`.  
 
 4. **DFA -> cost function**  
-   MASA wraps DFAs as constraint costs using :class:`DFACostFn`. In this convention, reaching an
+   MASA wraps DFAs as constraint costs using `DFACostFn`. In this convention, reaching an
    **accepting DFA state** indicates a *violation / terminal bad condition* (common for
    safety monitoring), and the cost is:
    - `1.0` if the DFA transitions into an accepting state at the current step
@@ -110,16 +110,17 @@ This makes DFA construction readable and modular: guards are built from proposit
 
 5. **Shaped costs for counterfactual experience**  
    For certain algorithms (e.g., counterfactual rollouts, shaping for exploration), MASA
-   provides :class:`ShapedCostFn`, which adds a potential-based shaping term on top of the base DFA
+   provides `ShapedCostFn`, which adds a potential-based shaping term on top of the base DFA
    cost:
 
+```{eval-rst}
 .. math::
 
-c'(q, L) = c(q, L) + \gamma \Phi(\delta(q, L)) - \Phi(q).
+   c'(q, L) = c(q, L) + \gamma \Phi(\delta(q, L)) - \Phi(q).
 
+```
    This shaped cost is intentionally **not** stateful: it is meant to be queried with
    explicit automaton states during counterfactual computations.
-```
 
 #### Next Steps
 
