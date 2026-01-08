@@ -187,9 +187,9 @@ Next Steps
 
 .. seealso::
 
-  `Contraints API Reference <../Common/Constraints>`_
+  `Constraints API Reference <../Common/Constraints>`_
 
 Next Steps
 ----------
 
-- **`Contraints API Reference <../Common/Constraints>`_** - View the common constraints upported by MASA.
+- **Constraints API Reference** (:doc:`open <../Common/Constraints>`) - View the common constraints supported by MASA.
