@@ -1,5 +1,7 @@
 # Temporal Operators
 
+## API Reference
+
 ```{eval-rst}
 .. automodule:: masa.common.pctl
    :members:  Next, Until, Always, Eventually

@@ -1,5 +1,7 @@
 # Vectorized Envs
 
+## API Reference
+
 ```{eval-rst}
 .. autoclass:: masa.common.wrappers.VecEnvWrapperBase
     :members:

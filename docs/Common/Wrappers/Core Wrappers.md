@@ -1,5 +1,7 @@
 # Core Wrappers
 
+## API Reference
+
 ```{eval-rst}
 .. autoclass:: masa.common.wrappers.TimeLimit
     :members:

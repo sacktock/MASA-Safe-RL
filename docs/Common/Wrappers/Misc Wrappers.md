@@ -1,5 +1,7 @@
 # Misc Wrappers
 
+## API Reference
+
 ```{eval-rst}
 .. autoclass:: masa.common.wrappers.RewardShapingWrapper
     :members:

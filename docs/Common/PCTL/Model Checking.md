@@ -1,6 +1,8 @@
 # Model Checking
 
-## Base Class
+## API Reference
+
+### Base Class
 
 ```{eval-rst}
 .. autoclass:: masa.common.pctl.BoundedPCTLModelChecker
@@ -10,7 +12,7 @@
    :private-members:
 ```
 
-## Exact Model Checking
+### Exact Model Checking
 
 ```{eval-rst}
 .. autoclass:: masa.common.pctl.ExactModelChecker
@@ -18,7 +20,7 @@
    :show-inheritance:
 ```
 
-## Statistical Model Checking
+### Statistical Model Checking
 
 ```{eval-rst}
 .. autoclass:: masa.common.pctl.StatisticalModelChecker

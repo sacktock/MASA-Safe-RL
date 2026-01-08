@@ -1,4 +1,7 @@
 """
+Overview
+--------
+
 Base constraint interfaces and Gymnasium wrappers.
 
 This module defines:
@@ -40,6 +43,9 @@ A cost function then maps labels to a scalar:
 .. math::
 
    c(s) \\triangleq \\mathrm{cost}(L(s)) \\in \\mathbb{R}.
+
+API Reference
+-------------
 
 """
 

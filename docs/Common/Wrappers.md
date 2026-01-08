@@ -34,7 +34,9 @@ where :math:`q_t` is the DFA state, :math:`c_t` is the original constraint cost,
 discount factor.
 ```
 
-## Base Classes
+## API Reference
+
+### Base Class
 
 ```{eval-rst}
 .. autoclass:: masa.common.wrappers.ConstraintPersistentWrapper

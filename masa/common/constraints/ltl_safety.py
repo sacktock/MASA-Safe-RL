@@ -1,4 +1,7 @@
 """
+Overview
+--------
+
 LTL-style safety constraints via DFA monitoring and product constructions.
 
 This module supports *safety constraints* expressed using a deterministic finite
@@ -50,6 +53,8 @@ Notes
 - :class:`LTLSafetyEnv` also augments observations to include the automaton state,
   enabling *product-state* learning in model-free settings.
 
+API Reference
+-------------
 """
 
 from __future__ import annotations

@@ -1,4 +1,7 @@
 """
+Overview
+--------
+
 Cumulative-cost constraints in the CMDP style.
 
 This module provides a simple *budgeted cumulative cost* constraint, commonly
@@ -25,6 +28,9 @@ where :math:`B` is the user-specified budget.
 
 The wrapper :class:`CumulativeCostEnv` updates the monitor each step by reading
 ``info["labels"]`` from the wrapped :class:`~masa.common.labelled_env.LabelledEnv`.
+
+API Reference
+-------------
 """
 
 from __future__ import annotations

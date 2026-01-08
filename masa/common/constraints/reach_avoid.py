@@ -1,4 +1,7 @@
 """
+Overview
+--------
+
 Reach-avoid constraint monitor.
 
 A reach-avoid property requires eventually reaching a target set while never
@@ -21,6 +24,8 @@ This implementation tracks:
 - ``violated``: whether ``avoid_label`` has been observed at least once,
 - ``satisfied``: whether the property has been satisfied so far.
 
+API Reference
+-------------
 """
 
 from __future__ import annotations

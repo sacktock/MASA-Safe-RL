@@ -13,7 +13,9 @@ MASA metrics are designed to make it easy to record and report learning signals 
 - **Logging** is performed by logger implementations (see the next page), which accept mixtures of scalars, :class:`~masa.common.metrics.Stats`, and :class:`~masa.common.metrics.Dist` objects. They aggregate values over a configurable window and can emit to stdout and/or TensorBoard with consistent key prefixing.
 ```
 
-## Metrics Core
+## API Reference
+
+### Metrics Core
 
 ```{eval-rst}
 .. autoclass:: masa.common.metrics.Stats

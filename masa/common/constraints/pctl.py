@@ -1,4 +1,7 @@
 """
+Overview
+--------
+
 Probabilistic CTL (PCTL) style constraint monitor (simplified).
 
 The current implementation mirrors the safety-style structure used elsewhere:
@@ -16,6 +19,8 @@ of reaching unsafe states, e.g.:
 but note that this file's current implementation does not compute an explicit
 probability estimate; it tracks whether any unsafe event occurred.
 
+API Reference
+-------------
 """
 
 from __future__ import annotations

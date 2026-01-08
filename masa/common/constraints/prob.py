@@ -1,4 +1,7 @@
 """
+Overview
+--------
+
 Undiscounted probabilistic safety constraint.
 
 This monitor tracks the empirical fraction of unsafe steps in an episode and
@@ -25,6 +28,8 @@ The episode is satisfied iff:
 
    \\hat{p}_{\\text{unsafe}} \\le \\alpha.
 
+API Reference
+-------------
 """
 
 from __future__ import annotations

@@ -35,7 +35,7 @@ If you use MASA in your research please cite it in your publications.
 ```
 
 ## Next Steps
-- [Quick Start](Get%20Started/Quick%20Start) - Installation instructions for MASA.
+- **[Quick Start](Get%20Started/Quick%20Start)** - Installation instructions for MASA.
 
 ```{toctree}
 :caption: Get Started

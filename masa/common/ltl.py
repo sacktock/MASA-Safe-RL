@@ -1,4 +1,7 @@
 r"""
+Overview
+--------
+
 Lightweight propositional (LTL-style) formula objects and a deterministic finite
 automaton (DFA) whose transitions are guarded by those formulae.
 
@@ -14,6 +17,9 @@ Core ideas:
 This module is intentionally minimal: it does not implement full LTL temporal
 operators (X, U, F, G). Instead, it provides propositional guards for DFA edges,
 which is sufficient for DFA-based monitoring and safety cost construction.
+
+API Reference
+-------------
 """
 
 from __future__ import annotations

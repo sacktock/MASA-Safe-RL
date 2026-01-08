@@ -1,4 +1,6 @@
-## Cost Function as a DFA
+# Cost Function as a DFA
+
+## API Reference
 
 ```{eval-rst}
 .. autoclass:: masa.common.ltl.DFACostFn
