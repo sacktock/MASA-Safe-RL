@@ -60,9 +60,9 @@ discount factor.
 
 ## Next Steps
 
-- **[Core Wrappers](Wrappers/Core%20Wrappers)** - API reference for core wrappers.
-- **[Misc Wrappers](Wrappers/Misc%20Wrappers)** - API reference for miscellanious wrappers.
-- **[Vectorized Envs](Wrappers/Vectorized%20Envs)** - API refernce for synchronous vectorized environments and wrappers.
+- [Core Wrappers](Wrappers/Core%20Wrappers) - API reference for core wrappers.
+- [Misc Wrappers](Wrappers/Misc%20Wrappers) - API reference for miscellanious wrappers.
+- [Vectorized Envs](Wrappers/Vectorized%20Envs) - API refernce for synchronous vectorized environments and wrappers.
 
 ```{toctree}
 :caption: Wrappers

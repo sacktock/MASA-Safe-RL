@@ -121,7 +121,7 @@ see the API reference:
 
 .. seealso::
 
-  :doc:`Constraints API Reference <../Common/Constraints>`
+  :doc:`Constraints API Reference <../../Common/Constraints>`
 
 Summary
 -------

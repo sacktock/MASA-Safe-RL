@@ -28,7 +28,7 @@ MASA metrics are designed to make it easy to record and report learning signals 
 
 ## Next Steps
 
-- **[Logging](Metrics/Logging)** - Learn how logging is handled automatically in MASA.
+- [Logging](Metrics/Logging) - Learn how logging is handled automatically in MASA.
 
 ```{toctree}
 :caption: Metrics

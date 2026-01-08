@@ -63,7 +63,7 @@ python -m masa.run --env-id mini_pacman --algo q_learning --custom-cfgs mini_pac
 
 ## Next Steps
 
-- **[Core Concepts](Core%20Concepts/)** - Familiarize yourself with the core concepts in MASA.
-- **[Basic Usage](Basic%20Usage)** - Learn how to use MASA.
+- [Core Concepts](Core%20Concepts/) - Familiarize yourself with the core concepts in MASA.
+- [Basic Usage](Basic%20Usage) - Learn how to use MASA.
 
 
