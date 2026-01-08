@@ -33,7 +33,11 @@ def make_env(
     This helper creates a Gymnasium environment and applies MASA wrappers in the
     **recommended and enforced order**:
 
-    ``TimeLimit`` :math:`\rightarrow` ``LabelledEnv`` :math:`\rightarrow` ``BaseconstraintEnv`` :math:`\rightarrow` ``ConstraintMonitor`` :math:`\rightarrow` ``RewardMonitor``
+    :class:`~gymnasium.wrappers.TimeLimit :math:`\rightarrow` 
+    :class:`~masa.common.labelled_env.LabelledEnv` :math:`\rightarrow` 
+    :class:`~masa.common.constraints.base.BaseConstraintEnv`  :math:`\rightarrow` 
+    :class:`~masa.common.wrappers.ConstraintMonitor` :math:`\rightarrow` 
+    :class:`~masa.common.wrappers.RewardMonitor`
 
     The resulting environment exposes labels, constraint metrics, and reward
     summaries exclusively via the Gymnasium ``info`` dictionary. Observations
@@ -65,11 +69,11 @@ def make_env(
         - All semantic metadata (labels, costs, violations, metrics) is communicated
           via the ``info`` dictionary.
 
-    See Also:
-        masa.common.labelled_env.LabelledEnv
-        masa.common.constraints.base.BaseConstraintEnv
-        masa.common.wrappers.ConstraintMonitor
-        masa.common.wrappers.RewardMonitor
+    See Also: 
+        - :class:`masa.common.labelled_env.LabelledEnv` 
+        - :class:`masa.common.constraints.base.BaseConstraintEnv` 
+        - :class:`masa.common.wrappers.ConstraintMonitor` 
+        - :class:`masa.common.wrappers.RewardMonitor`
     """
 
     load_plugins()

@@ -4,7 +4,11 @@ Basic Usage
 This page shows the **minimal** way to use MASA *without* :func:`masa.common.utils.make_env`, by manually
 constructing a Gymnasium environment and wrapping it in the recommended order:
 
-``TimeLimit`` :math:`\rightarrow` ``LabelledEnv`` :math:`\rightarrow` ``BaseconstraintEnv`` :math:`\rightarrow` ``ConstraintMonitor`` :math:`\rightarrow` ``RewardMonitor``
+    :class:`~gymnasium.wrappers.TimeLimit :math:`\rightarrow` 
+    :class:`~masa.common.labelled_env.LabelledEnv` :math:`\rightarrow` 
+    :class:`~masa.common.constraints.base.BaseConstraintEnv`  :math:`\rightarrow` 
+    :class:`~masa.common.wrappers.ConstraintMonitor` :math:`\rightarrow` 
+    :class:`~masa.common.wrappers.RewardMonitor`
 
 This is the same order enforced by :func:`~masa.common.utils.make_env` (notably, ``TimeLimit`` must come first).
 
@@ -181,4 +185,4 @@ API Reference for :func:`~masa.common.utils.make_env`
 Next Steps
 ----------
 
-- **`Constraints API Reference <../Common/Constraints>`_** - View the common constraints upported by MASA.
+- **`Constraints API Reference <Common/Constraints>`_** - View the common constraints upported by MASA.
