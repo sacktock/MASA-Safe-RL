@@ -33,7 +33,7 @@ def make_env(
     This helper creates a Gymnasium environment and applies MASA wrappers in the
     **recommended and enforced order**:
 
-    :class:`~gymnasium.wrappers.TimeLimit :math:`\rightarrow` 
+    :class:`~gymnasium.wrappers.TimeLimit` :math:`\rightarrow` 
     :class:`~masa.common.labelled_env.LabelledEnv` :math:`\rightarrow` 
     :class:`~masa.common.constraints.base.BaseConstraintEnv`  :math:`\rightarrow` 
     :class:`~masa.common.wrappers.ConstraintMonitor` :math:`\rightarrow` 

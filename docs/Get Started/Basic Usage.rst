@@ -185,4 +185,4 @@ API Reference for :func:`~masa.common.utils.make_env`
 Next Steps
 ----------
 
-- **`Constraints API Reference <Common/Constraints>`_** - View the common constraints upported by MASA.
+- **`Contraints API Reference <../Common/Constraints>`_** - View the common constraints upported by MASA.
