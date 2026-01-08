@@ -164,9 +164,9 @@ exact recurrence or sampled trajectory satisfaction depending on the chosen appr
 Next Steps
 ----------
 
-- **`Propositional Operators </PCTL/Propositional%20Operators>`_**
-- **`Temporal Operators </PCTL/Temporal%20Operators>`_**
-- **`Model Checking </PCTL/Model%20Checking>`_**
+- :doc:`**Propositional Operators** </PCTL/Propositional%20Operators>` - API Reference for PCTL propositional operators.
+- :doc:`**Temporal Operators** </PCTL/Temporal%20Operators>` - API Reference for PCTL temporal operators.
+- :doc:`**Model Checking** </PCTL/Model%20Checking>` - API Reference for PCTL model checking.
 
 .. toctree::
    :caption: Probabilistic Computation Tree Logic (PCTL)

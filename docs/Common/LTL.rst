@@ -159,10 +159,10 @@ MASA LTL Pipeline (High-Level)
 Next Steps
 ----------
 
-- **`Propositional Formula <LTL/Propositional%20Formula>`_**
-- **`Deterministic Finite Automata (DFA) <LTL/DFA>`_**
-- **`Cost Function as DFA <LTL/Cost%20Function%20as%20DFA>`_**
-- **`Shaped Cost Function <LTL/Shaped%20Cost%20Function>`_**
+- :doc:`**Propositional Formula** <LTL/Propositional%20Formula>` - API reference for LTL propositional formula.
+- :doc:`**Deterministic Finite Automata** (DFA) <LTL/DFA>` - API reference for DFA.
+- :doc:`**Cost Function as DFA** <LTL/Cost%20Function%20as%20DFA>` - API reference for DFA interpreted as cost functions.
+- :doc:`**Shaped Cost Function** <LTL/Shaped%20Cost%20Function>` - API reference for cost function shaping over the DFA.
 
 
 .. toctree::
