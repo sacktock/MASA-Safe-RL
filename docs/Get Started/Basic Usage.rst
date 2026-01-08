@@ -173,12 +173,12 @@ saving); the snippet mirrors the general style used in MASA runs.
        stats_window_size=100,        # optional
    )
 
-:func:`make_env(...)` API Reference
------------------------------------
+API Reference for :func:`~masa.common.utils.make_env`
+---------------------------------------
 
 .. autofunction:: masa.common.utils.make_env
 
 Next Steps
 ----------
 
-- **`Constraints API Reference <..Common/Contraints>`_** - View the common constraints upported by MASA.
+- **`Constraints API Reference <../Common/Constraints>`_** - View the common constraints upported by MASA.

@@ -27,7 +27,7 @@ def make_env(
     label_fn: Optional[LabelFn] = None, 
     **constraint_kwargs
 ) -> gym.Env:
-    """
+    r"""
     Construct a fully wrapped MASA environment using the canonical wrapper order.
 
     This helper creates a Gymnasium environment and applies MASA wrappers in the
