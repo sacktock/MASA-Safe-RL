@@ -6,6 +6,7 @@ from masa.plugins.helpers import load_plugins
 from masa.common.registry import ENV_REGISTRY, CONSTRAINT_REGISTRY
 from masa.common.wrappers import TimeLimit, ConstraintMonitor, RewardMonitor
 from masa.common.labelled_env import LabelledEnv
+from masa.common.label_fn import LabelFn
 
 def load_callable(path: str):
     """Load a callable from 'module_path:object_name' string."""
@@ -25,7 +26,7 @@ def make_env(
     *,
     label_fn: Optional[LabelFn] = None, 
     **constraint_kwargs
-):
+) -> gym.Env:
     """
     Construct a fully wrapped MASA environment using the canonical wrapper order.
 
@@ -34,49 +35,44 @@ def make_env(
 
     ``TimeLimit`` :math:`\rightarrow` ``LabelledEnv`` :math:`\rightarrow` ``BaseconstraintEnv`` :math:`\rightarrow` ``ConstraintMonitor`` :math:`\rightarrow` ``RewardMonitor``
 
-    The resulting environment exposes atomic predicate labels, constraint metrics,
-    and reward summaries via the standard Gymnasium ``info`` dictionary.
+    The resulting environment exposes labels, constraint metrics, and reward
+    summaries exclusively via the Gymnasium ``info`` dictionary. Observations
+    and rewards themselves are left unchanged.
 
     Args:
-        env_id (str | gymnasium.Env):
-            Either a Gymnasium environment ID (passed to :func:`gymnasium.make`)
-            or an already-constructed environment instance.
-        label_fn (:class:`masa.common.label_fn.LabelFn`):
-            Function mapping observations to an iterable of atomic predicate names.
-            Labels are computed on every call to :meth:`reset` and :meth:`step` and
+        env_id:
+            Environment identifier registered in ``ENV_REGISTRY``.
+        constraint:
+            Constraint identifier registered in ``CONSTRAINT_REGISTRY``.
+        max_episode_steps:
+            Maximum number of steps per episode. Applied via ``TimeLimit`` as
+            the outermost wrapper.
+        label_fn:
+            Optional function mapping observations to atomic predicate labels.
+            If provided, labels are computed on every ``reset`` and ``step`` and
             stored under ``info["labels"]``.
-        cost_fn (:class:`masa.common.constraints.base.CostFn`, optional):
-            Cost function mapping a set of atomic predicates to a scalar cost.
-            Required if ``constraint_cls`` expects a cost function.
-        constraint_cls (type, optional):
-            Constraint wrapper class to apply (e.g.,
-            :class:`masa.common.constraints.cumulative.CumulativeConstraintEnv`).
-            If ``None``, no constraint wrapper is applied.
-        max_episode_steps (int, optional):
-            Maximum episode length. If provided, the environment is wrapped in
-            :class:`gymnasium.wrappers.TimeLimit` *before* any MASA-specific wrappers.
         **constraint_kwargs:
-            Additional keyword arguments forwarded to ``constraint_cls``.
+            Additional keyword arguments forwarded to the constraint wrapper
+            constructor.
 
     Returns:
-        gymnasium.Env:
-            A fully wrapped Gymnasium environment compatible with MASA algorithms,
-            monitors, and logging utilities.
+        A fully wrapped Gymnasium environment compatible with MASA algorithms,
+        monitors, and logging utilities.
 
     Notes:
-        - Wrapper order matters and is enforced by this function.
+        - Wrapper order is fixed and enforced.
         - Constraints are reset automatically on environment reset.
-        - All semantic information (labels, costs, violations, metrics) is communicated
-          exclusively via the ``info`` dictionary; observations and rewards are left
-          unchanged.
+        - All semantic metadata (labels, costs, violations, metrics) is communicated
+          via the ``info`` dictionary.
 
     See Also:
-        - :class:`masa.common.labelled_env.LabelledEnv`
-        - :class:`masa.common.constraints.base.BaseConstraintEnv`
-        - :class:`masa.common.wrappers.ConstraintMonitor`
-        - :class:`masa.common.wrappers.RewardMonitor`
+        masa.common.labelled_env.LabelledEnv
+        masa.common.constraints.base.BaseConstraintEnv
+        masa.common.wrappers.ConstraintMonitor
+        masa.common.wrappers.RewardMonitor
     """
-    
+
+    load_plugins()
     env_ctor = ENV_REGISTRY.get(env_id)
     constraint_ctor = CONSTRAINT_REGISTRY.get(constraint)
     env = env_ctor()
@@ -89,4 +85,3 @@ def make_env(
     env = RewardMonitor(env)
     return env
 
-load_plugins()
