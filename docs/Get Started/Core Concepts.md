@@ -188,7 +188,7 @@ MASA constraints can be:
 * automaton-based (Safety LTL),
 * probabilistic (bounded PCTL).
 
-```{figure} _static/img/MASA.svg
+```{figure} ../_static/img/MASA.svg
 Overview of the abstraction stack used in MASA
 ```
 
