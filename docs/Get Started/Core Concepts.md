@@ -188,6 +188,10 @@ MASA constraints can be:
 * automaton-based (Safety LTL),
 * probabilistic (bounded PCTL).
 
+```{figure} _static/img/MASA.svg
+Overview of the abstraction stack used in MASA
+```
+
 ## Temporal Logic in MASA
 
 Beyond scalar costs, MASA supports **formal temporal specifications**, including:
