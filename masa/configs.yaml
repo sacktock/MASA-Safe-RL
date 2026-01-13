@@ -63,23 +63,6 @@ defaults:
     epsilon_decay: linear
     epsilon_decay_frames: 10000
 
-  recreg:
-    task_alpha: 0.1
-    task_gamma: 0.9
-    safe_alpha: 0.1
-    safe_gamma: 0.9
-    mode: model-free
-    model_checking: statistical
-    samples: 8192
-    horizon: 5
-    step_wise_prob: 0.00001
-    exploration: boltzmann
-    boltzmann_temp: 0.05
-    initial_epsilon: 1.0
-    final_epsilon: 0.1
-    epsilon_decay: linear
-    epsilon_decay_frames: 10000
-
   ppo:
     learning_rate: 3e-4
     n_steps: 2048

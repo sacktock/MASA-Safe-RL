@@ -25,6 +25,8 @@ def parse_config(args, unknown) -> Config:
         config = config.update({"env.cost_fn": args.cost_fn})
     if args.dfa is not None:
         config = config.update({"constraint.dfa": args.dfa})
+    if args.constraint is not None:
+        config = config.update({"constraint.type": args.constraint})
     if args.total_timesteps is not None:
         config = config.update({"run.total_timesteps": args.total_timesteps})
     config = config.update({"run.seed": args.seed})
