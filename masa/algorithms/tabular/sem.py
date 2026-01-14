@@ -29,6 +29,7 @@ class SEM(QL):
         dm_gamma: float = 0.99,
         cm_alpha: float = 0.05,
         cm_gamma: float = 0.999,
+        cost_coef: float = 1.0,
         r_min: float = 0.0,
         exploration: str = 'boltzmann',
         boltzmann_temp: float = 0.05,
@@ -61,6 +62,7 @@ class SEM(QL):
         self.dm_gamma = dm_gamma
         self.cm_alpha = cm_alpha
         self.cm_gamma = cm_gamma
+        self.cost_coef = cost_coef
         self.r_min = r_min
         
     def _setup_q_table(self):
@@ -75,11 +77,13 @@ class SEM(QL):
 
         for (state, action, reward, _, violation, next_state, terminal) in self.buffer:
 
-            penalty = 1.0 if violation else 0.0
+            reward = reward - self.r_min
+
+            penalty = self.cost_coef if violation else 0.0
 
             current = self.Q[next_state]
             self.Q[state, action] = (1 - self.alpha) * self.Q[state, action] \
-            + self.alpha * ((reward - self.r_min) + (1 - terminal) * self.gamma * np.max(current))
+            + self.alpha * (reward + (1 - terminal) * self.gamma * np.max(current))
 
             current = self.D[next_state]
             self.D[state, action] = (1 - self.dm_alpha) * self.D[state, action] \
@@ -122,30 +126,19 @@ class SEM(QL):
     @staticmethod
     @jit
     def select_action(q_values, d_values, c_values):
-        c_values = jnp.clip(c_values, -1.0, 0.0)
-        d_values = jnp.clip(-d_values, -1.0, 0.0)
+        c_values = jnp.clip(c_values, -self.cost_coef, 0.0)
+        d_values = jnp.clip(-d_values, -self.cost_coef, 0.0)
         X = jnp.exp(jnp.minimum(c_values, d_values))
-        q_X = q_values * X
-        return np.argmax(q_X)
+        q_X = q_values * X + 1e-6
+        probs = q_X / jnp.sum(q_X)
+        return np.argmax(probs)
 
     @staticmethod
     @partial(jit, static_argnames=["exploration"])
     def sample_action(key, q_values, d_values, c_values, tmp, eps, exploration="boltzmann"):
-        c_values = jnp.clip(c_values, -1.0, 0.0)
-        d_values = jnp.clip(-d_values, -1.0, 0.0)
+        c_values = jnp.clip(c_values, -self.cost_coef, 0.0)
+        d_values = jnp.clip(-d_values, -self.cost_coef, 0.0)
         X = jnp.exp(jnp.minimum(c_values, d_values))
-        q_X = q_values * X
-        #q_X = q_X / (jnp.sum(q_X) + 1e-6)
-        #probs = q_X / (jnp.sum(q_X) + 1e-6)
-        #return jr.choice(key, q_values.shape[0], p=probs)
-        if exploration == "boltzmann":
-            probs = q_X / (jnp.sum(q_X) + 1e-6)
-            log_probs = jnp.log(probs)
-            scaled_log_probs = log_probs - log_probs
-            exp = jnp.exp(scaled_log_probs / tmp)
-            probs = exp / (jnp.sum(exp) + 1e-6)
-        if exploration == "epsilon_greedy":
-            probs = jnp.zeros(q_X.shape[0])
-            probs = probs.at[jnp.argmax(q_X)].set(1.0 - eps)
-            probs += eps * (q_X / (jnp.sum(q_X) + 1e-6))
+        q_X = q_values * X + 1e-6
+        probs = q_X / jnp.sum(q_X)
         return jr.choice(key, q_values.shape[0], p=probs)

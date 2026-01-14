@@ -40,10 +40,11 @@ defaults:
   sem:
     ql_alpha: 0.1
     ql_gamma: 0.9
-    dm_alpha: 0.05
+    dm_alpha: 0.1
     dm_gamma: 0.95
     cm_alpha: 0.05
     cm_gamma: 0.999
+    cost_coef: 1.0
     r_min: 0.0
     exploration: boltzmann
     boltzmann_temp: 0.05

@@ -64,7 +64,7 @@ class LCRL(QL):
 
             current = self.Q[next_state]
             self.Q[state, action] = (1 - self.alpha) * self.Q[state, action] \
-            + self.alpha * (reward * (1 - violation) + float(violation) * (self.r_min / self.gamma) \
+            + self.alpha * (reward * (1 - violation) + float(violation) * (self.r_min / (1.0 - self.gamma)) \
             + (1 - violation) * (1 - terminal) * self.gamma * np.max(current))
 
         self.buffer.clear()
