@@ -109,7 +109,7 @@ class QL(TabularAlgorithm):
         if hasattr(self.env, "cost_fn") and isinstance(self.env.cost_fn, DFACostFn):
             # if the cost function associated with the constraint is a DFA, by default use counter factual experiences
             self.buffer += self.generate_counter_factuals(
-                self._last_obs, action, reward, next_obs, terminated, info, getattr(self.env._constraint, "cost_fn", None)
+                self._last_obs, action, reward, next_obs, terminated, info, getattr(self.env, "cost_fn", None)
             )
         else:
             cost = info["constraint"]["step"].get("cost", 0.0)

@@ -556,7 +556,9 @@ class ShapedCostFn(DFACostFn):
         """
         next_state = self.dfa.transition(state, labels)
         cost = float(next_state in self.dfa.accepting)
-        return cost + self._gamma * self.potential_fn(next_state) - self.potential(state)
+        potential_cost = 0.0 if next_state in self.dfa.accepting or state in self.dfa.accepting else \
+          self._gamma * self.potential_fn(next_state) - self.potential_fn(state)
+        return cost + potential_cost
 
     def __call__(self):
         """Disables stateful calling for shaped cost.

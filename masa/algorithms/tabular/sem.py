@@ -110,6 +110,7 @@ class SEM(QL):
                 jnp.asarray(self.Q[obs], dtype=jnp.float32), 
                 jnp.asarray(self.D[obs], dtype=jnp.float32),
                 jnp.asarray(self.C[obs], dtype=jnp.float32),
+                self.cost_coef,
             )
         else:
             action = self.sample_action(
@@ -119,15 +120,16 @@ class SEM(QL):
                 jnp.asarray(self.C[obs], dtype=jnp.float32),
                 self.boltzmann_temp, 
                 self._epsilon, 
+                self.cost_coef,
                 exploration=self.exploration
             )
         return self.prepare_act(action)
 
     @staticmethod
     @jit
-    def select_action(q_values, d_values, c_values):
-        c_values = jnp.clip(c_values, -self.cost_coef, 0.0)
-        d_values = jnp.clip(-d_values, -self.cost_coef, 0.0)
+    def select_action(q_values, d_values, c_values, cost_coef):
+        c_values = jnp.clip(c_values, -cost_coef, 0.0)
+        d_values = jnp.clip(-d_values, -cost_coef, 0.0)
         X = jnp.exp(jnp.minimum(c_values, d_values))
         q_X = q_values * X + 1e-6
         probs = q_X / jnp.sum(q_X)
@@ -135,9 +137,9 @@ class SEM(QL):
 
     @staticmethod
     @partial(jit, static_argnames=["exploration"])
-    def sample_action(key, q_values, d_values, c_values, tmp, eps, exploration="boltzmann"):
-        c_values = jnp.clip(c_values, -self.cost_coef, 0.0)
-        d_values = jnp.clip(-d_values, -self.cost_coef, 0.0)
+    def sample_action(key, q_values, d_values, c_values, tmp, eps, cost_coef, exploration="boltzmann"):
+        c_values = jnp.clip(c_values, -cost_coef, 0.0)
+        d_values = jnp.clip(-d_values, -cost_coef, 0.0)
         X = jnp.exp(jnp.minimum(c_values, d_values))
         q_X = q_values * X + 1e-6
         probs = q_X / jnp.sum(q_X)
