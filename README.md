@@ -42,8 +42,11 @@ pip install -e .
 ```
 
 #### Installation with uv
+`uv sync` allows installing the base package.
 
-Coming soon!
+* For building docs, you can use `uv sync --extras docs`.
+* Adding GPU support: `uv sync --extra jax_gpu` (unimplemented at the momment)
+* All extras (docs and GPU support): `uv sync --all-extras`.
 
 #### Installation with PyPI
 
