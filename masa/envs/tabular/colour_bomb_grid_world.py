@@ -79,7 +79,3 @@ class ColourBombGridWorld(TabularEnv):
         reward = 1.0 if self._state in self._goal_states else 0.0
 
         return self._state, reward, terminated, False, {}
-
-    @property
-    def safe_end_component(self):
-        return list(self._goal_states)

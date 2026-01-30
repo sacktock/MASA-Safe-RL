@@ -72,10 +72,6 @@ class ColourGridWorld(TabularEnv):
 
         return self._state, reward, terminated, False, {}
 
-    @property
-    def safe_end_component(self):
-        return [self._goal_state]
-
 
         
         

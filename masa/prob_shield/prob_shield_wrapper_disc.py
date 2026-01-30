@@ -106,12 +106,12 @@ class ProbShieldWrapperDisc(ConstraintPersistentWrapper):
             )
 
         self.successor_states_matrix, self.probabilities, self.max_successors, \
-        label_fn, cost_fn, sec = build_successor_states_matrix(
+        label_fn, cost_fn, safe_set = build_successor_states_matrix(
             self.env, label_fn=label_fn, cost_fn=cost_fn,
         )
 
         v_inf, v_sup, _, _, = interval_bound_value_iteration(
-            self.successor_states_matrix, self.probabilities, label_fn, cost_fn, sec, \
+            self.successor_states_matrix, self.probabilities, label_fn, cost_fn, safe_set, \
             theta=self.theta, max_steps=self.max_vi_steps
         )
 

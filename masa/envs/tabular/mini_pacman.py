@@ -73,16 +73,6 @@ class MiniPacman(TabularEnv):
         self.observation_space = spaces.Discrete(self._n_states)
         self.action_space = spaces.Discrete(self._n_actions)
 
-        self.safe_end_component = create_pacman_end_component(
-            STANDARD_MAP, 
-            AGENT_TERM[0], 
-            AGENT_TERM[1], 
-            self._state_map, 
-            n_directions=N_DIRECTIONS, 
-            n_ghosts=N_GHOSTS,
-            food=True,
-        )
-
         self._agent_start_x = AGENT_START[0]
         self._agent_start_y = AGENT_START[1]
         self._agent_start_direction = AGENT_DIRECTION

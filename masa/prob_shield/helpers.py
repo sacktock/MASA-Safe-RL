@@ -1,7 +1,7 @@
 from __future__ import annotations
 import gymnasium as gym
 from gymnasium import spaces
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Set, List
 import numpy as np
 from masa.common.wrappers import is_wrapped, get_wrapped
 from masa.common.constraints.ltl_safety import LTLSafetyEnv
@@ -31,23 +31,6 @@ def build_successor_states_matrix(
             "Environment must expose either a transition matrix or a "
             "successor-states dictionary (or both), but neither was found."
         )
-
-    if hasattr(env.unwrapped, "safe_end_component"):
-        sec = env.unwrapped.safe_end_component
-        try:
-            iter(sec)
-        except TypeError:
-            raise TypeError(
-                "`env.safe_end_component` must be an iterable (e.g. list, set, tuple) "
-                f"but got type {type(sec).__name__}."
-            )
-        if len(sec) == 0:
-            raise ValueError(
-                "`env.safe_end_component` must be a non-empty iterable. "
-                "The shielding procedure requires at least one absorbing safe state."
-            )
-    else:
-        sec = None
 
     transition_matrix = env.unwrapped.get_transition_matrix() if use_transition_matrix else None
     successor_states, probs_dict = env.unwrapped.get_successor_states_dict() if use_successor_states_dict else (None, None)
@@ -89,11 +72,7 @@ def build_successor_states_matrix(
             successor_states, probs_dict = create_product_successor_states_and_probabilities(
                 n_states, n_actions, successor_states, probs_dict, dfa, label_fn
             )
-        if sec is not None:
-            from masa.common.constraints.ltl_safety import create_product_safe_end_component
-            sec = create_product_safe_end_component(
-                n_states, n_actions, sec, dfa, label_fn,
-            )
+
         label_fn = create_product_label_fn(n_states, dfa)
         cost_fn = product_cost_fn
 
@@ -136,7 +115,7 @@ def build_successor_states_matrix(
 
     print(f"Calculated maximum number of successor states [{max_successors}] ...")
 
-    successor_states_matrix = np.zeros((max_successors, n_states), dtype=np.int64)
+    successor_states_matrix = -np.ones((max_successors, n_states), dtype=np.int64) # -1 means invalid transition
     probabilities = np.zeros((max_successors, n_states, n_actions), dtype=np.float64)
 
     print("Building successor state matrix and probabilities ...")
@@ -150,7 +129,7 @@ def build_successor_states_matrix(
             probabilities[:k, s, :] = probs[successors_s, s, :]
 
         if use_successor_states_dict:
-            successors_s = np.array(successor_states[s], dtype=np.int64)#
+            successors_s = np.array(successor_states[s], dtype=np.int64)
             k = len(successors_s)
             successor_states_matrix[:k, s] = successors_s
 
@@ -160,4 +139,39 @@ def build_successor_states_matrix(
                     dtype=np.float64
                 )
 
-    return successor_states_matrix, probabilities, max_successors, label_fn, cost_fn, sec
+    print("Computing almost sure safe set ...")
+
+    safe_states = {s for s in range(n_states) if cost_fn(label_fn(s)) < 0.5}
+
+    def almost_sure_safe_set(
+        succ_matrix: np.ndarray, probs: np.ndarray, safe_states: Set[int]
+    ) -> List[int]:
+
+        k, n_states = succ_matrix.shape
+        assert probs.shape == (k, n_states, n_actions), f"probs shape must be (k,n_states,n_actions) = {(k,n_states,n_actions)}"
+
+        W = set(safe_states)
+        changed = True
+        while changed:
+            changed = False
+            to_remove = []
+            for s in list(W):
+                ok = False
+                succs_s = succ_matrix[:, s]
+                for a in range(n_actions):
+                    p_sa = probs[:, s, a]
+                    mask = (p_sa > 0.0) & (succs_s != -1)
+                    support = succs_s[mask]
+                    if all(int(sp) in W for sp in support):
+                        ok = True
+                        break
+                if not ok:
+                    to_remove.append(s)
+            if to_remove:
+                W.difference_update(to_remove)
+                changed = True
+        return list(W)
+
+    safe_set = almost_sure_safe_set(successor_states_matrix, probabilities, safe_states)
+
+    return successor_states_matrix, probabilities, max_successors, label_fn, cost_fn, safe_set

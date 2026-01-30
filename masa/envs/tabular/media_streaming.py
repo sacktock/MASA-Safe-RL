@@ -79,10 +79,5 @@ class MediaStreaming(TabularEnv):
         reward = -1.0 if action == 1 else 0.0
 
         return self._state, reward, False, False, {}
-
-    @property
-    def safe_end_component(self):
-        # This is a simplification - we assume the start states and above are safe, but every state has a small non-zero probability of being safe.
-        return [s for s in range(self._start_state, self._n_states)]
         
 

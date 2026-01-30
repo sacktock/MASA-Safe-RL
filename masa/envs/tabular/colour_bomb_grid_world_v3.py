@@ -127,7 +127,3 @@ class ColourBombGridWorldV3(TabularEnv):
         reward = 1.0 if self._active_colour_dict[self._state//(self._grid_size**2)] in label_fn(self._state) else 0.0
 
         return self._state, reward, False, False, {}
-
-    @property
-    def safe_end_component(self):
-        return list(self._safe_states)
