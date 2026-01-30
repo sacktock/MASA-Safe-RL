@@ -68,7 +68,7 @@ class OnPolicyAlgorithm(BaseAlgorithm):
         if isinstance(learning_rate, float):
             self.lr_schedule = optax.schedules.constant_schedule(learning_rate)
         else:
-            assert isinstance(learning_rate, optax.Schedule), f"learning_rate for class PPO must be float or optax.Schedule not {learning_rate}"
+            assert callable(learning_rate), f"learning_rate for class PPO must be float or optax.Schedule not {type(learning_rate)}"
             self.lr_schedule = learning_rate
 
         self.use_tqdm_rollout = use_tqdm_rollout

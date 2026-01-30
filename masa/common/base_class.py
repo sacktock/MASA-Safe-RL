@@ -27,6 +27,7 @@ class BaseAlgorithm(ABC):
         env_fn: Optional[Callable[[], gym.Env]] = None,
         eval_env: Optional[gym.Env] = None, 
     ):
+
         self.env = env
         self.tensorboard_logdir = tensorboard_logdir
         self.seed = seed
@@ -62,8 +63,10 @@ class BaseAlgorithm(ABC):
         self._eval_env = eval_env
 
         self.key = jr.PRNGKey(0 if seed is None else seed)
+        self.eval_key, self.key = jr.split(self.key)
 
-    def train(self, 
+    def train(
+        self, 
         num_frames: int,
         num_eval_episodes: int = 0,
         eval_freq: int = 0,

@@ -69,7 +69,7 @@ class PPO(OnPolicyAlgorithm):
         if isinstance(clip_range, float):
             self.clip_range_schedule = optax.schedules.constant_schedule(clip_range)
         else:
-            assert isinstance(clip_range, optax.Schedule), f"clip_range for class PPO must be float or optax.Schedule not {clip_range}"
+            assert callable(clip_range), f"clip_range for class PPO must be float or optax.Schedule not {clip_range}"
             self.clip_range_schedule = clip_range
 
         self.normalize_advantage = normalize_advantage

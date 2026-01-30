@@ -1254,7 +1254,7 @@ class VecWrapper(VecEnvWrapperBase):
 
         return reset_obs, reset_infos
 
-    def step(self, action):
+    def step(self, actions):
         """
         Step all environments.
 

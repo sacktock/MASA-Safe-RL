@@ -418,10 +418,10 @@ class StatsLogger(BaseLogger):
             if isinstance(val, Stats):
                 met = val.get()
                 for k, v in met.items():
-                    if k in self.stats:
-                        self.stats[k].append(float(v))
+                    if f"{key}_{k}" in self.stats:
+                        self.stats[f"{key}_{k}"].append(float(v))
                     else:
-                        self.stats[k] = deque([float(v)], maxlen=self.stats_window_size)
+                        self.stats[f"{key}_{k}"] = deque([float(v)], maxlen=self.stats_window_size)
             elif isinstance(val, Dist):
                 # Store a snapshot of the reservoir for later histogram logging.
                 self.dists[key] = val.get()
