@@ -65,10 +65,10 @@ def projection_bar_min(intersections: np.ndarray, i: int, j: int) -> np.ndarray:
 
     return result_vertex.astype(np.float64)
 
-class ProbShieldWrapperDisc(ConstraintPersistentWrapper):
+class ProbShieldWrapperBase(ConstraintPersistentWrapper):
 
     def __init__(
-        self, 
+        self,
         env: gym.Env,
         label_fn: Optional[LabelFn] = None,
         cost_fn: Optional[CostFn] = None,
@@ -76,16 +76,13 @@ class ProbShieldWrapperDisc(ConstraintPersistentWrapper):
         theta: float = 1e-10,
         max_vi_steps: int = 1000,
         init_safety_bound: float = 0.5,
-        granularity: int = 20,
     ):
-
         super().__init__(env)
 
         self.safety_abstraction = safety_abstraction
         self.theta = theta
         self.max_vi_steps = max_vi_steps
         self.init_safety_bound = init_safety_bound
-        self.granularity = granularity
         self._box_dtype = np.float32
 
         # Sanity checks
@@ -171,11 +168,9 @@ class ProbShieldWrapperDisc(ConstraintPersistentWrapper):
             )
         return aug
 
-    def _make_augmented_act_space(self, orig: spaces.Discrete) -> spaces.MultiDiscrete:
-        n_actions = orig.n
-        aug = spaces.MultiDiscrete([n_actions]*2+[self.granularity+1]*self.max_successors)
-        return aug
-
+    def _make_augmented_act_space(self, orig: spaces.Discrete) -> Any:
+        raise NotImplementedError
+    
     def _augment_obs(self, obs: Any) -> Dict[str, Any]:
         # No one-hotting here, we let the algorithm decide how they want to handle discrete observations
         if isinstance(self._orig_obs_space, (spaces.Discrete, spaces.Box)):
@@ -196,8 +191,11 @@ class ProbShieldWrapperDisc(ConstraintPersistentWrapper):
     def _one_hot(self, s: int) -> np.ndarray:
         raise NotImplementedError
 
-    def _project_act(self, action: np.ndarray, eps: float = 1e-6) -> Tuple[np.ndarray, np.ndarray]:
+    def _parse_act(self, action: np.ndarray) -> Tuple[int, int, np.ndarray]:
+        raise NotImplementedError 
 
+    def _project_act(self, i: int, j: int, betas: np.ndarray, eps: float = 1e-6) -> Tuple[np.ndarray, np.ndarray]:
+        
         # Calculate non-zero successors
         probs_curr = self.probabilities[:, self._current_obs, :].copy()
         mask = np.any(probs_curr > 0.0, axis=1)
@@ -205,7 +203,6 @@ class ProbShieldWrapperDisc(ConstraintPersistentWrapper):
         k = len(successors_s)
         probs_curr = probs_curr[successors_s]
 
-        betas = action[2:] / self.granularity # betas chosen by the agent
         betas = betas[:k]
         obs_successor_states = self.successor_states_matrix[successors_s, self._current_obs]
         obs_safety_lb = self.safety_lb[obs_successor_states]
@@ -312,9 +309,6 @@ class ProbShieldWrapperDisc(ConstraintPersistentWrapper):
         else:
             intersections = np.empty((0, n_actions), dtype=np.float64)
 
-        i = action[0]
-        j = action[1]
-
         # Compute the vertex corresponding to the action
         safe_vertex = np.zeros(n_actions, dtype=np.float64)
 
@@ -340,7 +334,7 @@ class ProbShieldWrapperDisc(ConstraintPersistentWrapper):
                     safe_vertex[j] = diff_act_i / (diff_act_i - diff_act_j)
 
         return safe_vertex, proj_safety_bounds
-                    
+
     def reset(self, *, seed: int | None = None, options: Dict[str, Any] | None = None):
         obs, info = self.env.reset(seed=seed, options=options)
         self._current_safety_bound = self.init_safety_bound
@@ -349,7 +343,8 @@ class ProbShieldWrapperDisc(ConstraintPersistentWrapper):
         return self._augment_obs(obs), info
 
     def step(self, action):
-        safe_vertex, proj_safety_bounds = self._project_act(action)
+        i, j, betas = self._parse_act(action)
+        safe_vertex, proj_safety_bounds = self._project_act(i, j, betas)
 
         # Renormalize safe_vertex:
         #   safe_vertex can often be affected by floating point errors
@@ -373,6 +368,82 @@ class ProbShieldWrapperDisc(ConstraintPersistentWrapper):
         self._current_obs = abstr_obs
 
         return self._augment_obs(orig_obs), reward, terminated, truncated, info
+
+class ProbShieldWrapperDisc(ProbShieldWrapperBase):
+
+    def __init__(
+        self, 
+        env: gym.Env,
+        label_fn: Optional[LabelFn] = None,
+        cost_fn: Optional[CostFn] = None,
+        safety_abstraction: Optional[Callable[[Any], int]] = None,
+        theta: float = 1e-10,
+        max_vi_steps: int = 1000,
+        init_safety_bound: float = 0.5,
+        granularity: int = 20,
+    ):
+
+        self.granularity = granularity
+
+        super().__init__(
+            env, 
+            label_fn=label_fn, 
+            cost_fn=cost_fn, 
+            safety_abstraction=safety_abstraction, 
+            theta=theta, 
+            max_vi_steps=max_vi_steps, 
+            init_safety_bound=init_safety_bound
+        )
+
+    def _make_augmented_act_space(self, orig: spaces.Discrete) -> spaces.MultiDiscrete:
+        n_actions = orig.n
+        aug = spaces.MultiDiscrete([n_actions]*2+[self.granularity+1]*self.max_successors)
+        return aug
+
+    def _parse_act(self, action: np.ndarray) -> Tuple[int, int, np.ndarray]:
+        i, j = action[0], action[1]
+        betas = action[2:] / self.granularity
+        return i, j, betas
+
+class ProbShieldWrapperCont(ProbShieldWrapperBase):
+
+    def __init__(
+        self, 
+        env: gym.Env,
+        label_fn: Optional[LabelFn] = None,
+        cost_fn: Optional[CostFn] = None,
+        safety_abstraction: Optional[Callable[[Any], int]] = None,
+        theta: float = 1e-10,
+        max_vi_steps: int = 1000,
+        init_safety_bound: float = 0.5,
+    ):
+
+        super().__init__(
+            env, 
+            label_fn=label_fn, 
+            cost_fn=cost_fn, 
+            safety_abstraction=safety_abstraction, 
+            theta=theta, 
+            max_vi_steps=max_vi_steps, 
+            init_safety_bound=init_safety_bound
+        )
+
+    def _make_augmented_act_space(self, orig: spaces.Discrete) -> spaces.Dict:
+        n_actions = orig.n
+        aug = spaces.Dict({
+            "multi_discrete": spaces.MultiDiscrete([n_actions]*2),
+            "box": spaces.Box(low=0, high=1, shape=(self.max_successors,), dtype=self._box_dtype)
+        })
+        return aug
+
+    def _parse_act(self, action: np.ndarray) -> Tuple[int, int, np.ndarray]:
+        i, j = action[0], action[1]
+        betas = action[2:]
+        return i, j, betas
+
+    
+
+    
 
 
 
