@@ -101,7 +101,7 @@ class RolloutBuffer():
             # Reshape 0-d tensor to avoid error
             log_probs = log_probs.reshape(-1, 1)
 
-        actions = actions.reshape((self.n_envs, self.act_dim), dtype=np.float32)
+        actions = actions.reshape((self.n_envs, self.act_dim))
 
         self.observations[self.pos] = np.array(obs)
         self.actions[self.pos] = np.array(actions)
