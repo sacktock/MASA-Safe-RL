@@ -20,12 +20,6 @@ from masa.common.base_class import BaseJaxPolicy
 
 tfd = tfp.distributions
 
-PRNGKey = Any
-Shape = Tuple[int, ...]
-Dtype = Any
-Array = Any
-
-
 class Critic(nn.Module):
     net_arch: Sequence[int]
     activation_fn: Callable[[jnp.ndarray], jnp.ndarray] = nn.tanh
@@ -136,7 +130,6 @@ class PPOPolicy(BaseJaxPolicy):
             if features_extractor_kwargs is None:
                 features_extractor_kwargs = {}
 
-        self.net_arch = net_arch
         self.log_std_init = log_std_init
         self.activation_fn = activation_fn
         self.features_extractor_class = features_extractor_class
@@ -242,8 +235,8 @@ class PPOPolicy(BaseJaxPolicy):
             ),
         )
 
-        self.actor.apply = jax.jit(self.actor.apply)
-        self.critic.apply = jax.jit(self.critic.apply)
+        self.actor.apply = jit(self.actor.apply)
+        self.critic.apply = jit(self.critic.apply)
 
         return key
 
@@ -253,7 +246,7 @@ class PPOPolicy(BaseJaxPolicy):
     def forward(self, key: jax.Array, obs: np.ndarray, deterministic: bool = False) -> np.ndarray:
         return self._predict(key, obs, deterministic=deterministic)
 
-    def predict_all(self, key: jax.Array, observation: np.ndarray):
+    def predict_all(self, key: jax.Array, observation: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         return self._predict_all(key, self.featurizer_state, self.actor_state, self.critic_state, observation)
 
     def _predict(self, key: jax.Array, obs: np.ndarray, deterministic: bool = False) -> np.ndarray:
@@ -264,7 +257,9 @@ class PPOPolicy(BaseJaxPolicy):
 
     @staticmethod
     @jit
-    def _predict_all(key, featurizer_state, actor_state, critic_state, observations):
+    def _predict_all(
+        key: jax.Array, featurizer_state: TrainState, actor_state: TrainState, critic_state: TrainState, observations: jnp.ndarray
+    ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
         features = featurizer_state.apply_fn(featurizer_state.params, observations)
         dist = actor_state.apply_fn(actor_state.params, features)
         actions = dist.sample(seed=key)
@@ -274,13 +269,17 @@ class PPOPolicy(BaseJaxPolicy):
 
     @staticmethod
     @jit
-    def select_action(featurizer_state, actor_state, obs):
+    def select_action(
+        featurizer_state: TrainState, actor_state: TrainState, obs: jnp.ndarray
+    ) -> jnp.ndarray:
         feats = featurizer_state.apply_fn(featurizer_state.params, obs)
         return actor_state.apply_fn(actor_state.params, feats).mode()
         
     @staticmethod
     @jit
-    def sample_action(key, featurizer_state, actor_state, obs):
+    def sample_action(
+        key: jax.Array, featurizer_state: TrainState, actor_state: TrainState, obs: jnp.ndarray
+    ) -> jnp.ndarray:
         feats = featurizer_state.apply_fn(featurizer_state.params, obs)
         dist = actor_state.apply_fn(actor_state.params, feats)
         action = dist.sample(seed=key)

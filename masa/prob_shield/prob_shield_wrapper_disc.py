@@ -437,7 +437,7 @@ class ProbShieldWrapperCont(ProbShieldWrapperBase):
         return aug
 
     def _parse_act(self, action: np.ndarray) -> Tuple[int, int, np.ndarray]:
-        i, j = action[0], action[1]
+        i, j = int(action[0].item()), int(action[1].item())
         betas = action[2:]
         return i, j, betas
 

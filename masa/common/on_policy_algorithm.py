@@ -54,7 +54,7 @@ class OnPolicyAlgorithm(BaseAlgorithm):
             monitor=monitor,
             device=device,
             verbose=verbose,
-            supported_action_spaces=(spaces.Discrete, spaces.Box, spaces.MultiBinary, spaces.MultiDiscrete),
+            supported_action_spaces=(spaces.Discrete, spaces.Box, spaces.MultiBinary, spaces.MultiDiscrete, spaces.Dict),
             supported_observation_spaces=(spaces.Box),
             env_fn=env_fn,
             eval_env=eval_env,
