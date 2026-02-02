@@ -2,7 +2,6 @@ import os
 os.environ["TF_USE_LEGACY_KERAS"] = "1"
 
 from dataclasses import dataclass
-import tensorflow_probability.substrates.jax as tfp
 from masa.common.base_class import BaseJaxPolicy
 from flax.training.train_state import TrainState
 import optax
@@ -16,31 +15,44 @@ from masa.common.layers import Identity, NatureCNN, Flatten
 from masa.common.policies import Critic
 from typing import Callable, Optional, Sequence, Union, Tuple, Any
 
+import tensorflow_probability.substrates.jax as tfp
+
 tfd = tfp.distributions
+tfb = tfp.bijectors
 
 @dataclass
 class ParamActionDist:
     # tensors from the network
     logits_i: jnp.ndarray          # (B, N)
     logits_j: jnp.ndarray          # (B, N)
-    beta_loc: callable             # function(features, i, j) -> (B, K)
-    beta_scale: callable           # same -> (B, K)
-    features: jnp.ndarray          # (B, F)
-    max_successors: int
-    eps: float = 1e-6
+    beta_loc_table: jnp.ndarray    # (B, N, N, K)
+    beta_scale_table: jnp.ndarray  # (B, N, N, K)
 
-    def _beta_dist(self, i: jnp.ndarray, j: jnp.ndarray):
-        # i,j shape: (B,)
-        loc = self.beta_loc(self.features, i, j)
-        scale = self.beta_scale(self.features, i, j)
+    def _beta_params(self, i: jnp.ndarray, j: jnp.ndarray):
+        # i,j: (B,)
+        # gather (B, K) from (B, N, N, K)
+        B = i.shape[0]
+        # Expand indices for take_along_axis
+        i_idx = i.reshape(B, 1, 1, 1)
+        j_idx = j.reshape(B, 1, 1, 1)
 
-        # squashed Gaussian to [0,1]
+        loc_ij = jnp.take_along_axis(self.beta_loc_table, i_idx, axis=1)   # (B,1,N,K)
+        loc_ij = jnp.take_along_axis(loc_ij, j_idx, axis=2).squeeze((1,2)) # (B,K)
+
+        sc_ij = jnp.take_along_axis(self.beta_scale_table, i_idx, axis=1)
+        sc_ij = jnp.take_along_axis(sc_ij, j_idx, axis=2).squeeze((1,2))
+        return loc_ij, sc_ij
+
+    def _beta_dist(self, i, j):
+        loc, scale = self._beta_params(i, j)
         base = tfd.MultivariateNormalDiag(loc=loc, scale_diag=scale)
-        # Use sigmoid squash: beta = sigmoid(z)
-        # log_prob needs change-of-variables term; easiest is to use TFP TransformedDistribution
-        bij = tfp.bijectors.Sigmoid()
-        dist = tfd.TransformedDistribution(distribution=base, bijector=bij)
-        return dist
+        eps = jnp.array(1e-6, dtype=loc.dtype)
+        bij = tfb.Chain([
+            tfb.Shift(eps),
+            tfb.Scale(1.0 - 2.0 * eps),
+            tfb.Sigmoid(),
+        ])
+        return tfd.TransformedDistribution(distribution=base, bijector=bij)
 
     def sample(self, seed):
         di = tfd.Categorical(logits=self.logits_i)
@@ -57,14 +69,15 @@ class ParamActionDist:
         i = jnp.argmax(self.logits_i, axis=1)
         j = jnp.argmax(self.logits_j, axis=1)
         # use mean of sigmoid-normal approximately via loc (not exact); ok for deterministic eval
-        betas = jnp.clip(jax.nn.sigmoid(self.beta_loc(self.features, i, j)), 0.0, 1.0)
+        loc, _ = self._beta_params(i, j)
+        betas = jnp.clip(jax.nn.sigmoid(loc), 0.0, 1.0)
         return jnp.concatenate([i[:, None], j[:, None], betas], axis=1)
 
     def log_prob(self, actions):
         # actions shape (B, 2+K), first two are i,j (possibly floats)
         i = actions[:, 0].astype(jnp.int32)
         j = actions[:, 1].astype(jnp.int32)
-        betas = actions[:, 2:]
+        betas = actions[:, 2:].astype(self.beta_loc_table.dtype)#.astype(jnp.float32)
 
         di = tfd.Categorical(logits=self.logits_i)
         dj = tfd.Categorical(logits=self.logits_j)
@@ -73,14 +86,23 @@ class ParamActionDist:
         return lp
 
     def entropy(self):
-        # exact entropies for categorical; approximate for sigmoid-normal by MC or use -E[logp]
         di = tfd.Categorical(logits=self.logits_i)
         dj = tfd.Categorical(logits=self.logits_j)
-        # Approx beta entropy via 1 sample (cheap & common)
-        # NOTE: entropy coeff in PPO is usually small; stochastic (per-batch) approximation is acceptable
-        key = jax.random.PRNGKey(jnp.sum(self.logits_i + self.logits_j))
-        a = self.sample(seed=key)
-        return di.entropy() + dj.entropy() - self.log_prob(a)
+
+        i = jnp.argmax(self.logits_i, axis=1)
+        j = jnp.argmax(self.logits_j, axis=1)
+        loc, scale = self._beta_params(i, j)
+
+        # deterministic proxy for entropy based on Jacobian-at-mean correction
+        base = tfd.MultivariateNormalDiag(loc=loc, scale_diag=scale)
+        base_ent = base.entropy()  # (B,)
+
+        # log sigmoid'(x) = -softplus(-x) - softplus(x)
+        log_sigmoid_prime_at_mean = -jax.nn.softplus(-loc) - jax.nn.softplus(loc)  # (B, K)
+        jacobian_term = jnp.sum(log_sigmoid_prime_at_mean, axis=-1)          # (B,)
+
+        beta_ent_approx = base_ent + jacobian_term
+        return di.entropy() + dj.entropy() + beta_ent_approx
 
 class ParameterizedActor(nn.Module):
     n_actions: int
@@ -90,11 +112,15 @@ class ParameterizedActor(nn.Module):
     shared_trunk: bool = True
     activation_fn: Callable[[jnp.ndarray], jnp.ndarray] = nn.tanh
     embed_dim: int = 16
-    min_scale: float = 1e-3
-    init_log_scale: float = 0.0
+    log_std_init: float = 0.0
+    log_std_min: float = -10.0
+    log_std_max: float = 2.0
+    eps: float = 1e-6
+    mean_clip: Optional[float] = 20.0
+    smooth_mean_clip: bool = True
 
     @nn.compact
-    def __call__(self, x: jnp.array) -> tfd.Distribution:
+    def __call__(self, x: jnp.array) -> ParamActionDist:
         x = Flatten()(x)
         if self.shared_trunk:
             for h in self.trunk_arch:
@@ -107,35 +133,45 @@ class ParameterizedActor(nn.Module):
         emb_i_tbl = self.param("emb_i", nn.initializers.normal(0.02), (self.n_actions, self.embed_dim))
         emb_j_tbl = self.param("emb_j", nn.initializers.normal(0.02), (self.n_actions, self.embed_dim))
 
-        def beta_net(feats, i, j):
-            ei = emb_i_tbl[i]
-            ej = emb_j_tbl[j]
-            z = jnp.concatenate([feats, ei, ej], axis=1)
-            y = z
-            for h in self.head_arch:
-                y = nn.Dense(h)(y)
-                y = self.activation_fn(y)
+        # Build (B, N, E) and (B, N, E)
+        ei = jnp.broadcast_to(emb_i_tbl[None, :, :], (x.shape[0], self.n_actions, self.embed_dim))
+        ej = jnp.broadcast_to(emb_j_tbl[None, :, :], (x.shape[0], self.n_actions, self.embed_dim))
 
-            loc = nn.Dense(self.max_successors)(y)
-            log_scale = nn.Dense(self.max_successors)(y) + self.init_log_scale
-            scale = jnp.maximum(jnp.exp(log_scale), self.min_scale)
-            return loc, scale
+        # Make grid (B, N, N, *)
+        # x -> (B,1,1,F) broadcast
+        xb = x[:, None, None, :]
+        ei_grid = ei[:, :, None, :]   # (B, N, 1, E)
+        ej_grid = ej[:, None, :, :]   # (B, 1, N, E)
+        z = jnp.concatenate([jnp.broadcast_to(xb, (x.shape[0], self.n_actions, self.n_actions, x.shape[1])),
+                            jnp.broadcast_to(ei_grid, (x.shape[0], self.n_actions, self.n_actions, self.embed_dim)),
+                            jnp.broadcast_to(ej_grid, (x.shape[0], self.n_actions, self.n_actions, self.embed_dim))],
+                            axis=-1)
 
-        def beta_loc(feats, i, j):
-            loc, _ = beta_net(feats, i, j)
-            return loc
+        # MLP over last dim; we can reshape to 2D, apply Dense, reshape back
+        y = z.reshape((x.shape[0]*self.n_actions*self.n_actions, -1))
+        for h in self.head_arch:
+            y = nn.Dense(h)(y)
+            y = self.activation_fn(y)
 
-        def beta_scale(feats, i, j):
-            _, scale = beta_net(feats, i, j)
-            return scale
+        loc = nn.Dense(self.max_successors)(y)
+        if self.mean_clip is not None:
+            if self.smooth_mean_clip:
+                loc = self.mean_clip * jnp.tanh(loc)
+            else:
+                loc = jnp.clip(loc, -self.mean_clip, self.mean_clip)
+
+        log_scale = nn.Dense(self.max_successors)(y) + self.log_std_init
+        log_scale = jnp.clip(log_scale, self.log_std_min, self.log_std_max)
+        scale = jnp.exp(log_scale) + self.eps
+
+        loc = loc.reshape((x.shape[0], self.n_actions, self.n_actions, self.max_successors))
+        scale = scale.reshape((x.shape[0], self.n_actions, self.n_actions, self.max_successors))
 
         return ParamActionDist(
             logits_i=logits_i,
             logits_j=logits_j,
-            beta_loc=beta_loc,
-            beta_scale=beta_scale,
-            features=x if self.shared_trunk else features,
-            max_successors=self.max_successors,
+            beta_loc_table=loc,
+            beta_scale_table=scale,
         )
 
 class ParameterizedPPOPolicy(BaseJaxPolicy):

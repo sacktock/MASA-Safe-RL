@@ -1,4 +1,4 @@
-
+import warnings
 import gymnasium as gym
 from gymnasium import spaces
 from masa.common.wrappers import ConstraintPersistentWrapper, is_wrapped
@@ -195,6 +195,9 @@ class ProbShieldWrapperBase(ConstraintPersistentWrapper):
         raise NotImplementedError 
 
     def _project_act(self, i: int, j: int, betas: np.ndarray, eps: float = 1e-6) -> Tuple[np.ndarray, np.ndarray]:
+
+        if not np.all(np.isfinite(betas)):
+            raise RuntimeError(f"Non-finite betas: {betas}")
         
         # Calculate non-zero successors
         probs_curr = self.probabilities[:, self._current_obs, :].copy()
@@ -308,6 +311,13 @@ class ProbShieldWrapperBase(ConstraintPersistentWrapper):
             intersections = np.vstack(intersections_list)
         else:
             intersections = np.empty((0, n_actions), dtype=np.float64)
+
+        if intersections.shape[0] == 0:
+            warning.warn("Empty intersections in _project_act ... falling back to the closesly vertex.")
+            idx = int(np.nanargmin(np.abs(self._current_safety_bound - expected_proj_safety)))
+            safe_vertex = np.zeros(n_actions, dtype=np.float64)
+            safe_vertex[idx] = 1.0
+            return safe_vertex, proj_safety_bounds
 
         # Compute the vertex corresponding to the action
         safe_vertex = np.zeros(n_actions, dtype=np.float64)
@@ -438,7 +448,7 @@ class ProbShieldWrapperCont(ProbShieldWrapperBase):
 
     def _parse_act(self, action: np.ndarray) -> Tuple[int, int, np.ndarray]:
         i, j = int(action[0].item()), int(action[1].item())
-        betas = action[2:]
+        betas = action[2:].astype(np.float64)
         return i, j, betas
 
     
