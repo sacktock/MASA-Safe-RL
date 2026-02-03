@@ -1,7 +1,7 @@
 import warnings
 import gymnasium as gym
 from gymnasium import spaces
-from masa.common.wrappers import ConstraintPersistentWrapper, is_wrapped
+from masa.common.wrappers import ConstraintPersistentWrapper, is_wrapped, get_wrapped
 from masa.common.constraints.ltl_safety import LTLSafetyEnv
 from typing import Union, Any, Tuple, Dict, List, Optional, Callable
 from masa.common.constraints.base import CostFn
@@ -86,19 +86,19 @@ class ProbShieldWrapperBase(ConstraintPersistentWrapper):
         self._box_dtype = np.float32
 
         # Sanity checks
-        if is_wrapped(self.env, ProbShieldWrapperDisc):
+        if is_wrapped(self.env, ProbShieldWrapperBase):
             raise RuntimeError(
-                "Environment is already wrapped in ProbShieldWrapperDisc. "
+                "Environment is already wrapped in ProbShieldWrapperBase. "
                 "Double-wrapping can cause undefined behaviour."
             )
         if not isinstance(self.env, ConstraintPersistentWrapper):
             raise TypeError(
-                "ProbShieldWrapperDisc expects `env` to be an instance of "
+                "ProbShieldWrapperBase expects `env` to be an instance of "
                 f"ConstraintPersistentWrapper, got {type(env).__name__}."
             )
         if not isinstance(self.env.observation_space, spaces.Discrete) and safety_abstraction is None:
             raise TypeError(
-                "ProbShieldWrapperDisc only supports environments with a "
+                "ProbShieldWrapperBase only supports environments with a "
                 f"Discrete observation space or a discrete safety abstraction, got: {type(self.env.observation_space).__name__}"
             )
 
@@ -114,6 +114,8 @@ class ProbShieldWrapperBase(ConstraintPersistentWrapper):
 
         start_state = None
         if is_wrapped(self.env, LTLSafetyEnv):
+            ltl_safety_env = get_wrapped(env, LTLSafetyEnv)
+            n_states = ltl_safety_env._orig_obs_space.n
             dfa: DFA = self.env._constraint.get_dfa()
             if hasattr(self.env.unwrapped, "_start_state"):
                 aut_states = list(dfa.states)
@@ -161,9 +163,10 @@ class ProbShieldWrapperBase(ConstraintPersistentWrapper):
         elif isinstance(orig, spaces.Dict):
             aug = dict(orig.spaces)
             aug["safety_bound"] = spaces.Box(low=0, high=1, shape=(1,), dtype=self._box_dtype)
+            aug = spaces.Dict(aug)
         else:
             raise TypeError(
-                f"ProbShieldWrapperDisc does not support observation space type {type(orig).__name__}. "
+                f"ProbShieldWrapperBase does not support observation space type {type(orig).__name__}. "
                 "Supported: Discrete, Box, Dict."
             )
         return aug
@@ -184,7 +187,7 @@ class ProbShieldWrapperBase(ConstraintPersistentWrapper):
             return obs
         else:
             raise TypeError(
-                f"ProbShieldWrapperDisc does not support observation space type {type(orig).__name__}. "
+                f"ProbShieldWrapperBase does not support observation space type {type(orig).__name__}. "
                 "Supported: Discrete, Box, Dict."
             )
 

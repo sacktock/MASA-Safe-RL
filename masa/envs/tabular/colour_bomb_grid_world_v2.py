@@ -64,6 +64,7 @@ class ColourBombGridWorldV2(TabularEnv):
         self.action_space = spaces.Discrete(self._n_actions)
 
         self._start_states = START_STATES
+        self._start_state = self._start_states[0]
         self._goal_states = GREEN_STATES + YELLOW_STATES + RED_STATES + BLUE_STATES + PINK_STATES
         self._safe_states = MEDIC_STATES
 

@@ -78,6 +78,9 @@ class ParamActionDist:
         i = actions[:, 0].astype(jnp.int32)
         j = actions[:, 1].astype(jnp.int32)
         betas = actions[:, 2:].astype(self.beta_loc_table.dtype)#.astype(jnp.float32)
+        #eps = jnp.array(1e-6, dtype=betas.dtype)
+        #betas_safe = jnp.clip(betas, eps, 1.0 - eps)
+        #betas_safe = jax.lax.stop_gradient(betas_safe - betas) + betas
 
         di = tfd.Categorical(logits=self.logits_i)
         dj = tfd.Categorical(logits=self.logits_j)
@@ -113,10 +116,10 @@ class ParameterizedActor(nn.Module):
     activation_fn: Callable[[jnp.ndarray], jnp.ndarray] = nn.tanh
     embed_dim: int = 16
     log_std_init: float = 0.0
-    log_std_min: float = -10.0
-    log_std_max: float = 2.0
+    log_std_min: float = -5.0
+    log_std_max: float = 1.0
     eps: float = 1e-6
-    mean_clip: Optional[float] = 20.0
+    mean_clip: Optional[float] = 10.0
     smooth_mean_clip: bool = True
 
     @nn.compact
@@ -163,6 +166,8 @@ class ParameterizedActor(nn.Module):
         log_scale = nn.Dense(self.max_successors)(y) + self.log_std_init
         log_scale = jnp.clip(log_scale, self.log_std_min, self.log_std_max)
         scale = jnp.exp(log_scale) + self.eps
+
+        #scale = jnp.nan_to_num(scale, nan=self.eps, posinf=jnp.exp(self.log_std_max), neginf=self.eps)
 
         loc = loc.reshape((x.shape[0], self.n_actions, self.n_actions, self.max_successors))
         scale = scale.reshape((x.shape[0], self.n_actions, self.n_actions, self.max_successors))
@@ -268,6 +273,7 @@ class ParameterizedPPOPolicy(BaseJaxPolicy):
             head_arch=self.actor_net_arch,
             shared_trunk=self.shared_trunk,
             activation_fn=self.activation_fn,
+            log_std_init=self.log_std_init
         )
 
         self.actor_state = TrainState.create(

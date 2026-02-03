@@ -28,13 +28,12 @@ def main():
     # make_env wraps the environment in TimeLimit -> LabelledEnv -> PCTLEnv -> ConstraintMonitor -> RewardMonitor
     env = make_env("mini_pacman", "pctl", 100, label_fn=label_fn, **constraint_kwargs)
 
-    # Now we're going to wrap our environment in ProbShieldWrapperDisc
+    # Now we're going to wrap our environment in ProbShieldWrapperCont
     # The wrapper takes one arg: env
     #   and key word args: 
     #   theta: float = 1e-10,
     #   max_vi_steps: int = 1000,
     #   init_safety_bound: float = 0.5,
-    #   granularity: int = 20,
     env = ProbShieldWrapperCont(
         env, 
         init_safety_bound = 0.01, # Safety constraint from the intial state

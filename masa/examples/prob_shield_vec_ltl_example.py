@@ -1,5 +1,5 @@
-from masa.prob_shield.prob_shield_wrapper_disc import ProbShieldWrapperCont
-from masa.prob_shield.parameterized_ppo import ParameterizedPPO
+from masa.prob_shield.prob_shield_wrapper_disc import ProbShieldWrapperDisc
+from masa.algorithms.ppo import PPO
 from masa.common.wrappers import FlattenDictObsWrapper, VecWrapper, OneHotObsWrapper
 from typing import Dict, Any
 import flax.linen as nn
@@ -34,25 +34,26 @@ def main():
     # make_env wraps the environment in TimeLimit -> LabelledEnv -> LTLSafetyEnv -> ConstraintMonitor -> RewardMonitor
     eval_env = make_env("colour_bomb_grid_world_v2", "ltl_safety", 250, label_fn=label_fn, **constraint_kwargs)
     # Because we're using obs_stype=dict here we need to use a safety abstraction 
-    #   as ProbShieldWrapperCont expected either a discrete state space or obs -> discrete state safety abstraction
+    #   as ProbShieldWrapperDisc expected either a discrete state space or obs -> discrete state safety abstraction
     #orig_space_n = eval_env.observation_space["orig"].n
     #def safety_abstraction(obs: Dict[str, Any]) -> int:
     #    state = obs["orig"]
     #    aut_state = obs["automaton"]
     #    return orig_space_n * aut_state + state
 
-    # Now we're going to wrap our environment in ProbShieldWrapperCont
+    # Now we're going to wrap our environment in ProbShieldWrapperDisc
     # The wrapper takes one arg: env
     #   and key word args: 
     #   theta: float = 1e-10,
     #   max_vi_steps: int = 1000,
     #   init_safety_bound: float = 0.5,
-    eval_env = ProbShieldWrapperCont(
+    eval_env = ProbShieldWrapperDisc(
         eval_env,
         #safety_abstraction=safety_abstraction, # discrete safety abstraction for the environment: maps observations to concerete discrete states
         init_safety_bound = 0.01, # Safety constraint from the intial state
         theta = 1e-15, # early stopping condition for value iteration
         max_vi_steps= 10_000, # number of value iteration steps
+        granularity = 20,
     )
 
     # We're going to use VecWrapper for the training env so we need to define a environment creatation function
@@ -60,13 +61,14 @@ def main():
         # Intialize the environment 
         env = make_env("colour_bomb_grid_world_v2", "ltl_safety", 250, label_fn=label_fn, **constraint_kwargs)
 
-        # Wrap in ProbShieldWrapperCont
-        env = ProbShieldWrapperCont(
+        # Wrap in ProbShieldWrapperDisc
+        env = ProbShieldWrapperDisc(
             env, 
             #safety_abstraction=safety_abstraction, 
             init_safety_bound = 0.01, 
             theta = 1e-15, 
             max_vi_steps= 10_000, 
+            granularity = 20,
         )
 
         # Now we're going to wrap our environment in OneHotObsWrappe and FlattenDictObsWrapper so the observations are compatible with ParameterizedPPO
@@ -108,10 +110,10 @@ def main():
         activation_fn=nn.relu
     )
 
-    algo = ParameterizedPPO(
+    algo = PPO(
         env,
         tensorboard_logdir=None, # ignoring tensorboard logging
-        seed=1,
+        seed=0,
         monitor=True, # monitors training progress
         device="auto", 
         verbose=0, # verbosity level for monitoring
@@ -123,12 +125,11 @@ def main():
         clip_range=optax.schedules.linear_schedule(0.1, 0.0, 300_000),
         ent_coef=0.02,
         vf_coef=0.5,
-        policy_kwargs=policy_kwargs
     )
 
     # Now we begin training
     algo.train(
-        num_frames=300_000, # total number of frames (environment interactions)
+        num_frames=500_000, # total number of frames (environment interactions)
         num_eval_episodes=10, # total number of evaluation episodes to run
         eval_freq=10_000, # how frequently to run evaluation (default=0 => never run evaluation)
         log_freq=10_000, # how frequenntly to log metrics to stdout or tensorboard

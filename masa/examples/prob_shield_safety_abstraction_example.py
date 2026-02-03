@@ -39,7 +39,7 @@ def main():
         env, 
         label_fn=abstr_label_fn, # labelling function for the abstract discrete states
         cost_fn=cost_fn, # the usual cost function for the environment: 1.0 if ghost else 0.0
-        safety_abstraction=safety_abstraction, # discrete safety absraction for the environment: maps observations to concerete discrete states
+        safety_abstraction=safety_abstraction, # discrete safety abstraction for the environment: maps observations to concerete discrete states
         theta = 1e-15, # early stopping condition for value iteration
         max_vi_steps= 10_000, # number of value iteration steps
         init_safety_bound = 0.01, # Safety constraint from the intial state
