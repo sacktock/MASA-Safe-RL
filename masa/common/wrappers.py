@@ -1048,7 +1048,7 @@ class FlattenDictObsWrapper(ConstraintPersistentObsWrapper):
             arr = np.asarray(value, dtype=np.float32).reshape(-1)
             parts.append(arr)
 
-        return np.concatenate(parts, axis=0).astype(np.float32)
+        return np.concatenate(parts).astype(np.float32)
 
 class VecEnvWrapperBase(ConstraintPersistentWrapper):
     """

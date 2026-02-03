@@ -252,49 +252,6 @@ def create_product_successor_states_and_probabilities(
 
     return prod_successor_states, prod_probabilities
 
-def create_product_safe_end_component(
-    n_states: int,
-    n_actions: int,
-    sec: List[State],
-    dfa: DFA,
-    label_fn: LabelFn,
-) -> List[ProdState]:
-    """Lift a base safe end component (SEC) into the product while avoiding accepting DFA states.
-
-    Given a base SEC (a subset of base states), this function returns the set of
-    product states that correspond to those base states **and** do not transition
-    into an accepting DFA state when reading the base labels.
-
-    Args:
-        n_states: Number of base MDP states.
-        n_actions: Number of actions (unused here but kept for signature consistency).
-        sec: List of base states in the safe end component.
-        dfa: DFA whose accepting set corresponds to unsafe/terminal property violation.
-        label_fn: Labelling function ``L(s) -> set[str]``.
-
-    Returns:
-        List of product-state indices (ints) that form the lifted SEC in the product.
-
-    """
-
-    product_sec = []
-
-    aut_states = list(dfa.states)
-    aut_index = {q: i for i, q in enumerate(aut_states)}
-    accepting = list(dfa.accepting)
-
-    for q_idx, q in enumerate(aut_states):
-        for s in sec:
-            labels = label_fn(s)
-            q_next = dfa.transition(q, labels)
-            if q_next in accepting:
-                continue
-        
-            prod_state = q_idx * n_states + s
-            product_sec.append(prod_state)
-
-    return product_sec
-
 def create_product_label_fn(
     n_states: int,
     dfa: DFA,
@@ -429,46 +386,78 @@ class LTLSafetyEnv(BaseConstraintEnv):
     observation space to include the current DFA state, enabling model-free
     learning over the *product*.
 
-    Augmentation behavior depends on the original observation space:
+    The *representation* of the product observation is controlled by ``obs_type``:
 
-    - :class:`gymnasium.spaces.Discrete`:
-      the observation becomes a single discrete index encoding both
-      base state and automaton state.
+    - ``obs_type="discrete"``:
+      Requires the underlying observation space to be :class:`gymnasium.spaces.Discrete`.
+      The observation becomes a single discrete index encoding both
+      base state and automaton state:
 
       .. math::
 
          \\text{obs}_\\otimes = q\\_\\text{idx} \\cdot n + s.
 
-    - :class:`gymnasium.spaces.Box` (1-D only):
-      appends a one-hot encoding of the automaton state to the vector.
-    - :class:`gymnasium.spaces.Dict`:
-      adds a new key ``"automaton"`` containing a one-hot vector.
+    - ``obs_type="box"``:
+      Produces a :class:`gymnasium.spaces.Box` observation by concatenating a
+      one-hot encoding of the automaton state.
+
+      * If the base space is :class:`~gymnasium.spaces.Box` (1-D only), the result is
+        ``concat([obs, one_hot(q)])``.
+      * If the base space is :class:`~gymnasium.spaces.Discrete`, the result is
+        ``concat([one_hot(s), one_hot(q)])``.
+
+    - ``obs_type="dict"``:
+      Produces a :class:`gymnasium.spaces.Dict` observation with keys:
+      ``"orig"`` and ``"automaton"``.
+      ``"automaton"`` is always Discrete; ``"orig"`` matches the original observation
+      (for :class:`~gymnasium.spaces.Discrete`) or the original vector (for 1-D
+      :class:`~gymnasium.spaces.Box`). For original :class:`~gymnasium.spaces.Dict`,
+      this wrapper adds an ``"automaton"`` key to the existing dict.
 
     The wrapper also writes ``info["automaton_state"]`` each step/reset.
 
     Args:
         env: Base environment (must be a :class:`~masa.common.labelled_env.LabelledEnv`).
         dfa: DFA for safety monitoring. Defaults to a dummy DFA.
+        obs_type: One of ``{"discrete", "box", "dict"}``, controlling the product
+            observation representation.
         **kw: Extra keyword arguments forwarded to :class:`BaseConstraintEnv`.
 
     Raises:
-        ValueError: If the DFA reports a non-positive number of automaton states.
-        TypeError: If augmenting an unsupported observation space type.
-        TypeError: If augmenting a Box observation that is not 1-D.
-
+        ValueError: If ``dfa.num_automaton_states`` is non-positive.
+        ValueError: If ``obs_type`` is not in ``{"discrete", "box", "dict"}``.
+        TypeError: If an incompatible configuration is requested (e.g.
+            ``obs_type="discrete"`` but the base observation space is not Discrete),
+            or if the base space is unsupported.
+        TypeError: If ``obs_type`` requires a 1-D Box but the Box is not 1-D.
     """
 
-    def __init__(self, env: gym.Env, dfa: DFA = make_dummy_dfa(), **kw):
+    def __init__(
+        self,
+        env: gym.Env,
+        dfa: "DFA" = make_dummy_dfa(),
+        obs_type: str = "discrete",
+        **kw: Any,
+    ):
+        if obs_type not in ("discrete", "box", "dict"):
+            raise ValueError(
+                f"obs_type must be one of ['discrete', 'box', 'dict'], got {obs_type!r}"
+            )
+            
         super().__init__(env, LTLSafety(dfa=dfa), **kw)
         self._num_automaton_states = int(dfa.num_automaton_states)
-        self._automaton_states_idx = {q: i for i, q in enumerate(dfa.states)}
         if self._num_automaton_states < 1:
             raise ValueError("dfa.num_automaton_states must be non-zero and positive")
+
+        self._automaton_states_idx = {q: i for i, q in enumerate(dfa.states)}
+
         self._orig_obs_space = env.observation_space
-        self.observation_space = self._make_augmented_obs_space(self._orig_obs_space)
+        self._obs_type = obs_type
         self._box_dtype = np.float32
 
-    def _make_augmented_obs_space(self, orig: spaces.Space) -> spaces.Space:
+        self.observation_space = self._make_augmented_obs_space(self._orig_obs_space, self._obs_type)
+
+    def _make_augmented_obs_space(self, orig: spaces.Space, obs_type: str) -> spaces.Space:
         """Construct the augmented observation space.
 
         Args:
@@ -482,44 +471,95 @@ class LTLSafetyEnv(BaseConstraintEnv):
                 space is not 1-D.
         """
         if isinstance(orig, spaces.Discrete):
-            num_states = int(orig.n)
-            aug = spaces.Discrete(num_states * self._num_automaton_states)
-        elif isinstance(orig, spaces.Box):
+            n = int(orig.n)
+            if obs_type == "discrete":
+                return spaces.Discrete(n * self._num_automaton_states)
+            if obs_type == "box":
+                dim = n + self._num_automaton_states
+                return spaces.Box(
+                    low=0.0,
+                    high=1.0,
+                    shape=(dim,),
+                    dtype=self._box_dtype,
+                )
+            if obs_type == "dict":
+                return spaces.Dict(
+                    {
+                        "orig": spaces.Discrete(n),
+                        "automaton": spaces.Discrete(self._num_automaton_states)
+                    }
+                )
+            raise RuntimeError(f"Unhandled obs_type: {obs_type!r}")
+
+        if isinstance(orig, spaces.Box):
+            if obs_type == "discrete":
+                raise TypeError(
+                    "Incompatible configuration: obs_type='discrete' requires a Discrete "
+                    "base observation space, but got Box."
+                )
             if orig.shape is None or len(orig.shape) != 1:
                 raise TypeError(
                     f"LTLSafetyEnv only supports 1-D Box for augmentation; got shape {orig.shape}"
                 )
-            n = int(orig.shape[0])
-            low = np.concatenate([orig.low.astype(self._box_dtype, copy=False),
-                                  np.zeros(self._num_automaton_states, dtype=self._box_dtype)])
-            high = np.concatenate([orig.high.astype(self._box_dtype, copy=False),
-                                   np.ones(self._num_automaton_states, dtype=self._box_dtype)])
-            aug = spaces.Box(low=low, high=high, dtype=self._box_dtype)
-        elif isinstance(orig, spaces.Dict):
-            automaton_space = spaces.Box(low=0.0, high=1.0, shape=(self._num_automaton_states,), dtype=self._box_dtype)
-            new_spaces = dict(orig.spaces)
-            new_spaces["automaton"] = automaton_space
-            aug = spaces.Dict(new_spaces)
-        else:
-            raise TypeError(
-                f"LTLSafetyEnv does not support observation space type {type(orig).__name__}. "
-                "Supported: Discrete, 1-D Box, Dict."
-            )
-        return aug
+            d = int(orig.shape[0])
+            if obs_type == "box":
+                low = np.concatenate(
+                    [
+                        orig.low.astype(self._box_dtype, copy=False),
+                        np.zeros(self._num_automaton_states, dtype=self._box_dtype),
+                    ]
+                )
+                high = np.concatenate(
+                    [
+                        orig.high.astype(self._box_dtype, copy=False),
+                        np.ones(self._num_automaton_states, dtype=self._box_dtype),
+                    ]
+                )
+                return spaces.Box(low=low, high=high, dtype=self._box_dtype)
+            if obs_type == "dict":
+                return spaces.Dict(
+                    {
+                        "orig": orig,
+                        "automaton": spaces.Discrete(self._num_automaton_states)
+                    }
+                )
+            raise RuntimeError(f"Unhandled obs_type: {obs_type!r}")
 
-    def _one_hot(self, q: int) -> np.ndarray:
-        """One-hot encode an automaton state index.
+        if isinstance(orig, spaces.Dict):
+            if obs_type == "discrete":
+                raise TypeError(
+                    "Incompatible configuration: obs_type='discrete' requires a Discrete "
+                    "base observation space, but got Dict."
+                )
+            if obs_type == "box":
+                raise TypeError(
+                    "Incompatible configuration: obs_type='box' is not supported when the "
+                    "base observation space is Dict (cannot flatten generically). "
+                    "Use obs_type='dict' instead."
+                )
+            new_spaces = dict(orig.spaces)
+            new_spaces["automaton"] = spaces.Discrete(self._num_automaton_states)
+            return spaces.Dict(new_spaces)
+
+        raise TypeError(
+            f"LTLSafetyEnv does not support base observation space type {type(orig).__name__}. "
+            "Supported base spaces: Discrete, 1-D Box, Dict."
+        )
+
+    def _one_hot(self, idx: int, dim: int) -> np.ndarray:
+        """One-hot encode an index into a vector of length ``dim``.
 
         Args:
-            q: Automaton state index.
+            idx: index to encomde.
+            dim: length of one-hot encoding.
 
         Returns:
-            A 1-D numpy array of shape ``(num_automaton_states,)`` containing a
-            one-hot encoding. If ``q`` is out of range, returns the all-zeros vector.
+            A 1-D numpy array of shape ``(dim,)`` containing a
+            one-hot encoding. If ``idx`` is out of range, returns the all-zeros vector.
         """
-        enc = np.zeros(self._num_automaton_states, dtype=self._box_dtype)
-        if 0 <= q < self._num_automaton_states:
-            enc[q] = 1
+        enc = np.zeros(dim, dtype=self._box_dtype)
+        if 0 <= int(idx) < dim:
+            enc[int(idx)] = 1.0
         return enc
 
     def _augment_obs(self, obs: Any) -> Any:
@@ -536,24 +576,58 @@ class LTLSafetyEnv(BaseConstraintEnv):
                 implied by the observation space.
             RuntimeError: If the wrapper is in an unexpected observation-space state.
         """
-        q_idx = self._automaton_states_idx[self._constraint.get_automaton_state()]
-        if isinstance(self.observation_space, spaces.Discrete):
-            if not (isinstance(obs, (int, np.integer))):
+        q_state = self._constraint.get_automaton_state()
+        q_idx = int(self._automaton_states_idx[q_state])
+
+        orig = self._orig_obs_space
+        obs_type = self._obs_type
+
+        if isinstance(orig, spaces.Discrete):
+            if not isinstance(obs, (int, np.integer)):
                 raise TypeError(f"Expected Discrete obs as int, got {type(obs).__name__}")
-            return self._orig_obs_space.n * int(q_idx) + int(obs)
-        if isinstance(self.observation_space, spaces.Box):
-            if not isinstance(obs, np.ndarray):
-                obs = np.asarray(obs, dtype=self._box_dtype)
-            if obs.ndim != 1:
-                raise TypeError(f"Expected 1-D Box observation, got shape {getattr(obs, 'shape', None)}")
-            enc = self._one_hot(q_idx, dtype=self._box_dtype)
-            return np.concatenate([obs.astype(self._box_dtype, copy=False), enc], axis=0)
-        if isinstance(self.observation_space, spaces.Dict):
-            out = dict(obs) if isinstance(obs, dict) else {}
-            out["automaton"] = self._one_hot(q_idx, dtype=np.float32)
+            s = int(obs)
+            if not (0 <= s < int(orig.n)):
+                raise TypeError(f"Discrete obs out of range: got {s}, expected [0, {orig.n})")
+            if obs_type == "discrete":
+                return int(orig.n) * q_idx + s
+            if obs_type == "box":
+                return np.concatenate(
+                    [self._one_hot(s, int(orig.n)), self._one_hot(q_idx, self._num_automaton_states)],
+                    axis=0,
+                )
+            if obs_type == "dict":
+                return {
+                    "orig": s,
+                    "automaton": q_idx,
+                }
+            raise RuntimeError(f"Unhandled obs_type: {obs_type!r}")
+        if isinstance(orig, spaces.Box):
+            if obs_type == "discrete":
+                raise RuntimeError("obs_type='discrete' with Box base should have been rejected.")
+            arr = obs if isinstance(obs, np.ndarray) else np.asarray(obs, dtype=self._box_dtype)
+            if arr.ndim != 1:
+                raise TypeError(
+                    f"Expected 1-D Box observation, got shape {getattr(arr, 'shape', None)}"
+                )
+            arr = arr.astype(self._box_dtype, copy=False)
+            if obs_type == "box":
+                return np.concatenate([arr, self._one_hot(q_idx, self._num_automaton_states)], axis=0)
+            if obs_type == "dict":
+                return {
+                    "orig": arr,
+                    "automaton": q_idx
+                }
+            raise RuntimeError(f"Unhandled obs_type: {obs_type!r}")
+        if isinstance(orig, spaces.Dict):
+            if obs_type != "dict":
+                raise RuntimeError("Only obs_type='dict' is supported for Dict base spaces.")
+            if not isinstance(obs, dict):
+                raise TypeError(f"Expected Dict obs as dict, got {type(obs).__name__}")
+            out = dict(obs)
+            out["automaton"] = q_idx
             return out
 
-        raise RuntimeError(f"Unexpected observation space type {self.observation_space}")
+        raise RuntimeError(f"Unexpected base observation space type {type(orig).__name__}")
 
     def reset(self, *, seed: int | None = None, options: Dict[str, Any] | None = None):
         obs, info = self.env.reset(seed=seed, options=options)

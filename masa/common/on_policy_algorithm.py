@@ -55,7 +55,7 @@ class OnPolicyAlgorithm(BaseAlgorithm):
             device=device,
             verbose=verbose,
             supported_action_spaces=(spaces.Discrete, spaces.Box, spaces.MultiBinary, spaces.MultiDiscrete, spaces.Dict),
-            supported_observation_spaces=(spaces.Box),
+            supported_observation_spaces=(spaces.Box,),
             env_fn=env_fn,
             eval_env=eval_env,
         )
@@ -289,7 +289,7 @@ class OnPolicyAlgorithm(BaseAlgorithm):
                 act = int(act.item())
         elif isinstance(self.action_space, spaces.MultiDiscrete):
             act = np.array(act, dtype=np.int64)
-            act = act.reshape(self.n_envs, len(self.action_space.nvec))
+            act = act.reshape(n_envs, len(self.action_space.nvec))
             if n_envs == 1:
                 act = act[0]
         elif isinstance(self.action_space, spaces.MultiBinary):
