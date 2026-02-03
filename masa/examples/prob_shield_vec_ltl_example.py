@@ -118,7 +118,7 @@ def main():
         device="auto", 
         verbose=0, # verbosity level for monitoring
         eval_env=eval_env, # separate environment instance for eval
-        learning_rate=optax.schedules.linear_schedule(2.4e-4, 0.0, 300_000),
+        learning_rate=1e-4,
         n_steps=128,
         batch_size=256,
         n_epochs=4,
