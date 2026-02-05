@@ -28,14 +28,19 @@ class Path:
 
   def __init__(self, path):
     assert isinstance(path, str)
+    path = path.replace('\\', '/')   # Required for Windows compatibility
     path = re.sub(r'^\./*', '', path)  # Remove leading dot or dot slashes.
     path = re.sub(r'(?<=[^/])/$', '', path)  # Remove single trailing slash.
     path = path or '.'  # Empty path is represented by a dot.
     self._path = path
 
   def __truediv__(self, part):
+    part = str(part).replace('\\', '/')
+    # treat /foo and C:/foo and \\server\share as absolute-ish
+    if part.startswith('/') or re.match(r'^[A-Za-z]:/', part) or part.startswith('//'):
+      return type(self)(part)
     sep = '' if self._path.endswith('/') else '/'
-    return type(self)(f'{self._path}{sep}{str(part)}')
+    return type(self)(f'{self._path}{sep}{part}')
 
   def __repr__(self):
     return f'Path({str(self)})'
@@ -131,7 +136,7 @@ class LocalPath(Path):
       yield f
 
   def absolute(self):
-    return type(self)(os.path.absolute(str(self)))
+    return type(self)(os.path.abspath(str(self)))
 
   def glob(self, pattern):
     for path in glob.glob(f'{str(self)}/{pattern}'):
