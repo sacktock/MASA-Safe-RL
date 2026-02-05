@@ -22,7 +22,7 @@ If you use MASA-Safe-RL in your research please cite it in your publications.
 
 #### Prequisites
 
-Python 3.8+ is required but we recommend Python 3.10 (later Python versions may not be supported).
+Python 3.10+ is required, although later Python versions may not be supported.
 
 #### Installation with conda 
 - Install conda, e.g., via [anaconda](https://anaconda.org/channels/anaconda/packages/conda/overview).
@@ -42,8 +42,11 @@ pip install -e .
 ```
 
 #### Installation with uv
+`uv sync` allows installing the base package.
 
-Coming soon!
+* For building docs, you can use `uv sync --extras docs`.
+* Adding GPU support for Jax: `uv sync --extra cuda12` (or `cuda13` if supported by your device)
+* All extras (docs and GPU support): `uv sync --all-extras`.
 
 #### Installation with PyPI
 

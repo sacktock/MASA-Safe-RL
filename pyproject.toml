@@ -7,7 +7,7 @@ name = "MASA-Safe-RL"
 version = "0.1.0"
 description = "A safe reinforcement library for providing a common interface for different constraints and environments"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 dependencies = [
     "gymnasium>=1.1.1",
     "tensorflow==2.17.0",
@@ -24,14 +24,6 @@ dependencies = [
     "ruamel.yaml<0.18.0",
 ]
 
-[project.optional-dependencies]
-docs = [
-    "furo>=2025.9.25",
-    "myst-parser>=4.0.1",
-    "sphinx>=8.1.3",
-    "sphinx-autobuild>=2024.10.03",
-]
-
 [project.urls]
 Homepage = "https://github.com/sacktock/MASA-Safe-RL"
 Repository = "https://github.com/sacktock/MASA-Safe-RL"
@@ -45,3 +37,17 @@ run_masa = "masa:run"
 
 [tool.setuptools.packages.find]
 include = ["masa", "masa.*"]
+
+[dependency-groups]
+cuda12 = [
+    "jax[cuda12]>=0.4.30",
+]
+cuda13 = [
+    "jax[cuda13]>=0.4.30",
+]
+docs = [
+    "furo>=2025.12.19",
+    "myst-parser>=4.0.1",
+    "sphinx>=8.1.3",
+    "sphinx-autobuild>=2024.10.3",
+]
