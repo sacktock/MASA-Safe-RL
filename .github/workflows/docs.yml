@@ -33,7 +33,7 @@ jobs:
           python -m pip install -U pip
           # python -m pip install -r docs/requirements.txt
           # If your docs import your package (autodoc), also:
-          python -m pip install -e .[docs]
+          pip install . --group docs
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
