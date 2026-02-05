@@ -21,7 +21,7 @@ dependencies = [
     "optax>=0.1.9",
     "flax>=0.9.0",
     "ml-dtypes>=0.4.1",
-    "ruamel.yaml<0.18.0",
+    "ruamel.yaml<0.20.0",
 ]
 
 [project.urls]
