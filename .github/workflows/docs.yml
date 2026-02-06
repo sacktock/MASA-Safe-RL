@@ -33,7 +33,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --group docs --locked
+          uv sync --group docs
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
