@@ -44,7 +44,7 @@ pip install -e .
 #### Installation with uv
 `uv sync` allows installing the base package.
 
-* For building docs, you can use `uv sync --extras docs`.
+* For building docs, you can use `uv sync --extra docs`.
 * Adding GPU support for Jax: `uv sync --extra cuda12` (or `cuda13` if supported by your device)
 * All extras (docs and GPU support): `uv sync --all-extras`.
 
