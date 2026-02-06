@@ -45,6 +45,9 @@ cuda12 = [
 cuda13 = [
     "jax[cuda13]>=0.4.30",
 ]
+dev = [
+    "pytest>=9.0.2",
+]
 docs = [
     "furo>=2025.12.19",
     "myst-parser>=4.0.1",
