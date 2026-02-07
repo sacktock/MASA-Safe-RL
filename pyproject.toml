@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "gymnasium>=1.1.1",
-    "tensorflow>=2.17.0",
+    "tensorflow>=2.20.0",
     "tensorflow-probability==0.25.0",
     "tensorstore>=0.1.65",
     "tf-keras>=2.17.0",
@@ -44,6 +44,9 @@ cuda12 = [
 ]
 cuda13 = [
     "jax[cuda13]>=0.4.30",
+]
+dev = [
+    "pytest>=9.0.2",
 ]
 docs = [
     "furo>=2025.12.19",
