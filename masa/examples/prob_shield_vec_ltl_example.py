@@ -1,4 +1,4 @@
-from masa.prob_shield.prob_shield_wrapper_disc import ProbShieldWrapperDisc
+from masa.prob_shield.prob_shield_wrapper_v1 import ProbShieldWrapperDisc
 from masa.algorithms.ppo import PPO
 from masa.common.wrappers import FlattenDictObsWrapper, VecWrapper, OneHotObsWrapper
 from typing import Dict, Any
