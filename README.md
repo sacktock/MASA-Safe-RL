@@ -44,9 +44,9 @@ pip install -e .
 #### Installation with uv
 `uv sync` allows installing the base package.
 
-* For building docs, you can use `uv sync --extras docs`.
-* Adding GPU support for Jax: `uv sync --extra cuda12` (or `cuda13` if supported by your device)
-* All extras (docs and GPU support): `uv sync --all-extras`.
+* For building docs, you can use `uv sync --group docs`.
+* Adding GPU support for Jax: `uv sync --group cuda12` (or `cuda13` if supported by your device)
+* All groups (docs and GPU support): `uv sync --all-groups`.
 
 #### Installation with PyPI
 
@@ -63,12 +63,12 @@ pip install "jax[cuda13]"
 ```bash
 pip install "jax[cuda12]"
 ```
-Alternatively, 
+Alternatively,
 ```bash
-pip install -e . --group cuda12
+uv sync --group cuda12
 ```
 ```bash
-pip install -e . --group cuda13
+uv sync --group cuda13
 ```
 - **MAC** and **Windows**: we recommend JAX with CPU. No further action is required if you correctly followed the earlier steps.
 
