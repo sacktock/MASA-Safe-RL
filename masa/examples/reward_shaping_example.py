@@ -22,7 +22,7 @@ def main():
     from masa.examples.colour_bomb_grid_world.property_2 import make_dfa
 
     # We're going to use the LTL safety constraint, which just has one key word args: (dfa: DFA = dummy_dfa) 
-    constraint_kwargs = constraint_kwargs = dict(
+    constraint_kwargs = dict(
         dfa=make_dfa()
     )
 

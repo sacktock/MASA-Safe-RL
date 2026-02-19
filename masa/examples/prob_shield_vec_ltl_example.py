@@ -25,7 +25,7 @@ def main():
     from masa.examples.colour_bomb_grid_world.property_3 import make_dfa
 
     # We're going to use the LTLSafety constraint, which has key word args: (dfa: DFA, obs_type: str) 
-    constraint_kwargs = constraint_kwargs = dict(
+    constraint_kwargs = dict(
         dfa=make_dfa(), # creates an instance of the dfa
         obs_type="discrete", # the observations should be in dict format
     )

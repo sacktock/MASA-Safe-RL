@@ -19,7 +19,7 @@ def main():
     from masa.envs.discrete.pacman_with_coins import safety_abstraction, abstr_label_fn, label_fn, cost_fn
 
     # We're going to use the PCTL constraint, which has key word args: (cost_fn CostFn: = DummyCostFn, alpha: float = 0.01) 
-    constraint_kwargs = constraint_kwargs = dict(
+    constraint_kwargs = dict(
         cost_fn=cost_fn,
         alpha=0.01,
     )
