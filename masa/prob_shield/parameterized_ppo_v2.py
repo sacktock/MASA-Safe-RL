@@ -173,7 +173,7 @@ class ParameterizedPPOV2(PPO):
         clip_range = self.clip_range_schedule(step)
         current_lr = self.lr_schedule(step)
 
-        t_stats = Stats()
+        t_stats = Stats(prefix="mix")
 
         with tqdm(
             total=self.n_epochs*self.n_steps//(self.batch_size//self.n_envs),
