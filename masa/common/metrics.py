@@ -436,7 +436,7 @@ class StatsLogger(BaseLogger):
                 if key in self.stats:
                     self.stats[key].append(float(val))
                 else:
-                    maxlen = self.stats_window_size if k not in self.stats_window_overrides else self.stats_window_overrides[k]
+                    maxlen = self.stats_window_size if key not in self.stats_window_overrides else self.stats_window_overrides[key]
                     self.stats[key] = deque([float(val)], maxlen=maxlen)
             else:
                 raise NotImplementedError(
