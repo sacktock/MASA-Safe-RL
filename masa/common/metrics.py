@@ -289,6 +289,8 @@ class BaseLogger:
         summary_writer: TensorBoard writer. Required when ``tensorboard=True``.
         stats_window_size: Maximum number of recent scalar values retained per
             metric.
+        stats_window_overrides: A dictionary for overriding logged values with 
+            a different ``stats_window_size``.
         prefix: Optional string prefix for TensorBoard tag names and stdout
             display. If non-empty, a trailing ``"/"`` is ensured.
 
@@ -309,6 +311,7 @@ class BaseLogger:
         tensorboard: bool = False,
         summary_writer: Optional[tf.summary.SummaryWriter] = None,
         stats_window_size: int = 100,
+        stats_window_overrides: Dict[str, int] = {},
         prefix: str = "",
     ):
         self.stdout: bool = stdout
@@ -325,6 +328,7 @@ class BaseLogger:
             )
 
         self.stats_window_size: int = int(stats_window_size)
+        self.stats_window_overrides: Dict[str, int] = {str(k): int(v) for k, v in stats_window_overrides.items()}
         self.prefix: str = (prefix if not prefix else (prefix if prefix.endswith("/") else prefix + "/"))
         self.stats: Dict[str, Deque[float]] = {}
 
@@ -382,6 +386,7 @@ class StatsLogger(BaseLogger):
         tensorboard: bool = False,
         summary_writer: Optional[tf.summary.SummaryWriter] = None,
         stats_window_size: int = 100,
+        stats_window_overrides: Dict[str, int] = {},
         prefix: str = "",
     ):
         super().__init__(
@@ -390,6 +395,7 @@ class StatsLogger(BaseLogger):
             tensorboard=tensorboard,
             summary_writer=summary_writer,
             stats_window_size=stats_window_size,
+            stats_window_overrides=stats_window_overrides,
             prefix=prefix,
         )
         self.dists: Dict[str, np.ndarray] = {}
@@ -418,10 +424,11 @@ class StatsLogger(BaseLogger):
             if isinstance(val, Stats):
                 met = val.get()
                 for k, v in met.items():
-                    if f"{key}_{k}" in self.stats:
-                        self.stats[f"{key}_{k}"].append(float(v))
+                    if k in self.stats:
+                        self.stats[k].append(float(v))
                     else:
-                        self.stats[f"{key}_{k}"] = deque([float(v)], maxlen=self.stats_window_size)
+                        maxlen = self.stats_window_size if k not in self.stats_window_overrides else self.stats_window_overrides[k]
+                        self.stats[k] = deque([float(v)], maxlen=maxlen)
             elif isinstance(val, Dist):
                 # Store a snapshot of the reservoir for later histogram logging.
                 self.dists[key] = val.get()
@@ -429,7 +436,8 @@ class StatsLogger(BaseLogger):
                 if key in self.stats:
                     self.stats[key].append(float(val))
                 else:
-                    self.stats[key] = deque([float(val)], maxlen=self.stats_window_size)
+                    maxlen = self.stats_window_size if k not in self.stats_window_overrides else self.stats_window_overrides[k]
+                    self.stats[key] = deque([float(val)], maxlen=maxlen)
             else:
                 raise NotImplementedError(
                     "StatsLogger.add() only supports types: Stats, Dist, and numeric scalars"
@@ -552,6 +560,7 @@ class RolloutLogger(BaseLogger):
         tensorboard: bool = False,
         summary_writer: Optional[tf.summary.SummaryWriter] = None,
         stats_window_size: int = 100,
+        stats_window_overrides: Dict[str, int] = {},
         prefix: str = "",
     ):
         super().__init__(
@@ -560,6 +569,7 @@ class RolloutLogger(BaseLogger):
             tensorboard=tensorboard,
             summary_writer=summary_writer,
             stats_window_size=stats_window_size,
+            stats_window_overrides=stats_window_overrides,
             prefix=prefix,
         )
         self.start_time: Optional[float] = None
@@ -617,7 +627,8 @@ class RolloutLogger(BaseLogger):
                 self.stats[k].append(float(v))
             else:
                 # +1 because we keep the most recent value as "current episode".
-                self.stats[k] = deque([float(v)], maxlen=self.stats_window_size + 1)
+                maxlen = self.stats_window_size if k not in self.stats_window_overrides else self.stats_window_overrides[k]
+                self.stats[k] = deque([float(v)], maxlen=maxlen + 1)
                     
     def _create_stats_to_log(self):
         """Compute per-metric mean over *completed* episodes."""
@@ -711,6 +722,8 @@ class TrainLogger(BaseLogger):
             ``tensorboard=True``.
         stats_window_size: Either a single window size used for all sub-loggers,
             or a list of per-logger window sizes aligned with ``loggers``.
+        stats_window_overrides: A dictionary of string integer pairs for overriding
+            specific logged metrics with a different ``stats_window_size``.
         prefix: Optional display prefix for stdout tables.
 
     Attributes:
@@ -727,6 +740,7 @@ class TrainLogger(BaseLogger):
         tensorboard: bool = False,
         summary_writer: Optional[tf.summary.SummaryWriter] = None,
         stats_window_size: Union[int, List[int]] = 100,
+        stats_window_overrides: Dict[str, int] = {},
         prefix: str = "",
     ):
         # Note: TrainLogger is a coordinator and intentionally does not call
@@ -750,12 +764,14 @@ class TrainLogger(BaseLogger):
 
         for idx, (key, ctor) in enumerate(loggers):
             # ctor is expected to be a BaseLogger subclass or callable returning one.
+            overrides = {k.removeprefix(key+"/"): v for k, v in stats_window_overrides.items() if k.startswith(key+"/")}
             self.loggers[key] = ctor(
                 stdout=self.stdout,
                 tqdm=self.tqdm,
                 tensorboard=self.tensorboard,
                 summary_writer=self.summary_writer,
                 stats_window_size=window_sizes[idx],
+                stats_window_overrides=overrides,
                 prefix=key,
             )
 

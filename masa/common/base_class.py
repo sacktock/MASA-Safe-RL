@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, Optional, TypeVar, Union, List, Callable
+from typing import Any, Optional, TypeVar, Union, List, Callable, Dict
 from gymnasium import spaces
 import gymnasium as gym
 import jax.random as jr
@@ -74,6 +74,7 @@ class BaseAlgorithm(ABC):
         prefill: Optional[int] = None,
         save_freq: int = 0,
         stats_window_size: int = 100,
+        stats_window_overrides: Optional[Dict[str, int]] = None
     ):
 
         if self.tensorboard_logdir is not None:
@@ -81,11 +82,15 @@ class BaseAlgorithm(ABC):
         else:
             summary_writer = None
 
+        if not stats_window_overrides:
+            stats_window_overrides = {}
+
         logger = TrainLogger(
             [("train/rollout", RolloutLogger), ("train/stats", StatsLogger), ("eval/rollout", RolloutLogger)],
             tensorboard=bool(summary_writer is not None),
             summary_writer=summary_writer, 
             stats_window_size=[stats_window_size, stats_window_size, num_eval_episodes],
+            stats_window_overrides=stats_window_overrides,
             prefix='',
         )
 
