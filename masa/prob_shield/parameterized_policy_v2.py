@@ -100,15 +100,15 @@ class ParamActionDist:
         lp = lp + dm.log_prob(mix)  # (B,)
         return lp
 
-    def entropy(self):
+    def entropy(self, actions):
         di = tfd.Categorical(logits=self.logits_i)
         dj = tfd.Categorical(logits=self.logits_j)
 
         ent = di.entropy() + dj.entropy()
 
         # deterministic proxy for entropy based on Jacobian-at-mean correction
-        i = jnp.argmax(self.logits_i, axis=1)
-        j = jnp.argmax(self.logits_j, axis=1)
+        i = actions[:, 0].astype(jnp.int32)
+        j = actions[:, 1].astype(jnp.int32)
         loc, scale = self._gather_mix_params(i, j)  # (B,1)
         base = tfd.MultivariateNormalDiag(loc=loc, scale_diag=scale)
         base_ent = base.entropy()  # (B,)

@@ -88,12 +88,12 @@ class ParamActionDist:
         lp += self._beta_dist(i, j).log_prob(betas)
         return lp
 
-    def entropy(self):
+    def entropy(self, actions):
         di = tfd.Categorical(logits=self.logits_i)
         dj = tfd.Categorical(logits=self.logits_j)
 
-        i = jnp.argmax(self.logits_i, axis=1)
-        j = jnp.argmax(self.logits_j, axis=1)
+        i = actions[:, 0].astype(jnp.int32)
+        j = actions[:, 1].astype(jnp.int32)
         loc, scale = self._beta_params(i, j)
 
         # deterministic proxy for entropy based on Jacobian-at-mean correction
@@ -114,7 +114,7 @@ class ParameterizedActor(nn.Module):
     head_arch: Sequence[int]
     shared_trunk: bool = True
     activation_fn: Callable[[jnp.ndarray], jnp.ndarray] = nn.tanh
-    embed_dim: int = 16
+    embed_dim: int = 64
     log_std_init: float = 0.0
     log_std_min: float = -5.0
     log_std_max: float = 1.0

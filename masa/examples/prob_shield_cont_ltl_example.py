@@ -105,13 +105,14 @@ def main():
 
     policy_kwargs = dict(
         net_arch=[256, 256],
-        activation_fn=nn.relu
+        activation_fn=nn.relu,
+        log_std_init=-2.0,
     )
 
     algo = ParameterizedPPO(
         env,
         tensorboard_logdir=None, # ignoring tensorboard logging
-        seed=1,
+        seed=0,
         monitor=True, # monitors training progress
         device="auto", 
         verbose=0, # verbosity level for monitoring
@@ -120,21 +121,23 @@ def main():
         n_steps=128,
         batch_size=256,
         n_epochs=4,
-        clip_range=optax.schedules.linear_schedule(0.1, 0.0, 300_000),
-        ent_coef=0.02,
+        clip_range=optax.schedules.linear_schedule(0.1, 0.0, 500_000),
+        #ent_coef=3e-4,
         vf_coef=0.5,
         policy_kwargs=policy_kwargs
     )
 
     # Now we begin training
     algo.train(
-        num_frames=300_000, # total number of frames (environment interactions)
+        num_frames=500_000, # total number of frames (environment interactions)
         num_eval_episodes=10, # total number of evaluation episodes to run
         eval_freq=10_000, # how frequently to run evaluation (default=0 => never run evaluation)
         log_freq=10_000, # how frequenntly to log metrics to stdout or tensorboard
         # prefill: Optional[int] = None (not implemented yet)
         # save_freq: int = 0, (not implemented yet)
         stats_window_size = 100, # sliding window size for metrics logging
+        stats_window_overrides = {"train/rollout/satisfied": 1000, # sliding window overrides for satisfied metrics logging
+                                  "eval/rollout/satisfied": 1000}
     )
 
 if __name__ == "__main__":

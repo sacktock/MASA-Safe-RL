@@ -95,7 +95,7 @@ def main():
         num_frames=500_000, # total number of frames (environment interactions)
         num_eval_episodes=10, # total number of evaluation episodes to run
         eval_freq=10_000, # how frequently to run evaluation (default=0 => never run evaluation)
-        log_freq=10_000, # how frequenntly to log metrics to stdout or tensorboard
+        log_freq=10_000, # how frequently to log metrics to stdout or tensorboard
         # prefill: Optional[int] = None (not implemented yet)
         # save_freq: int = 0, (not implemented yet)
         stats_window_size = 100, # sliding window size for metrics logging
