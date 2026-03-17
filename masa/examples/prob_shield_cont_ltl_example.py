@@ -122,7 +122,7 @@ def main():
         batch_size=256,
         n_epochs=4,
         clip_range=optax.schedules.linear_schedule(0.1, 0.0, 500_000),
-        #ent_coef=3e-4,
+        ent_coef=3e-4,
         vf_coef=0.5,
         policy_kwargs=policy_kwargs
     )
