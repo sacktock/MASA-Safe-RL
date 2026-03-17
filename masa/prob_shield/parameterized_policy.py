@@ -94,17 +94,9 @@ class ParamActionDist:
 
         i = actions[:, 0].astype(jnp.int32)
         j = actions[:, 1].astype(jnp.int32)
-        loc, scale = self._beta_params(i, j)
+        betas = actions[:, 2:].astype(self.beta_loc_table.dtype)
+        beta_ent_approx = -self._beta_dist(i, j).log_prob(betas)
 
-        # deterministic proxy for entropy based on Jacobian-at-mean correction
-        base = tfd.MultivariateNormalDiag(loc=loc, scale_diag=scale)
-        base_ent = base.entropy()  # (B,)
-
-        # log sigmoid'(x) = -softplus(-x) - softplus(x)
-        log_sigmoid_prime_at_mean = -jax.nn.softplus(-loc) - jax.nn.softplus(loc)  # (B, K)
-        jacobian_term = jnp.sum(log_sigmoid_prime_at_mean, axis=-1)          # (B,)
-
-        beta_ent_approx = base_ent + jacobian_term
         return di.entropy() + dj.entropy() + beta_ent_approx
 
 class ParameterizedActor(nn.Module):
