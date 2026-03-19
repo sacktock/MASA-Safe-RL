@@ -47,6 +47,7 @@ class MediaStreaming(TabularEnv):
                     self._transition_matrix[s+1, s, a] = in_rate * (1 - self._out_rate)
                     self._transition_matrix[s, s, a] = 1 - in_rate * (1 - self._out_rate)
                 elif s == (self._n_states - 1):
+                    in_rate = 1.0 # required for existence of safe end component
                     self._transition_matrix[s-1, s, a] = (1 - in_rate) * self._out_rate
                     self._transition_matrix[s, s, a] = 1 - (1 - in_rate) * self._out_rate
                 else:
