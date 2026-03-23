@@ -11,6 +11,7 @@ class TabularAlgorithm(BaseAlgorithm):
         self,
         env: gym.Env,
         tensorboard_logdir: Optional[str] = None,
+        wandb: bool = False,
         seed: Optional[int] = None,
         monitor: bool = True,
         device: str = "auto",
@@ -22,6 +23,7 @@ class TabularAlgorithm(BaseAlgorithm):
         super().__init__(
             env, 
             tensorboard_logdir=tensorboard_logdir,
+            wandb=wandb,
             seed=seed,
             monitor=monitor,
             device=device,

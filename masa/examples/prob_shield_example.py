@@ -1,3 +1,4 @@
+import wandb
 from masa.prob_shield.prob_shield_wrapper_v1 import ProbShieldWrapperDisc
 from masa.algorithms.ppo import PPO
 
@@ -75,11 +76,29 @@ def main():
         granularity = 20,
     )
 
+    # -------------------------------------------------------------------------
+    # W&B — native logging (Approach A)
+    # wandb=True in PPO routes all metrics through wandb.log() in metrics.py.
+    # -------------------------------------------------------------------------
+    wandb.init(
+        project="MASA-Safe-RL",
+        name="prob_shield_mini_pacman",
+        config=dict(
+            env="mini_pacman",
+            shield="ProbShieldWrapperDisc_v1",
+            seed=0,
+            alpha=0.01,
+            init_safety_bound=0.01,
+            granularity=20,
+        ),
+    )
+
     # Now let's initialize PPO
     # PPO will automatically one-hot encode any discrete observations and flatten any dict observations
     algo = PPO(
         env,
         tensorboard_logdir=None, # ignoring tensorboard logging
+        wandb=True, # enable native W&B logging
         seed=0,
         monitor=True, # monitors training progress
         device="auto", 
@@ -90,7 +109,7 @@ def main():
 
     # Now we begin training
     algo.train(
-        num_frames=500_000, # total number of frames (environment interactions)
+        num_frames=100_000, # total number of frames (environment interactions)
         num_eval_episodes=10, # total number of evaluation episodes to run
         eval_freq=10_000, # how frequently to run evaluation (default=0 => never run evaluation)
         log_freq=10_000, # how frequenntly to log metrics to stdout or tensorboard

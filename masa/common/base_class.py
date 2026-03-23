@@ -18,6 +18,7 @@ class BaseAlgorithm(ABC):
         self,
         env: gym.Env,
         tensorboard_logdir: Optional[str] = None,
+        wandb: bool = False,
         seed: Optional[int] = None,
         monitor: bool = True,
         device: str = "auto",
@@ -30,6 +31,7 @@ class BaseAlgorithm(ABC):
 
         self.env = env
         self.tensorboard_logdir = tensorboard_logdir
+        self.wandb = wandb
         self.seed = seed
         self.device = device
         self.verbose = verbose
@@ -88,7 +90,8 @@ class BaseAlgorithm(ABC):
         logger = TrainLogger(
             [("train/rollout", RolloutLogger), ("train/stats", StatsLogger), ("eval/rollout", RolloutLogger)],
             tensorboard=bool(summary_writer is not None),
-            summary_writer=summary_writer, 
+            summary_writer=summary_writer,
+            wandb=self.wandb,
             stats_window_size=[stats_window_size, stats_window_size, num_eval_episodes],
             stats_window_overrides=stats_window_overrides,
             prefix='',

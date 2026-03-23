@@ -218,5 +218,6 @@ __marimo__/
 # other
 runs/
 logdir/
+wandb/
 *Prob_Shielding*
 *recreg.py

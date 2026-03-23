@@ -17,6 +17,7 @@ class LCRL(QL):
         self,
         env: gym.Env,
         tensorboard_logdir: Optional[str] = None,
+        wandb: bool = False,
         seed: Optional[int] = None,
         monitor: bool = True,
         device: str = "auto",
@@ -37,6 +38,7 @@ class LCRL(QL):
         super().__init__(
             env, 
             tensorboard_logdir=tensorboard_logdir,
+            wandb=wandb,
             seed=seed,
             monitor=monitor,
             device=device,
