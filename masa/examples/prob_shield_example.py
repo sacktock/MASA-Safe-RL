@@ -1,4 +1,3 @@
-import wandb
 from masa.prob_shield.prob_shield_wrapper_v1 import ProbShieldWrapperDisc
 from masa.algorithms.ppo import PPO
 
@@ -47,6 +46,8 @@ def main():
     # PPO is a on-policy algorithm that takes one arg: env
     #   and key word args:
     #   tensorboard_logdir: Optional[str] = None,
+    #   wandb_project: Optional[str] = None,
+    #   wandb_name: Optional[str] = None,
     #   seed: Optional[int] = None,
     #   monitor: bool = True,
     #   device: str = "auto",
@@ -76,29 +77,13 @@ def main():
         granularity = 20,
     )
 
-    # -------------------------------------------------------------------------
-    # W&B — native logging (Approach A)
-    # wandb=True in PPO routes all metrics through wandb.log() in metrics.py.
-    # -------------------------------------------------------------------------
-    wandb.init(
-        project="MASA-Safe-RL",
-        name="prob_shield_mini_pacman",
-        config=dict(
-            env="mini_pacman",
-            shield="ProbShieldWrapperDisc_v1",
-            seed=0,
-            alpha=0.01,
-            init_safety_bound=0.01,
-            granularity=20,
-        ),
-    )
-
     # Now let's initialize PPO
     # PPO will automatically one-hot encode any discrete observations and flatten any dict observations
     algo = PPO(
         env,
         tensorboard_logdir=None, # ignoring tensorboard logging
-        wandb=True, # enable native W&B logging
+        wandb_project="MASA-Safe-RL", # W&B project name — enables native logging
+        wandb_name="prob_shield_2_mini_pacman", # W&B run name
         seed=0,
         monitor=True, # monitors training progress
         device="auto", 

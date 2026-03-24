@@ -18,7 +18,8 @@ class BaseAlgorithm(ABC):
         self,
         env: gym.Env,
         tensorboard_logdir: Optional[str] = None,
-        wandb: bool = False,
+        wandb_project: Optional[str] = None, # W&B project name (enables W&B if set)
+        wandb_name: Optional[str] = None, # Specific name for this W&B run
         seed: Optional[int] = None,
         monitor: bool = True,
         device: str = "auto",
@@ -31,7 +32,8 @@ class BaseAlgorithm(ABC):
 
         self.env = env
         self.tensorboard_logdir = tensorboard_logdir
-        self.wandb = wandb
+        self.wandb_project = wandb_project
+        self.wandb_name = wandb_name
         self.seed = seed
         self.device = device
         self.verbose = verbose
@@ -87,11 +89,24 @@ class BaseAlgorithm(ABC):
         if not stats_window_overrides:
             stats_window_overrides = {}
 
+        use_wandb = self.wandb_project is not None
+
+        if use_wandb:
+            import wandb
+            wandb_ctx = wandb.init(
+                project=self.wandb_project,
+                name=self.wandb_name,
+                config=self._get_wandb_config(),
+            )
+        else:
+            import contextlib
+            wandb_ctx = contextlib.nullcontext()
+
         logger = TrainLogger(
             [("train/rollout", RolloutLogger), ("train/stats", StatsLogger), ("eval/rollout", RolloutLogger)],
             tensorboard=bool(summary_writer is not None),
             summary_writer=summary_writer,
-            wandb=self.wandb,
+            wandb=use_wandb,
             stats_window_size=[stats_window_size, stats_window_size, num_eval_episodes],
             stats_window_overrides=stats_window_overrides,
             prefix='',
@@ -105,7 +120,7 @@ class BaseAlgorithm(ABC):
 
         self._last_obs, _ = self.env.reset(seed=self.seed)
 
-        with tqdm(
+        with wandb_ctx, tqdm(
             total=num_frames,
             desc="frames",
             position=0,
@@ -131,6 +146,19 @@ class BaseAlgorithm(ABC):
                 if log_freq and (total_steps >= next_log):
                     next_log += log_freq
                     logger.log(total_steps)
+
+    def _get_wandb_config(self) -> dict:
+        """Auto-capture serialisable instance attributes for wandb.config.
+
+        Returns a dict of all public instance attributes whose values are
+        JSON-serialisable primitives (int, float, str, bool, None).  Complex
+        objects such as environments, policies, and JAX arrays are excluded.
+        """
+        return {
+            k: v for k, v in self.__dict__.items()
+            if not k.startswith('_')
+            and isinstance(v, (int, float, str, bool, type(None)))
+        }
 
     def _get_eval_env(self) -> gym.Env:
         if self._eval_env is not None:
