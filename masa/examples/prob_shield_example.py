@@ -46,6 +46,8 @@ def main():
     # PPO is a on-policy algorithm that takes one arg: env
     #   and key word args:
     #   tensorboard_logdir: Optional[str] = None,
+    #   wandb_project: Optional[str] = None,
+    #   wandb_name: Optional[str] = None,
     #   seed: Optional[int] = None,
     #   monitor: bool = True,
     #   device: str = "auto",
@@ -80,6 +82,8 @@ def main():
     algo = PPO(
         env,
         tensorboard_logdir=None, # ignoring tensorboard logging
+        wandb_project="MASA-Safe-RL", # W&B project name — enables native logging
+        wandb_name="prob_shield_2_mini_pacman", # W&B run name
         seed=0,
         monitor=True, # monitors training progress
         device="auto", 
@@ -90,7 +94,7 @@ def main():
 
     # Now we begin training
     algo.train(
-        num_frames=500_000, # total number of frames (environment interactions)
+        num_frames=100_000, # total number of frames (environment interactions)
         num_eval_episodes=10, # total number of evaluation episodes to run
         eval_freq=10_000, # how frequently to run evaluation (default=0 => never run evaluation)
         log_freq=10_000, # how frequenntly to log metrics to stdout or tensorboard

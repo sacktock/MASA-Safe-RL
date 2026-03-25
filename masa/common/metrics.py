@@ -310,6 +310,7 @@ class BaseLogger:
         tqdm: bool = True,
         tensorboard: bool = False,
         summary_writer: Optional[tf.summary.SummaryWriter] = None,
+        wandb: bool = False,
         stats_window_size: int = 100,
         stats_window_overrides: Dict[str, int] = {},
         prefix: str = "",
@@ -318,6 +319,7 @@ class BaseLogger:
         self.tqdm: bool = tqdm
         self.tensorboard: bool = tensorboard
         self.summary_writer: Optional[tf.summary.SummaryWriter] = summary_writer
+        self.wandb: bool = wandb
 
         if self.tensorboard:
             assert self.summary_writer is not None, "tensorboard=True requires a summary_writer"
@@ -385,6 +387,7 @@ class StatsLogger(BaseLogger):
         tqdm: bool = True,
         tensorboard: bool = False,
         summary_writer: Optional[tf.summary.SummaryWriter] = None,
+        wandb: bool = False,
         stats_window_size: int = 100,
         stats_window_overrides: Dict[str, int] = {},
         prefix: str = "",
@@ -394,6 +397,7 @@ class StatsLogger(BaseLogger):
             tqdm=tqdm,
             tensorboard=tensorboard,
             summary_writer=summary_writer,
+            wandb=wandb,
             stats_window_size=stats_window_size,
             stats_window_overrides=stats_window_overrides,
             prefix=prefix,
@@ -489,6 +493,21 @@ class StatsLogger(BaseLogger):
             for key, values in self.dists_to_log.items():
                 tf.summary.histogram(self.prefix + key, data=values, step=step)
 
+    def _get_wandb_payload(self) -> Dict[str, Any]:
+        """Return the current W&B payload dict without logging it.
+
+        Used by :class:`TrainLogger` to batch all sub-logger payloads into a
+        single :func:`wandb.log` call.
+
+        Returns:
+            Mapping from metric name to scalar or :class:`wandb.Histogram`.
+        """
+        import wandb as _wandb
+        payload: Dict[str, Any] = {self.prefix + k: v for k, v in self.stats_to_log.items()}
+        for k, v in self.dists_to_log.items():
+            payload[self.prefix + k] = _wandb.Histogram(v)
+        return payload
+
     def _log_to_stdout(self, step: int):
         """Print the current scalar log table to stdout.
 
@@ -559,6 +578,7 @@ class RolloutLogger(BaseLogger):
         tqdm: bool = True,
         tensorboard: bool = False,
         summary_writer: Optional[tf.summary.SummaryWriter] = None,
+        wandb: bool = False,
         stats_window_size: int = 100,
         stats_window_overrides: Dict[str, int] = {},
         prefix: str = "",
@@ -568,6 +588,7 @@ class RolloutLogger(BaseLogger):
             tqdm=tqdm,
             tensorboard=tensorboard,
             summary_writer=summary_writer,
+            wandb=wandb,
             stats_window_size=stats_window_size,
             stats_window_overrides=stats_window_overrides,
             prefix=prefix,
@@ -652,6 +673,17 @@ class RolloutLogger(BaseLogger):
         with self.summary_writer.as_default():
             for key, value in self.stats_to_log.items():
                 tf.summary.scalar(self.prefix + key, value, step=step)
+
+    def _get_wandb_payload(self) -> Dict[str, Any]:
+        """Return the current W&B payload dict without logging it.
+
+        Used by :class:`TrainLogger` to batch all sub-logger payloads into a
+        single :func:`wandb.log` call.
+
+        Returns:
+            Mapping from metric name to scalar value.
+        """
+        return {self.prefix + k: v for k, v in self.stats_to_log.items()}
 
     def _log_to_stdout(self, step: int):
         """Print episode summaries and runtime diagnostics to stdout.
@@ -739,6 +771,7 @@ class TrainLogger(BaseLogger):
         tqdm: bool = True,
         tensorboard: bool = False,
         summary_writer: Optional[tf.summary.SummaryWriter] = None,
+        wandb: bool = False,
         stats_window_size: Union[int, List[int]] = 100,
         stats_window_overrides: Dict[str, int] = {},
         prefix: str = "",
@@ -750,6 +783,7 @@ class TrainLogger(BaseLogger):
         self.tqdm: bool = tqdm
         self.tensorboard: bool = tensorboard
         self.summary_writer: Optional[tf.summary.SummaryWriter] = summary_writer
+        self.wandb: bool = wandb
         self.prefix: str = prefix
 
         if isinstance(stats_window_size, int):
@@ -770,6 +804,7 @@ class TrainLogger(BaseLogger):
                 tqdm=self.tqdm,
                 tensorboard=self.tensorboard,
                 summary_writer=self.summary_writer,
+                wandb=False,  # TrainLogger drives W&B centrally; sub-loggers do not call wandb.log() independently
                 stats_window_size=window_sizes[idx],
                 stats_window_overrides=overrides,
                 prefix=key,
@@ -803,6 +838,16 @@ class TrainLogger(BaseLogger):
             self.loggers[key]._create_logs()  # type: ignore[attr-defined]
             if self.tensorboard:
                 self.loggers[key]._log_to_tensorboard(step)  # type: ignore[attr-defined]
+
+        if self.wandb:
+            # Batch all sub-logger payloads into a single wandb.log() call to
+            # keep all metrics on the same step without step-alignment warnings.
+            import wandb as _wandb
+            payload: Dict[str, Any] = {}
+            for logger in self.loggers.values():
+                payload.update(logger._get_wandb_payload())  # type: ignore[attr-defined]
+            if payload:
+                _wandb.log(payload, step=step)
 
         if self.stdout:
             self._log_to_stdout(step)
