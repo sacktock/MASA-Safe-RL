@@ -220,4 +220,3 @@ runs/
 logdir/
 wandb/
 *Prob_Shielding*
-*recreg.py
