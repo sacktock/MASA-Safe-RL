@@ -57,7 +57,7 @@ def test_new_envs_render_rgb_array_and_notebook():
         assert frame.mean() > 0
         env.close()
 
-    with open("notebooks/play_safety_gridworlds.ipynb", "r", encoding="utf-8") as fh:
+    with open("notebooks/envs/play_safety_gridworlds.ipynb", "r", encoding="utf-8") as fh:
         notebook = json.load(fh)
 
     assert notebook["nbformat"] == 4
