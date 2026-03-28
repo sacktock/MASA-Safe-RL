@@ -42,9 +42,9 @@ pip install -e .
 ```
 
 #### Installation with uv
-`uv sync` allows installing the base package.
+`uv sync` installs the base package from the repository root.
 
-* For building docs, you can use `uv sync --group docs`.
+* For building docs, use `uv sync --group docs` from the repository root.
 * Adding GPU support for Jax: `uv sync --group cuda12` (or `cuda13` if supported by your device)
 * All groups (docs and GPU support): `uv sync --all-groups`.
 
@@ -86,6 +86,24 @@ python -m masa.run --env-id bridge_crossing --algo ppo --custom-cfgs bridge_cros
 ```
 python -m masa.examples.prob_shield_example
 ```
+
+## Editing documentation
+
+Documentation uses the root `pyproject.toml` and `uv.lock`, so you can build and serve it directly from the repository root.
+
+```bash
+uv sync --group docs
+uv run --locked sphinx-build -b html docs docs/_build/html
+```
+
+The built site will be available at `docs/_build/html/index.html`.
+
+For live reload while editing, run:
+
+```bash
+uv run --locked sphinx-autobuild docs docs/_build/html
+```
+
 
 ## Getting in Touch
 
