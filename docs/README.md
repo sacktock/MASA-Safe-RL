@@ -8,7 +8,7 @@ The documentation is managed by the repository root `pyproject.toml` and `uv.loc
 
 ```sh
 uv sync --group docs
-uv run --locked sphinx-build -b html docs docs/_build/html
+uv run --locked --group docs sphinx-build -b html docs docs/_build/html
 ```
 
 The documentation will be present at `docs/_build/html`, where you can open `index.html`.
@@ -16,7 +16,7 @@ The documentation will be present at `docs/_build/html`, where you can open `ind
 ## Live reload with uv
 
 ```sh
-uv run --locked sphinx-autobuild docs docs/_build/html
+uv run --locked --group docs sphinx-autobuild docs docs/_build/html
 ```
 
 The docs will be served at `http://127.0.0.1:8000`.
