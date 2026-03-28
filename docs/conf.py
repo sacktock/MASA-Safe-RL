@@ -7,8 +7,8 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'MASA'
-copyright = '2025, Alexander Goodall, Edwin Hamel De Le Court, Omar Adalat, Francesco Belardinelli'
-author = 'Alexander Goodall, Edwin Hamel De Le Court, Omar Adalat, Francesco Belardinelli'
+copyright = '2025, Alexander Goodall, Omar Adalat, Edwin Hamel De Le Court, Francesco Belardinelli'
+author = 'Alexander Goodall, Omar Adalat, Edwin Hamel De Le Court, Francesco Belardinelli'
 release = 'v0'
 
 html_title = "Multi and Single Agent Safe Reinforcement Learning"
