@@ -13,6 +13,7 @@ class LabelledParallelEnv(BaseParallelEnv):
         self.env = env
         self.agents = env.possible_agents
         self.label_fn = label_fn
+        self.cost_fn = getattr(env, "cost_fn", None)
 
     def reset(self, seed: int | None = None, options: Dict[str, Any] | None = None):
         obs, info = self.env.reset(seed=seed, options=options)
