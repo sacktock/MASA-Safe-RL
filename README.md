@@ -56,6 +56,10 @@ Coming soon!
 
 MASA-Safe-RL relies on [JAX](https://docs.jax.dev/) for GPU acceleration. If you are only interested in the gymnasium wrappers and constraints API then you do not need to complete the following steps.
 
+## Mac and Windows
+**MAC** and **Windows**: we recommend JAX with CPU. No further action is required if you correctly followed the earlier steps.
+
+#### pip 
 - **Linux x86_64/aarch64** and **Windows WSL2 x86_64**: W+we strongly recommend using [Ubuntu 22.04](https://apps.microsoft.com/detail/9pn20msr04dw?hl=en-GB&gl=BE) or similar, jax and jaxlib should already be installed via the `requirements.txt`. You need to reinstall [JAX](https://docs.jax.dev/) based on your cuda driver compatibility. Do not use the ```-U``` option here as it may break earlier dependencies!
 ```bash
 pip install "jax[cuda13]"
@@ -63,14 +67,15 @@ pip install "jax[cuda13]"
 ```bash
 pip install "jax[cuda12]"
 ```
-Alternatively,
+
+#### uv
+Alternatively with `uv`,
 ```bash
 uv sync --group cuda12
 ```
 ```bash
 uv sync --group cuda13
 ```
-- **MAC** and **Windows**: we recommend JAX with CPU. No further action is required if you correctly followed the earlier steps.
 
 ## How to run MASA
 - You can run masa with the prebuilt `run` script. The script is not fully configurable so it is often better to create your own examples.
