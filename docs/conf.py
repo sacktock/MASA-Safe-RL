@@ -16,7 +16,7 @@ author = 'Alexander Goodall, Omar Adalat, Edwin Hamel De Le Court, Francesco Bel
 release = 'v0'
 
 ROOT_DIR = pathlib.Path(__file__).absolute().parent.parent
-sys.path.append(0, str(ROOT_DIR / 'images'))
+sys.path.append(str(ROOT_DIR / 'images'))
 
 
 # -- General configuration ---------------------------------------------------
