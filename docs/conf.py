@@ -15,10 +15,6 @@ copyright = '2025, Alexander Goodall, Omar Adalat, Edwin Hamel De Le Court, Fran
 author = 'Alexander Goodall, Omar Adalat, Edwin Hamel De Le Court, Francesco Belardinelli'
 release = 'v0'
 
-ROOT_DIR = pathlib.Path(__file__).absolute().parent
-sys.path.append(str(ROOT_DIR / 'images'))
-
-
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
@@ -62,7 +58,7 @@ autodoc_typehints = "signature"
 
 
 html_title = 'MASA-Safe-RL'
-html_logo = 'logo.png'
+html_logo = '../images/logo.png'
 html_theme = 'furo'
 html_static_path = ['_static']
 html_css_files = ["custom.css"]
