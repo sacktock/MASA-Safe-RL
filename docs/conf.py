@@ -15,7 +15,7 @@ copyright = '2025, Alexander Goodall, Omar Adalat, Edwin Hamel De Le Court, Fran
 author = 'Alexander Goodall, Omar Adalat, Edwin Hamel De Le Court, Francesco Belardinelli'
 release = 'v0'
 
-ROOT_DIR = pathlib.Path(__file__).absolute().parent.parent
+ROOT_DIR = pathlib.Path(__file__).absolute().parent
 sys.path.append(str(ROOT_DIR / 'images'))
 
 
