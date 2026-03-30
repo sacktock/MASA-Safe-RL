@@ -1,7 +1,8 @@
-# MASA Safe RL Docs
+# Introduction
 
 ## Welcome
 
+![title card](../images/logo_large.png)
 
 Welcome to MASA-Safe-RL, the Multi and Single Agent (MASA) Safe Reinforcement Learning library. The primary goal of this library is to develop a set of common constraints and environments for safe reinforcement learning research, built on top of the popular **[Gymnasium API](https://gymnasium.farama.org/)**. We span, CMPDs, probabilistic constraints, Reach-Avoid and LTL-Safety (DFA) properties.  
 
