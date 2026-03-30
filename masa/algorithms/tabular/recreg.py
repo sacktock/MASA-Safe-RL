@@ -159,6 +159,7 @@ class RECREG(QL):
         samples: int = 512,
         horizon: int = 10,
         step_wise_prob: float = 0.99,
+        r_min: float = 0.0,
         cost_coef: float = 10.0,
         exploration: str = "boltzmann",
         boltzmann_temp: float = 0.05,
@@ -201,6 +202,7 @@ class RECREG(QL):
         self.samples = samples
         self.horizon = horizon
         self.step_wise_prob = step_wise_prob
+        self.r_min = r_min
         self.cost_coef = cost_coef
 
         self._setup_models()
@@ -320,7 +322,8 @@ class RECREG(QL):
 
             # 0-return update for the risky action if overridden (all modes)
             if override:
-                self.Q[state, action] = (1 - self.alpha) * self.Q[state, action]
+                targ = self.r_min / (1 - self.gamma)
+                self.Q[state, action] = (1 - self.alpha) * self.Q[state, action] + self.alpha * targ
 
             # Generate (real + counterfactual) experiences
             if hasattr(self.env, "cost_fn") and isinstance(self.env.cost_fn, DFACostFn):
