@@ -1,3 +1,5 @@
+# prob_shield_wrapper_v1.py
+
 import warnings
 import gymnasium as gym
 from gymnasium import spaces
@@ -139,6 +141,8 @@ class ProbShieldWrapperBase(ConstraintPersistentWrapper):
 
         self.observation_space = self._make_augmented_obs_space(self._orig_obs_space)
         self.action_space = self._make_augmented_act_space(self._orig_act_space)
+
+        self.t = 0
 
     def _abstraction(self, obs: Any) -> int:
         if isinstance(self._orig_obs_space, spaces.Discrete):
@@ -346,18 +350,26 @@ class ProbShieldWrapperBase(ConstraintPersistentWrapper):
                     safe_vertex[i] = diff_act_j / (diff_act_j - diff_act_i)
                     safe_vertex[j] = diff_act_i / (diff_act_i - diff_act_j)
 
-        return safe_vertex, proj_safety_bounds
+        proj_penalty = np.sqrt(np.mean((proj_safety_bounds - safety_bounds)**2))
+        margin_penalty = np.sum((
+            np.sum(probs_curr * (-np.log(proj_safety_bounds + 1e-6) -np.log(1-proj_safety_bounds + 1e-6))[:, None], axis=0) 
+            + np.sum(probs_curr * (-np.log(betas + 1e-6) -np.log(1-betas + 1e-6))[:, None], axis=0)
+        )*safe_vertex)
+        return safe_vertex, proj_safety_bounds, proj_penalty, margin_penalty
 
     def reset(self, *, seed: int | None = None, options: Dict[str, Any] | None = None):
         obs, info = self.env.reset(seed=seed, options=options)
         self._current_safety_bound = self.init_safety_bound
         abstr_obs = self._abstraction(obs)
         self._current_obs = abstr_obs
+        self.t = 0
         return self._augment_obs(obs), info
 
     def step(self, action):
         i, j, betas = self._parse_act(action)
-        safe_vertex, proj_safety_bounds = self._project_act(i, j, betas)
+        safe_vertex, proj_safety_bounds, proj_penalty, margin_penalty = self._project_act(i, j, betas)
+
+        # beta_penalty = -np.mean(np.log(betas + 1e-6) + np.log(1 - betas + 1e-6))
 
         # Renormalize safe_vertex:
         #   safe_vertex can often be affected by floating point errors
@@ -380,6 +392,17 @@ class ProbShieldWrapperBase(ConstraintPersistentWrapper):
         self._current_safety_bound = proj_safety_bounds[next_obs_idx]
         self._current_obs = abstr_obs
 
+        #margin_penalty = -np.log(self._current_safety_bound + 1e-6) - np.log(1-self._current_safety_bound + 1e-6)
+
+        #margin_bonus = self._current_safety_bound * (1 - self._current_safety_bound)
+
+        if self.t % 50 == 0:
+            info.update({f"margin_{self.t}": self._current_safety_bound})
+
+        info.update({"margin_penalty": margin_penalty, "proj_penalty": proj_penalty})
+        
+        self.t += 1
+    #- margin_penalty - 0.1*proj_penalty
         return self._augment_obs(orig_obs), reward, terminated, truncated, info
 
 class ProbShieldWrapperDisc(ProbShieldWrapperBase):
