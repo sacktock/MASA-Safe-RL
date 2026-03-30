@@ -2,26 +2,35 @@
 
 This folder contains the docmentation for [MASA-Safe-RL](https://github.com/sacktock/MASA-Safe-RL/)
 
-## Building
+The documentation is managed by the repository root `pyproject.toml` and `uv.lock`. Run the following commands from the repository root; there is no separate docs-local `uv` environment to sync.
 
-The docs can be built with:
+## Building with uv
+
 ```sh
-# 1. Without uv:
-make html
-
-#2 . If using Astral's uv package manager:
-uv run make html
+uv sync --group docs
+uv run --locked --group docs sphinx-build -b html docs docs/_build/html
 ```
 
 The documentation will be present at `docs/_build/html`, where you can open `index.html`.
 
-Live reloading is supported with either:
-```sh
-#1. Without uv:
-sphinx-autobuild docs docs/_build/html
+## Live reload with uv
 
-#2. With uv:
-uv run sphinx-autobuild docs docs/_build/html
+```sh
+uv run --locked --group docs sphinx-autobuild docs docs/_build/html
 ```
 
-Where the documentation should be auto-served at: `http://127.0.0.1:8000`
+The docs will be served at `http://127.0.0.1:8000`.
+
+## Building without uv
+
+The docs can still be built from the repository root with:
+
+```sh
+make -C docs html
+```
+
+Live reloading without `uv` is:
+
+```sh
+sphinx-autobuild docs docs/_build/html
+```

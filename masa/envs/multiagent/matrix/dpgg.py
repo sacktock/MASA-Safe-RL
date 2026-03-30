@@ -7,9 +7,53 @@ import numpy as np
 from gymnasium.spaces import Box, Discrete
 from pettingzoo import ParallelEnv
 
+from masa.envs.multiagent.matrix._label_utils import (
+    binary_cost,
+    decode_lsb_bits,
+    flatten_binary_obs,
+)
+
 class Actions(IntEnum):
     Contribute = 0
     Withhold   = 1
+
+
+def label_fn(obs):
+    obs_vec = flatten_binary_obs(obs)
+    if obs_vec.size < 5:
+        raise ValueError(
+            "DPGGMatrix label_fn expected at least 5 channels "
+            f"(4 action channels + pot bits), got {obs_vec.size}."
+        )
+
+    labels = set()
+    if obs_vec[0]:
+        labels.add("player_0_contribute")
+    if obs_vec[1]:
+        labels.add("player_0_withhold")
+    if obs_vec[2]:
+        labels.add("player_1_contribute")
+    if obs_vec[3]:
+        labels.add("player_1_withhold")
+
+    if obs_vec[0] and obs_vec[2]:
+        labels.add("both_contribute")
+    elif obs_vec[1] and obs_vec[3]:
+        labels.update({"both_withhold", "unsafe"})
+    elif (obs_vec[0] and obs_vec[3]) or (obs_vec[1] and obs_vec[2]):
+        labels.add("mixed_contributions")
+
+    pot_idx = decode_lsb_bits(obs_vec[4:])
+    if pot_idx == 0:
+        labels.add("pot_empty")
+    else:
+        labels.update({"pot_positive", "pot_nonempty"})
+
+    return labels
+
+
+def cost_fn(labels):
+    return binary_cost(labels)
 
 class DPGGMatrix(ParallelEnv):
     """
@@ -100,6 +144,8 @@ class DPGGMatrix(ParallelEnv):
         # self._renderer: DPGGRenderer | None = None
         # if self.render_mode is not None:
         #     self._renderer = DPGGRenderer(self.render_mode)
+        self.label_fn = label_fn
+        self.cost_fn = cost_fn
 
         # Spaces
         self.observation_spaces = {a: self.observation_space(a) for a in self.possible_agents}

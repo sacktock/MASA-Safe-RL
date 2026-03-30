@@ -11,8 +11,8 @@ import pathlib
 import sys
 
 project = 'MASA'
-copyright = '2025, Alexander Goodall, Edwin Hamel De Le Court, Omar Adalat, Francesco Belardinelli'
-author = 'Alexander Goodall, Edwin Hamel De Le Court, Omar Adalat, Francesco Belardinelli'
+copyright = '2025, Alexander Goodall, Omar Adalat, Edwin Hamel De Le Court, Francesco Belardinelli'
+author = 'Alexander Goodall, Omar Adalat, Edwin Hamel De Le Court, Francesco Belardinelli'
 release = 'v0'
 
 ROOT_DIR = pathlib.Path(__file__).absolute().parent.parent

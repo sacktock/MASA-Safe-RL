@@ -7,6 +7,8 @@ from enum import IntEnum
 from gymnasium.spaces import Box, Discrete
 from pettingzoo import ParallelEnv
 
+from masa.envs.multiagent.matrix._label_utils import binary_cost, flatten_binary_obs
+
 class InspectorActions(IntEnum):
     NotInspect = 0
     Inspect    = 1
@@ -14,6 +16,40 @@ class InspectorActions(IntEnum):
 class InspecteeActions(IntEnum):
     Comply  = 0
     Violate = 1
+
+
+def label_fn(obs):
+    obs_vec = flatten_binary_obs(obs)
+    if obs_vec.size != 5:
+        raise ValueError(f"InspectionMatrix label_fn expected 5 channels, got {obs_vec.size}.")
+
+    labels = set()
+    if obs_vec[0]:
+        labels.add("inspector_notinspect")
+    if obs_vec[1]:
+        labels.add("inspector_inspect")
+    if obs_vec[2]:
+        labels.add("inspectee_comply")
+    if obs_vec[3]:
+        labels.update({"inspectee_violate", "violation"})
+
+    if obs_vec[0] and obs_vec[2]:
+        labels.add("notinspect_comply")
+    elif obs_vec[0] and obs_vec[3]:
+        labels.add("notinspect_violate")
+    elif obs_vec[1] and obs_vec[2]:
+        labels.add("inspect_comply")
+    elif obs_vec[1] and obs_vec[3]:
+        labels.update({"inspect_violate", "detected_violation"})
+
+    if obs_vec[4]:
+        labels.update({"undetected_violation", "unsafe"})
+
+    return labels
+
+
+def cost_fn(labels):
+    return binary_cost(labels)
 
 class InspectionMatrix(ParallelEnv):
     """
@@ -88,6 +124,8 @@ class InspectionMatrix(ParallelEnv):
         # if self.render_mode is not None:
         #     self._renderer = InspectionRenderer(self.render_mode)
         # self._cum_rewards: dict[str, float] = {}
+        self.label_fn = label_fn
+        self.cost_fn = cost_fn
 
         # Spaces
         self.observation_spaces = {a: self.observation_space(a) for a in self.possible_agents}
