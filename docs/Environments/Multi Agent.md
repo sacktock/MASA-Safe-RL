@@ -8,6 +8,6 @@ For Multi Agent environments, we use the **PettingZoo** API for environment inte
 ```{toctree}
 :hidden:
 
-Multi Agent/Gridworlds/Markov Stag Hunt
+Multi Agent/Gridworlds
 Multi Agent/Matrix Games
 ```
