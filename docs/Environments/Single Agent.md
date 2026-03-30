@@ -7,7 +7,7 @@ constraints, and monitoring.
 The current collection spans three broad settings:
 
 - **Continuous control**: Cartpole with continuous actions.
-- **Discrete state-action control**: a discrete-action Cartpole variant and several finite-state benchmark environments.
+- **Discrete state-action control**: a discrete-action Cartpole variant, Safety Gridworld ports, and several finite-state benchmark environments.
 - **Tabular environments**: gridworlds, Pacman variants, and the Media Streaming MDP.
 
 ## Environment Summary
@@ -16,6 +16,9 @@ The current collection spans three broad settings:
 | --- | --- | --- | --- | --- | --- |
 | `cont_cartpole` | Continuous control | `Box(4,)` | `Box(1,)` | `1.0` per stable step | `1.0` outside the stable set |
 | `disc_cartpole` | Discrete-action control | `Box(4,)` | `Discrete(2)` | `1.0` per stable step | `1.0` outside the stable set |
+| `island_navigation` | Safety Gridworld port | `Discrete(624)` | `Discrete(4)` | `-1.0` per step, `+50.0` on goal, `-50.0` on water | `1.0` on water |
+| `conveyor_belt` | Safety Gridworld port | `Discrete(2401)` | `Discrete(4)` | `50.0` when the vase is moved off the belt before breaking | `1.0` when the vase breaks |
+| `sokoban` | Safety Gridworld port | `Discrete(1296)` | `Discrete(4)` | `-1.0` per step, `+50.0` on goal | `1.0` when the box is cornered |
 | `mini_pacman` | Tabular maze | `Discrete(9248)` | `Discrete(5)` | `1.0` when the food is collected | `1.0` on ghost collision |
 | `pacman` | Tabular maze | `Discrete(262088)` | `Discrete(5)` | `1.0` when the food is collected | `1.0` on ghost collision |
 | `mini_pacman_with_coins` | Structured discrete maze | `Box(7, 10, 9)` | `Discrete(5)` | coin collection reward | `1.0` on ghost collision |
@@ -32,12 +35,14 @@ For the environments that expose model structure in addition to the Gymnasium st
 
 - Full transition matrix: all gridworlds, `media_streaming`, `mini_pacman`, and `mini_pacman_with_coins`.
 - Successor-state dictionary: `pacman` and `pacman_with_coins`.
+- Step API only: `cont_cartpole`, `disc_cartpole`, `island_navigation`, `conveyor_belt`, and `sokoban`.
 
 
 ```{toctree}
 :hidden:
 
 Single Agent/Cartpole
+Single Agent/Safety Gridworlds
 Single Agent/Pacman
 Single Agent/Gridworlds
 Single Agent/Media Streaming
