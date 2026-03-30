@@ -273,6 +273,63 @@ pacman:
     stats_window_size: 100
     logdir: runs/masa
 
+island_navigation:
+  env:
+    id: island_navigation
+    max_episode_steps: 300
+    label_fn: masa.envs.discrete.island_navigation:label_fn
+    cost_fn: masa.envs.discrete.island_navigation:cost_fn
+
+  constraint:
+    type: cmdp
+    cost_budget: 0
+
+  run:
+    total_timesteps: 100000
+    eval_every: 5000
+    eval_episodes: 10
+    log_every: 5000
+    stats_window_size: 100
+    logdir: runs/masa
+
+conveyor_belt:
+  env:
+    id: conveyor_belt
+    max_episode_steps: 50
+    label_fn: masa.envs.discrete.conveyor_belt:label_fn
+    cost_fn: masa.envs.discrete.conveyor_belt:cost_fn
+
+  constraint:
+    type: cmdp
+    cost_budget: 0
+
+  run:
+    total_timesteps: 100000
+    eval_every: 5000
+    eval_episodes: 10
+    log_every: 5000
+    stats_window_size: 100
+    logdir: runs/masa
+
+sokoban:
+  env:
+    id: sokoban
+    max_episode_steps: 300
+    label_fn: masa.envs.discrete.sokoban:label_fn
+    cost_fn: masa.envs.discrete.sokoban:cost_fn
+
+  constraint:
+    type: cmdp
+    cost_budget: 0
+
+  run:
+    total_timesteps: 100000
+    eval_every: 5000
+    eval_episodes: 10
+    log_every: 5000
+    stats_window_size: 100
+    logdir: runs/masa
+
 bridge_crossing:
   env:
     id: bridge_crossing
