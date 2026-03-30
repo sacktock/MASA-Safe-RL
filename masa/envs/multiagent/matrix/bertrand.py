@@ -7,9 +7,45 @@ import numpy as np
 from gymnasium.spaces import Box, Discrete
 from pettingzoo import ParallelEnv
 
+from masa.envs.multiagent.matrix._label_utils import binary_cost, flatten_binary_obs
+
 class Actions(IntEnum):
     High = 0    # Collusive/high price
     Low  = 1    # Undercut/low price
+
+
+def label_fn(obs):
+    obs_vec = flatten_binary_obs(obs)
+    if obs_vec.size != 5:
+        raise ValueError(f"BertrandMatrix label_fn expected 5 channels, got {obs_vec.size}.")
+
+    labels = set()
+    if obs_vec[0]:
+        labels.add("player_0_high")
+    if obs_vec[1]:
+        labels.add("player_0_low")
+    if obs_vec[2]:
+        labels.add("player_1_high")
+    if obs_vec[3]:
+        labels.add("player_1_low")
+
+    if obs_vec[0] and obs_vec[2]:
+        labels.update({"high_high", "collusion"})
+    elif obs_vec[0] and obs_vec[3]:
+        labels.add("high_low")
+    elif obs_vec[1] and obs_vec[2]:
+        labels.add("low_high")
+    elif obs_vec[1] and obs_vec[3]:
+        labels.add("low_low")
+
+    if obs_vec[4]:
+        labels.update({"price_war", "unsafe"})
+
+    return labels
+
+
+def cost_fn(labels):
+    return binary_cost(labels)
 
 class BertrandMatrix(ParallelEnv):
     """
@@ -79,6 +115,8 @@ class BertrandMatrix(ParallelEnv):
         # if self.render_mode is not None:
         #     self._renderer = BertrandRenderer(self.render_mode)
         self._cum_rewards: dict[str, float] = {}
+        self.label_fn = label_fn
+        self.cost_fn = cost_fn
 
         # Spaces
         self.observation_spaces = {a: self.observation_space(a) for a in self.possible_agents}

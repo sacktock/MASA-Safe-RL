@@ -7,9 +7,45 @@ import numpy as np
 from gymnasium.spaces import Box, Discrete
 from pettingzoo import ParallelEnv
 
+from masa.envs.multiagent.matrix._label_utils import binary_cost, flatten_binary_obs
+
 class Actions(IntEnum):
     Swerve   = 0
     Straight = 1
+
+
+def label_fn(obs):
+    obs_vec = flatten_binary_obs(obs)
+    if obs_vec.size != 5:
+        raise ValueError(f"ChickenMatrix label_fn expected 5 channels, got {obs_vec.size}.")
+
+    labels = set()
+    if obs_vec[0]:
+        labels.add("player_0_swerve")
+    if obs_vec[1]:
+        labels.add("player_0_straight")
+    if obs_vec[2]:
+        labels.add("player_1_swerve")
+    if obs_vec[3]:
+        labels.add("player_1_straight")
+
+    if obs_vec[0] and obs_vec[2]:
+        labels.add("swerve_swerve")
+    elif obs_vec[0] and obs_vec[3]:
+        labels.add("swerve_straight")
+    elif obs_vec[1] and obs_vec[2]:
+        labels.add("straight_swerve")
+    elif obs_vec[1] and obs_vec[3]:
+        labels.add("straight_straight")
+
+    if obs_vec[4]:
+        labels.update({"crash", "unsafe"})
+
+    return labels
+
+
+def cost_fn(labels):
+    return binary_cost(labels)
 
 class ChickenMatrix(ParallelEnv):
     """
@@ -79,6 +115,8 @@ class ChickenMatrix(ParallelEnv):
         # if self.render_mode is not None:
         #     self._renderer = ChickenRenderer(self.render_mode)
         self._cum_rewards: dict[str, float] = {}
+        self.label_fn = label_fn
+        self.cost_fn = cost_fn
 
         # Spaces
         self.observation_spaces = {a: self.observation_space(a) for a in self.possible_agents}

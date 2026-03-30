@@ -8,10 +8,64 @@ import numpy as np
 from gymnasium.spaces import Box, Discrete
 from pettingzoo import ParallelEnv
 
+from masa.envs.multiagent.matrix._label_utils import (
+    binary_cost,
+    flatten_binary_obs,
+)
+
 
 class Actions(IntEnum):
     RoadA = 0
     RoadB = 1
+
+
+def infer_congestion_num_agents(obs_vec: np.ndarray) -> int:
+    """Infer ``num_agents`` from a congestion-game observation length."""
+    num_channels = int(obs_vec.size)
+    if (num_channels - 3) % 4 != 0:
+        raise ValueError(
+            "CongestionMatrix label_fn expected observation length of the form 4*N + 3, "
+            f"got {num_channels}."
+        )
+    return (num_channels - 3) // 4
+
+
+def label_fn(obs):
+    obs_vec = flatten_binary_obs(obs)
+    n_agents = infer_congestion_num_agents(obs_vec)
+
+    labels = set()
+    for idx in range(n_agents):
+        base = 2 * idx
+        if obs_vec[base]:
+            labels.add(f"player_{idx}_roadA")
+        if obs_vec[base + 1]:
+            labels.add(f"player_{idx}_roadB")
+
+    offset = 2 * n_agents
+    load_a = int(np.argmax(obs_vec[offset : offset + n_agents + 1]))
+    offset += n_agents + 1
+    load_b = int(np.argmax(obs_vec[offset : offset + n_agents + 1]))
+    offset += n_agents + 1
+
+    labels.add(f"loadA_{load_a}")
+    labels.add(f"loadB_{load_b}")
+
+    if load_a == 0:
+        labels.add("roadA_empty")
+    if load_b == 0:
+        labels.add("roadB_empty")
+    if load_a == load_b:
+        labels.add("balanced_load")
+
+    if obs_vec[offset]:
+        labels.update({"jam", "unsafe"})
+
+    return labels
+
+
+def cost_fn(labels):
+    return binary_cost(labels)
 
 class CongestionMatrix(ParallelEnv):
     """
@@ -96,6 +150,8 @@ class CongestionMatrix(ParallelEnv):
         # self._renderer: CongestionRenderer | None = None
         # if self.render_mode is not None:
         #     self._renderer = CongestionRenderer(self.render_mode)
+        self.label_fn = label_fn
+        self.cost_fn = cost_fn
 
         # Spaces
         self.observation_spaces = {a: self.observation_space(a) for a in self.possible_agents}
