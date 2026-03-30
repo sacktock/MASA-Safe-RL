@@ -6,10 +6,18 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+import os
+import pathlib
+import sys
+
 project = 'MASA'
 copyright = '2025, Alexander Goodall, Edwin Hamel De Le Court, Omar Adalat, Francesco Belardinelli'
 author = 'Alexander Goodall, Edwin Hamel De Le Court, Omar Adalat, Francesco Belardinelli'
 release = 'v0'
+
+ROOT_DIR = pathlib.Path(__file__).absolute().parent.parent
+sys.path.append(0, str(ROOT_DIR / 'images'))
+
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -52,8 +60,9 @@ autodoc_typehints = "signature"
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_title = '../images/logo.png'
-html_title = "MASA-Safe-RL"
+
+html_title = 'MASA-Safe-RL'
+html_logo = 'logo.png'
 html_theme = 'furo'
 html_static_path = ['_static']
 html_css_files = ["custom.css"]
