@@ -1429,6 +1429,7 @@ dependencies = [
     { name = "ml-dtypes" },
     { name = "numpy" },
     { name = "optax" },
+    { name = "pettingzoo" },
     { name = "pillow" },
     { name = "pygame" },
     { name = "ruamel-yaml" },
@@ -1472,6 +1473,7 @@ requires-dist = [
     { name = "ml-dtypes", specifier = ">=0.4.1" },
     { name = "numpy", specifier = ">=1.26.4" },
     { name = "optax", specifier = ">=0.1.9" },
+    { name = "pettingzoo", specifier = ">=1.24.3" },
     { name = "pillow", specifier = ">=10.4.0" },
     { name = "pygame", specifier = ">=2.6.1" },
     { name = "ruamel-yaml", specifier = "<0.20.0" },
@@ -2227,6 +2229,19 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/81/76/a1e769043c0c0c9fe391b702539d594731a4362334cdf4dc25d0c09761e7/parso-0.8.6.tar.gz", hash = "sha256:2b9a0332696df97d454fa67b81618fd69c35a7b90327cbe6ba5c92d2c68a7bfd", size = 401621, upload-time = "2026-02-09T15:45:24.425Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b6/61/fae042894f4296ec49e3f193aff5d7c18440da9e48102c3315e1bc4519a7/parso-0.8.6-py2.py3-none-any.whl", hash = "sha256:2c549f800b70a5c4952197248825584cb00f033b29c692671d3bf08bf380baff", size = 106894, upload-time = "2026-02-09T15:45:21.391Z" },
+]
+
+[[package]]
+name = "pettingzoo"
+version = "1.25.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "gymnasium" },
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/38/cb/cbb8d0e973b284f709ce93a80354d464588301957220f031c51324b464b2/pettingzoo-1.25.0.tar.gz", hash = "sha256:4b8a8552eab07a9c8f37dca094e59ee194003c57e2a7e7348bdf7c62049eecf6", size = 723959, upload-time = "2025-04-22T14:37:37.36Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d3/9a/33fb244264573687ef27b2f436ae98b524c5e8e5edc7c36183a59c5b4748/pettingzoo-1.25.0-py3-none-any.whl", hash = "sha256:f385bccbebdad73a0c3da884344aea6e2614aa962b653c790b06ef9ab162d651", size = 852489, upload-time = "2025-04-22T14:37:36.036Z" },
 ]
 
 [[package]]
