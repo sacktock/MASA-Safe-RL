@@ -69,9 +69,12 @@ Environments/Single Agent
 ```{toctree}
 :caption: Algorithms
 :hidden:
+:maxdepth: 2
 
-Algorithms/PPO Lagrangian
-Algorithms/CPO
+Algorithms/Overview
+Algorithms/Tabular
+Algorithms/On Policy
+Algorithms/Shielded
 ```
 
 ```{toctree}
