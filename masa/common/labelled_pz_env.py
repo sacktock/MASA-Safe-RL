@@ -1,15 +1,15 @@
 from __future__ import annotations
 from typing import Any, Dict
-from pettingzoo.utils import BaseParallelEnv
+from pettingzoo import ParallelEnv
 from masa.common.label_fn import LabelFn
 
 
-class LabelledParallelEnv(BaseParallelEnv):
+class LabelledParallelEnv(ParallelEnv):
     """PettingZoo parallel API wrapper that attaches the per-agent labelling function."""
     metadata = {"name": "labelled_parallel_env"}
 
 
-    def __init__(self, env: BaseParallelEnv, label_fn: Dict[str, LabelFn] | LabelFn):
+    def __init__(self, env: ParallelEnv, label_fn: Dict[str, LabelFn] | LabelFn):
         self.env = env
         self.agents = env.possible_agents
         self.label_fn = label_fn
