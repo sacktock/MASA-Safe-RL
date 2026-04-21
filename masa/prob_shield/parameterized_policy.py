@@ -99,6 +99,25 @@ class ParamActionDist:
 
         return di.entropy() + dj.entropy() + beta_ent_approx
 
+class ActionDist:
+
+    logits_i: jnp.ndarray          # (B, N)
+    logits_j: jnp.ndarray          # (B, N)
+    loc: jnp.ndarray               # (B, K)
+    scale: jnp.ndarray             # (B, K)
+
+    def sample(self, seed):
+        # TODO
+
+    def mode(self):
+        # TODO
+
+    def log_prob(self, actions):
+        # TODO
+
+    def entropy(self, actions):
+        #TODO
+
 class ParameterizedActor(nn.Module):
     n_actions: int
     max_successors: int
@@ -124,6 +143,22 @@ class ParameterizedActor(nn.Module):
 
         logits_i = nn.Dense(self.n_actions)(x)
         logits_j = nn.Dense(self.n_actions)(x)
+
+        loc = nn.Dense(self.max_successors)(x)
+        log_scale = nn.Dense(self.max_successors)(x) + self.log_std_init
+        scale = jnp.exp(log_scale) + self.eps
+
+        return ActionDist(
+            logits_i=logits_i,
+            logits_j=logits_j,
+            loc=loc,
+            scale=scale,
+        )
+
+        # output:
+        # loc and scale
+
+        
 
         emb_i_tbl = self.param("emb_i", nn.initializers.normal(0.02), (self.n_actions, self.embed_dim))
         emb_j_tbl = self.param("emb_j", nn.initializers.normal(0.02), (self.n_actions, self.embed_dim))
