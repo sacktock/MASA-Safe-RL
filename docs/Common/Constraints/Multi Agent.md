@@ -1,8 +1,8 @@
-# Multi Agent Constraints
+# Multi-Agent Constraints
 
 Here, we consider constraints only applicable to multi-agent environments.
 
 ```{toctree}
-
-# Multi Agent/ATL
+Multi-Agent/Constrained Markov Game (CMG)
+# Multi-Agent/ATL
 ```
