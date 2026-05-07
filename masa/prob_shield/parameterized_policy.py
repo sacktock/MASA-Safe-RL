@@ -99,6 +99,52 @@ class ParamActionDist:
 
         return di.entropy() + dj.entropy() + beta_ent_approx
 
+@dataclass
+class ActionDist:
+    logits_i: jnp.ndarray  # (B, N)
+    logits_j: jnp.ndarray  # (B, N)
+    loc: jnp.ndarray       # (B, K)
+    scale: jnp.ndarray     # (B, K)
+    eps: float = 1e-6
+
+    def _beta_dist(self):
+        eps = jnp.array(self.eps, dtype=self.loc.dtype)
+        base = tfd.MultivariateNormalDiag(loc=self.loc, scale_diag=self.scale)
+        bij = tfb.Chain([tfb.Shift(eps), tfb.Scale(1.0 - 2.0 * eps), tfb.Sigmoid()])
+        return tfd.TransformedDistribution(distribution=base, bijector=bij)
+
+    def sample(self, seed):
+        di = tfd.Categorical(logits=self.logits_i)
+        dj = tfd.Categorical(logits=self.logits_j)
+        key_i, key_j, key_b = tfp.random.split_seed(seed, n=3)
+        i = di.sample(seed=key_i)                    # (B,)
+        j = dj.sample(seed=key_j)                    # (B,)
+        betas = self._beta_dist().sample(seed=key_b) # (B, K)
+        return jnp.concatenate([i[:, None], j[:, None], betas], axis=1)
+
+    def mode(self):
+        i = jnp.argmax(self.logits_i, axis=1)
+        j = jnp.argmax(self.logits_j, axis=1)
+        betas = jnp.clip(jax.nn.sigmoid(self.loc), 0.0, 1.0)
+        return jnp.concatenate([i[:, None], j[:, None], betas], axis=1)
+
+    def log_prob(self, actions):
+        i = actions[:, 0].astype(jnp.int32)
+        j = actions[:, 1].astype(jnp.int32)
+        betas = actions[:, 2:].astype(self.loc.dtype)
+        di = tfd.Categorical(logits=self.logits_i)
+        dj = tfd.Categorical(logits=self.logits_j)
+        lp = di.log_prob(i) + dj.log_prob(j)
+        lp += self._beta_dist().log_prob(betas)
+        return lp
+
+    def entropy(self, actions):
+        di = tfd.Categorical(logits=self.logits_i)
+        dj = tfd.Categorical(logits=self.logits_j)
+        betas = actions[:, 2:].astype(self.loc.dtype)
+        beta_ent_approx = -self._beta_dist().log_prob(betas)
+        return di.entropy() + dj.entropy() + beta_ent_approx
+
 class ParameterizedActor(nn.Module):
     n_actions: int
     max_successors: int
@@ -124,6 +170,22 @@ class ParameterizedActor(nn.Module):
 
         logits_i = nn.Dense(self.n_actions)(x)
         logits_j = nn.Dense(self.n_actions)(x)
+
+        loc = nn.Dense(self.max_successors)(x)
+        log_scale = nn.Dense(self.max_successors)(x) + self.log_std_init
+        scale = jnp.exp(log_scale) + self.eps
+
+        return ActionDist(
+            logits_i=logits_i,
+            logits_j=logits_j,
+            loc=loc,
+            scale=scale,
+        )
+
+        # output:
+        # loc and scale
+
+        
 
         emb_i_tbl = self.param("emb_i", nn.initializers.normal(0.02), (self.n_actions, self.embed_dim))
         emb_j_tbl = self.param("emb_j", nn.initializers.normal(0.02), (self.n_actions, self.embed_dim))
