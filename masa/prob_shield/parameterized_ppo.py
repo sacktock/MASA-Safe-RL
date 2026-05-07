@@ -14,7 +14,7 @@ from flax.training.train_state import TrainState
 from masa.algorithms.ppo import PPO
 from masa.common.base_class import BaseJaxPolicy
 from masa.prob_shield.parameterized_policy import ParameterizedPPOPolicy
-from masa.common.metrics import Stats
+from masa.common.metrics import Stats, Dist
 
 from tqdm.auto import tqdm
 
@@ -24,6 +24,7 @@ class ParameterizedPPO(PPO):
         super().__init__(*args, policy_class=policy_class, **kwargs)
 
         self.margin_stats = {f"margin_{t}": Stats(prefix=f"margin_{t}") for t in [0, 50, 100, 150, 200]}
+        self.margin_dists = {f"margin_{t}": Dist(prefix=f"margin_{t}") for t in [0, 50, 100, 150, 200]}
 
     def _validate_and_extract_action_specs(self):
 
@@ -227,7 +228,10 @@ class ParameterizedPPO(PPO):
                 "lr": float(current_lr)
             })
             logger.add("train/stats", {k: v for k, v in self.margin_stats.items() if v.n != 0})
+            logger.add("train/stats", {k: v for k, v in self.margin_dists.items() if v.n != 0})
             self.margin_stats = {f"margin_{t}": Stats(prefix=f"margin_{t}") for t in [0, 50, 100, 150, 200]}
+            # do not reinstatiate self.margin_dists: we keep previous samples
+            
 
     def rollout(
         self, 
@@ -320,6 +324,7 @@ class ParameterizedPPO(PPO):
                         for t in [0, 50, 100, 200, 250]:
                             if f"margin_{t}" in info:
                                 self.margin_stats[f"margin_{t}"].update(info[f"margin_{t}"])
+                                self.margin_dists[f"margin_{t}"].update(info[f"margin_{t}"])
 
         assert isinstance(self._last_obs, np.ndarray) 
         final_obs = self.prepare_obs(self._last_obs, n_envs=self.n_envs)
@@ -363,7 +368,7 @@ class ParameterizedPPO(PPO):
                     return flat[0]
                 return flat
 
-            flat = np.asarray(act, dtype=np.float32).reshape(n_envs, 2 + self.max_successors)
+            flat = np.array(act, dtype=np.float32, copy=True).reshape(n_envs, 2 + self.max_successors)
             flat[:, 0] = np.clip(flat[:, 0], 0, self.n_actions - 1)
             flat[:, 1] = np.clip(flat[:, 1], 0, self.n_actions - 1)
             flat[:, 2:] = np.clip(flat[:, 2:], 0.0, 1.0)

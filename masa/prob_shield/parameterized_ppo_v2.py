@@ -14,7 +14,7 @@ from flax.training.train_state import TrainState
 from masa.algorithms.ppo import PPO
 from masa.common.base_class import BaseJaxPolicy
 from masa.prob_shield.parameterized_policy_v2 import ParameterizedPPOPolicyV2
-from masa.common.metrics import Stats
+from masa.common.metrics import Stats, Dist
 
 from tqdm.auto import tqdm
 
