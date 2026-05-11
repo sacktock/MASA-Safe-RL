@@ -154,11 +154,12 @@ class RECREG(QL):
         task_gamma: float = 0.9,
         safe_alpha: float = 0.1,
         safe_gamma: float = 0.9,
+        model_free_alpha: float = 0.1,
         mode: str = "model_based",
         model_checking: str = "statistical",
         samples: int = 512,
         horizon: int = 10,
-        step_wise_prob: float = 0.99,
+        safety_prob: float = 0.01,
         r_min: float = 0.0,
         cost_coef: float = 10.0,
         exploration: str = "boltzmann",
@@ -197,11 +198,12 @@ class RECREG(QL):
 
         self.safe_alpha = safe_alpha
         self.safe_gamma = safe_gamma
+        self.model_free_alpha = model_free_alpha
         self.mode = mode
         self.model_checking = model_checking
         self.samples = samples
         self.horizon = horizon
-        self.step_wise_prob = step_wise_prob
+        self.safety_prob = safety_prob
         self.r_min = r_min
         self.cost_coef = cost_coef
 
@@ -219,7 +221,7 @@ class RECREG(QL):
             )
 
             if self.exploration == "boltzmann":
-                self.backup_policy = q_to_boltzmann_policy(self.B, self.boltzmann_temp)
+                self.backup_policy = q_to_boltzmann_policy(self.B, 0.01)
             elif self.exploration == "epsilon_greedy":
                 self.backup_policy = q_to_argmax_policy(self.B)
             else:
@@ -243,7 +245,12 @@ class RECREG(QL):
                 self.backup_policy,
             )[np.newaxis, :]
 
-        elif self.mode == "model_based":
+            self.unsafe_mask = np.array(
+                [bool(cost_fn(label_fn(s))) for s in range(self.n_states)],
+                dtype=bool,
+            )
+
+        elif self.mode in ["model_based", "model_free"]:
 
             # Handle LTLSafetyEnv case
             if is_wrapped(self.env, LTLSafetyEnv):
@@ -266,51 +273,81 @@ class RECREG(QL):
                     raise AttributeError("Environment must define a `cost_fn` attribute.")
                 cost_fn = self.env.cost_fn
 
-            # Backup policy Q values
-            self.B = np.zeros((self.n_states, self.n_actions), dtype=np.float32)
-
-            formula, pctl_label_fn = build_pctl_formula(
-                self.env, self.horizon, self.step_wise_prob, label_fn=label_fn, cost_fn=cost_fn
+            self.unsafe_mask = np.array(
+                [bool(cost_fn(label_fn(s))) for s in range(self.n_states)],
+                dtype=bool,
             )
 
-            max_succesors = 5 # modify this if need be
+            if self.mode == "model_based":
 
-            # Successor states and counts to estimate the transition kernel
-            self.successors = -np.ones((max_succesors, self.n_states), dtype=np.int64)
-            self.successors[0, :] = np.arange(self.n_states, dtype=np.int64) 
-            self.counts = np.zeros((max_succesors, self.n_states, self.n_actions), dtype=np.float32)
-            self.counts[0, :, :] = 1e-3
+                # Backup policy Q values
+                self.B = np.zeros((self.n_states, self.n_actions), dtype=np.float32)
 
-            self.successor_index = [{int(s): 0} for s in range(self.n_states)]
-            self.next_free = np.ones(self.n_states, dtype=np.int32)
+                formula, pctl_label_fn = build_pctl_formula(
+                    self.env, self.horizon, self.step_wise_prob, label_fn=label_fn, cost_fn=cost_fn
+                )
 
-            if self.model_checking == "exact":
-                model_checker_cls = pctl.ExactModelChecker
-            elif self.model_checking == "statistical":
-                model_checker_cls = pctl.StatisticalModelChecker
-            else:
-                raise NotImplementedError(f"Unexpected model checker class: {self.model_checking}")
+                max_succesors = 5 # modify this if need be
 
-            self.model_checker = model_checker_cls(
-                formula, 
-                pctl_label_fn, 
-                {"unsafe"}, # atomic predicates
-                successor_states=self.successors,
-                probabilities=compact_probabilities(self.counts)
-            )
+                # Successor states and counts to estimate the transition kernel
+                self.successors = -np.ones((max_succesors, self.n_states), dtype=np.int64)
+                self.successors[0, :] = np.arange(self.n_states, dtype=np.int64) 
+                self.counts = np.zeros((max_succesors, self.n_states, self.n_actions), dtype=np.float32)
+                self.counts[0, :, :] = 1e-3
 
-        elif self.mode == "model_free":
+                self.successor_index = [{int(s): 0} for s in range(self.n_states)]
+                self.next_free = np.ones(self.n_states, dtype=np.int32)
 
-            # Backup policy Q values
-            self.B = np.zeros((self.n_states, self.n_actions), dtype=np.float32)
-            # Satisfaction relation: the probability of being unsafe in H timesteps
-            self.S = np.zeros((self.horizon, self.n_states, self.n_actions), dtype=np.float32)
+                if self.model_checking == "exact":
+                    model_checker_cls = pctl.ExactModelChecker
+                elif self.model_checking == "statistical":
+                    model_checker_cls = pctl.StatisticalModelChecker
+                else:
+                    raise NotImplementedError(f"Unexpected model checker class: {self.model_checking}")
+
+                self.model_checker = model_checker_cls(
+                    formula, 
+                    pctl_label_fn, 
+                    {"unsafe"}, # atomic predicates
+                    successor_states=self.successors,
+                    probabilities=compact_probabilities(self.counts)
+                )
+
+            if self.mode == "model_free":
+                # Backup policy Q values
+                self.B = np.zeros((self.n_states, self.n_actions), dtype=np.float32)
+                # Satisfaction relation: the probability of being unsafe in H timesteps
+                self.S = np.zeros((self.horizon, self.n_states, self.n_actions), dtype=np.float32)
 
         else:
             raise NotImplementedError(f"Unexpected mode: {self.mode}")
 
+    def _backup_tail_risk_state(self, s: int) -> float:
+        if self.mode == "exact":
+            policy = self.backup_policy
+            return float(np.sum(policy[s] * self.S[0, s]))
+
+        policy = q_to_boltzmann_policy(self.B, 0.01)
+
+        if self.mode == "model_free":
+            return float(np.sum(policy[s] * self.S[0, s, :]))
+
+        return float(np.sum(policy[s] * self.S[0, s]))
+
+    def _update_next_budget(self, s: int, a: int, next_obs: int, delta: float) -> float:
+        if self.unsafe_mask[next_obs]:
+            return 0.0
+
+        tail = float(self.S[0, s, a])
+        rho_next = self._backup_tail_risk_state(next_obs)
+
+        slack = max(delta - tail, 0.0)
+
+        return float(np.clip(rho_next + slack, 0.0, 1.0))
+
     def train(self, *args, **kwargs):
         self._overrides = []
+        self._step_wise_prob = self.safety_prob
         super().train(*args, **kwargs)
 
     def optimize(self, step: int, logger: Optional[TrainLogger] = None):
@@ -356,7 +393,7 @@ class RECREG(QL):
                                 + (1 - cf_term) * self.S[t + 1, cf_next_state, np.argmax(next_b)],
                             )
                         self.S[t, cf_state, cf_act] = (
-                            (1 - self.safe_alpha) * self.S[t, cf_state, cf_act] + self.safe_alpha * next_S
+                            (1 - self.model_free_alpha) * self.S[t, cf_state, cf_act] + self.model_free_alpha * next_S
                         )
 
                 # --- update backup policy B with cf exp ---
@@ -369,21 +406,14 @@ class RECREG(QL):
                                                 + self.safe_alpha * target_b
 
                 # --- update task policy Q with cf exp ---
-                if self.mode in ["model_free", "exact"]:
+                if self.mode in ["model_free", "exact", "model_based"]:
                     next_q = self.Q[cf_next_state]
-                    if self.S[0, cf_state, cf_act] <= self.step_wise_prob:
+                    if self.S[0, cf_state, cf_act] <= self.safety_prob:
                         target_q = cf_rew + (1 - cf_term) * self.gamma * np.max(next_q)
                     else:
                         target_q = 0.0
                     self.Q[cf_state, cf_act] = (1 - self.alpha) * self.Q[cf_state, cf_act] \
                                                 + self.alpha * target_q
-
-            # Q-update for model_based on the *actual* safe action (no CF gating)
-            if self.mode == "model_based":
-                next_q = self.Q[next_state]
-                target_q = reward + (1 - terminal) * self.gamma * np.max(next_q)
-                self.Q[state, safe_action] = (1 - self.alpha) * self.Q[state, safe_action] \
-                                            + self.alpha * target_q
 
         self.buffer.clear()
 
@@ -399,7 +429,7 @@ class RECREG(QL):
     def rollout(self, step: int, logger: Optional[TrainLogger] = None):
 
         self.key, subkey = jr.split(self.key)
-        safe_act, act, override = self.act_override(subkey, self._last_obs)
+        safe_act, act, override = self.act_override(subkey, self._last_obs, self._step_wise_prob)
         next_obs, reward, terminated, truncated, info = self.env.step(safe_act)
 
         self._overrides.append(override)
@@ -407,12 +437,17 @@ class RECREG(QL):
         cost = info["constraint"]["step"].get("cost", 0.0)
         violation = info["constraint"]["step"].get("violation", False)
 
+        self._step_wise_prob = self._update_next_budget(
+                self._last_obs, safe_act, next_obs, self._step_wise_prob
+            )
+
         self.buffer.append(
             (self._last_obs, safe_act, act, override, reward, cost, violation, next_obs, terminated, info)
         )
 
         if terminated or truncated:
             self._last_obs, _ = self.env.reset()
+            self._step_wise_prob = self.safety_prob
             info["constraint"]["episode"].update({"override_rate": float(np.mean(self._overrides))})
             self._overrides.clear()
         else:
@@ -445,11 +480,19 @@ class RECREG(QL):
                 obs, info = eval_env.reset(seed=eval_seed + ep)
                 done = False
                 ret = 0.0
+                self._eval_step_wise_prob = self.safety_prob
                 while not done:
                     eval_key, subkey = jr.split(eval_key)
-                    action, _, override = self.act_override(subkey, obs, deterministic=False)
+                    action, _, override = self.act_override(subkey, obs, self._eval_step_wise_prob, deterministic=False)
+                    next_obs, rew, terminated, truncated, info = eval_env.step(action)
+
+                    self._eval_step_wise_prob = self._update_next_budget(
+                            obs, action, next_obs, self._eval_step_wise_prob
+                        )
+                    
+                    obs = next_obs
                     overrides.append(override)
-                    obs, rew, terminated, truncated, info = eval_env.step(action)
+
                     ret += float(rew)
                     done = terminated or truncated
 
@@ -464,43 +507,41 @@ class RECREG(QL):
 
         return returns
 
-    def act_override(self, key, obs, deterministic=False):
+    def act_override(self, key, obs, step_wise_prob, deterministic=False):
         key, key1, key2, key3 = jr.split(key, 4)
 
         safe_act = act = self._act(key1, obs, self.Q, deterministic, self.boltzmann_temp, self._epsilon)
 
-        if self.mode in ["exact", "model_free"]:
-            override = False if self.S[0, obs, act] <= self.step_wise_prob else True
-
-        elif self.mode == "model_based":
+        if self.mode == "model_based":
             self.model_checker.update_kernel(
                 successor_states=self.successors, probabilities=compact_probabilities(self.counts)
             )
 
             if self.exploration == "boltzmann":
-                self.backup_policy = q_to_boltzmann_policy(self.B, self.boltzmann_temp)
+                self.backup_policy = q_to_boltzmann_policy(self.B, 0.01)
             elif self.exploration == "epsilon_greedy":
                 self.backup_policy = q_to_argmax_policy(self.B)
             else:
                 raise NotImplementedError(f"Unexpected exploration: {self.exploration}")
 
             if self.model_checking == "exact":
-                result = (1.0 - self.model_checker.check_state_action(
+                self.S = 1.0 - self.model_checker.check_state_action(
                     None, self.backup_policy
-                )[obs, act]) <= self.step_wise_prob
+                )[np.newaxis, :]
+            else:
+                raise NotImplementedError(f"Model checker class: {self.model_checking} currently not supported")
 
-            if self.model_checking == "statistical":
-                result = self.model_checker.check_state_action(
-                    key2, self.backup_policy, obs, act, self.samples
-                )
-
-            override = False if result else True
+            override = self.S[0, obs, act] > step_wise_prob
+        
+        elif self.mode in ["model_free", "exact"]:
+            override = self.S[0, obs, act] > step_wise_prob
         else:
             raise NotImplementedError(f"Unexpected mode: {self.mode}")
-            
+
         if override:
-            # Use boltzmann temperature or epsilon=0.01 for backup policy
-            safe_act = self._act(key3, obs, self.B, deterministic, self.boltzmann_temp, 0.01)
+            # Use boltzmann temperature=0.01 or epsilon=0.001 for backup policy
+            safe_act = self._act(key3, obs, self.B, deterministic, 0.01, 0.001)
+
         return self.prepare_act(safe_act), self.prepare_act(act), override
 
     def act(self, key, obs, deterministic=False):

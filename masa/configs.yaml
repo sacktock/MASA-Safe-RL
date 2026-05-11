@@ -69,12 +69,27 @@ defaults:
     task_gamma: 0.95
     safe_alpha: 0.1
     safe_gamma: 0.95
+    model_free_alpha: 0.1
     mode: model_free
     model_checking: exact
     samples: 8192
-    horizon: 4
-    step_wise_prob: 0.0001
+    horizon: 5
+    safety_prob: 0.01
+    r_min: 0.0
     cost_coef: 10.0
+    exploration: boltzmann
+    boltzmann_temp: 0.05
+    initial_epsilon: 1.0
+    final_epsilon: 0.1
+    epsilon_decay: linear
+    epsilon_decay_frames: 10000
+
+  recovery_rl:
+    task_alpha: 0.1
+    task_gamma: 0.9
+    risk_alpha: 0.1
+    risk_gamma: 0.99
+    step_wise_risk: 0.01
     exploration: boltzmann
     boltzmann_temp: 0.05
     initial_epsilon: 1.0
@@ -372,7 +387,7 @@ bridge_crossing_v2:
 media_streaming:
   env:
     id: media_streaming
-    max_episode_steps: 40
+    max_episode_steps: 250
     label_fn: masa.envs.tabular.media_streaming:label_fn
     cost_fn: masa.envs.tabular.media_streaming:cost_fn
 

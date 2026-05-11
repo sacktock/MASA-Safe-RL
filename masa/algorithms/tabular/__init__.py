@@ -3,3 +3,4 @@ from masa.algorithms.tabular.q_learning_lambda import QL_Lambda
 from masa.algorithms.tabular.sem import SEM
 from masa.algorithms.tabular.lcrl import LCRL
 from masa.algorithms.tabular.recreg import RECREG
+from masa.algorithms.tabular.recovery_rl import RECOVERY_RL
