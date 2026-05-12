@@ -9,7 +9,7 @@ description = "A safe reinforcement library for providing a common interface for
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "gymnasium>=1.1.1",
+    "gymnasium>=1.3.0",
     "pettingzoo>=1.26.1",
     "tensorflow>=2.20.0",
     "tensorflow-probability==0.25.0",
