@@ -1278,7 +1278,7 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-cuda12 = [{ name = "jax", extras = ["cuda12"], specifier = ">=0.4.30" }]
+cuda12 = [{ name = "jax", extras = ["cuda12"], specifier = ">=0.6.2" }]
 cuda13 = [{ name = "jax", extras = ["cuda13"], specifier = ">=0.6.2" }]
 dev = [{ name = "pytest", specifier = ">=9.0.3" }]
 docs = [
