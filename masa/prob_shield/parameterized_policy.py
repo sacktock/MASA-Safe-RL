@@ -172,7 +172,14 @@ class ParameterizedActor(nn.Module):
         logits_j = nn.Dense(self.n_actions)(x)
 
         loc = nn.Dense(self.max_successors)(x)
+        if self.mean_clip is not None:
+            if self.smooth_mean_clip:
+                loc = self.mean_clip * jnp.tanh(loc)
+            else:
+                loc = jnp.clip(loc, -self.mean_clip, self.mean_clip)
+
         log_scale = nn.Dense(self.max_successors)(x) + self.log_std_init
+        log_scale = jnp.clip(log_scale, self.log_std_min, self.log_std_max)
         scale = jnp.exp(log_scale) + self.eps
 
         return ActionDist(
