@@ -14,5 +14,5 @@ flax>=0.9.0
 ml-dtypes>=0.4.1
 ruamel.yaml<0.20.0
 ipykernel>=7.2.0
-pillow>=10.4.0
+pillow>=12.2.0
 pygame>=2.6.1
