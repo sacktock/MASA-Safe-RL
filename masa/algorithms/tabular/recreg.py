@@ -228,7 +228,7 @@ class RECREG(QL):
                 raise NotImplementedError(f"Unexpected exploration: {self.exploration}")
 
             formula, pctl_label_fn = build_pctl_formula(
-                self.env, self.horizon, self.step_wise_prob, label_fn=label_fn, cost_fn=cost_fn,
+                self.env, self.horizon, self.safety_prob, label_fn=label_fn, cost_fn=cost_fn,
             )
 
             self.model_checker = pctl.ExactModelChecker(
@@ -284,7 +284,7 @@ class RECREG(QL):
                 self.B = np.zeros((self.n_states, self.n_actions), dtype=np.float32)
 
                 formula, pctl_label_fn = build_pctl_formula(
-                    self.env, self.horizon, self.step_wise_prob, label_fn=label_fn, cost_fn=cost_fn
+                    self.env, self.horizon, self.safety_prob, label_fn=label_fn, cost_fn=cost_fn
                 )
 
                 max_succesors = 5 # modify this if need be
