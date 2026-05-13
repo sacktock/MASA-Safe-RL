@@ -27,6 +27,7 @@ class ParamActionDist:
     logits_j: jnp.ndarray          # (B, N)
     beta_loc_table: jnp.ndarray    # (B, N, N, K)
     beta_scale_table: jnp.ndarray  # (B, N, N, K)
+    eps: float = 1e-6
 
     def _beta_params(self, i: jnp.ndarray, j: jnp.ndarray):
         # i,j: (B,)
@@ -46,7 +47,7 @@ class ParamActionDist:
     def _beta_dist(self, i, j):
         loc, scale = self._beta_params(i, j)
         base = tfd.MultivariateNormalDiag(loc=loc, scale_diag=scale)
-        eps = jnp.array(1e-6, dtype=loc.dtype)
+        eps = jnp.array(self.eps, dtype=self.loc.dtype)
         bij = tfb.Chain([
             tfb.Shift(eps),
             tfb.Scale(1.0 - 2.0 * eps),
@@ -70,7 +71,8 @@ class ParamActionDist:
         j = jnp.argmax(self.logits_j, axis=1)
         # use mean of sigmoid-normal approximately via loc (not exact); ok for deterministic eval
         loc, _ = self._beta_params(i, j)
-        betas = jnp.clip(jax.nn.sigmoid(loc), 0.0, 1.0)
+        margin = jnp.array(self.eps*2, dtype=loc.dtype)
+        betas = jnp.clip(jax.nn.sigmoid(loc), margin, 1.0 - margin)
         return jnp.concatenate([i[:, None], j[:, None], betas], axis=1)
 
     def log_prob(self, actions):
@@ -78,10 +80,8 @@ class ParamActionDist:
         i = actions[:, 0].astype(jnp.int32)
         j = actions[:, 1].astype(jnp.int32)
         betas = actions[:, 2:].astype(self.beta_loc_table.dtype)#.astype(jnp.float32)
-        #eps = jnp.array(1e-6, dtype=betas.dtype)
-        #betas_safe = jnp.clip(betas, eps, 1.0 - eps)
-        #betas_safe = jax.lax.stop_gradient(betas_safe - betas) + betas
-
+        margin = jnp.array(self.eps*2, dtype=self.beta_loc_table.dtype)
+        betas = jnp.clip(betas, margin, 1.0 - margin) # guard against nans
         di = tfd.Categorical(logits=self.logits_i)
         dj = tfd.Categorical(logits=self.logits_j)
         lp = di.log_prob(i) + dj.log_prob(j)
@@ -95,8 +95,10 @@ class ParamActionDist:
         i = actions[:, 0].astype(jnp.int32)
         j = actions[:, 1].astype(jnp.int32)
         betas = actions[:, 2:].astype(self.beta_loc_table.dtype)
+        margin = jnp.array(self.eps*2, dtype=self.beta_loc_table.dtype)
+        betas = jnp.clip(betas, margin, 1.0 - margin) # guard against nans
         beta_ent_approx = -self._beta_dist(i, j).log_prob(betas)
-
+        
         return di.entropy() + dj.entropy() + beta_ent_approx
 
 @dataclass
@@ -125,13 +127,16 @@ class ActionDist:
     def mode(self):
         i = jnp.argmax(self.logits_i, axis=1)
         j = jnp.argmax(self.logits_j, axis=1)
-        betas = jnp.clip(jax.nn.sigmoid(self.loc), 0.0, 1.0)
+        margin = jnp.array(self.eps*2, dtype=self.loc.dtype)
+        betas = jnp.clip(jax.nn.sigmoid(self.loc), margin, 1.0 - margin)
         return jnp.concatenate([i[:, None], j[:, None], betas], axis=1)
 
     def log_prob(self, actions):
         i = actions[:, 0].astype(jnp.int32)
         j = actions[:, 1].astype(jnp.int32)
         betas = actions[:, 2:].astype(self.loc.dtype)
+        margin = jnp.array(self.eps*2, dtype=self.loc.dtype)
+        betas = jnp.clip(betas, margin, 1.0 - margin) # guard against nans
         di = tfd.Categorical(logits=self.logits_i)
         dj = tfd.Categorical(logits=self.logits_j)
         lp = di.log_prob(i) + dj.log_prob(j)
@@ -142,6 +147,8 @@ class ActionDist:
         di = tfd.Categorical(logits=self.logits_i)
         dj = tfd.Categorical(logits=self.logits_j)
         betas = actions[:, 2:].astype(self.loc.dtype)
+        margin = jnp.array(self.eps*2, dtype=self.loc.dtype)
+        betas = jnp.clip(betas, margin, 1.0 - margin) # guard against nans
         beta_ent_approx = -self._beta_dist().log_prob(betas)
         return di.entropy() + dj.entropy() + beta_ent_approx
 

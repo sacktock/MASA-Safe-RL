@@ -80,7 +80,8 @@ class ParamActionDist:
         
         # use mean of sigmoid-normal approximately via loc (not exact); ok for deterministic eval
         loc, _ = self._gather_mix_params(i, j)
-        mix = jnp.clip(jax.nn.sigmoid(loc), 0.0, 1.0)
+        margin = jnp.array(self.eps*2, dtype=loc.dtype)
+        mix = jnp.clip(jax.nn.sigmoid(loc), margin, 1.0 - margin)
         return jnp.concatenate([i[:, None], j[:, None], mix], axis=1)
 
     def log_prob(self, actions):
@@ -88,9 +89,8 @@ class ParamActionDist:
         i = actions[:, 0].astype(jnp.int32)
         j = actions[:, 1].astype(jnp.int32)
         mix = actions[:, 2].reshape((-1, 1)).astype(self.mix_loc_table.dtype)  # (B,1)
-        #eps = jnp.array(1e-6, dtype=betas.dtype)
-        #betas_safe = jnp.clip(betas, eps, 1.0 - eps)
-        #betas_safe = jax.lax.stop_gradient(betas_safe - betas) + betas
+        margin = jnp.array(self.eps*2, dtype=self.mix_loc_table.dtype)
+        mix = jnp.clip(mix, margin, 1.0 - margin) # guard against nans
 
         di = tfd.Categorical(logits=self.logits_i)
         dj = tfd.Categorical(logits=self.logits_j)
@@ -106,10 +106,11 @@ class ParamActionDist:
 
         ent = di.entropy() + dj.entropy()
 
-        # deterministic proxy for entropy based on Jacobian-at-mean correction
         i = actions[:, 0].astype(jnp.int32)
         j = actions[:, 1].astype(jnp.int32)
         mix = actions[:, 2].reshape((-1, 1)).astype(self.mix_loc_table.dtype)
+        margin = jnp.array(self.eps*2, dtype=self.mix_loc_table.dtype)
+        mix = jnp.clip(mix, margin, 1.0 - margin) # guard against nans
         mix_ent_approx = -self._mix_dist(i, j).log_prob(mix)
 
         return ent + mix_ent_approx
@@ -140,13 +141,16 @@ class ActionDist:
     def mode(self):
         i = jnp.argmax(self.logits_i, axis=1)
         j = jnp.argmax(self.logits_j, axis=1)
-        mix = jnp.clip(jax.nn.sigmoid(self.loc), 0.0, 1.0)
+        margin = jnp.array(self.eps*2, dtype=self.loc.dtype)
+        mix = jnp.clip(jax.nn.sigmoid(self.loc), margin, 1.0 - margin)
         return jnp.concatenate([i[:, None], j[:, None], mix], axis=1)
 
     def log_prob(self, actions):
         i = actions[:, 0].astype(jnp.int32)
         j = actions[:, 1].astype(jnp.int32)
         mix = actions[:, 2].reshape((-1, 1)).astype(self.loc.dtype)
+        margin = jnp.array(self.eps*2, dtype=self.loc.dtype)
+        mix = jnp.clip(mix, margin, 1.0 - margin) # guard against nans
         di = tfd.Categorical(logits=self.logits_i)
         dj = tfd.Categorical(logits=self.logits_j)
         lp = di.log_prob(i) + dj.log_prob(j)
@@ -157,6 +161,8 @@ class ActionDist:
         di = tfd.Categorical(logits=self.logits_i)
         dj = tfd.Categorical(logits=self.logits_j)
         mix = actions[:, 2].reshape((-1, 1)).astype(self.loc.dtype)
+        margin = jnp.array(self.eps*2, dtype=self.loc.dtype)
+        mix = jnp.clip(mix, margin, 1.0 - margin) # guard against nans
         mix_ent_approx = -self._mix_dist().log_prob(mix)
         return di.entropy() + dj.entropy() + mix_ent_approx
 
