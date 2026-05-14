@@ -101,11 +101,18 @@
     <text x="424" y="247" font-size="33" font-weight="650" fill="#081D33">Safe learning across agents,</text>
     <text x="424" y="292" font-size="33" font-weight="650" fill="#081D33">constraints, and worlds</text>
     <g font-size="17" font-weight="800" letter-spacing="2.4" fill="#247C77">
-      <text x="426" y="345">SINGLE AGENT</text>
-      <circle cx="582" cy="339" r="5" fill="#FFB84D"/>
-      <text x="604" y="345">MULTI-AGENT</text>
-      <circle cx="761" cy="339" r="5" fill="#FF6B5F"/>
-      <text x="783" y="345">CONSTRAINED RL</text>
+      <g transform="translate(426 339)">
+        <circle cx="0" cy="0" r="5" fill="#FFB84D"/>
+        <text x="16" y="6">SINGLE AGENT</text>
+      </g>
+      <g transform="translate(605 339)">
+        <circle cx="0" cy="0" r="5" fill="#FF6B5F"/>
+        <text x="16" y="6">MULTI-AGENT</text>
+      </g>
+      <g transform="translate(785 339)">
+        <circle cx="0" cy="0" r="5" fill="#2FBF71"/>
+        <text x="16" y="6">CONSTRAINED RL</text>
+      </g>
     </g>
   </g>
 </svg>
