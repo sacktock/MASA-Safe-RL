@@ -10,6 +10,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 TUTORIAL_01 = REPO_ROOT / "notebooks" / "tutorials" / "01_first_masa_experiment.ipynb"
 TUTORIAL_02 = REPO_ROOT / "notebooks" / "tutorials" / "02_labels_costs_and_infos.ipynb"
 TUTORIAL_03 = REPO_ROOT / "notebooks" / "tutorials" / "03_wrapper_stack.ipynb"
+TUTORIAL_04 = REPO_ROOT / "notebooks" / "tutorials" / "04_constraints_tour.ipynb"
 
 
 def _notebook_source(notebook: nbformat.NotebookNode) -> str:
@@ -88,6 +89,36 @@ def test_wrapper_stack_notebook_is_valid_and_executable():
         "is_wrapped",
         "get_wrapped",
         "colour_grid_world",
+    ):
+        assert token in source
+
+    client = NotebookClient(
+        notebook,
+        timeout=120,
+        kernel_name="python3",
+        allow_errors=False,
+        resources={"metadata": {"path": str(REPO_ROOT)}},
+    )
+    client.execute()
+
+
+def test_constraints_tour_notebook_is_valid_and_executable():
+    notebook = nbformat.read(TUTORIAL_04, as_version=4)
+
+    assert notebook["nbformat"] == 4
+
+    source = _notebook_source(notebook)
+    for token in (
+        "cmdp",
+        "prob",
+        "pctl",
+        "reach_avoid",
+        "ltl_safety",
+        "DFA",
+        "Atom",
+        "colour_grid_world",
+        "avoid_label",
+        "reach_label",
     ):
         assert token in source
 
