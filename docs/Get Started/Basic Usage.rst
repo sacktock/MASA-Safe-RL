@@ -177,10 +177,12 @@ saving); the snippet mirrors the general style used in MASA runs.
        stats_window_size=100,        # optional
    )
 
-API Reference for :func:`~masa.common.utils.make_env`
+API Reference for environment factories
 ---------------------------------------
 
 .. autofunction:: masa.common.utils.make_env
+
+.. autofunction:: masa.common.utils.make_marl_env
 
 Next Steps
 ----------

@@ -29,5 +29,7 @@ class Registry:
 
 
 ENV_REGISTRY = Registry()
+MARL_ENV_REGISTRY = Registry()
 ALGO_REGISTRY = Registry()
 CONSTRAINT_REGISTRY = Registry()
+MARL_CONSTRAINT_REGISTRY = Registry()
