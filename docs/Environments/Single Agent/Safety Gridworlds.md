@@ -46,7 +46,7 @@ env = make_env(
 )
 ```
 
-To inspect the visual layouts interactively, see `notebooks/environments/play_safety_gridworlds.ipynb`.
+To inspect the visual layouts interactively, see `notebooks/envs/play_safety_gridworlds.ipynb`.
 
 ```{toctree}
 :hidden:
