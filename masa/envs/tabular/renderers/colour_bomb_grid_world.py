@@ -17,8 +17,13 @@ GRID_COLOR = (193, 187, 174)
 WALL_COLOR = (68, 78, 92)
 WALL_EDGE_COLOR = (43, 50, 62)
 START_COLOR = (245, 188, 82)
-BOMB_COLOR = (191, 57, 67)
-BOMB_CORE_COLOR = (79, 35, 42)
+BOMB_COLOR = (34, 39, 48)
+BOMB_CORE_COLOR = (11, 15, 22)
+BOMB_HIGHLIGHT_COLOR = (111, 123, 140)
+BOMB_CAP_COLOR = (150, 155, 164)
+BOMB_FUSE_COLOR = (73, 56, 38)
+BOMB_SPARK_COLOR = (255, 191, 54)
+BOMB_SPARK_CORE_COLOR = (255, 246, 167)
 MEDIC_COLOR = (78, 166, 129)
 MEDIC_CROSS_COLOR = (238, 248, 236)
 AGENT_COLOR = (55, 115, 206)
@@ -272,13 +277,35 @@ class ColourBombGridWorldRenderer:
         import pygame
 
         center = _state_center(state, grid_size, cell_size)
-        radius = max(5, cell_size // 4)
-        pygame.draw.circle(surface, BOMB_CORE_COLOR, (center[0] + max(1, cell_size // 28), center[1] + max(1, cell_size // 28)), radius)
+        radius = max(5, int(cell_size * 0.28))
+        shadow_offset = max(1, cell_size // 22)
+        outline = max(1, cell_size // 28)
+        pygame.draw.circle(surface, BOMB_CORE_COLOR, (center[0] + shadow_offset, center[1] + shadow_offset), radius)
         pygame.draw.circle(surface, BOMB_COLOR, center, radius)
-        fuse_start = (center[0] + radius // 2, center[1] - radius // 2)
-        fuse_end = (center[0] + radius, center[1] - radius)
-        pygame.draw.line(surface, (66, 55, 43), fuse_start, fuse_end, width=max(2, cell_size // 22))
-        pygame.draw.circle(surface, (250, 201, 87), fuse_end, max(2, cell_size // 18))
+        pygame.draw.circle(surface, BOMB_CORE_COLOR, center, radius, width=outline)
+
+        highlight_radius = max(2, radius // 4)
+        highlight = (center[0] - radius // 3, center[1] - radius // 3)
+        pygame.draw.circle(surface, BOMB_HIGHLIGHT_COLOR, highlight, highlight_radius)
+
+        cap_width = max(5, cell_size // 5)
+        cap_height = max(3, cell_size // 9)
+        cap_left = center[0] + radius // 4
+        cap_top = center[1] - radius - cap_height // 2
+        cap = pygame.Rect(cap_left, cap_top, cap_width, cap_height)
+        pygame.draw.rect(surface, BOMB_CORE_COLOR, cap.inflate(outline * 2, outline * 2), border_radius=max(2, cell_size // 24))
+        pygame.draw.rect(surface, BOMB_CAP_COLOR, cap, border_radius=max(2, cell_size // 24))
+
+        fuse_start = (cap.centerx + cap_width // 3, cap.top)
+        fuse_mid = (fuse_start[0] + max(3, cell_size // 8), fuse_start[1] - max(4, cell_size // 7))
+        fuse_end = (fuse_mid[0] + max(3, cell_size // 9), fuse_mid[1] + max(1, cell_size // 18))
+        pygame.draw.lines(surface, BOMB_FUSE_COLOR, False, (fuse_start, fuse_mid, fuse_end), width=max(2, cell_size // 24))
+
+        spark_radius = max(3, cell_size // 14)
+        for dx, dy in ((spark_radius, 0), (-spark_radius, 0), (0, spark_radius), (0, -spark_radius)):
+            pygame.draw.line(surface, BOMB_SPARK_COLOR, fuse_end, (fuse_end[0] + dx, fuse_end[1] + dy), width=max(1, cell_size // 36))
+        pygame.draw.circle(surface, BOMB_SPARK_COLOR, fuse_end, max(2, spark_radius // 2))
+        pygame.draw.circle(surface, BOMB_SPARK_CORE_COLOR, fuse_end, max(1, spark_radius // 3))
 
     def _draw_medic_tile(self, surface: Any, state: int, grid_size: int, cell_size: int) -> None:
         import pygame
