@@ -1,11 +1,18 @@
 from __future__ import annotations
-from typing import Optional
+from typing import Any, Optional
 import importlib
 import warnings
+from pettingzoo import ParallelEnv
 from masa.plugins.helpers import load_plugins
-from masa.common.registry import ENV_REGISTRY, CONSTRAINT_REGISTRY
+from masa.common.registry import (
+    CONSTRAINT_REGISTRY,
+    ENV_REGISTRY,
+    MARL_CONSTRAINT_REGISTRY,
+    MARL_ENV_REGISTRY,
+)
 from masa.common.wrappers import TimeLimit, ConstraintMonitor, RewardMonitor
 from masa.common.labelled_env import LabelledEnv
+from masa.common.labelled_pz_env import LabelledParallelEnv
 from masa.common.label_fn import LabelFn
 
 def load_callable(path: str):
@@ -89,3 +96,64 @@ def make_env(
     env = RewardMonitor(env)
     return env
 
+
+def make_marl_env(
+    env_id: str,
+    constraint: str,
+    *,
+    label_fn: Optional[dict[str, LabelFn] | LabelFn] = None,
+    env_kwargs: Optional[dict[str, Any]] = None,
+    **constraint_kwargs,
+) -> ParallelEnv:
+    r"""
+    Construct a fully wrapped MASA multi-agent environment.
+
+    This helper creates a PettingZoo parallel environment and applies the
+    standard MARL wrapper order:
+
+    :class:`~masa.common.labelled_pz_env.LabelledParallelEnv` :math:`\rightarrow`
+    :class:`~masa.common.constraints.multi_agent.cmg.ConstrainedMarkovGameEnv`
+
+    Args:
+        env_id:
+            Multi-agent environment identifier registered in ``MARL_ENV_REGISTRY``.
+        constraint:
+            Multi-agent constraint identifier registered in
+            ``MARL_CONSTRAINT_REGISTRY``.
+        label_fn:
+            Optional labelling function, or per-agent mapping of labelling
+            functions. If omitted, the base environment's ``label_fn`` attribute
+            is used.
+        env_kwargs:
+            Optional keyword arguments forwarded to the base environment
+            constructor.
+        **constraint_kwargs:
+            Additional keyword arguments forwarded to the constraint wrapper
+            constructor. If ``cost_fn`` is omitted and the base environment
+            exposes one, it is forwarded automatically.
+
+    Returns:
+        A wrapped PettingZoo parallel environment compatible with MASA MARL
+        constraints.
+    """
+
+    load_plugins()
+    env_ctor = MARL_ENV_REGISTRY.get(env_id)
+    constraint_ctor = MARL_CONSTRAINT_REGISTRY.get(constraint)
+
+    raw_env = env_ctor(**dict(env_kwargs or {}))
+    resolved_label_fn = label_fn if label_fn is not None else getattr(raw_env, "label_fn", None)
+    if resolved_label_fn is None:
+        raise ValueError(
+            f"MARL env '{env_id}' does not expose a default label_fn. "
+            "Pass label_fn=... to make_marl_env."
+        )
+
+    if "cost_fn" not in constraint_kwargs:
+        cost_fn = getattr(raw_env, "cost_fn", None)
+        if cost_fn is not None:
+            constraint_kwargs["cost_fn"] = cost_fn
+
+    env = LabelledParallelEnv(raw_env, resolved_label_fn)
+    env = constraint_ctor(env, **constraint_kwargs)
+    return env
