@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 import importlib
 import warnings
 import gymnasium as gym
@@ -29,6 +29,22 @@ def load_callable(path: str):
         warnings.warn(f"Could not load object from path: {path}")
         return None
 
+
+def _resolve_video_kwargs(
+    video_kwargs: Optional[dict[str, Any]],
+    record_video_episode_trigger: Optional[Callable[[int], bool]],
+) -> dict[str, Any]:
+    resolved = dict(video_kwargs or {})
+    if record_video_episode_trigger is not None:
+        if "episode_trigger" in resolved:
+            raise ValueError(
+                "Pass either record_video_episode_trigger or "
+                "video_kwargs['episode_trigger'], not both."
+            )
+        resolved["episode_trigger"] = record_video_episode_trigger
+    return resolved
+
+
 def make_env(
     env_id: str, 
     constraint: str, 
@@ -37,6 +53,7 @@ def make_env(
     label_fn: Optional[LabelFn] = None, 
     env_kwargs: Optional[dict[str, Any]] = None,
     record_video: bool = False,
+    record_video_episode_trigger: Optional[Callable[[int], bool]] = None,
     video_folder: str = "videos",
     video_kwargs: Optional[dict[str, Any]] = None,
     **constraint_kwargs
@@ -75,6 +92,10 @@ def make_env(
         record_video:
             Whether to wrap the resulting environment with Gymnasium's
             :class:`~gymnasium.wrappers.RecordVideo`. Defaults to ``False``.
+        record_video_episode_trigger:
+            Optional predicate called with the episode id to decide whether to
+            record that episode. This is forwarded as ``episode_trigger`` to
+            :class:`~gymnasium.wrappers.RecordVideo`.
         video_folder:
             Output directory for recorded videos when ``record_video=True``.
         video_kwargs:
@@ -113,7 +134,11 @@ def make_env(
     env = ConstraintMonitor(env)
     env = RewardMonitor(env)
     if record_video:
-        env = GymnasiumRecordVideo(env, video_folder=video_folder, **dict(video_kwargs or {}))
+        env = GymnasiumRecordVideo(
+            env,
+            video_folder=video_folder,
+            **_resolve_video_kwargs(video_kwargs, record_video_episode_trigger),
+        )
     return env
 
 
@@ -124,6 +149,7 @@ def make_marl_env(
     label_fn: Optional[dict[str, LabelFn] | LabelFn] = None,
     env_kwargs: Optional[dict[str, Any]] = None,
     record_video: bool = False,
+    record_video_episode_trigger: Optional[Callable[[int], bool]] = None,
     video_folder: str = "videos",
     video_kwargs: Optional[dict[str, Any]] = None,
     **constraint_kwargs,
@@ -154,6 +180,10 @@ def make_marl_env(
             Whether to wrap the resulting PettingZoo parallel environment with
             :class:`~masa.common.pettingzoo_record_video.RecordVideoParallel`.
             Defaults to ``False``.
+        record_video_episode_trigger:
+            Optional predicate called with the episode id to decide whether to
+            record that episode. This is forwarded as ``episode_trigger`` to
+            :class:`~masa.common.pettingzoo_record_video.RecordVideoParallel`.
         video_folder:
             Output directory for recorded videos when ``record_video=True``.
         video_kwargs:
@@ -189,5 +219,9 @@ def make_marl_env(
     env = LabelledParallelEnv(raw_env, resolved_label_fn)
     env = constraint_ctor(env, **constraint_kwargs)
     if record_video:
-        env = RecordVideoParallel(env, video_folder=video_folder, **dict(video_kwargs or {}))
+        env = RecordVideoParallel(
+            env,
+            video_folder=video_folder,
+            **_resolve_video_kwargs(video_kwargs, record_video_episode_trigger),
+        )
     return env

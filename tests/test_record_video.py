@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from gymnasium import spaces
 from gymnasium.wrappers import RecordVideo as GymnasiumRecordVideo
 from pettingzoo import ParallelEnv
@@ -29,8 +30,9 @@ def test_make_env_records_video(tmp_path):
         label_fn=conveyor_label_fn,
         env_kwargs={"render_mode": "rgb_array", "render_window_size": 64},
         record_video=True,
+        record_video_episode_trigger=_always,
         video_folder=str(video_folder),
-        video_kwargs={"episode_trigger": _always, "gc_trigger": _never},
+        video_kwargs={"gc_trigger": _never},
         cost_fn=conveyor_cost_fn,
         budget=10.0,
     )
@@ -128,8 +130,9 @@ def test_make_marl_env_records_video(tmp_path):
         "cmg",
         env_kwargs={"render_mode": "rgb_array"},
         record_video=True,
+        record_video_episode_trigger=_always,
         video_folder=str(video_folder),
-        video_kwargs={"episode_trigger": _always, "gc_trigger": _never},
+        video_kwargs={"gc_trigger": _never},
         budgets=[Budget(amount=3.0, agents=("player_0", "player_1"), name="shared")],
     )
 
@@ -144,6 +147,25 @@ def test_make_marl_env_records_video(tmp_path):
     videos = list(video_folder.glob("*.mp4"))
     assert videos
     assert all(path.stat().st_size > 0 for path in videos)
+
+
+def test_record_video_episode_trigger_rejects_duplicate_video_kwargs(tmp_path):
+    from masa.common.utils import make_env
+
+    with pytest.raises(ValueError, match="record_video_episode_trigger"):
+        make_env(
+            "conveyor_belt",
+            "cmdp",
+            5,
+            label_fn=conveyor_label_fn,
+            env_kwargs={"render_mode": "rgb_array", "render_window_size": 64},
+            record_video=True,
+            record_video_episode_trigger=_always,
+            video_folder=str(tmp_path / "duplicate-trigger"),
+            video_kwargs={"episode_trigger": _always},
+            cost_fn=conveyor_cost_fn,
+            budget=10.0,
+        )
 
 
 def test_make_marl_env_recording_is_off_by_default():

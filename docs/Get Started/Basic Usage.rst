@@ -189,6 +189,9 @@ image-producing render mode such as ``"rgb_array"``.
    from masa.common.utils import make_env
    from masa.envs.discrete.conveyor_belt import cost_fn, label_fn
 
+   def record_every_episode(episode_id):
+       return True
+
    env = make_env(
        "conveyor_belt",
        "cmdp",
@@ -198,6 +201,7 @@ image-producing render mode such as ``"rgb_array"``.
        budget=10.0,
        env_kwargs={"render_mode": "rgb_array"},
        record_video=True,
+       record_video_episode_trigger=record_every_episode,
        video_folder="videos",
    )
 
@@ -209,12 +213,16 @@ MASA's PettingZoo video wrapper in the same outermost position:
    from masa.common.constraints.multi_agent.cmg import Budget
    from masa.common.utils import make_marl_env
 
+   def record_every_episode(episode_id):
+       return True
+
    env = make_marl_env(
        "renderable_marl_env",
        "cmg",
        budgets=[Budget(amount=10.0, agents=("player_0", "player_1"), name="shared")],
        env_kwargs={"render_mode": "rgb_array"},
        record_video=True,
+       record_video_episode_trigger=record_every_episode,
        video_folder="videos",
    )
 
