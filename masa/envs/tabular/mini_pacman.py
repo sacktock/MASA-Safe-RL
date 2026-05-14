@@ -56,12 +56,12 @@ class MiniPacman(TabularEnv):
     def __init__(
         self,
         render_mode: Literal["ansi", "rgb_array", "human"] | None = None,
-        window_size: int = 512,
+        render_window_size: int = 512,
         pacman_hat: PacmanHat = "none",
         ghost_colors: tuple[RGBColor, ...] | None = None,
     ):
         super().__init__()
-        validate_renderer_options(render_mode, window_size, pacman_hat)
+        validate_renderer_options(render_mode, render_window_size, pacman_hat)
 
         self._layout = STANDARD_MAP
         self._n_row = STANDARD_MAP.shape[0]
@@ -109,7 +109,7 @@ class MiniPacman(TabularEnv):
         self._state = None
         self._step_count = 0
         self.render_mode = render_mode
-        self.window_size = int(window_size)
+        self.render_window_size = int(render_window_size)
         self.pacman_hat = pacman_hat
         self.ghost_colors = ghost_colors
         self._renderer = PacmanRenderer(self)

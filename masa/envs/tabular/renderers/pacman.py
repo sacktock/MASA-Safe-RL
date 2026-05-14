@@ -49,7 +49,7 @@ DIRECTION_DELTAS: dict[int, Position] = {
 class TabularPacmanEnv(Protocol):
     metadata: dict[str, Any]
     render_mode: str | None
-    window_size: int
+    render_window_size: int
     pacman_hat: PacmanHat
     ghost_colors: tuple[RGBColor, ...] | None
     _layout: np.ndarray
@@ -125,7 +125,7 @@ class PacmanRenderer:
         import pygame
 
         snapshot = self._snapshot()
-        cell_size = max(12, int(self.env.window_size) // max(snapshot.layout.shape))
+        cell_size = max(12, int(self.env.render_window_size) // max(snapshot.layout.shape))
         scale = 3
         high_cell = cell_size * scale
         high_size = (snapshot.layout.shape[1] * high_cell, snapshot.layout.shape[0] * high_cell)
@@ -416,11 +416,11 @@ class _PacmanSnapshot:
         self.step_count = step_count
 
 
-def validate_renderer_options(render_mode: str | None, window_size: int, pacman_hat: str) -> None:
+def validate_renderer_options(render_mode: str | None, render_window_size: int, pacman_hat: str) -> None:
     if render_mode not in (None, "ansi", "rgb_array", "human"):
         raise ValueError("render_mode must be None, 'ansi', 'rgb_array', or 'human'.")
-    if int(window_size) <= 0:
-        raise ValueError("window_size must be positive.")
+    if int(render_window_size) <= 0:
+        raise ValueError("render_window_size must be positive.")
     if pacman_hat not in ("none", "cap", "crown", "wizard"):
         raise ValueError("pacman_hat must be 'none', 'cap', 'crown', or 'wizard'.")
 

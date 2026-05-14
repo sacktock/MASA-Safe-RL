@@ -152,7 +152,7 @@ All four Pacman variants support the Gymnasium render API:
 
 The constructors accept the same rendering options:
 
-- `window_size=512` controls the target size used to derive grid cell size.
+- `render_window_size=512` controls the target size used to derive grid cell size.
 - `pacman_hat` can be `"none"`, `"cap"`, `"crown"`, or `"wizard"`.
 - `ghost_colors` can override the default ghost palette with RGB triplets.
 

@@ -17,7 +17,7 @@ from masa.envs.tabular.renderers.pacman import (
 class CoinPacmanEnv(Protocol):
     metadata: dict[str, Any]
     render_mode: str | None
-    window_size: int
+    render_window_size: int
     pacman_hat: PacmanHat
     ghost_colors: tuple[RGBColor, ...] | None
     _layout: np.ndarray
@@ -62,7 +62,7 @@ class PacmanWithCoinsRenderer(_BasePacmanRenderer):
         import pygame
 
         snapshot = self._snapshot()
-        cell_size = max(12, int(self.env.window_size) // max(snapshot.layout.shape))
+        cell_size = max(12, int(self.env.render_window_size) // max(snapshot.layout.shape))
         scale = 3
         high_cell = cell_size * scale
         high_size = (snapshot.layout.shape[1] * high_cell, snapshot.layout.shape[0] * high_cell)
@@ -90,4 +90,3 @@ class PacmanWithCoinsRenderer(_BasePacmanRenderer):
 
 
 __all__ = ["PacmanWithCoinsRenderer", "validate_renderer_options"]
-
