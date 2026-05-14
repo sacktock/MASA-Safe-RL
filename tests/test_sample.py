@@ -228,3 +228,53 @@ def test_cartpole_envs_render_rgb_array_ansi_and_notebook():
     assert "pygame.K_SPACE" in source
     assert "np.array([0.0]" in source
     assert "play_env" in source
+
+
+def test_colour_grid_world_render_rgb_array_ansi_and_notebook():
+    import json
+
+    import pytest
+
+    from masa.envs.tabular.colour_grid_world import ColourGridWorld
+
+    env = ColourGridWorld(render_mode="rgb_array", render_window_size=192)
+    env.reset(seed=0)
+    frame = env.render()
+    cell_size = max(12, env.render_window_size // env._grid_size)
+    assert frame.shape == (env._grid_size * cell_size, env._grid_size * cell_size, 3)
+    assert frame.dtype.name == "uint8"
+    assert frame.mean() > 0
+    env.close()
+
+    env = ColourGridWorld(render_mode="ansi")
+    env.reset(seed=0)
+    env._state = 1
+    rendered = env.render()
+    assert isinstance(rendered, str)
+    for marker in ("A", "S", "T", "X", "G", "P"):
+        assert marker in rendered
+    env.close()
+
+    env = ColourGridWorld()
+    env.reset(seed=0)
+    assert env.render() is None
+    env.close()
+
+    with pytest.raises(ValueError):
+        ColourGridWorld(render_mode="bad")
+    with pytest.raises(ValueError):
+        ColourGridWorld(render_window_size=0)
+
+    with open("notebooks/envs/play_colour_grid_world.ipynb", "r", encoding="utf-8") as fh:
+        notebook = json.load(fh)
+
+    assert notebook["nbformat"] == 4
+    source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
+    assert "ENV_NAME" in source
+    assert "colour_grid_world" in source
+    assert "ColourGridWorld" in source
+    assert "render_mode=\"human\"" in source
+    assert "render_mode=\"rgb_array\"" in source
+    assert "render_window_size=512" in source
+    assert "pygame.K_SPACE: 4" in source
+    assert "play_env" in source
