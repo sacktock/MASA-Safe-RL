@@ -175,7 +175,7 @@ def test_media_streaming_render_rgb_array_ansi_and_notebook():
     env = MediaStreaming(render_mode="rgb_array")
     env.reset(seed=0)
     frame = env.render()
-    assert frame.shape == (320, 512, 3)
+    assert frame.shape == (320, 640, 3)
     assert frame.dtype.name == "uint8"
     assert frame.mean() > 0
     env.close()
@@ -220,7 +220,7 @@ def test_media_streaming_render_rgb_array_ansi_and_notebook():
     assert "MediaStreaming" in source
     assert "render_mode=\"human\"" in source
     assert "render_mode=\"rgb_array\"" in source
-    assert "render_window_size=512" in source
+    assert "render_window_size=640" in source
     assert "pygame.K_LEFT: 0" in source
     assert "pygame.K_SPACE: 1" in source
     assert "play_env" in source

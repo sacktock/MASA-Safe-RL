@@ -29,7 +29,7 @@ class MediaStreaming(TabularEnv):
     def __init__(
         self,
         render_mode: Literal["ansi", "rgb_array", "human"] | None = None,
-        render_window_size: int = 512,
+        render_window_size: int = 640,
     ):
         super().__init__()
         validate_renderer_options(render_mode, render_window_size)
