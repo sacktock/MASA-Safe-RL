@@ -15,4 +15,10 @@
 .. autoclass:: masa.common.wrappers.FlattenDictObsWrapper
     :members:
     :show-inheritance:
+.. autoclass:: masa.common.pettingzoo_record_video.RecordVideoParallel
+    :members:
+    :show-inheritance:
+.. autoclass:: masa.common.pettingzoo_record_video.RecordVideoAEC
+    :members:
+    :show-inheritance:
 ```

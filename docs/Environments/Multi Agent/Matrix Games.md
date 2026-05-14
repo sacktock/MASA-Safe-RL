@@ -35,6 +35,13 @@ env = make_marl_env(
 Registered MARL environment ids are `bertrand_matrix`, `chicken_matrix`,
 `congestion_matrix`, `dpgg_matrix`, and `inspection_matrix`.
 
+`make_marl_env` also accepts `record_video=True`,
+`record_video_episode_trigger`, `video_folder`, and `video_kwargs` for
+renderable PettingZoo parallel environments. Video recording requires
+`render()` to return RGB array frames. The current matrix games do not yet
+implement concrete image renderers, so recording is available for renderable
+PettingZoo environments and plugins until matrix-game renderers are added.
+
 ## Available Games
 
 - [Bertrand](Matrix%20Games/Bertrand)
