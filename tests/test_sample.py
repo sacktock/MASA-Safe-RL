@@ -422,3 +422,60 @@ def test_media_streaming_render_rgb_array_ansi_and_notebook():
     assert "pygame.K_LEFT: 0" in source
     assert "pygame.K_SPACE: 1" in source
     assert "play_env" in source
+
+
+def test_bridge_crossing_envs_render_rgb_array_ansi_and_notebook():
+    import json
+
+    import pytest
+
+    from masa.envs.tabular.bridge_crossing import BridgeCrossing
+    from masa.envs.tabular.bridge_crossing_v2 import BridgeCrossingV2
+
+    env_classes = (BridgeCrossing, BridgeCrossingV2)
+
+    for env_cls in env_classes:
+        env = env_cls(render_mode="rgb_array", render_window_size=192)
+        env.reset(seed=0)
+        frame = env.render()
+        cell_size = max(12, env.render_window_size // env._grid_size)
+        assert frame.shape == (env._grid_size * cell_size, env._grid_size * cell_size, 3)
+        assert frame.dtype.name == "uint8"
+        assert frame.mean() > 0
+        env.close()
+
+    for env_cls in env_classes:
+        env = env_cls(render_mode="ansi")
+        env.reset(seed=0)
+        env._state = env._start_state + 1
+        rendered = env.render()
+        assert isinstance(rendered, str)
+        for marker in ("A", "S", "G", "L"):
+            assert marker in rendered
+        env.close()
+
+    for env_cls in env_classes:
+        env = env_cls()
+        env.reset(seed=0)
+        assert env.render() is None
+        env.close()
+
+        with pytest.raises(ValueError):
+            env_cls(render_mode="bad")
+        with pytest.raises(ValueError):
+            env_cls(render_window_size=0)
+
+    with open("notebooks/envs/play_bridge_crossing.ipynb", "r", encoding="utf-8") as fh:
+        notebook = json.load(fh)
+
+    assert notebook["nbformat"] == 4
+    source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
+    assert "bridge_crossing" in source
+    assert "bridge_crossing_v2" in source
+    assert "widgets.ToggleButtons" in source
+    assert "render_mode=\"human\"" in source
+    assert "render_mode=\"rgb_array\"" in source
+    assert "render_window_size=512" in source
+    assert "pygame.K_SPACE: 4" in source
+    assert "def make_env" in source
+    assert "play_env" in source
