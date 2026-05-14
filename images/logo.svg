@@ -40,8 +40,6 @@
     <path d="M71 113H318M55 158H329M47 203H319M62 248H297M107 65V318M154 42V337M201 34V332M248 63V302M294 99V247" fill="none" stroke="#CFE2E6" stroke-width="4" opacity="0.72"/>
     <path d="M72 292C106 258 117 227 107 196C98 168 112 139 140 108C163 83 181 61 194 42M54 170C85 176 116 169 146 149C181 126 214 122 246 137C278 153 304 151 324 131" fill="none" stroke="#E6F1F1" stroke-width="3" opacity="0.9"/>
     <rect x="94" y="104" width="34" height="34" rx="9" fill="#FFB84D"/>
-    <rect x="245" y="219" width="38" height="38" rx="10" fill="#FF6B5F"/>
-    <path d="M253 228L274 249M276 228L254 250" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round"/>
     <rect x="214" y="96" width="32" height="32" rx="9" fill="#E9F5F6"/>
     <path d="M101 256C124 222 148 203 172 198C203 192 213 169 233 144C248 125 268 118 286 120" fill="none" stroke="#DFF8EF" stroke-width="31" stroke-linecap="round" stroke-linejoin="round" opacity="0.94"/>
     <path d="M101 256C124 222 148 203 172 198C203 192 213 169 233 144C248 125 268 118 286 120" fill="none" stroke="url(#policyGradient)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
