@@ -65,3 +65,57 @@ def test_new_envs_render_rgb_array_and_notebook():
     assert "ENV_NAME" in source
     assert "render_mode=\"human\"" in source
     assert "render_mode=\"rgb_array\"" in source
+
+
+def test_pacman_envs_render_rgb_array_ansi_and_notebooks():
+    import json
+    import math
+
+    from masa.envs.discrete.mini_pacman_with_coins import MiniPacmanWithCoins
+    from masa.envs.discrete.pacman_with_coins import PacmanWithCoins
+    from masa.envs.tabular.renderers.pacman import DOWN, LEFT, RIGHT, UP, _pacman_eye_angle
+    from masa.envs.tabular.mini_pacman import MiniPacman
+    from masa.envs.tabular.pacman import Pacman
+
+    for direction in (LEFT, RIGHT, DOWN, UP):
+        assert math.sin(_pacman_eye_angle(direction)) < 0.0
+    for direction, horizontal_sign in ((LEFT, -1), (RIGHT, 1), (DOWN, 1), (UP, -1)):
+        assert math.copysign(1, math.cos(_pacman_eye_angle(direction))) == horizontal_sign
+
+    for env_cls in (MiniPacman, Pacman, MiniPacmanWithCoins, PacmanWithCoins):
+        env = env_cls(
+            render_mode="rgb_array",
+            window_size=192,
+            pacman_hat="wizard",
+            ghost_colors=((10, 20, 30),),
+        )
+        env.reset(seed=0)
+        frame = env.render()
+        cell_size = max(12, env.window_size // max(env._n_row, env._n_col))
+        assert frame.shape == (env._n_row * cell_size, env._n_col * cell_size, 3)
+        assert frame.dtype.name == "uint8"
+        assert frame.mean() > 0
+        env.close()
+
+    for env_cls in (MiniPacman, MiniPacmanWithCoins):
+        env = env_cls(render_mode="ansi")
+        env.reset(seed=0)
+        rendered = env.render()
+        assert isinstance(rendered, str)
+        assert "P" in rendered
+        assert "G" in rendered
+        assert "T" in rendered
+        env.close()
+
+    for path, env_name in (
+        ("notebooks/envs/play_pacman_tabular.ipynb", "mini_pacman"),
+        ("notebooks/envs/play_pacman_coins.ipynb", "mini_pacman_with_coins"),
+    ):
+        with open(path, "r", encoding="utf-8") as fh:
+            notebook = json.load(fh)
+        assert notebook["nbformat"] == 4
+        source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
+        assert env_name in source
+        assert "render_mode=\"human\"" in source
+        assert "render_mode=\"rgb_array\"" in source
+        assert "play()" in source

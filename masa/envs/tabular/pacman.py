@@ -1,11 +1,12 @@
 from __future__ import annotations
-from typing import Any
+from typing import Any, Literal
 from gymnasium import spaces
 import numpy as np
 from masa.common.label_fn import LabelFn
 from collections import defaultdict 
 from masa.envs.tabular.base import TabularEnv
 from masa.envs.tabular.utils import create_pacman_transition_dict, create_pacman_end_component
+from masa.envs.tabular.renderers.pacman import PacmanHat, PacmanRenderer, RGBColor, validate_renderer_options
 
 STANDARD_MAP = np.array([
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -58,10 +59,19 @@ def label_fn(obs):
 cost_fn = lambda labels: 1.0 if "ghost" in labels else 0.0
     
 class Pacman(TabularEnv):
+    metadata = {"render_modes": ["ansi", "rgb_array", "human"], "render_fps": 4}
 
-    def __init__(self):
+    def __init__(
+        self,
+        render_mode: Literal["ansi", "rgb_array", "human"] | None = None,
+        window_size: int = 512,
+        pacman_hat: PacmanHat = "none",
+        ghost_colors: tuple[RGBColor, ...] | None = None,
+    ):
         super().__init__()
+        validate_renderer_options(render_mode, window_size, pacman_hat)
 
+        self._layout = STANDARD_MAP
         self._n_row = STANDARD_MAP.shape[0]
         self._n_col = STANDARD_MAP.shape[1]
         self._n_ghosts = N_GHOSTS
@@ -89,6 +99,8 @@ class Pacman(TabularEnv):
         self._ghost_start_x = GHOST_START[0]
         self._ghost_start_y = GHOST_START[1]
         self._ghost_start_direction = GHOST_DIRECTION
+        self._agent_term_x = AGENT_TERM[0]
+        self._agent_term_y = AGENT_TERM[1]
 
         self._start_state = self._state_map[
             (
@@ -104,6 +116,12 @@ class Pacman(TabularEnv):
 
         self.np_random = None
         self._state = None
+        self._step_count = 0
+        self.render_mode = render_mode
+        self.window_size = int(window_size)
+        self.pacman_hat = pacman_hat
+        self.ghost_colors = ghost_colors
+        self._renderer = PacmanRenderer(self)
 
     def reset(self, *, seed: int | None = None, options: Dict[str, Any] | None = None):
         super().reset(seed=seed)
@@ -116,11 +134,15 @@ class Pacman(TabularEnv):
             self.np_random = np.random.default_rng(seed)
 
         self._state = self._start_state
+        self._step_count = 0
+        if self.render_mode == "human":
+            self.render()
         return self._state, {}
 
     def step(self, action):
         assert self.action_space.contains(action), f"Invalid action {action}!"
         self._state = self.np_random.choice(self._successor_states[self._state], p=self._transition_probs[(self._state, action)])
+        self._step_count += 1
 
         (agent_y, agent_x, agent_direction, ghost_y, ghost_x, ghost_direction, food) = self._reverse_state_map[self._state]
         if (agent_y == self._food_y) and (agent_x == self._food_x) and (not ((agent_y, agent_x) == (ghost_y, ghost_x))) and food:
@@ -130,4 +152,19 @@ class Pacman(TabularEnv):
 
         terminated = True if (agent_x, agent_y) == AGENT_TERM else False
 
+        if self.render_mode == "human":
+            self.render()
         return self._state, reward, terminated, False, {}
+
+    def render(self):
+        return self._renderer.render()
+
+    def close(self) -> None:
+        self._renderer.close()
+
+    @property
+    def human_window_closed(self) -> bool:
+        return self._renderer.human_window_closed
+
+    def handle_pygame_event(self, event: Any) -> bool:
+        return self._renderer.handle_pygame_event(event)
