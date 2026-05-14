@@ -1,10 +1,11 @@
 from __future__ import annotations
-from typing import Any
+from typing import Any, Literal
 from gymnasium import spaces
 import numpy as np
 import math
 from masa.common.label_fn import LabelFn
 from masa.envs.continuous.base import ContinuousEnv
+from masa.envs.discrete.renderers.cartpole import CartPoleRenderer, validate_renderer_options
 
 THETA_THESHOLD_RADIANS = 0.2095 # ~ 3/4 pi radians
 X_THRESHOLD = 2.4
@@ -20,8 +21,14 @@ def label_fn(obs):
 cost_fn = lambda labels: 0.0 if "stable" in labels else 1.0
 
 class ContinuousCartPole(ContinuousEnv):
+    metadata = {"render_modes": ["ansi", "rgb_array", "human"], "render_fps": 30}
 
-    def __init__(self):
+    def __init__(
+        self,
+        render_mode: Literal["ansi", "rgb_array", "human"] | None = None,
+        render_window_size: int = 512,
+    ):
+        validate_renderer_options(render_mode, render_window_size)
 
         self._gravity = 9.8
         self._masscart = 1.0
@@ -51,6 +58,13 @@ class ContinuousCartPole(ContinuousEnv):
 
         self.observation_space = spaces.Box(low=-high, high=high, dtype=np.float32)
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(1,), dtype=np.float32)
+        self.np_random = None
+        self._state = None
+        self._step_count = 0
+        self._last_action = None
+        self.render_mode = render_mode
+        self.render_window_size = int(render_window_size)
+        self._renderer = CartPoleRenderer(self)
 
     def _obs(self):
         return self._state
@@ -70,6 +84,10 @@ class ContinuousCartPole(ContinuousEnv):
             high=np.array([0.05, 0.05, 0.05, 0.05]), 
             size=(4,)
         )
+        self._step_count = 0
+        self._last_action = None
+        if self.render_mode == "human":
+            self.render()
 
         return self._obs(), {}
 
@@ -103,8 +121,25 @@ class ContinuousCartPole(ContinuousEnv):
             theta = theta + self._tau * theta_dot
 
         self._state = np.array([x, x_dot, theta, theta_dot], dtype=np.float32)
+        self._step_count += 1
+        self._last_action = np.array(action, dtype=np.float32)
 
         stable = np.abs(theta) <= self._theta_threshold_radians \
             and np.abs(x) <= self._x_threshold
 
+        if self.render_mode == "human":
+            self.render()
         return self._obs(), 1.0, not stable, False, {}
+
+    def render(self):
+        return self._renderer.render()
+
+    def close(self) -> None:
+        self._renderer.close()
+
+    @property
+    def human_window_closed(self) -> bool:
+        return self._renderer.human_window_closed
+
+    def handle_pygame_event(self, event: Any) -> bool:
+        return self._renderer.handle_pygame_event(event)
