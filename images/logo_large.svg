@@ -8,20 +8,21 @@
       <stop offset="1" stop-color="#EFF8F3"/>
     </linearGradient>
     <linearGradient id="boundaryGradient" x1="62" y1="36" x2="326" y2="338" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#B9403F"/>
-      <stop offset="0.48" stop-color="#E17643"/>
-      <stop offset="1" stop-color="#2FBF71"/>
+      <stop offset="0" stop-color="#E15B6A"/>
+      <stop offset="0.34" stop-color="#CF686E"/>
+      <stop offset="0.66" stop-color="#7DA56F"/>
+      <stop offset="1" stop-color="#2FAE68"/>
     </linearGradient>
     <linearGradient id="policyGradient" x1="94" y1="253" x2="286" y2="119" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#1AA7EC"/>
-      <stop offset="0.55" stop-color="#33C7A0"/>
-      <stop offset="1" stop-color="#5DDD78"/>
+      <stop offset="0" stop-color="#D95D69"/>
+      <stop offset="0.58" stop-color="#78AD72"/>
+      <stop offset="1" stop-color="#38B96E"/>
     </linearGradient>
     <linearGradient id="fieldGradient" x1="74" y1="58" x2="307" y2="318" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#FFFFFF"/>
       <stop offset="1" stop-color="#EFFAF5"/>
     </linearGradient>
-    <linearGradient id="ruleGradient" x1="421" y1="214" x2="927" y2="214" gradientUnits="userSpaceOnUse">
+    <linearGradient id="ruleGradient" x1="455" y1="214" x2="959" y2="214" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#1AA7EC"/>
       <stop offset="0.48" stop-color="#2FBF71"/>
       <stop offset="1" stop-color="#FFB84D"/>
@@ -31,10 +32,10 @@
       <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
     </radialGradient>
     <filter id="softShadow" x="-22%" y="-18%" width="144%" height="140%" color-interpolation-filters="sRGB">
-      <feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#081D33" flood-opacity="0.16"/>
+      <feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#203229" flood-opacity="0.16"/>
     </filter>
     <filter id="nodeShadow" x="-40%" y="-40%" width="180%" height="180%" color-interpolation-filters="sRGB">
-      <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#081D33" flood-opacity="0.22"/>
+      <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#203229" flood-opacity="0.22"/>
     </filter>
     <clipPath id="safeField">
       <path d="M194 25C232 52 278 70 327 81V160C327 246 276 312 194 347C112 312 61 246 61 160V81C110 70 156 52 194 25Z"/>
@@ -83,13 +84,13 @@
       <circle cx="233" cy="144" r="7" fill="#FFFFFF"/>
       <circle cx="286" cy="120" r="18" fill="#2FBF71"/>
       <circle cx="286" cy="120" r="8" fill="#FFFFFF"/>
-      <circle cx="136" cy="137" r="10" fill="#6D5DFB"/>
+      <circle cx="136" cy="137" r="10" fill="#D95D69"/>
       <circle cx="259" cy="246" r="10" fill="#081D33"/>
       <circle cx="259" cy="246" r="4" fill="#FFFFFF"/>
     </g>
     <g clip-path="url(#safeField)" opacity="0.88">
       <path d="M73 303C113 333 162 348 212 336" fill="none" stroke="#2FBF71" stroke-width="5" stroke-linecap="round"/>
-      <path d="M293 88C315 113 327 143 329 176" fill="none" stroke="#1AA7EC" stroke-width="5" stroke-linecap="round"/>
+      <path d="M293 88C315 113 327 143 329 176" fill="none" stroke="#D95D69" stroke-width="5" stroke-linecap="round"/>
     </g>
   </g>
 
@@ -97,7 +98,7 @@
     <text x="421" y="152" font-size="80" font-weight="850">
       <tspan fill="#081D33">MASA</tspan><tspan fill="#2FBF71">-Safe-</tspan><tspan fill="#081D33">RL</tspan>
     </text>
-    <rect x="424" y="186" width="504" height="7" rx="3.5" fill="url(#ruleGradient)"/>
+    <rect x="455" y="186" width="504" height="7" rx="3.5" fill="url(#ruleGradient)"/>
     <text x="424" y="247" font-size="33" font-weight="650" fill="#081D33">Safe learning across agents,</text>
     <text x="424" y="292" font-size="33" font-weight="650" fill="#081D33">constraints, and worlds</text>
     <g font-size="17" font-weight="800" letter-spacing="2.4" fill="#247C77">
