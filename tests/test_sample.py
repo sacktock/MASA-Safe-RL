@@ -172,6 +172,14 @@ def test_media_streaming_render_rgb_array_ansi_and_notebook():
 
     from masa.envs.tabular.media_streaming import MediaStreaming
 
+    env = MediaStreaming(render_mode="rgb_array")
+    env.reset(seed=0)
+    frame = env.render()
+    assert frame.shape == (320, 512, 3)
+    assert frame.dtype.name == "uint8"
+    assert frame.mean() > 0
+    env.close()
+
     env = MediaStreaming(render_mode="rgb_array", render_window_size=192)
     env.reset(seed=0)
     frame = env.render()

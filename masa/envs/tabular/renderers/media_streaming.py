@@ -23,6 +23,8 @@ SLOW_COLOR = (107, 161, 105)
 FAST_COLOR = (211, 119, 62)
 TEXT_COLOR = (39, 45, 58)
 MUTED_TEXT_COLOR = (97, 104, 111)
+MIN_RENDER_HEIGHT = 160
+RENDER_HEIGHT_RATIO = 0.625
 
 
 class MediaStreamingEnv(Protocol):
@@ -103,7 +105,7 @@ class MediaStreamingRenderer:
 
         snapshot = self._snapshot()
         width = int(self.env.render_window_size)
-        height = max(160, width // 2)
+        height = max(MIN_RENDER_HEIGHT, int(width * RENDER_HEIGHT_RATIO))
         scale = 3
         surface = pygame.Surface((width * scale, height * scale))
         surface.fill(BACKGROUND_COLOR)
