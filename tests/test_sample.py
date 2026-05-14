@@ -230,3 +230,19 @@ def test_colour_bomb_envs_render_rgb_array_ansi_and_notebook():
     assert "pygame.K_SPACE: 4" in source
     assert "def make_env" in source
     assert "play_env" in source
+
+
+def test_colour_bomb_wall_states_are_impassable_under_slip():
+    import numpy as np
+
+    from masa.envs.tabular.colour_bomb_grid_world import ColourBombGridWorld
+    from masa.envs.tabular.colour_bomb_grid_world_v2 import ColourBombGridWorldV2
+    from masa.envs.tabular.colour_bomb_grid_world_v3 import ColourBombGridWorldV3
+
+    for env_cls in (ColourBombGridWorld, ColourBombGridWorldV2, ColourBombGridWorldV3):
+        env = env_cls()
+        wall_states = sorted(getattr(env, "_wall_states", []))
+        non_wall_states = [state for state in range(env._n_states) if state not in wall_states]
+
+        wall_entry_probs = env._transition_matrix[wall_states][:, non_wall_states, :]
+        assert np.allclose(wall_entry_probs, 0.0)
