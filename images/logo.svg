@@ -3,8 +3,8 @@
   <desc id="desc">A shield-shaped safe reinforcement learning state space with agent nodes, hazards, and a protected policy path.</desc>
   <defs>
     <linearGradient id="boundaryGradient" x1="62" y1="36" x2="326" y2="338" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#081D33"/>
-      <stop offset="0.48" stop-color="#0E7490"/>
+      <stop offset="0" stop-color="#B9403F"/>
+      <stop offset="0.48" stop-color="#E17643"/>
       <stop offset="1" stop-color="#2FBF71"/>
     </linearGradient>
     <linearGradient id="policyGradient" x1="94" y1="253" x2="286" y2="119" gradientUnits="userSpaceOnUse">
