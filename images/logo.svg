@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="388" height="377" viewBox="0 0 388 377" role="img" aria-labelledby="title desc">
+  <title id="title">MASA-Safe-RL mark</title>
+  <desc id="desc">A shield-shaped safe reinforcement learning state space with agent nodes, hazards, and a protected policy path.</desc>
+  <defs>
+    <linearGradient id="boundaryGradient" x1="62" y1="36" x2="326" y2="338" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#081D33"/>
+      <stop offset="0.48" stop-color="#0E7490"/>
+      <stop offset="1" stop-color="#2FBF71"/>
+    </linearGradient>
+    <linearGradient id="policyGradient" x1="94" y1="253" x2="286" y2="119" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1AA7EC"/>
+      <stop offset="0.55" stop-color="#33C7A0"/>
+      <stop offset="1" stop-color="#5DDD78"/>
+    </linearGradient>
+    <linearGradient id="fieldGradient" x1="74" y1="58" x2="307" y2="318" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#EFFAF5"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="40%" r="60%">
+      <stop offset="0" stop-color="#DDF7FF" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softShadow" x="-22%" y="-18%" width="144%" height="140%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#081D33" flood-opacity="0.16"/>
+    </filter>
+    <filter id="nodeShadow" x="-40%" y="-40%" width="180%" height="180%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#081D33" flood-opacity="0.22"/>
+    </filter>
+    <clipPath id="safeField">
+      <path d="M194 25C232 52 278 70 327 81V160C327 246 276 312 194 347C112 312 61 246 61 160V81C110 70 156 52 194 25Z"/>
+    </clipPath>
+  </defs>
+
+  <g filter="url(#softShadow)">
+    <path d="M194 25C232 52 278 70 327 81V160C327 246 276 312 194 347C112 312 61 246 61 160V81C110 70 156 52 194 25Z" fill="url(#fieldGradient)" stroke="url(#boundaryGradient)" stroke-width="10" stroke-linejoin="round"/>
+    <path d="M194 49C228 73 267 89 307 98V161C307 232 267 288 194 322C121 288 81 232 81 161V98C121 89 160 73 194 49Z" fill="url(#glow)"/>
+  </g>
+
+  <g clip-path="url(#safeField)">
+    <path d="M71 113H318M55 158H329M47 203H319M62 248H297M107 65V318M154 42V337M201 34V332M248 63V302M294 99V247" fill="none" stroke="#CFE2E6" stroke-width="4" opacity="0.72"/>
+    <path d="M72 292C106 258 117 227 107 196C98 168 112 139 140 108C163 83 181 61 194 42M54 170C85 176 116 169 146 149C181 126 214 122 246 137C278 153 304 151 324 131" fill="none" stroke="#E6F1F1" stroke-width="3" opacity="0.9"/>
+    <rect x="94" y="104" width="34" height="34" rx="9" fill="#FFB84D"/>
+    <rect x="214" y="96" width="32" height="32" rx="9" fill="#E9F5F6"/>
+    <path d="M101 256C124 222 148 203 172 198C203 192 213 169 233 144C248 125 268 118 286 120" fill="none" stroke="#DFF8EF" stroke-width="31" stroke-linecap="round" stroke-linejoin="round" opacity="0.94"/>
+    <path d="M101 256C124 222 148 203 172 198C203 192 213 169 233 144C248 125 268 118 286 120" fill="none" stroke="url(#policyGradient)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <g filter="url(#nodeShadow)">
+    <circle cx="101" cy="256" r="14" fill="#081D33"/>
+    <circle cx="101" cy="256" r="7" fill="#FFFFFF"/>
+    <circle cx="172" cy="198" r="14" fill="#081D33"/>
+    <circle cx="172" cy="198" r="7" fill="#FFFFFF"/>
+    <circle cx="233" cy="144" r="14" fill="#081D33"/>
+    <circle cx="233" cy="144" r="7" fill="#FFFFFF"/>
+    <circle cx="286" cy="120" r="18" fill="#2FBF71"/>
+    <circle cx="286" cy="120" r="8" fill="#FFFFFF"/>
+    <circle cx="136" cy="137" r="10" fill="#6D5DFB"/>
+    <circle cx="259" cy="246" r="10" fill="#081D33"/>
+    <circle cx="259" cy="246" r="4" fill="#FFFFFF"/>
+  </g>
+
+  <g clip-path="url(#safeField)" opacity="0.88">
+    <path d="M73 303C113 333 162 348 212 336" fill="none" stroke="#2FBF71" stroke-width="5" stroke-linecap="round"/>
+    <path d="M293 88C315 113 327 143 329 176" fill="none" stroke="#1AA7EC" stroke-width="5" stroke-linecap="round"/>
+  </g>
+</svg>
