@@ -165,6 +165,204 @@ def test_pacman_envs_render_rgb_array_ansi_and_notebooks(monkeypatch):
         assert "play()" in source
 
 
+def test_cartpole_envs_render_rgb_array_ansi_and_notebook():
+    import json
+
+    import numpy as np
+    import pytest
+
+    from masa.envs.continuous.cartpole import ContinuousCartPole
+    from masa.envs.discrete.cartpole import DiscreteCartPole
+
+    env_cases = (
+        (DiscreteCartPole, 1),
+        (ContinuousCartPole, np.array([1.0], dtype=np.float32)),
+    )
+
+    for env_cls, action in env_cases:
+        env = env_cls(render_mode="rgb_array", render_window_size=192)
+        env.reset(seed=0)
+        frame = env.render()
+        assert frame.shape == (192, 192, 3)
+        assert frame.dtype.name == "uint8"
+        assert frame.mean() > 0
+        env.step(action)
+        next_frame = env.render()
+        assert next_frame.shape == frame.shape
+        assert next_frame.mean() > 0
+        env.close()
+
+    for env_cls, action in env_cases:
+        env = env_cls(render_mode="ansi")
+        env.reset(seed=0)
+        env.step(action)
+        rendered = env.render()
+        assert isinstance(rendered, str)
+        for token in ("cart", "pole", "status", "last_action"):
+            assert token in rendered
+        env.close()
+
+    for env_cls, _ in env_cases:
+        env = env_cls()
+        env.reset(seed=0)
+        assert env.render() is None
+        env.close()
+
+        with pytest.raises(ValueError):
+            env_cls(render_mode="bad")
+        with pytest.raises(ValueError):
+            env_cls(render_window_size=0)
+
+    with open("notebooks/envs/play_cartpole.ipynb", "r", encoding="utf-8") as fh:
+        notebook = json.load(fh)
+
+    assert notebook["nbformat"] == 4
+    source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
+    assert "disc_cartpole" in source
+    assert "cont_cartpole" in source
+    assert "widgets.ToggleButtons" in source
+    assert "render_mode=\"human\"" in source
+    assert "render_mode=\"rgb_array\"" in source
+    assert "render_window_size=512" in source
+    assert "pygame.K_LEFT" in source
+    assert "pygame.K_SPACE" in source
+    assert "np.array([0.0]" in source
+    assert "play_env" in source
+
+
+def test_colour_grid_world_render_rgb_array_ansi_and_notebook():
+    import json
+
+    import pytest
+
+    from masa.envs.tabular.colour_grid_world import ColourGridWorld
+
+    env = ColourGridWorld(render_mode="rgb_array", render_window_size=192)
+    env.reset(seed=0)
+    frame = env.render()
+    cell_size = max(12, env.render_window_size // env._grid_size)
+    assert frame.shape == (env._grid_size * cell_size, env._grid_size * cell_size, 3)
+    assert frame.dtype.name == "uint8"
+    assert frame.mean() > 0
+    env.close()
+
+    env = ColourGridWorld(render_mode="ansi")
+    env.reset(seed=0)
+    env._state = 1
+    rendered = env.render()
+    assert isinstance(rendered, str)
+    for marker in ("A", "S", "T", "X", "G", "P"):
+        assert marker in rendered
+    env.close()
+
+    env = ColourGridWorld()
+    env.reset(seed=0)
+    assert env.render() is None
+    env.close()
+
+    with pytest.raises(ValueError):
+        ColourGridWorld(render_mode="bad")
+    with pytest.raises(ValueError):
+        ColourGridWorld(render_window_size=0)
+
+    with open("notebooks/envs/play_colour_grid_world.ipynb", "r", encoding="utf-8") as fh:
+        notebook = json.load(fh)
+
+    assert notebook["nbformat"] == 4
+    source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
+    assert "ENV_NAME" in source
+    assert "colour_grid_world" in source
+    assert "ColourGridWorld" in source
+    assert "render_mode=\"human\"" in source
+    assert "render_mode=\"rgb_array\"" in source
+    assert "render_window_size=512" in source
+    assert "pygame.K_SPACE: 4" in source
+    assert "play_env" in source
+
+
+def test_colour_bomb_envs_render_rgb_array_ansi_and_notebook():
+    import json
+
+    import pytest
+
+    from masa.envs.tabular.colour_bomb_grid_world import ColourBombGridWorld
+    from masa.envs.tabular.colour_bomb_grid_world_v2 import ColourBombGridWorldV2
+    from masa.envs.tabular.colour_bomb_grid_world_v3 import ColourBombGridWorldV3
+
+    env_classes = (ColourBombGridWorld, ColourBombGridWorldV2, ColourBombGridWorldV3)
+
+    for env_cls in env_classes:
+        env = env_cls(render_mode="rgb_array", render_window_size=192)
+        env.reset(seed=0)
+        frame = env.render()
+        cell_size = max(12, env.render_window_size // env._grid_size)
+        assert frame.shape == (env._grid_size * cell_size, env._grid_size * cell_size, 3)
+        assert frame.dtype.name == "uint8"
+        assert frame.mean() > 0
+        env.close()
+
+    for env_cls in env_classes:
+        env = env_cls(render_mode="ansi")
+        env.reset(seed=0)
+        rendered = env.render()
+        assert isinstance(rendered, str)
+        assert "A" in rendered
+        assert "#" in rendered
+        assert "X" in rendered
+        assert any(marker in rendered for marker in ("G", "Y", "R", "B", "P"))
+        env.close()
+
+    for env_cls in (ColourBombGridWorldV2, ColourBombGridWorldV3):
+        env = env_cls(render_mode="ansi")
+        env.reset(seed=0)
+        rendered = env.render()
+        assert "M" in rendered
+        env.close()
+
+    for env_cls in env_classes:
+        env = env_cls()
+        env.reset(seed=0)
+        assert env.render() is None
+        env.close()
+
+        with pytest.raises(ValueError):
+            env_cls(render_mode="bad")
+        with pytest.raises(ValueError):
+            env_cls(render_window_size=0)
+
+    with open("notebooks/envs/play_colour_bomb_gridworlds.ipynb", "r", encoding="utf-8") as fh:
+        notebook = json.load(fh)
+
+    assert notebook["nbformat"] == 4
+    source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
+    assert "colour_bomb_grid_world" in source
+    assert "colour_bomb_grid_world_v2" in source
+    assert "colour_bomb_grid_world_v3" in source
+    assert "widgets.ToggleButtons" in source
+    assert "render_mode=\"human\"" in source
+    assert "render_mode=\"rgb_array\"" in source
+    assert "render_window_size=512" in source
+    assert "pygame.K_SPACE: 4" in source
+    assert "def make_env" in source
+    assert "play_env" in source
+
+
+def test_colour_bomb_wall_states_are_impassable_under_slip():
+    import numpy as np
+
+    from masa.envs.tabular.colour_bomb_grid_world import ColourBombGridWorld
+    from masa.envs.tabular.colour_bomb_grid_world_v2 import ColourBombGridWorldV2
+    from masa.envs.tabular.colour_bomb_grid_world_v3 import ColourBombGridWorldV3
+
+    for env_cls in (ColourBombGridWorld, ColourBombGridWorldV2, ColourBombGridWorldV3):
+        env = env_cls()
+        wall_states = sorted(getattr(env, "_wall_states", []))
+        non_wall_states = [state for state in range(env._n_states) if state not in wall_states]
+
+        wall_entry_probs = env._transition_matrix[wall_states][:, non_wall_states, :]
+        assert np.allclose(wall_entry_probs, 0.0)
+
+
 def test_media_streaming_render_rgb_array_ansi_and_notebook():
     import json
 

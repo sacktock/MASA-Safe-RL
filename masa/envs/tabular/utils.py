@@ -59,6 +59,7 @@ def create_transition_matrix(
                     next_y = int(np.clip(y + act_map[rand_a][0], 0, grid_size-1))
                     next_x = int(np.clip(x + act_map[rand_a][1], 0, grid_size-1))
                     next_state = grid[next_y, next_x]
+                    next_state = state if next_state in wall_states else next_state
                     matrix[next_state, state, a] += rand_prob
     return matrix
 

@@ -177,10 +177,65 @@ saving); the snippet mirrors the general style used in MASA runs.
        stats_window_size=100,        # optional
    )
 
-API Reference for :func:`~masa.common.utils.make_env`
+Recording Videos
+----------------
+
+The central environment factories can optionally wrap the completed environment
+stack with video recording. Recording is disabled by default and requires an
+image-producing render mode such as ``"rgb_array"``.
+
+.. code-block:: python
+
+   from masa.common.utils import make_env
+   from masa.envs.discrete.conveyor_belt import cost_fn, label_fn
+
+   def record_every_episode(episode_id):
+       return True
+
+   env = make_env(
+       "conveyor_belt",
+       "cmdp",
+       100,
+       label_fn=label_fn,
+       cost_fn=cost_fn,
+       budget=10.0,
+       env_kwargs={"render_mode": "rgb_array"},
+       record_video=True,
+       record_video_episode_trigger=record_every_episode,
+       video_folder="videos",
+   )
+
+For renderable PettingZoo parallel environments, ``make_marl_env`` applies
+MASA's PettingZoo video wrapper in the same outermost position:
+
+.. code-block:: python
+
+   from masa.common.constraints.multi_agent.cmg import Budget
+   from masa.common.utils import make_marl_env
+
+   def record_every_episode(episode_id):
+       return True
+
+   env = make_marl_env(
+       "renderable_marl_env",
+       "cmg",
+       budgets=[Budget(amount=10.0, agents=("player_0", "player_1"), name="shared")],
+       env_kwargs={"render_mode": "rgb_array"},
+       record_video=True,
+       record_video_episode_trigger=record_every_episode,
+       video_folder="videos",
+   )
+
+The PettingZoo wrapper supports renderable parallel environments and plugins
+whose ``render()`` returns RGB numpy arrays. The built-in matrix games expose
+the central wrapper path, but do not yet include concrete image renderers.
+
+API Reference for environment factories
 ---------------------------------------
 
 .. autofunction:: masa.common.utils.make_env
+
+.. autofunction:: masa.common.utils.make_marl_env
 
 Next Steps
 ----------
