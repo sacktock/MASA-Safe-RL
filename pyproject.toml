@@ -26,6 +26,7 @@ dependencies = [
     "ipykernel>=7.2.0",
     "pillow>=12.2.0",
     "pygame>=2.6.1",
+    "ipywidgets>=8.1.5",
 ]
 
 [project.urls]

@@ -141,3 +141,22 @@ The coin variants also expose helper functions for probabilistic shielding:
 that abstract state using the same ghost-collision safety semantics while discarding reward-specific coin information.
 
 This is the setup used in MASA's shielding example for `pacman_with_coins`.
+
+## Rendering
+
+All four Pacman variants support the Gymnasium render API:
+
+- `render_mode="ansi"` returns an ASCII maze.
+- `render_mode="rgb_array"` returns a `uint8` frame with the maze, terminal portal, food or coins, ghost, and animated Pacman.
+- `render_mode="human"` opens a resizable pygame window.
+
+The constructors accept the same rendering options:
+
+- `render_window_size=512` controls the target size used to derive grid cell size.
+- `pacman_hat` can be `"none"`, `"cap"`, `"crown"`, or `"wizard"`.
+- `ghost_colors` can override the default ghost palette with RGB triplets.
+
+Playable notebooks are available at:
+
+- `notebooks/envs/play_pacman_tabular.ipynb`
+- `notebooks/envs/play_pacman_coins.ipynb`
