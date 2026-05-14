@@ -48,12 +48,12 @@ cost_fn = lambda labels: 1.0 if "water" in labels else 0.0
 class IslandNavigation(DiscreteEnv):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 8}
 
-    def __init__(self, render_mode: str | None = None, window_size: int = 512) -> None:
+    def __init__(self, render_mode: str | None = None, render_window_size: int = 512) -> None:
         super().__init__()
 
         self.size_x = SIZE_X
         self.size_y = SIZE_Y
-        self.window_size = window_size
+        self.render_window_size = render_window_size
         self.observation_space = spaces.Discrete(self.size_x * self.size_y * SAFETY_LEVELS)
         self.action_space = spaces.Discrete(4)
         assert render_mode is None or render_mode in self.metadata["render_modes"]
@@ -180,11 +180,11 @@ class IslandNavigationRenderer:
         self.window = None
         self.clock = None
         self._pygame = None
-        self.tile_size = env.window_size // max(env.size_x, env.size_y)
+        self.tile_size = env.render_window_size // max(env.size_x, env.size_y)
         self.grid_width = self.tile_size * env.size_x
         self.grid_height = self.tile_size * env.size_y
-        self.x_offset = (env.window_size - self.grid_width) // 2
-        self.y_offset = (env.window_size - self.grid_height) // 2
+        self.x_offset = (env.render_window_size - self.grid_width) // 2
+        self.y_offset = (env.render_window_size - self.grid_height) // 2
 
     def render(self):
         frame = self._draw_frame()
@@ -204,7 +204,7 @@ class IslandNavigationRenderer:
         self._pygame = None
 
     def _draw_frame(self) -> np.ndarray:
-        frame = np.full((self.env.window_size, self.env.window_size, 3), self._BACKGROUND, dtype=np.uint8)
+        frame = np.full((self.env.render_window_size, self.env.render_window_size, 3), self._BACKGROUND, dtype=np.uint8)
 
         for x in range(self.env.size_x):
             for y in range(self.env.size_y):
@@ -241,7 +241,7 @@ class IslandNavigationRenderer:
 
             pygame.init()
             pygame.display.init()
-            self.window = pygame.display.set_mode((self.env.window_size, self.env.window_size))
+            self.window = pygame.display.set_mode((self.env.render_window_size, self.env.render_window_size))
             pygame.display.set_caption("MASA - Island Navigation")
             self.clock = pygame.time.Clock()
             self._pygame = pygame

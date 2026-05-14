@@ -49,7 +49,7 @@ def test_new_envs_render_rgb_array_and_notebook():
     from masa.envs.discrete.sokoban import Sokoban
 
     for env_cls in (IslandNavigation, ConveyorBelt, Sokoban):
-        env = env_cls(render_mode="rgb_array", window_size=192)
+        env = env_cls(render_mode="rgb_array", render_window_size=192)
         env.reset(seed=0)
         frame = env.render()
         assert frame.shape == (192, 192, 3)
@@ -63,8 +63,10 @@ def test_new_envs_render_rgb_array_and_notebook():
     assert notebook["nbformat"] == 4
     source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
     assert "ENV_NAME" in source
+    assert "widgets.ToggleButtons" in source
     assert "render_mode=\"human\"" in source
     assert "render_mode=\"rgb_array\"" in source
+    assert "render_window_size=512" in source
 
 
 def test_pacman_envs_render_rgb_array_ansi_and_notebooks(monkeypatch):
@@ -155,6 +157,7 @@ def test_pacman_envs_render_rgb_array_ansi_and_notebooks(monkeypatch):
         assert notebook["nbformat"] == 4
         source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
         assert env_name in source
+        assert "widgets.ToggleButtons" in source
         assert "render_mode=\"human\"" in source
         assert "render_mode=\"rgb_array\"" in source
         assert "render_window_size=512" in source
