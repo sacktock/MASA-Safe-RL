@@ -1,0 +1,17 @@
+defaults:
+  env:
+    id: mini_pacman
+    max_episode_steps: 100
+    label_fn: masa.envs.tabular.mini_pacman:label_fn
+    cost_fn: masa.envs.tabular.mini_pacman:cost_fn
+
+  constraint:
+    type: cmdp
+    cost_budget: 1
+
+  run:
+    total_timesteps: 250000
+    eval_every: 5000
+    eval_episodes: 10
+    log_every: 5000
+    stats_window_size: 100

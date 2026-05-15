@@ -1,0 +1,19 @@
+defaults:
+  task_alpha: 0.1
+  task_gamma: 0.95
+  safe_alpha: 0.1
+  safe_gamma: 0.95
+  model_free_alpha: 0.1
+  mode: model_free
+  model_checking: exact
+  samples: 8192
+  horizon: 5
+  safety_prob: 0.01
+  r_min: 0.0
+  cost_coef: 10.0
+  exploration: boltzmann
+  boltzmann_temp: 0.05
+  initial_epsilon: 1.0
+  final_epsilon: 0.1
+  epsilon_decay: linear
+  epsilon_decay_frames: 10000

@@ -39,7 +39,7 @@ Documentation = "https://sacktock.github.io/MASA-Safe-RL/"
 include-package-data = true
 
 [project.scripts]
-run_masa = "masa:run"
+masa = "omnisafe.cli.cli_app:app"
 
 [tool.setuptools.packages.find]
 include = ["masa", "masa.*"]

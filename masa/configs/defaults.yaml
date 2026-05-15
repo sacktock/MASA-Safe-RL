@@ -1,0 +1,30 @@
+
+defaults:
+  env:
+    id: disc_cartpole
+    max_episode_steps: 200
+    label_fn: masa.common.dummy:label_fn
+    cost_fn: masa.common.dummy:cost_fn
+    reward_shaping: none
+    prob_shield_wrapper: False
+
+  constraint:
+    type: cmdp
+    cost_budget: 20.0
+    alpha: 0.01
+    avoid_label: unsafe
+    reach_label: target
+    dfa: masa.common.dummy:make_dfa
+
+  run:
+    seed: 0
+    total_timesteps: 100000
+    eval_every: 0
+    eval_episodes: 10
+    log_every: 1000
+    prefill: 0
+    save_every: 0
+    stats_window_size: 100
+    logdir: runs/masa
+    device: auto
+    verbose: 0

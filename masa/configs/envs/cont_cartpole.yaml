@@ -1,0 +1,17 @@
+defaults:  
+  env:
+    id: cont_cartpole
+    max_episode_steps: 500
+    label_fn: masa.envs.continuous.cartpole:label_fn
+    cost_fn: masa.envs.continuous.cartpole:cost_fn
+
+  constraint:
+    type: cmdp
+    cost_budget: 0
+
+  run:
+    total_timesteps: 50000
+    eval_every: 2048
+    eval_episodes: 1
+    log_every: 2048
+    stats_window_size: 10

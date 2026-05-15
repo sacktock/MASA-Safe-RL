@@ -1,0 +1,17 @@
+defaults:
+  env:
+    id: conveyor_belt
+    max_episode_steps: 50
+    label_fn: masa.envs.discrete.conveyor_belt:label_fn
+    cost_fn: masa.envs.discrete.conveyor_belt:cost_fn
+
+  constraint:
+    type: cmdp
+    cost_budget: 0
+
+  run:
+    total_timesteps: 100000
+    eval_every: 5000
+    eval_episodes: 10
+    log_every: 5000
+    stats_window_size: 100
