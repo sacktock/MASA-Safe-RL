@@ -15,6 +15,7 @@ TUTORIAL_05 = REPO_ROOT / "notebooks" / "tutorials" / "05_ltl_safety_colour_bomb
 TUTORIAL_06 = REPO_ROOT / "notebooks" / "tutorials" / "06_tabular_safe_rl_baselines.ipynb"
 TUTORIAL_07 = REPO_ROOT / "notebooks" / "tutorials" / "07_continuous_safe_rl_baselines.ipynb"
 TUTORIAL_08 = REPO_ROOT / "notebooks" / "tutorials" / "08_create_a_new_environment.ipynb"
+TUTORIAL_09 = REPO_ROOT / "notebooks" / "tutorials" / "09_probabilistic_shielding_minipacman.ipynb"
 
 
 def _notebook_source(notebook: nbformat.NotebookNode) -> str:
@@ -273,6 +274,42 @@ def test_create_a_new_environment_notebook_is_valid_and_executable():
     client = NotebookClient(
         notebook,
         timeout=120,
+        kernel_name="python3",
+        allow_errors=False,
+        resources={"metadata": {"path": str(REPO_ROOT)}},
+    )
+    client.execute()
+
+
+def test_probabilistic_shielding_minipacman_notebook_is_valid_and_executable():
+    notebook = nbformat.read(TUTORIAL_09, as_version=4)
+
+    assert notebook["nbformat"] == 4
+
+    source = _notebook_source(notebook)
+    for token in (
+        "mini_pacman",
+        "pctl",
+        "ProbShieldWrapperDisc",
+        "init_safety_bound",
+        "safety_lb",
+        "successor_states_matrix",
+        "probabilities",
+        "max_successors",
+        "orig_obs",
+        "safety_bound",
+        "_project_act",
+        "project_candidate_action",
+        "safe_actions",
+        "bounds",
+        "alpha=0.01",
+    ):
+        assert token in source
+    assert "<svg" not in source
+
+    client = NotebookClient(
+        notebook,
+        timeout=180,
         kernel_name="python3",
         allow_errors=False,
         resources={"metadata": {"path": str(REPO_ROOT)}},
