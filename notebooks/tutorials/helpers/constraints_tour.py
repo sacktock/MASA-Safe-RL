@@ -124,7 +124,7 @@ def render_constraint_semantics_svg() -> str:
     boxes = [
         ("cmdp", "sum cost <= budget"),
         ("prob", "unsafe fraction <= alpha"),
-        ("pctl", "safety satisfied so far"),
+        ("pctl", "Pr(formula satisfied) >= threshold"),
         ("reach_avoid", "reach goal before blue"),
         ("ltl_safety", "DFA avoids accepting unsafe state"),
     ]
@@ -152,6 +152,6 @@ def render_constraint_semantics_svg() -> str:
         )
         parts.append(
             f'<text x="420" y="{y + 23}" font-family="sans-serif" font-size="12" fill="#374151">{escape(meaning)}</text>'
-    )
+        )
     parts.append("</svg>")
     return "\n".join(parts)

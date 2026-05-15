@@ -16,7 +16,7 @@
   <line x1="186" y1="130" x2="270" y2="170" stroke="#4b5563" stroke-width="1.8" marker-end="url(#docs-sem-arrow)"/>
   <rect x="280" y="150" width="430" height="36" rx="7" fill="#eff6ff" stroke="#93c5fd"/>
   <text x="300" y="173" font-family="sans-serif" font-size="13" font-weight="700" fill="#1f2937">pctl</text>
-  <text x="420" y="173" font-family="sans-serif" font-size="12" fill="#374151">safety satisfied so far</text>
+  <text x="420" y="173" font-family="sans-serif" font-size="12" fill="#374151">Pr(formula satisfied) &gt;= threshold</text>
   <line x1="186" y1="130" x2="270" y2="216" stroke="#4b5563" stroke-width="1.8" marker-end="url(#docs-sem-arrow)"/>
   <rect x="280" y="196" width="430" height="36" rx="7" fill="#eff6ff" stroke="#93c5fd"/>
   <text x="300" y="219" font-family="sans-serif" font-size="13" font-weight="700" fill="#1f2937">reach_avoid</text>

@@ -68,16 +68,7 @@ Goal script:
 Seed `4` with actions `[2] * 8 + [1] * 8` reaches `goal` without visiting `blue`.
 ```
 
-### DFA and Constraint Semantics
-
-The `ltl_safety` example uses a two-state DFA. The accepting state is unsafe here: entering it means the safety property has been violated.
-
-```{figure} ../../_static/tutorials/constraints_tour/never_blue_dfa.svg
-:alt: Two-state never-blue DFA.
-:width: 520px
-
-The `blue` label moves the automaton from safe state `q0` to accepting unsafe state `q1`.
-```
+### Constraint Semantics
 
 The same labels are fed to every constraint. The difference is the safety state each constraint derives from those labels.
 
@@ -213,7 +204,7 @@ Things to notice:
 
 - `cmdp` reports `cost=1.0`, `violation=1.0`, and cumulative cost above the zero budget.
 - `prob` reports an unsafe fraction above `alpha=0.1`.
-- `pctl` reports safety no longer satisfied.
+- `pctl` reports the PCTL-style condition as not satisfied for the unsafe trace.
 - `reach_avoid` reports `violated=True`.
 - `ltl_safety` moves the DFA to the accepting unsafe state.
 
@@ -236,7 +227,7 @@ Things to notice:
 
 - `cmdp` accumulates scalar cost and checks it against a budget.
 - `prob` tracks the empirical fraction of unsafe observations and checks it against `alpha`.
-- `pctl` currently behaves as a safety-so-far tracker over unsafe events.
+- `pctl` is intended to evaluate whether a bounded PCTL formula's satisfaction probability meets its threshold.
 - `reach_avoid` separately tracks whether the target was reached and whether the avoid label was ever seen.
 - `ltl_safety` advances a DFA and reports violations when the automaton enters an accepting unsafe state.
 

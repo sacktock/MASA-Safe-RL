@@ -122,7 +122,6 @@ def test_constraints_tour_notebook_is_valid_and_executable():
         "notebooks.tutorials.helpers.constraints_tour",
         "SVG",
         "render_grid_trace_svg",
-        "render_dfa_svg",
         "render_constraint_semantics_svg",
     ):
         assert token in source
