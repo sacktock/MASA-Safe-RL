@@ -9,6 +9,7 @@ from nbclient import NotebookClient
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TUTORIAL_01 = REPO_ROOT / "notebooks" / "tutorials" / "01_first_masa_experiment.ipynb"
 TUTORIAL_02 = REPO_ROOT / "notebooks" / "tutorials" / "02_labels_costs_and_infos.ipynb"
+TUTORIAL_03 = REPO_ROOT / "notebooks" / "tutorials" / "03_wrapper_stack.ipynb"
 
 
 def _notebook_source(notebook: nbformat.NotebookNode) -> str:
@@ -58,6 +59,35 @@ def test_labels_costs_and_infos_notebook_is_valid_and_executable():
         "terminated",
         "truncated",
         "budget=0.0",
+    ):
+        assert token in source
+
+    client = NotebookClient(
+        notebook,
+        timeout=120,
+        kernel_name="python3",
+        allow_errors=False,
+        resources={"metadata": {"path": str(REPO_ROOT)}},
+    )
+    client.execute()
+
+
+def test_wrapper_stack_notebook_is_valid_and_executable():
+    notebook = nbformat.read(TUTORIAL_03, as_version=4)
+
+    assert notebook["nbformat"] == 4
+
+    source = _notebook_source(notebook)
+    for token in (
+        "TimeLimit",
+        "LabelledEnv",
+        "CumulativeCostEnv",
+        "ConstraintMonitor",
+        "RewardMonitor",
+        "make_env",
+        "is_wrapped",
+        "get_wrapped",
+        "colour_grid_world",
     ):
         assert token in source
 
