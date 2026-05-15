@@ -18,6 +18,7 @@ TUTORIAL_08 = REPO_ROOT / "notebooks" / "tutorials" / "08_create_a_new_environme
 TUTORIAL_09 = REPO_ROOT / "notebooks" / "tutorials" / "09_probabilistic_shielding_minipacman.ipynb"
 TUTORIAL_10 = REPO_ROOT / "notebooks" / "tutorials" / "10_safety_abstractions_pacman_coins.ipynb"
 TUTORIAL_11 = REPO_ROOT / "notebooks" / "tutorials" / "11_vectorization_and_normalization.ipynb"
+TUTORIAL_12 = REPO_ROOT / "notebooks" / "tutorials" / "12_multi_agent_cmg.ipynb"
 
 
 def _notebook_source(notebook: nbformat.NotebookNode) -> str:
@@ -382,6 +383,43 @@ def test_vectorization_and_normalization_notebook_is_valid_and_executable():
     client = NotebookClient(
         notebook,
         timeout=180,
+        kernel_name="python3",
+        allow_errors=False,
+        resources={"metadata": {"path": str(REPO_ROOT)}},
+    )
+    client.execute()
+
+
+def test_multi_agent_cmg_notebook_is_valid_and_executable():
+    notebook = nbformat.read(TUTORIAL_12, as_version=4)
+
+    assert notebook["nbformat"] == 4
+
+    source = _notebook_source(notebook)
+    for token in (
+        "make_marl_env",
+        "chicken_matrix",
+        "ChickenMatrix",
+        "cmg",
+        "Budget",
+        "Actions",
+        "ParallelEnv",
+        "possible_agents",
+        "player_0",
+        "player_1",
+        'infos[agent]["labels"]',
+        "constraint_step_metrics",
+        "constraint_episode_metrics",
+        "shared_cum_cost",
+        "shared_satisfied",
+        "satisfied",
+    ):
+        assert token in source
+    assert "<svg" not in source
+
+    client = NotebookClient(
+        notebook,
+        timeout=120,
         kernel_name="python3",
         allow_errors=False,
         resources={"metadata": {"path": str(REPO_ROOT)}},

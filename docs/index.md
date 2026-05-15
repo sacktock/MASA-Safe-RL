@@ -88,6 +88,7 @@ Tutorials/Wrappers
 Tutorials/Environments
 Tutorials/Algorithms
 Tutorials/Shielding
+Tutorials/Multi-Agent
 ```
 
 ```{toctree}
