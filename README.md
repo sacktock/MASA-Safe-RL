@@ -83,13 +83,13 @@ uv sync --group cuda13
 ```
 
 ## How to run MASA
-- You can run masa with the prebuilt `run` script. The script is not fully configurable so it is often better to create your own examples.
-```
-python -m masa.run --env-id bridge_crossing --algo ppo --custom-cfgs bridge_crossing --seed 0
+- You can run masa with the prebuilt CLI:
+```bash
+masa run --env-id bridge_crossing --algo ppo --seed 0
 ```
 - You can run examples from the ```\examples``` folder via:
-```
-python -m masa.examples.prob_shield_example
+```bash
+masa examples prob_shield_example
 ```
 
 ## Editing documentation

@@ -68,10 +68,10 @@ uv sync --group cuda13
 
 ### Testing Your Installation
 
-You can test your installation of masa via the command line,
+You can test your installation of masa with the prebuilt CLI:,
 
 ```bash
-python -m masa.run --env-id mini_pacman --algo q_learning --custom-cfgs mini_pacman --seed 0
+masa run --env-id mini_pacman --algo q_learning --seed 0
 ```
 
 ## Next Steps
