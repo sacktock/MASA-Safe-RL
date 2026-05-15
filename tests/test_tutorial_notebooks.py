@@ -13,6 +13,7 @@ TUTORIAL_03 = REPO_ROOT / "notebooks" / "tutorials" / "03_wrapper_stack.ipynb"
 TUTORIAL_04 = REPO_ROOT / "notebooks" / "tutorials" / "04_constraints_tour.ipynb"
 TUTORIAL_05 = REPO_ROOT / "notebooks" / "tutorials" / "05_ltl_safety_colour_bomb.ipynb"
 TUTORIAL_06 = REPO_ROOT / "notebooks" / "tutorials" / "06_tabular_safe_rl_baselines.ipynb"
+TUTORIAL_07 = REPO_ROOT / "notebooks" / "tutorials" / "07_continuous_safe_rl_baselines.ipynb"
 
 
 def _notebook_source(notebook: nbformat.NotebookNode) -> str:
@@ -204,6 +205,38 @@ def test_tabular_safe_rl_baselines_notebook_is_valid_and_executable():
     client = NotebookClient(
         notebook,
         timeout=180,
+        kernel_name="python3",
+        allow_errors=False,
+        resources={"metadata": {"path": str(REPO_ROOT)}},
+    )
+    client.execute()
+
+
+def test_continuous_safe_rl_baselines_notebook_is_valid_and_executable():
+    notebook = nbformat.read(TUTORIAL_07, as_version=4)
+
+    assert notebook["nbformat"] == 4
+
+    source = _notebook_source(notebook)
+    for token in (
+        "continuous",
+        "cont_cartpole",
+        "cmdp",
+        "PPO",
+        "CPO",
+        "PPO Lagrangian",
+        "PPO_STUB_CONFIG",
+        "make_continuous_safe_env",
+        "BASELINE_STATUS",
+        "stub",
+        "constraint",
+    ):
+        assert token in source
+    assert "<svg" not in source
+
+    client = NotebookClient(
+        notebook,
+        timeout=120,
         kernel_name="python3",
         allow_errors=False,
         resources={"metadata": {"path": str(REPO_ROOT)}},
