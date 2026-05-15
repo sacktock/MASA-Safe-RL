@@ -147,10 +147,13 @@ def render_dfa_diagram_svg(
     gap = 115
     margin = 44
     width = max(440, margin * 2 + gap * max(1, len(states) - 1) + radius * 2)
-    height = 220
-    y = 92
-    x_by_state = {state: margin + radius + idx * gap for idx, state in enumerate(states)}
+    height = 250
+    y = 122
+    content_width = gap * max(1, len(states) - 1) + radius * 2
+    left = (width - content_width) / 2
+    x_by_state = {state: left + radius + idx * gap for idx, state in enumerate(states)}
     accepting_set = set(accepting)
+    start_x = x_by_state[states[0]] - radius
 
     parts = [
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="{width}" height="{height}" role="img" aria-label="{escape(title)}">',
@@ -161,7 +164,7 @@ def render_dfa_diagram_svg(
         "</defs>",
         '<rect width="100%" height="100%" fill="#ffffff"/>',
         f'<text x="18" y="26" font-family="sans-serif" font-size="16" font-weight="700" fill="#111827">{escape(title)}</text>',
-        '<line x1="22" y1="92" x2="43" y2="92" stroke="#374151" stroke-width="2.5" marker-end="url(#dfa-arrow)"/>',
+        f'<line x1="{start_x - 22:.1f}" y1="{y}" x2="{start_x - 1:.1f}" y2="{y}" stroke="#374151" stroke-width="2.5" marker-end="url(#dfa-arrow)"/>',
     ]
 
     for source, target, label in edges:
