@@ -17,6 +17,7 @@ TUTORIAL_07 = REPO_ROOT / "notebooks" / "tutorials" / "07_continuous_safe_rl_bas
 TUTORIAL_08 = REPO_ROOT / "notebooks" / "tutorials" / "08_create_a_new_environment.ipynb"
 TUTORIAL_09 = REPO_ROOT / "notebooks" / "tutorials" / "09_probabilistic_shielding_minipacman.ipynb"
 TUTORIAL_10 = REPO_ROOT / "notebooks" / "tutorials" / "10_safety_abstractions_pacman_coins.ipynb"
+TUTORIAL_11 = REPO_ROOT / "notebooks" / "tutorials" / "11_vectorization_and_normalization.ipynb"
 
 
 def _notebook_source(notebook: nbformat.NotebookNode) -> str:
@@ -340,6 +341,40 @@ def test_safety_abstractions_pacman_coins_notebook_is_valid_and_executable():
         "probabilities",
         "project_candidate_action",
         "alpha=0.01",
+    ):
+        assert token in source
+    assert "<svg" not in source
+
+    client = NotebookClient(
+        notebook,
+        timeout=180,
+        kernel_name="python3",
+        allow_errors=False,
+        resources={"metadata": {"path": str(REPO_ROOT)}},
+    )
+    client.execute()
+
+
+def test_vectorization_and_normalization_notebook_is_valid_and_executable():
+    notebook = nbformat.read(TUTORIAL_11, as_version=4)
+
+    assert notebook["nbformat"] == 4
+
+    source = _notebook_source(notebook)
+    for token in (
+        "DummyVecWrapper",
+        "VecWrapper",
+        "NormWrapper",
+        "VecNormWrapper",
+        "OneHotObsWrapper",
+        "FlattenDictObsWrapper",
+        "colour_grid_world",
+        "cont_cartpole",
+        "colour_bomb_grid_world",
+        "ltl_safety",
+        'obs_type="dict"',
+        "make_never_bomb_dfa",
+        "Box(83,)",
     ):
         assert token in source
     assert "<svg" not in source
