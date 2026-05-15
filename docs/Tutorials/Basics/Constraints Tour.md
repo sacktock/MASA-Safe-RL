@@ -74,7 +74,7 @@ Seed `4` with actions `[2] * 8 + [1] * 8` reaches `goal` without visiting `blue`
 
 ```{figure} ../../_static/tutorials/constraints_tour/cmdp_prob.svg
 :alt: CMDP and probabilistic safety both derive metrics from a label-based unsafe signal.
-:width: 820px
+:width: 900px
 
 `cmdp` checks accumulated cost against a budget, while `prob` checks the fraction of unsafe steps against `alpha`.
 ```

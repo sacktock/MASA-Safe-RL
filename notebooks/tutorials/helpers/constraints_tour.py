@@ -94,7 +94,7 @@ def render_grid_trace_svg(rows: Sequence[Mapping[str, object]], title: str) -> s
 
 def render_cmdp_prob_svg() -> str:
     return """
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 300" width="820" height="300" role="img" aria-label="CMDP and probabilistic safety comparison">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 300" width="900" height="300" role="img" aria-label="CMDP and probabilistic safety comparison">
   <defs>
     <marker id="cmdp-prob-arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
       <path d="M0,0 L0,6 L9,3 z" fill="#4b5563" />
@@ -115,12 +115,12 @@ def render_cmdp_prob_svg() -> str:
   <text x="500" y="138" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#7f1d1d">unsafe bit</text>
   <path d="M538 112 C590 74 628 74 670 94" fill="none" stroke="#4b5563" stroke-width="2" marker-end="url(#cmdp-prob-arrow)"/>
   <path d="M538 132 C590 180 628 180 670 158" fill="none" stroke="#4b5563" stroke-width="2" marker-end="url(#cmdp-prob-arrow)"/>
-  <rect x="680" y="62" width="118" height="70" rx="8" fill="#ecfdf5" stroke="#86efac"/>
-  <text x="739" y="90" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#14532d">cmdp</text>
-  <text x="739" y="112" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#166534">sum cost &lt;= budget</text>
-  <rect x="680" y="150" width="118" height="70" rx="8" fill="#fff7ed" stroke="#fdba74"/>
-  <text x="739" y="178" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#7c2d12">prob</text>
-  <text x="739" y="200" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#9a3412">mean unsafe &lt;= alpha</text>
+  <rect x="680" y="62" width="180" height="70" rx="8" fill="#ecfdf5" stroke="#86efac"/>
+  <text x="770" y="90" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#14532d">cmdp</text>
+  <text x="770" y="112" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#166534">sum cost &lt;= budget</text>
+  <rect x="680" y="150" width="180" height="70" rx="8" fill="#fff7ed" stroke="#fdba74"/>
+  <text x="770" y="178" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#7c2d12">prob</text>
+  <text x="770" y="200" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#9a3412">mean unsafe &lt;= alpha</text>
 </svg>
 """.strip()
 
