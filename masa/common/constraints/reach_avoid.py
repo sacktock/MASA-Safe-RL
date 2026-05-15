@@ -61,7 +61,7 @@ class ReachAvoid(Constraint):
 
     """
 
-    def __init__(avoid_label: str, reach_label: str):
+    def __init__(self, avoid_label: str, reach_label: str):
         self.avoid_label = avoid_label
         self.reach_label = reach_label
 
