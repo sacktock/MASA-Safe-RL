@@ -119,12 +119,14 @@ def test_constraints_tour_notebook_is_valid_and_executable():
         "colour_grid_world",
         "avoid_label",
         "reach_label",
+        "notebooks.tutorials.helpers.constraints_tour",
         "SVG",
         "render_grid_trace_svg",
         "render_dfa_svg",
         "render_constraint_semantics_svg",
     ):
         assert token in source
+    assert "<svg" not in source
 
     client = NotebookClient(
         notebook,
