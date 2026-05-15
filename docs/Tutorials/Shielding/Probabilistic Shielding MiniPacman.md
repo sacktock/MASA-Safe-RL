@@ -73,9 +73,9 @@ The projection step follows the geometry described in the probabilistic shieldin
 
 ```{figure} ../../_static/tutorials/probabilistic_shielding_minipacman/simplex_projection.svg
 :alt: Toy MDP and simplex projection for probabilistic shielding.
-:width: 980px
+:width: 1040px
 
-For budget `q=0.10`, `_project_act` keeps action distributions inside the safe half-space `0.02*pi0 + 0.08*pi1 + 0.20*pi2 <= 0.10`.
+For budget `q=0.10`, `_project_act` keeps action distributions inside the green safe half-space `0.02*pi0 + 0.08*pi1 + 0.20*pi2 <= 0.10`. The red part of the simplex is the clipped-away region above that budget.
 ```
 
 ## Inspect Projected Safe Actions
