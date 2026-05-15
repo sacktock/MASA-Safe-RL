@@ -1,0 +1,87 @@
+"""Visual helpers for the probabilistic shielding tutorial."""
+
+from __future__ import annotations
+
+
+def render_simplex_projection_svg() -> str:
+    """Render a tiny-MDP simplex projection diagram as an SVG string."""
+    return """
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 540" width="980" height="540" role="img" aria-label="Toy MDP and probability simplex projection for probabilistic shielding">
+  <defs>
+    <marker id="simplex-arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#374151" />
+    </marker>
+    <marker id="simplex-red-arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#b91c1c" />
+    </marker>
+  </defs>
+  <rect width="100%" height="100%" fill="#ffffff"/>
+
+  <text x="28" y="34" font-family="sans-serif" font-size="18" font-weight="700" fill="#111827">Projection geometry on a tiny MDP</text>
+  <text x="28" y="58" font-family="sans-serif" font-size="12" fill="#4b5563">Sound VI gives beta(safe)=0, beta(unsafe)=1, and beta(s0)=min(0.02, 0.08, 0.20)=0.02.</text>
+
+  <rect x="28" y="86" width="330" height="390" rx="8" fill="#f8fafc" stroke="#d1d5db"/>
+  <text x="48" y="116" font-family="sans-serif" font-size="14" font-weight="700" fill="#111827">Toy safety dynamics</text>
+
+  <circle cx="102" cy="245" r="34" fill="#eff6ff" stroke="#2563eb" stroke-width="2.5"/>
+  <text x="102" y="241" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700" fill="#111827">s0</text>
+  <text x="102" y="260" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#1d4ed8">beta=0.02</text>
+
+  <circle cx="280" cy="164" r="34" fill="#dcfce7" stroke="#16a34a" stroke-width="2.5"/>
+  <text x="280" y="160" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700" fill="#111827">safe</text>
+  <text x="280" y="179" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#166534">beta=0</text>
+
+  <circle cx="280" cy="326" r="34" fill="#fee2e2" stroke="#dc2626" stroke-width="2.5"/>
+  <text x="280" y="322" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700" fill="#111827">unsafe</text>
+  <text x="280" y="341" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#991b1b">beta=1</text>
+
+  <path d="M134 235 C176 194, 205 174, 244 166" fill="none" stroke="#374151" stroke-width="1.8" marker-end="url(#simplex-arrow)"/>
+  <path d="M136 245 C177 232, 206 228, 247 229" fill="none" stroke="#374151" stroke-width="1.8" marker-end="url(#simplex-arrow)"/>
+  <path d="M134 257 C176 296, 205 318, 244 326" fill="none" stroke="#374151" stroke-width="1.8" marker-end="url(#simplex-arrow)"/>
+
+  <text x="168" y="169" font-family="sans-serif" font-size="12" font-weight="700" fill="#111827">a0</text>
+  <text x="166" y="185" font-family="sans-serif" font-size="11" fill="#374151">risk 0.02</text>
+  <text x="168" y="222" font-family="sans-serif" font-size="12" font-weight="700" fill="#111827">a1</text>
+  <text x="166" y="238" font-family="sans-serif" font-size="11" fill="#374151">risk 0.08</text>
+  <text x="168" y="319" font-family="sans-serif" font-size="12" font-weight="700" fill="#111827">a2</text>
+  <text x="166" y="335" font-family="sans-serif" font-size="11" fill="#374151">risk 0.20</text>
+
+  <rect x="54" y="394" width="278" height="52" rx="7" fill="#ffffff" stroke="#d1d5db"/>
+  <text x="70" y="416" font-family="sans-serif" font-size="12" font-weight="700" fill="#111827">Budget at s0: q=0.10</text>
+  <text x="70" y="436" font-family="sans-serif" font-size="11" fill="#4b5563">A mixed action is safe when its expected risk is at most q.</text>
+
+  <rect x="386" y="86" width="566" height="390" rx="8" fill="#f8fafc" stroke="#d1d5db"/>
+  <text x="406" y="116" font-family="sans-serif" font-size="14" font-weight="700" fill="#111827">Action probability simplex</text>
+  <text x="406" y="136" font-family="sans-serif" font-size="12" fill="#4b5563">0.02*pi0 + 0.08*pi1 + 0.20*pi2 &lt;= 0.10</text>
+
+  <polygon points="462,430 660,170 858,430" fill="#ffffff" stroke="#111827" stroke-width="2"/>
+  <polygon points="462,430 660,170 693,214 638,430" fill="#dcfce7" stroke="#16a34a" stroke-width="1.5" opacity="0.88"/>
+  <polygon points="638,430 693,214 858,430" fill="#fee2e2" stroke="#ef4444" stroke-width="1.5" opacity="0.88"/>
+  <line x1="638" y1="430" x2="693" y2="214" stroke="#b91c1c" stroke-width="2.3" stroke-dasharray="7 5"/>
+
+  <text x="444" y="456" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="700" fill="#111827">pi(a0)</text>
+  <text x="660" y="153" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="700" fill="#111827">pi(a1)</text>
+  <text x="876" y="456" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="700" fill="#111827">pi(a2)</text>
+
+  <circle cx="638" cy="430" r="5" fill="#b91c1c"/>
+  <text x="638" y="415" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#7f1d1d">P02=(0.556,0,0.444)</text>
+  <circle cx="693" cy="214" r="5" fill="#b91c1c"/>
+  <text x="720" y="205" font-family="sans-serif" font-size="11" fill="#7f1d1d">P12=(0,0.833,0.167)</text>
+
+  <circle cx="660" cy="343" r="7" fill="#2563eb" stroke="#ffffff" stroke-width="2"/>
+  <text x="660" y="326" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" fill="#1d4ed8">projected</text>
+  <text x="660" y="358" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#1d4ed8">(1/3,1/3,1/3)</text>
+
+  <line x1="850" y1="422" x2="668" y2="349" stroke="#b91c1c" stroke-width="2.2" stroke-dasharray="6 5" marker-end="url(#simplex-red-arrow)"/>
+  <circle cx="858" cy="430" r="7" fill="#dc2626" stroke="#ffffff" stroke-width="2"/>
+  <text x="806" y="396" font-family="sans-serif" font-size="11" font-weight="700" fill="#991b1b">risky pure action</text>
+
+  <text x="482" y="190" font-family="sans-serif" font-size="11" font-weight="700" fill="#166534">safe polytope</text>
+  <text x="770" y="344" font-family="sans-serif" font-size="11" font-weight="700" fill="#991b1b">clipped away</text>
+
+  <rect x="406" y="386" width="198" height="60" rx="7" fill="#ffffff" stroke="#d1d5db"/>
+  <text x="422" y="410" font-family="sans-serif" font-size="12" font-weight="700" fill="#111827">What _project_act does</text>
+  <text x="422" y="430" font-family="sans-serif" font-size="11" fill="#4b5563">It maps proposed actions back onto</text>
+  <text x="422" y="446" font-family="sans-serif" font-size="11" fill="#4b5563">the safe part of this simplex.</text>
+</svg>
+""".strip()

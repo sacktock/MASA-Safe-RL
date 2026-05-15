@@ -67,6 +67,17 @@ The augmented action format is:
 
 The first two entries select candidate MiniPacman actions. The remaining entries encode candidate successor safety-bound choices from `0` to `granularity`.
 
+## Projection Geometry on a Toy MDP
+
+The projection step follows the geometry described in the probabilistic shielding paper: action choices live in a probability simplex, and the safety budget cuts out the unsafe part of that simplex. The tiny MDP below uses exact reach-unsafe values so the clipping operation is visible before we inspect the larger MiniPacman state.
+
+```{figure} ../../_static/tutorials/probabilistic_shielding_minipacman/simplex_projection.svg
+:alt: Toy MDP and simplex projection for probabilistic shielding.
+:width: 980px
+
+For budget `q=0.10`, `_project_act` keeps action distributions inside the safe half-space `0.02*pi0 + 0.08*pi1 + 0.20*pi2 <= 0.10`.
+```
+
 ## Inspect Projected Safe Actions
 
 The notebook uses `_parse_act` and `_project_act` to show how candidate augmented actions are projected. These are internal inspection hooks, not a stable public API.
