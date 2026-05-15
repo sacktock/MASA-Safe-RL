@@ -121,6 +121,7 @@ def test_constraints_tour_notebook_is_valid_and_executable():
         "reach_label",
         "notebooks.tutorials.helpers.constraints_tour",
         "SVG",
+        "render_cmdp_prob_svg",
         "render_grid_trace_svg",
         "render_constraint_semantics_svg",
     ):

@@ -92,30 +92,35 @@ def render_grid_trace_svg(rows: Sequence[Mapping[str, object]], title: str) -> s
     return "\n".join(parts)
 
 
-def render_dfa_svg() -> str:
+def render_cmdp_prob_svg() -> str:
     return """
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 190" width="520" height="190" role="img" aria-label="Never blue DFA">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 300" width="820" height="300" role="img" aria-label="CMDP and probabilistic safety comparison">
   <defs>
-    <marker id="dfa-arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
-      <path d="M0,0 L0,6 L9,3 z" fill="#111827" />
+    <marker id="cmdp-prob-arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#4b5563" />
     </marker>
   </defs>
   <rect width="100%" height="100%" fill="#ffffff"/>
-  <text x="24" y="28" font-family="sans-serif" font-size="16" font-weight="700" fill="#111827">Never-blue DFA used by ltl_safety</text>
-  <line x1="55" y1="96" x2="91" y2="96" stroke="#111827" stroke-width="2.5" marker-end="url(#dfa-arrow)"/>
-  <circle cx="140" cy="96" r="40" fill="#dcfce7" stroke="#166534" stroke-width="3"/>
-  <text x="140" y="91" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700" fill="#14532d">q0</text>
-  <text x="140" y="110" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#14532d">safe</text>
-  <circle cx="380" cy="96" r="42" fill="#fee2e2" stroke="#991b1b" stroke-width="3"/>
-  <circle cx="380" cy="96" r="34" fill="none" stroke="#991b1b" stroke-width="2"/>
-  <text x="380" y="91" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="700" fill="#7f1d1d">q1</text>
-  <text x="380" y="110" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#7f1d1d">unsafe</text>
-  <path d="M180 96 C235 52 285 52 338 96" fill="none" stroke="#111827" stroke-width="2.5" marker-end="url(#dfa-arrow)"/>
-  <text x="260" y="55" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#111827">blue</text>
-  <path d="M122 58 C86 25 190 25 158 58" fill="none" stroke="#166534" stroke-width="2" marker-end="url(#dfa-arrow)"/>
-  <text x="140" y="24" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#166534">implicit not blue loop</text>
-  <path d="M362 58 C326 25 430 25 398 58" fill="none" stroke="#991b1b" stroke-width="2" marker-end="url(#dfa-arrow)"/>
-  <text x="380" y="24" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#991b1b">implicit loop after violation</text>
+  <text x="24" y="30" font-family="sans-serif" font-size="16" font-weight="700" fill="#111827">CMDP and probabilistic safety use the same unsafe signal</text>
+  <rect x="30" y="86" width="150" height="72" rx="8" fill="#f3f4f6" stroke="#9ca3af"/>
+  <text x="105" y="115" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#111827">labels</text>
+  <text x="105" y="138" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#374151">blue, goal, ...</text>
+  <line x1="180" y1="122" x2="232" y2="122" stroke="#4b5563" stroke-width="2" marker-end="url(#cmdp-prob-arrow)"/>
+  <rect x="240" y="86" width="162" height="72" rx="8" fill="#eff6ff" stroke="#93c5fd"/>
+  <text x="321" y="115" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#111827">cost_fn(labels)</text>
+  <text x="321" y="138" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#374151">cost >= 0.5 is unsafe</text>
+  <line x1="402" y1="122" x2="456" y2="122" stroke="#4b5563" stroke-width="2" marker-end="url(#cmdp-prob-arrow)"/>
+  <circle cx="500" cy="122" r="38" fill="#fee2e2" stroke="#ef4444" stroke-width="2"/>
+  <text x="500" y="117" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#7f1d1d">u_t</text>
+  <text x="500" y="138" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#7f1d1d">unsafe bit</text>
+  <path d="M538 112 C590 74 628 74 670 94" fill="none" stroke="#4b5563" stroke-width="2" marker-end="url(#cmdp-prob-arrow)"/>
+  <path d="M538 132 C590 180 628 180 670 158" fill="none" stroke="#4b5563" stroke-width="2" marker-end="url(#cmdp-prob-arrow)"/>
+  <rect x="680" y="62" width="118" height="70" rx="8" fill="#ecfdf5" stroke="#86efac"/>
+  <text x="739" y="90" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#14532d">cmdp</text>
+  <text x="739" y="112" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#166534">sum cost &lt;= budget</text>
+  <rect x="680" y="150" width="118" height="70" rx="8" fill="#fff7ed" stroke="#fdba74"/>
+  <text x="739" y="178" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#7c2d12">prob</text>
+  <text x="739" y="200" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#9a3412">mean unsafe &lt;= alpha</text>
 </svg>
 """.strip()
 

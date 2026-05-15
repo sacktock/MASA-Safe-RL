@@ -68,6 +68,17 @@ Goal script:
 Seed `4` with actions `[2] * 8 + [1] * 8` reaches `goal` without visiting `blue`.
 ```
 
+### CMDP and Probabilistic Safety
+
+`cmdp` and `prob` both start from the same label-derived unsafe signal. They differ in how they aggregate it over an episode.
+
+```{figure} ../../_static/tutorials/constraints_tour/cmdp_prob.svg
+:alt: CMDP and probabilistic safety both derive metrics from a label-based unsafe signal.
+:width: 820px
+
+`cmdp` checks accumulated cost against a budget, while `prob` checks the fraction of unsafe steps against `alpha`.
+```
+
 ### Constraint Semantics
 
 The same labels are fed to every constraint. The difference is the safety state each constraint derives from those labels.
