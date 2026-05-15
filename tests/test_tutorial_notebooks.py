@@ -12,6 +12,7 @@ TUTORIAL_02 = REPO_ROOT / "notebooks" / "tutorials" / "02_labels_costs_and_infos
 TUTORIAL_03 = REPO_ROOT / "notebooks" / "tutorials" / "03_wrapper_stack.ipynb"
 TUTORIAL_04 = REPO_ROOT / "notebooks" / "tutorials" / "04_constraints_tour.ipynb"
 TUTORIAL_05 = REPO_ROOT / "notebooks" / "tutorials" / "05_ltl_safety_colour_bomb.ipynb"
+TUTORIAL_06 = REPO_ROOT / "notebooks" / "tutorials" / "06_tabular_safe_rl_baselines.ipynb"
 
 
 def _notebook_source(notebook: nbformat.NotebookNode) -> str:
@@ -166,6 +167,43 @@ def test_ltl_safety_colour_bomb_notebook_is_valid_and_executable():
     client = NotebookClient(
         notebook,
         timeout=120,
+        kernel_name="python3",
+        allow_errors=False,
+        resources={"metadata": {"path": str(REPO_ROOT)}},
+    )
+    client.execute()
+
+
+def test_tabular_safe_rl_baselines_notebook_is_valid_and_executable():
+    notebook = nbformat.read(TUTORIAL_06, as_version=4)
+
+    assert notebook["nbformat"] == 4
+
+    source = _notebook_source(notebook)
+    for token in (
+        "colour_grid_world",
+        "cmdp",
+        "QL",
+        "QL_Lambda",
+        "LCRL",
+        "SEM",
+        "RECREG",
+        "q_learning",
+        "q_learning_lambda",
+        "lcrl",
+        "sem",
+        "recreg",
+        "num_frames=20",
+        "cost_lambda",
+        "override_rate",
+        "satisfied",
+    ):
+        assert token in source
+    assert "<svg" not in source
+
+    client = NotebookClient(
+        notebook,
+        timeout=180,
         kernel_name="python3",
         allow_errors=False,
         resources={"metadata": {"path": str(REPO_ROOT)}},
