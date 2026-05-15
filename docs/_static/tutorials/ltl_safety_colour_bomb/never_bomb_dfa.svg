@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 250" width="440" height="250" role="img" aria-label="Inline DFA: never observe bomb">
+<defs>
+<marker id="dfa-arrow" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+<path d="M0,0 L0,6 L8,3 z" fill="#374151"/>
+</marker>
+</defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="18" y="26" font-family="sans-serif" font-size="16" font-weight="700" fill="#111827">Inline DFA: never observe bomb</text>
+<line x1="114.5" y1="122" x2="135.5" y2="122" stroke="#374151" stroke-width="2.5" marker-end="url(#dfa-arrow)"/>
+<path d="M188.5 122 C220.0 76, 220.0 76, 251.5 122" fill="none" stroke="#374151" stroke-width="2" marker-end="url(#dfa-arrow)"/>
+<text x="220.0" y="70" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" fill="#111827">bomb</text>
+<path d="M267.5 96 C235.5 52, 319.5 52, 287.5 96" fill="none" stroke="#374151" stroke-width="2" marker-end="url(#dfa-arrow)"/>
+<text x="277.5" y="50" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#374151">any label</text>
+<circle cx="162.5" cy="122" r="26" fill="#dcfce7" stroke="#166534" stroke-width="3"/>
+<text x="162.5" y="119" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#111827">q0</text>
+<text x="162.5" y="137" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#374151">safe</text>
+<circle cx="277.5" cy="122" r="26" fill="#fee2e2" stroke="#991b1b" stroke-width="3"/>
+<circle cx="277.5" cy="122" r="19" fill="none" stroke="#991b1b" stroke-width="2"/>
+<text x="277.5" y="119" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#111827">q1</text>
+<text x="277.5" y="137" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#374151">unsafe</text>
+</svg>

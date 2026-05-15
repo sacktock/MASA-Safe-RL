@@ -11,6 +11,7 @@ TUTORIAL_01 = REPO_ROOT / "notebooks" / "tutorials" / "01_first_masa_experiment.
 TUTORIAL_02 = REPO_ROOT / "notebooks" / "tutorials" / "02_labels_costs_and_infos.ipynb"
 TUTORIAL_03 = REPO_ROOT / "notebooks" / "tutorials" / "03_wrapper_stack.ipynb"
 TUTORIAL_04 = REPO_ROOT / "notebooks" / "tutorials" / "04_constraints_tour.ipynb"
+TUTORIAL_05 = REPO_ROOT / "notebooks" / "tutorials" / "05_ltl_safety_colour_bomb.ipynb"
 
 
 def _notebook_source(notebook: nbformat.NotebookNode) -> str:
@@ -124,6 +125,40 @@ def test_constraints_tour_notebook_is_valid_and_executable():
         "render_cmdp_prob_svg",
         "render_grid_trace_svg",
         "render_constraint_semantics_svg",
+    ):
+        assert token in source
+    assert "<svg" not in source
+
+    client = NotebookClient(
+        notebook,
+        timeout=120,
+        kernel_name="python3",
+        allow_errors=False,
+        resources={"metadata": {"path": str(REPO_ROOT)}},
+    )
+    client.execute()
+
+
+def test_ltl_safety_colour_bomb_notebook_is_valid_and_executable():
+    notebook = nbformat.read(TUTORIAL_05, as_version=4)
+
+    assert notebook["nbformat"] == 4
+
+    source = _notebook_source(notebook)
+    for token in (
+        "colour_bomb_grid_world",
+        "colour_bomb_grid_world_v2",
+        "ltl_safety",
+        "DFA",
+        "Atom",
+        "property_2",
+        "property_3",
+        'obs_type="dict"',
+        "automaton_state",
+        "cum_unsafe",
+        "satisfied",
+        "render_colour_bomb_trace_svg",
+        "render_ltl_rollout_timeline_svg",
     ):
         assert token in source
     assert "<svg" not in source
