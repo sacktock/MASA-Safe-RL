@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 485 220" width="485" height="220" role="img" aria-label="Loaded property_2 DFA: stay on bomb once before leaving">
+<defs>
+<marker id="dfa-arrow" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+<path d="M0,0 L0,6 L8,3 z" fill="#374151"/>
+</marker>
+</defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="18" y="26" font-family="sans-serif" font-size="16" font-weight="700" fill="#111827">Loaded property_2 DFA: stay on bomb once before leaving</text>
+<line x1="22" y1="92" x2="43" y2="92" stroke="#374151" stroke-width="2.5" marker-end="url(#dfa-arrow)"/>
+<path d="M96 92 C127 46, 127 46, 159 92" fill="none" stroke="#374151" stroke-width="2" marker-end="url(#dfa-arrow)"/>
+<text x="127" y="40" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" fill="#111827">bomb</text>
+<path d="M211 92 C242 46, 242 46, 274 92" fill="none" stroke="#374151" stroke-width="2" marker-end="url(#dfa-arrow)"/>
+<text x="242" y="40" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" fill="#111827">bomb</text>
+<path d="M211 92 C300 46, 300 46, 389 92" fill="none" stroke="#374151" stroke-width="2" marker-end="url(#dfa-arrow)"/>
+<text x="300" y="40" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" fill="#111827">not bomb</text>
+<path d="M326 92 C185 144, 185 144, 44 92" fill="none" stroke="#374151" stroke-width="2" marker-end="url(#dfa-arrow)"/>
+<text x="185" y="160" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" fill="#111827">not bomb</text>
+<circle cx="70" cy="92" r="26" fill="#dcfce7" stroke="#166534" stroke-width="3"/>
+<text x="70" y="89" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#111827">q0</text>
+<text x="70" y="107" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#374151">safe</text>
+<circle cx="185" cy="92" r="26" fill="#dcfce7" stroke="#166534" stroke-width="3"/>
+<text x="185" y="89" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#111827">q1</text>
+<text x="185" y="107" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#374151">armed</text>
+<circle cx="300" cy="92" r="26" fill="#dcfce7" stroke="#166534" stroke-width="3"/>
+<text x="300" y="89" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#111827">q2</text>
+<text x="300" y="107" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#374151">diffused</text>
+<circle cx="415" cy="92" r="26" fill="#fee2e2" stroke="#991b1b" stroke-width="3"/>
+<circle cx="415" cy="92" r="19" fill="none" stroke="#991b1b" stroke-width="2"/>
+<text x="415" y="89" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#111827">q3</text>
+<text x="415" y="107" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#374151">unsafe</text>
+</svg>
