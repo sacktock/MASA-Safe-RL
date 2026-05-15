@@ -23,6 +23,6 @@ property_2:
     dfa: masa.examples.colour_bomb_grid_world.property_2:make_dfa
 
 property_3:
-constraint:
+  constraint:
     type: ltl_dfa
     dfa: masa.examples.colour_bomb_grid_world.property_3:make_dfa

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, Any
+from typing import Optional, Any, List
 import sys
 import importlib.resources as resources
 import argparse
@@ -27,9 +27,6 @@ def load_yaml(package: str, filename: str) -> dict[str, Any]:
     path = resources.files(package).joinpath(filename)
     return yaml.YAML(typ="safe").load(path.read_text())
 
-def split_cfgs(value: str) -> list[str]:
-    return [v.strip() for v in value.split(" ") if v.strip()]
-
 def select_cfg(
     package: str,
     filename: str,
@@ -37,7 +34,7 @@ def select_cfg(
 ) -> dict[str, Any]:
     configs = load_yaml(package, filename)
     config = Config(configs["defaults"])
-    for name in split_cfgs(selected):
+    for name in selected:
         config = config.update(configs[name])
     return config
 
@@ -55,6 +52,29 @@ def deep_update(config: Config, overrides: dict[str, Any]) -> Config:
             config = config.update({f"{section}.{key}": value})
     return config
     
+
+def parse_config(env_id, env_cfgs, algo, algo_cfgs) -> Config:
+    configs = load_yaml("masa.configs", "defaults.yaml")
+    config = Config(configs["defaults"])
+
+    env_configs = load_yaml("masa.configs.envs", f"{env_id}.yaml")
+    env_config = Config(env_configs["defaults"])
+    config = config.update(env_config)
+    for name in env_cfgs:
+        config = config.update(env_configs[name])
+
+    algo_config = select_cfg(
+        "masa.configs.algorithms",
+        f"{algo}.yaml",
+        algo_cfgs,
+    )
+
+    config = config.update(env_config)
+    base = {algo: {**algo_config}, **config}
+    config = Config(base)
+
+    return config
+
 
 def print_config(config: Config, algo: str) -> None:
     console.print()
@@ -77,7 +97,12 @@ def print_config(config: Config, algo: str) -> None:
     console.print("[bold green]Beginning training ...[/]")
 
 
-@app.command()
+@app.command(
+    context_settings={
+        "allow_extra_args": True,
+        "ignore_unknown_options": True,
+    }
+)
 def run(
     ctx: typer.Context,
     env_id: str = typer.Option(
@@ -90,20 +115,20 @@ def run(
         "--algo",
         help="Algorithm name registered in ALGO_REGISTRY.",
     ),
+    env_cfgs: List[str] = typer.Option(
+        [],
+        "--env-cfgs",
+        help="Environment config variant(s)",
+    ),
+    algo_cfgs: List[str] = typer.Option(
+        [],
+        "--algo-cfgs",
+        help="Algorithm config variant(s)",
+    ),
     constraint: Optional[str] = typer.Option(
         None,
         "--constraint",
         help="Constraint config name.",
-    ),
-    env_cfgs: Optional[str] = typer.Option(
-        None,
-        "--env-cfgs",
-        help="Environment config variant(s)",
-    ),
-    algo_cfgs: Optional[str] = typer.Option(
-        None,
-        "--algo-cfgs",
-        help="Algorithm config variant(s)",
     ),
     custom_cfgs: Optional[str] = typer.Option(
         None,
@@ -126,7 +151,7 @@ def run(
 
         masa run --env-id bridge_crossing --algo ppo --constraint cmdp \
             --env.max_episode_steps 300 \
-            --algo.learning_rate 0.0003 \
+            --ppo.learning_rate 0.0003 \
             --constraint.cost_budget 10
     """
     load_plugins()
@@ -146,23 +171,7 @@ def run(
             f"Unknown constraint '{constraint}'. Available: {list(CONSTRAINT_REGISTRY.keys())}"
         )
 
-    configs = load_yaml("masa.configs", "defaults.yaml")
-    config = Config(configs["defaults"])
-
-    env_config = select_cfg(
-        "masa.configs.envs",
-        f"{env_id}.yaml",
-        env_cfg,
-    )
-
-    algo_config = select_cfg(
-        "masa.configs.algorithms",
-        f"{algo}.yaml",
-        algo_cfg,
-    )
-
-    config.update(env_config)
-    config[algo] = algo_config
+    config = parse_config(env_id, env_cfgs, algo, algo_cfgs)
 
     custom_config = load_custom_cfg(custom_cfgs)
     config = deep_update(config, custom_config)
@@ -202,7 +211,7 @@ def run(
 
     train_env = env_fn()
     
-    algo_cls = ALGO_REGISTRY[algo]
+    algo_cls = ALGO_REGISTRY.get(algo)
     algo_kwargs = dict(config[algo])
 
     base_kwargs = {
@@ -227,7 +236,12 @@ def run(
     model.train(config.run.total_timesteps, **run_kwargs)
 
 
-@app.command()
+@app.command(
+    context_settings={
+        "allow_extra_args": True,
+        "ignore_unknown_options": True,
+    }
+)
 def example(
     ctx: typer.Context,
     example_script: str = typer.Argument(help="Example script in masa.examples."),

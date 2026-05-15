@@ -18,3 +18,5 @@ ipywidgets>=8.1.5
 moviepy>=2.2.1,<3.0.0
 pillow>=11.3.0,<12.0.0
 pygame>=2.6.1
+ipywidgets>=8.1.5
+typer>=0.25.1

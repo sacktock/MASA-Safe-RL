@@ -17,3 +17,14 @@ defaults:
   final_epsilon: 0.1
   epsilon_decay: linear
   epsilon_decay_frames: 10000
+
+colour_bomb_grid_world_v2:
+  task_alpha: 0.05
+  task_gamma: 0.95
+  safe_alpha: 0.05
+  safe_gamma: 0.99
+  model_free_alpha: 0.05
+  mode: model_free
+  horizon: 9
+  cost_coef: 10.0
+  

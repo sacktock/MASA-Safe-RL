@@ -1,4 +1,4 @@
-from typing import Callable, Dict, Union
+from typing import Callable, Dict, Union, Iterator
 import importlib
 
 Factory = Union[Callable, str]
@@ -26,6 +26,9 @@ class Registry:
 
     def keys(self) -> list[str]:
         return list([str(key) for key in self._items.keys()])
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._items)
 
 
 ENV_REGISTRY = Registry()

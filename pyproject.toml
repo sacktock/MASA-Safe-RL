@@ -28,6 +28,7 @@ dependencies = [
     "pillow>=11.3.0,<12.0.0",
     "pygame>=2.6.1",
     "ipywidgets>=8.1.5",
+    "typer>=0.25.1",
 ]
 
 [project.urls]
@@ -39,7 +40,7 @@ Documentation = "https://sacktock.github.io/MASA-Safe-RL/"
 include-package-data = true
 
 [project.scripts]
-masa = "omnisafe.cli.cli_app:app"
+masa = "masa.cli.cli_app:app"
 
 [tool.setuptools.packages.find]
 include = ["masa", "masa.*"]

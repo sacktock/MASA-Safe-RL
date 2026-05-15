@@ -1,7 +1,7 @@
 defaults:
   env:
     id: media_streaming
-    max_episode_steps: 250
+    max_episode_steps: 40
     label_fn: masa.envs.tabular.media_streaming:label_fn
     cost_fn: masa.envs.tabular.media_streaming:cost_fn
 
