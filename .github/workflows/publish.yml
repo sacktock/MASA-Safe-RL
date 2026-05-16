@@ -1,0 +1,95 @@
+name: Publish to PyPI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - pyproject.toml
+
+jobs:
+  publish:
+    name: Publish package
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Check project version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          before="${{ github.event.before }}"
+          if [[ -z "${before}" || "${before}" =~ ^0+$ ]]; then
+            if git rev-parse HEAD^ >/dev/null 2>&1; then
+              before="$(git rev-parse HEAD^)"
+            else
+              before=""
+            fi
+          fi
+
+          if [[ -n "${before}" ]]; then
+            if ! git show "${before}:pyproject.toml" > /tmp/pyproject-before.toml 2>/dev/null; then
+              : > /tmp/pyproject-before.toml
+            fi
+          else
+            : > /tmp/pyproject-before.toml
+          fi
+
+          python - <<'PY'
+          import os
+          import tomllib
+
+
+          def read_version(path):
+              if os.path.getsize(path) == 0:
+                  return ""
+              with open(path, "rb") as file:
+                  data = tomllib.load(file)
+              return data.get("project", {}).get("version", "")
+
+
+          old_version = read_version("/tmp/pyproject-before.toml")
+          new_version = read_version("pyproject.toml")
+          if not new_version:
+              raise SystemExit("pyproject.toml is missing [project].version")
+
+          changed = old_version != new_version
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"old_version={old_version}\n")
+              output.write(f"new_version={new_version}\n")
+              output.write(f"changed={str(changed).lower()}\n")
+
+          if changed:
+              print(f"Project version changed: {old_version or '<none>'} -> {new_version}")
+          else:
+              print(f"Project version unchanged: {new_version}")
+          PY
+
+      - name: Install uv
+        if: steps.version.outputs.changed == 'true'
+        uses: astral-sh/setup-uv@v8
+
+      - name: Build
+        if: steps.version.outputs.changed == 'true'
+        run: uv build --no-sources --clear
+
+      - name: Publish
+        if: steps.version.outputs.changed == 'true'
+        run: uv publish --trusted-publishing always
