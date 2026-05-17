@@ -4,7 +4,7 @@ wandb_project: ProbShield-Benchmarks-2
 run_schema:
   pattern: '^(?P<env>.+?)_(?P<variant>[a-z]+_v\d+)_seed(?P<seed>\d+)$'
 
-cache_dir: ./wandb_cache
+cache_dir: ../../../../wandb_csvs
 output_dir: ./plots
 
 palette: colorblind

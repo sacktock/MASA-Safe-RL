@@ -81,7 +81,7 @@ Load extra figure specs from another module (the package ships only `performance
 python -m masa.plotting --config <your-yaml> --specs-from <dotted.module>
 ```
 
-See [examples/probshield/](examples/probshield/) for a worked example that adds three diagnostic specs via this flag.
+Use this flag to register your own `PlotSpec` modules alongside the default `performance` spec.
 
 ## Configuration
 
@@ -201,10 +201,6 @@ python -m masa.plotting --config <your-yaml> --specs-from my_specs
 
 The new spec is then available via `--specs my_plot`.
 
-## Examples
-
-* [examples/probshield/](examples/probshield/) registers three ProbShield safety diagnostic specs (`margin`, `margin_dist`, `betas`) and ships a paper.yaml that compares four variants across four environments.
-
 ## File map
 
 | File                       | Role                                                          |
@@ -223,4 +219,3 @@ The new spec is then available via `--specs my_plot`.
 | `specs/__init__.py`        | Spec registry (auto registers `performance`)                  |
 | `specs/base.py`            | `PlotSpec`, `Panel`, `Band`, `HLine`, `RenderContext`         |
 | `specs/performance.py`     | Generic 2 by 2 reward and satisfaction figure                 |
-| `examples/probshield/`     | Worked example: three ProbShield diagnostic specs             |

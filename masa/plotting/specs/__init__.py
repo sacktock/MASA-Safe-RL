@@ -37,6 +37,7 @@ def all_specs(filter_ids: Optional[list[str]] = None) -> list[PlotSpec]:
 
 # Auto register the generic spec that ships with the library.
 from . import performance  # noqa: E402, F401
+from . import margin       # noqa: E402, F401
 
 
 __all__ = [

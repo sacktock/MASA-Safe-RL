@@ -9,8 +9,8 @@ Example (generic researcher, ships with the ``performance`` spec):
 Example (load extra specs from another module before resolving):
 
     python -m masa.plotting \\
-        --config masa/plotting/examples/probshield/paper.yaml \\
-        --specs-from masa.plotting.examples.probshield \\
+        --config <your-yaml> \\
+        --specs-from <your.spec.module> \\
         --stages process,render
 """
 
