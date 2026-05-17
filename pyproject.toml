@@ -26,6 +26,10 @@ dependencies = [
     "ipykernel>=7.2.0",
     "pillow>=10.4.0",
     "pygame>=2.6.1",
+    "wandb>=0.17.0",
+    "pandas>=2.3.3",
+    "matplotlib>=3.10.9",
+    "tenacity>=9.0.0",
 ]
 
 [project.urls]

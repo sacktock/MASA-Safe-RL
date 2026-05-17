@@ -1,9 +1,23 @@
-"""Data sources that normalize TensorBoard and W&B logs into a common DataFrame."""
+"""Data sources for MASA plotting.
+
+Three classes live here:
+
+* :class:`TensorBoardSource` and :class:`WandBSource` are tidy long form
+  loaders used by the generic single run plotter (``api.plot_run``,
+  ``run.py``). Both return a DataFrame with columns
+  ``[step, metric, value, run]``.
+* :class:`CachedWandbSource` is the benchmark pipeline downloader: it
+  writes each W&B run's history to its own CSV inside ``Config.cache_dir``
+  with bounded retries, and reads from that cache on subsequent calls.
+  The downstream long form and quantile frames are built in
+  :mod:`masa.plotting.processing`.
+"""
 
 from __future__ import annotations
 
 import os
-from typing import List, Optional
+from pathlib import Path
+from typing import Iterable, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -200,3 +214,95 @@ class WandBSource:
         if self.entity:
             return f"{self.entity}/{self.project}"
         return self.project
+
+
+# ----------------------------------------------------------------------
+# Benchmark pipeline downloader
+# ----------------------------------------------------------------------
+
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
+
+from .config import Config
+from .io_utils import atomic_write_csv, ensure_dir, get_logger
+
+
+_RETRY = dict(
+    reraise=True,
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    retry=retry_if_exception_type(Exception),
+)
+
+
+class CachedWandbSource:
+    """Per run CSV downloader with bounded retries.
+
+    Lists every run in ``Config.wandb_entity/wandb_project`` and writes each
+    run's history to ``Config.cache_dir/{run.name}.csv``. Re runs skip the API
+    call when a CSV already exists, unless ``Config.force_download`` is set.
+    The downstream long form and quantile frames are built by
+    :func:`masa.plotting.processing.load_or_build`.
+    """
+
+    def __init__(self, config: Config):
+        self.config = config
+        self.log = get_logger()
+
+    def download(self) -> list[Path]:
+        """Download (or read from cache) every run in the project.
+
+        Returns paths to the per run CSVs in ``config.cache_dir``.
+        Failures on a single run are logged and skipped, never raised.
+        """
+        ensure_dir(self.config.cache_dir)
+        try:
+            runs = list(self._list_runs())
+        except Exception as e:
+            self.log.error(f"W&B run listing failed after retries: {e}")
+            return self._existing_csvs()
+
+        self.log.info(f"W&B reports {len(runs)} runs in {self._project_path()}")
+        paths: list[Path] = []
+        for run in runs:
+            csv_path = self.config.cache_dir / f"{run.name}.csv"
+            if csv_path.exists() and not self.config.force_download:
+                self.log.debug(f"  cache hit: {run.name}")
+                paths.append(csv_path)
+                continue
+            try:
+                df = self._fetch_history(run)
+            except Exception as e:
+                self.log.warning(f"  skipping {run.name}: {e}")
+                continue
+            atomic_write_csv(csv_path, df)
+            self.log.info(f"  downloaded: {run.name}  ({len(df)} rows)")
+            paths.append(csv_path)
+        return paths
+
+    def _project_path(self) -> str:
+        c = self.config
+        return f"{c.wandb_entity}/{c.wandb_project}" if c.wandb_entity else c.wandb_project
+
+    @retry(**_RETRY)
+    def _list_runs(self) -> Iterable:
+        import wandb
+        api = wandb.Api()
+        return api.runs(self._project_path())
+
+    @retry(**_RETRY)
+    def _fetch_history(self, run) -> pd.DataFrame:
+        df = run.history(samples=10_000)
+        if df.empty:
+            raise RuntimeError("history is empty")
+        return df
+
+    def _existing_csvs(self) -> list[Path]:
+        if not self.config.cache_dir.exists():
+            return []
+        return sorted(p for p in self.config.cache_dir.glob("*.csv")
+                      if p.name != "grouped_results.csv")

@@ -219,4 +219,9 @@ __marimo__/
 runs/
 logdir/
 wandb/
+wandb_runs
+wandb_csvs
+wandb_cache
 *Prob_Shielding*
+/masa/plotting/configs/plots/
+/masa/plotting/examples/*/plots/

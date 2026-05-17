@@ -1,0 +1,20 @@
+wandb_entity: terence-fernandes2003-icl
+wandb_project: ProbShield-Benchmarks-2
+
+run_schema:
+  pattern: '^(?P<env>.+?)_(?P<variant>[a-z]+_v\d+)_seed(?P<seed>\d+)$'
+
+cache_dir: ./wandb_cache
+output_dir: ./plots
+
+palette: colorblind
+seed_for_logged_quantiles: 1
+
+# null = fetch every non-internal column from each run
+metrics: null
+
+variants:
+  - {name: disc_v1, label: 'Discrete (v1)', colour: '#0072B2', order: 0}
+  - {name: disc_v2, label: 'Discrete (v2)', colour: '#D55E00', order: 1}
+  - {name: cont_v1, label: 'Continuous (v1)', colour: '#E69F00', order: 2}
+  - {name: cont_v2, label: 'Continuous (v2)', colour: '#56B4E9', order: 3}
