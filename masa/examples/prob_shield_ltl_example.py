@@ -76,7 +76,7 @@ def main():
         init_safety_bound=0.01,
         theta=1e-15,
         max_vi_steps=10_000,
-        granularit=20,
+        granularity=20,
     )
 
     # Now let's initialize PPO

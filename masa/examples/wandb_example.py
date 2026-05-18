@@ -79,3 +79,6 @@ def main():
         # save_freq: int = 0, (not implemented yet)
         stats_window_size=100, # sliding window size for metrics logging
     )
+
+if __name__ == "__main__":
+    main()
