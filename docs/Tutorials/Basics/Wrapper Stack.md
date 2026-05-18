@@ -25,6 +25,7 @@ The manual path uses the same pieces that `make_env` applies internally.
 ```python
 from pathlib import Path
 from pprint import pprint
+from shutil import rmtree
 
 from gymnasium.wrappers import RecordVideo
 
@@ -177,7 +178,7 @@ The final row reaches the blue state, so both environments should report:
 
 `RecordVideo` is not part of the semantic MASA stack. When `record_video=True`, `make_env` wraps the completed stack with Gymnasium's video recorder, so labels, constraints, and monitors behave the same while frames are saved from `render()`.
 
-In the notebook, `Path(mkdtemp(prefix="masa-wrapper-stack-video-"))` creates a fresh directory in Python's default temporary location. On Linux this is usually `/tmp`, so the actual directory will look like `/tmp/masa-wrapper-stack-video-...`. The cell prints the exact directory and MP4 paths. Use a project-relative path, as below, if you want to keep the videos near the repo checkout.
+`Path("videos/tutorial_wrapper_stack")` stores recordings under the repo-local `videos/` directory when the tutorial is run from the project root. The example prints the exact directory and MP4 paths, and clears this tutorial subdirectory before recording so reruns do not mix old and new videos.
 
 `record_video_episode_trigger` is Gymnasium's `episode_trigger`. It receives the zero-based episode id and records that episode when it returns `True`. Common schedules are:
 
@@ -187,7 +188,7 @@ record_every_5_episodes_from_zero = lambda episode_id: episode_id % 5 == 0
 record_human_episodes_5_10_15 = lambda episode_id: (episode_id + 1) % 5 == 0
 ```
 
-For step-based schedules, pass Gymnasium's `step_trigger` through `video_kwargs`. The step id is global across episodes. This starts a fixed-length recording every 500 environment steps:
+Gymnasium's `step_trigger` is useful for fixed-length clips that start immediately on a global environment step. This starts a 500-frame clip every 500 environment steps:
 
 ```python
 video_kwargs={
@@ -196,8 +197,43 @@ video_kwargs={
 }
 ```
 
+If you specifically want the next complete episode after each 500-step boundary, use a small stateful episode trigger and update it from your rollout loop. The example script exposes this as `--trigger-mode step --trigger-value 500`.
+
+```python
+class RecordNextEpisodeEveryNSteps:
+    def __init__(self, interval):
+        self.interval = interval
+        self.total_steps = 0
+        self.next_threshold = interval
+        self.pending_recordings = 0
+
+    def observe_step(self):
+        self.total_steps += 1
+        while self.total_steps >= self.next_threshold:
+            self.pending_recordings += 1
+            self.next_threshold += self.interval
+
+    def __call__(self, episode_id):
+        if self.pending_recordings < 1:
+            return False
+        self.pending_recordings -= 1
+        return True
+
+trigger = RecordNextEpisodeEveryNSteps(500)
+
+env = make_env(
+    ...,
+    record_video=True,
+    record_video_episode_trigger=trigger,
+)
+
+# Inside the rollout loop, after each env.step(...):
+trigger.observe_step()
+```
+
 ```python
 video_dir = Path("videos/tutorial_wrapper_stack")
+rmtree(video_dir, ignore_errors=True)
 print("video directory", video_dir)
 
 video_env = make_env(

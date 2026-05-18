@@ -182,3 +182,35 @@ def test_make_marl_env_recording_is_off_by_default():
         assert not isinstance(env, RecordVideoParallel)
     finally:
         env.close()
+
+
+def test_record_video_example_records_every_nth_episode(tmp_path):
+    from masa.examples.record_video_example import run_recording
+
+    videos = run_recording(
+        video_folder=tmp_path / "episode-trigger",
+        episodes=2,
+        trigger_mode="episode",
+        trigger_value=2,
+        render_window_size=64,
+    )
+
+    assert len(videos) == 1
+    assert videos[0].name == "rl-video-episode-1.mp4"
+    assert videos[0].stat().st_size > 0
+
+
+def test_record_video_example_step_mode_records_next_episode(tmp_path):
+    from masa.examples.record_video_example import run_recording
+
+    videos = run_recording(
+        video_folder=tmp_path / "step-trigger",
+        episodes=2,
+        trigger_mode="step",
+        trigger_value=8,
+        render_window_size=64,
+    )
+
+    assert len(videos) == 1
+    assert videos[0].name == "rl-video-episode-1.mp4"
+    assert videos[0].stat().st_size > 0
