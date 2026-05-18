@@ -10,6 +10,7 @@ on:
 jobs:
   publish:
     name: Publish package
+    if: ${{ ! github.event.repository.fork }}
     runs-on: ubuntu-latest
     environment:
       name: pypi
