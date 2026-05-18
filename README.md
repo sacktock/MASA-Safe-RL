@@ -27,7 +27,7 @@ If you use MASA-Safe-RL in your research please cite it in your publications.
 
 #### Prequisites
 
-Python 3.10+ is required, although later Python versions may not be supported.
+Python 3.10+ is required (3.10 recommonded), later versions may be supported.
 
 #### Installation with conda 
 - Install conda, e.g., via [anaconda](https://anaconda.org/channels/anaconda/packages/conda/overview).
@@ -55,7 +55,11 @@ pip install -e .
 
 #### Installation with PyPI
 
-Coming soon!
+MASA-Safe-RL is now available on PyPI: [MASA-Safe-RL](https://pypi.org/project/MASA-Safe-RL/). 
+
+```bash
+pip install -U MASA-Safe-RL
+```
 
 ### Enabling GPU Acceleration with JAX (Optional)
 
@@ -108,7 +112,6 @@ For live reload while editing, run:
 ```bash
 uv run --locked --group docs sphinx-autobuild docs docs/_build/html
 ```
-
 
 ## Getting in Touch
 

@@ -4,7 +4,7 @@ Quick Start
 Installation
 ------------
 
-Python 3.8+ is required but we recommend Python 3.10 (later Python versions may not be supported).
+Python 3.10+ is required (3.10 recommonded), later versions may be supported.
 
 #### Installation with conda
 - Install conda, e.g., via [anaconda](https://anaconda.org/channels/anaconda/packages/conda/overview).
@@ -33,7 +33,11 @@ pip install -e .
 
 #### Installation with PyPI
 
-Coming soon!
+MASA-Safe-RL is now available on PyPI: [MASA-Safe-RL](https://pypi.org/project/MASA-Safe-RL/). 
+
+```bash
+pip install -U MASA-Safe-RL
+```
 
 ### Enabling GPU Acceleration with JAX (Optional)
 
