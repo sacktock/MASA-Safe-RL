@@ -177,8 +177,28 @@ The final row reaches the blue state, so both environments should report:
 
 `RecordVideo` is not part of the semantic MASA stack. When `record_video=True`, `make_env` wraps the completed stack with Gymnasium's video recorder, so labels, constraints, and monitors behave the same while frames are saved from `render()`.
 
+In the notebook, `Path(mkdtemp(prefix="masa-wrapper-stack-video-"))` creates a fresh directory in Python's default temporary location. On Linux this is usually `/tmp`, so the actual directory will look like `/tmp/masa-wrapper-stack-video-...`. The cell prints the exact directory and MP4 paths. Use a project-relative path, as below, if you want to keep the videos near the repo checkout.
+
+`record_video_episode_trigger` is Gymnasium's `episode_trigger`. It receives the zero-based episode id and records that episode when it returns `True`. Common schedules are:
+
+```python
+record_every_episode = lambda episode_id: True
+record_every_5_episodes_from_zero = lambda episode_id: episode_id % 5 == 0
+record_human_episodes_5_10_15 = lambda episode_id: (episode_id + 1) % 5 == 0
+```
+
+For step-based schedules, pass Gymnasium's `step_trigger` through `video_kwargs`. The step id is global across episodes. This starts a fixed-length recording every 500 environment steps:
+
+```python
+video_kwargs={
+    "step_trigger": lambda step_id: step_id > 0 and step_id % 500 == 0,
+    "video_length": 500,
+}
+```
+
 ```python
 video_dir = Path("videos/tutorial_wrapper_stack")
+print("video directory", video_dir)
 
 video_env = make_env(
     "colour_grid_world",
