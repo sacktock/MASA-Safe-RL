@@ -16,10 +16,10 @@ def main():
     '''
 
     # Import the labelling and cost functions for the ColourBombGridWorld
-    from masa.envs.tabular.colour_bomb_grid_world import label_fn, cost_fn
+    from masa.envs.tabular.colour_bomb_grid_world_v2 import label_fn, cost_fn
 
     # Import example DFA 
-    from masa.examples.colour_bomb_grid_world.property_2 import make_dfa
+    from masa.examples.colour_bomb_grid_world.property_3 import make_dfa
 
     # We're going to use the LTL safety constraint, which just has one key word args: (dfa: DFA = dummy_dfa) 
     constraint_kwargs = dict(
@@ -28,7 +28,7 @@ def main():
 
     # Intialize the environment (env_id, constraint, max_epsiode_steps)
     # make_env wraps the environment in TimeLimit -> LabelledEnv -> LTLSafetyEnv -> ConstraintMonitor -> RewardMonitor
-    env = make_env("colour_bomb_grid_world", "ltl_safety", 400, label_fn=label_fn, **constraint_kwargs)
+    env = make_env("colour_bomb_grid_world_v2", "ltl_safety", 250, label_fn=label_fn, **constraint_kwargs)
 
     # Now we're going to wrap our environment in RewardShapingWrapper
     # The wrapper takes one arg: env
@@ -47,6 +47,8 @@ def main():
     # RECREG is an off-policy tabular algorithm based on Q learning that takes one arg: env
     #   and key word args:
     #   tensorboard_logdir: Optional[str] = None,
+    #   wandb_project: Optional[str] = None,
+    #   wandb_name: Optional[str] = None,
     #   seed: Optional[int] = None,
     #   monitor: bool = True,
     #   device: str = "auto",
@@ -71,7 +73,7 @@ def main():
     #   epsilon_decay_frames: int = 10000, 
 
     # First lets initialize the eval_env
-    eval_env = make_env("colour_bomb_grid_world", "ltl_safety", 400, label_fn=label_fn, **constraint_kwargs)
+    eval_env = make_env("colour_bomb_grid_world_v2", "ltl_safety", 250, label_fn=label_fn, **constraint_kwargs)
 
     # Now let's initialize RECREG
     algo = RECREG(
@@ -82,21 +84,26 @@ def main():
         device="cpu", # keep everything on the cpu 
         verbose=0, # verbosity level for monitoring
         eval_env=eval_env, # separate environment instance for eval
-        model_impl = "model-free", # using model-free RECREG as it is much quicker
-        horizon = 5, # recoverability horizon for RECREG
-        step_wise_prob = 1e-4, # step-wise epsilon_t values
+        task_alpha=0.05, # learning rate for the task policy
+        task_gamma=0.95, # discount factor for the task policy
+        safe_alpha=0.05, # learning rate for the safe (backup) policy
+        safe_gamma=0.99, # discount factor for the safe (backup) policy
+        model_free_alpha=0.05, # learning rate for safety Bellman update
+        mode="model_free", # using model_free mode as it is much quicker
+        horizon=9, # recoverability horizon for RECREG
+        safety_prob=0.01, # safety constraint from the initial state
         # Using the RECREG specific defaults after this
     )
 
     # Now we begin training
     algo.train(
-        num_frames=100_000, # total number of frames (environment interactions)
+        num_frames=300_000, # total number of frames (environment interactions)
         num_eval_episodes=10, # total number of evaluation episodes to run
-        eval_freq=2_000, # how frequently to run evaluation (default=0 => never run evaluation)
-        log_freq=2_000, # how frequenntly to log metrics to stdout or tensorboard
+        eval_freq=5_000, # how frequently to run evaluation (default=0 => never run evaluation)
+        log_freq=5_000, # how frequenntly to log metrics to stdout or tensorboard
         # prefill: Optional[int] = None (not implemented yet)
         # save_freq: int = 0, (not implemented yet)
-        stats_window_size = 100, # sliding window size for metrics logging
+        stats_window_size=100, # sliding window size for metrics logging
     )
 
 if __name__ == "__main__":

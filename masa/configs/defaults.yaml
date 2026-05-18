@@ -5,8 +5,6 @@ defaults:
     max_episode_steps: 200
     label_fn: masa.common.dummy:label_fn
     cost_fn: masa.common.dummy:cost_fn
-    reward_shaping: none
-    prob_shield_wrapper: False
 
   constraint:
     type: cmdp

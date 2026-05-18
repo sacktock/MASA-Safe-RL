@@ -55,6 +55,8 @@ def main():
     # PPO is a on-policy algorithm that takes one arg: env
     #   and key word args:
     #   tensorboard_logdir: Optional[str] = None,
+    #   wandb_project: Optional[str] = None,
+    #   wandb_name: Optional[str] = None,
     #   seed: Optional[int] = None,
     #   monitor: bool = True,
     #   device: str = "auto",
@@ -109,7 +111,7 @@ def main():
         log_freq=5000, # how frequenntly to log metrics to stdout or tensorboard
         # prefill: Optional[int] = None (not implemented yet)
         # save_freq: int = 0, (not implemented yet)
-        stats_window_size = 100, # sliding window size for metrics logging
+        stats_window_size=100, # sliding window size for metrics logging
     )
 
 if __name__ == "__main__":

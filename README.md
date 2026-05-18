@@ -89,7 +89,7 @@ masa run --env-id bridge_crossing --algo ppo --seed 0
 ```
 - You can run examples from the ```\examples``` folder via:
 ```bash
-masa examples prob_shield_example
+masa example prob_shield_example
 ```
 
 ## Editing documentation

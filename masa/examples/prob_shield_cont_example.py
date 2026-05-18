@@ -19,7 +19,7 @@ def main():
     from masa.envs.tabular.mini_pacman import label_fn, cost_fn
 
     # We're going to use the PCTL constraint, which has key word args: (cost_fn CostFn: = DummyCostFn, alpha: float = 0.01) 
-    constraint_kwargs = constraint_kwargs = dict(
+    constraint_kwargs = dict(
         cost_fn=cost_fn,
         alpha=0.01,
     )
@@ -36,14 +36,16 @@ def main():
     #   init_safety_bound: float = 0.5,
     env = ProbShieldWrapperCont(
         env, 
-        init_safety_bound = 0.01, # Safety constraint from the intial state
-        theta = 1e-15, # early stopping condition for value iteration
-        max_vi_steps= 10_000, # number of value iteration steps
+        init_safety_bound=0.01, # safety constraint from the intial state
+        theta=1e-15, # early stopping condition for value iteration
+        max_vi_steps=10_000, # number of value iteration steps
     )
 
     # ParameterizedPPO is a on-policy algorithm that takes one arg: env
     #   and key word args:
     #   tensorboard_logdir: Optional[str] = None,
+    #   wandb_project: Optional[str] = None,
+    #   wandb_name: Optional[str] = None,
     #   seed: Optional[int] = None,
     #   monitor: bool = True,
     #   device: str = "auto",
@@ -67,9 +69,9 @@ def main():
     # First lets initialize the eval_env
     eval_env = ProbShieldWrapperCont(
         make_env("mini_pacman", "pctl", 100, label_fn=label_fn, **constraint_kwargs), 
-        init_safety_bound = 0.01,
-        theta = 1e-15,
-        max_vi_steps= 10_000,
+        init_safety_bound=0.01,
+        theta=1e-15,
+        max_vi_steps=10_000,
     )
 
     # Now let's initialize PPO
@@ -93,7 +95,7 @@ def main():
         log_freq=10_000, # how frequenntly to log metrics to stdout or tensorboard
         # prefill: Optional[int] = None (not implemented yet)
         # save_freq: int = 0, (not implemented yet)
-        stats_window_size = 100, # sliding window size for metrics logging
+        stats_window_size=100, # sliding window size for metrics logging
     )
 
 if __name__ == "__main__":

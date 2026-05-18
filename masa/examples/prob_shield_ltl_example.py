@@ -38,15 +38,17 @@ def main():
     #   granularity: int = 20,
     env = ProbShieldWrapperDisc(
         env, 
-        init_safety_bound = 0.01, # Safety constraint from the intial state
-        theta = 1e-15, # early stopping condition for value iteration
-        max_vi_steps= 10_000, # number of value iteration steps
-        granularity = 20, # Granulairty with which is discretize the successor state betas
+        init_safety_bound=0.01, # Safety constraint from the intial state
+        theta=1e-15, # early stopping condition for value iteration
+        max_vi_steps=10_000, # number of value iteration steps
+        granularity=20, # granulairty with which is discretize the successor state betas
     )
 
     # PPO is a on-policy algorithm that takes one arg: env
     #   and key word args:
     #   tensorboard_logdir: Optional[str] = None,
+    #   wandb_project: Optional[str] = None,
+    #   wandb_name: Optional[str] = None,
     #   seed: Optional[int] = None,
     #   monitor: bool = True,
     #   device: str = "auto",
@@ -71,10 +73,10 @@ def main():
     # We can reuse constraint kwargs here as dfa_to_costfn internally creates a deepcopy of the dfa
     eval_env = ProbShieldWrapperDisc(
         make_env("colour_bomb_grid_world_v2", "ltl_safety", 250, label_fn=label_fn, **constraint_kwargs),
-        init_safety_bound = 0.01,
-        theta = 1e-15,
-        max_vi_steps= 10_000,
-        granularity = 20,
+        init_safety_bound=0.01,
+        theta=1e-15,
+        max_vi_steps=10_000,
+        granularit=20,
     )
 
     # Now let's initialize PPO
@@ -98,7 +100,7 @@ def main():
         log_freq=10_000, # how frequently to log metrics to stdout or tensorboard
         # prefill: Optional[int] = None (not implemented yet)
         # save_freq: int = 0, (not implemented yet)
-        stats_window_size = 100, # sliding window size for metrics logging
+        stats_window_size=100, # sliding window size for metrics logging
     )
 
 if __name__ == "__main__":
