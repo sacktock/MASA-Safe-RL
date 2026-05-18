@@ -23,7 +23,11 @@ os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
 The manual path uses the same pieces that `make_env` applies internally.
 
 ```python
+from pathlib import Path
 from pprint import pprint
+from shutil import rmtree
+
+from gymnasium.wrappers import RecordVideo
 
 from masa.plugins.helpers import load_plugins
 from masa.common.constraints.cmdp import CumulativeCostEnv
@@ -170,6 +174,102 @@ The final row reaches the blue state, so both environments should report:
 - `constraint["step"]["cost"] == 1.0`,
 - `constraint["step"]["violation"] == 1.0`.
 
+## Record the Finished Stack
+
+`RecordVideo` is not part of the semantic MASA stack. When `record_video=True`, `make_env` wraps the completed stack with Gymnasium's video recorder, so labels, constraints, and monitors behave the same while frames are saved from `render()`.
+
+`Path("videos/tutorial_wrapper_stack")` stores recordings under the repo-local `videos/` directory when the tutorial is run from the project root. The example prints the exact directory and MP4 paths, and clears this tutorial subdirectory before recording so reruns do not mix old and new videos.
+
+`record_video_episode_trigger` is Gymnasium's `episode_trigger`. It receives the zero-based episode id and records that episode when it returns `True`. Common schedules are:
+
+```python
+record_every_episode = lambda episode_id: True
+record_every_5_episodes_from_zero = lambda episode_id: episode_id % 5 == 0
+record_human_episodes_5_10_15 = lambda episode_id: (episode_id + 1) % 5 == 0
+```
+
+Gymnasium's `step_trigger` is useful for fixed-length clips that start immediately on a global environment step. This starts a 500-frame clip every 500 environment steps:
+
+```python
+video_kwargs={
+    "step_trigger": lambda step_id: step_id > 0 and step_id % 500 == 0,
+    "video_length": 500,
+}
+```
+
+If you specifically want the next complete episode after each 500-step boundary, use a small stateful episode trigger and update it from your rollout loop. The example script exposes this as `--trigger-mode step --trigger-value 500`.
+
+```python
+class RecordNextEpisodeEveryNSteps:
+    def __init__(self, interval):
+        self.interval = interval
+        self.total_steps = 0
+        self.next_threshold = interval
+        self.pending_recordings = 0
+
+    def observe_step(self):
+        self.total_steps += 1
+        while self.total_steps >= self.next_threshold:
+            self.pending_recordings += 1
+            self.next_threshold += self.interval
+
+    def __call__(self, episode_id):
+        if self.pending_recordings < 1:
+            return False
+        self.pending_recordings -= 1
+        return True
+
+trigger = RecordNextEpisodeEveryNSteps(500)
+
+env = make_env(
+    ...,
+    record_video=True,
+    record_video_episode_trigger=trigger,
+)
+
+# Inside the rollout loop, after each env.step(...):
+trigger.observe_step()
+```
+
+```python
+video_dir = Path("videos/tutorial_wrapper_stack")
+rmtree(video_dir, ignore_errors=True)
+print("video directory", video_dir)
+
+video_env = make_env(
+    "colour_grid_world",
+    "cmdp",
+    len(actions),
+    label_fn=label_fn,
+    cost_fn=cost_fn,
+    budget=0.0,
+    env_kwargs={
+        "render_mode": "rgb_array",
+        "render_window_size": 96,
+    },
+    record_video=True,
+    record_video_episode_trigger=lambda episode_id: True,
+    video_folder=str(video_dir),
+)
+
+assert isinstance(video_env, RecordVideo)
+
+try:
+    video_env.reset(seed=2)
+    for action in actions:
+        _, _, terminated, truncated, _ = video_env.step(action)
+        if terminated or truncated:
+            break
+finally:
+    video_env.close()
+
+recorded_videos = sorted(video_dir.glob("*.mp4"))
+for path in recorded_videos:
+    print(path)
+
+assert recorded_videos
+```
+
 ## Why Order Matters
 
 - `TimeLimit` comes first so truncation is part of the base interaction before safety monitoring.
@@ -177,5 +277,6 @@ The final row reaches the blue state, so both environments should report:
 - `CumulativeCostEnv` updates the stateful safety monitor.
 - `ConstraintMonitor` reads the constraint and writes `info["constraint"]`.
 - `RewardMonitor` is last here so it can add reward and episode-length metrics without changing safety logic.
+- When enabled, `RecordVideo` sits outside the completed stack and observes rendered frames without changing MASA metadata.
 
 Most users should call `make_env`. Manual construction is useful when you need to understand, debug, or extend the stack.
