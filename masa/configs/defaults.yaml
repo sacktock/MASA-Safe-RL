@@ -19,6 +19,8 @@ defaults:
     total_timesteps: 100000
     eval_every: 0
     eval_episodes: 10
+    record_video: False
+    record_every: 0
     log_every: 1000
     prefill: 0
     save_every: 0

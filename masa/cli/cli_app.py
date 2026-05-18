@@ -3,6 +3,7 @@ from typing import Optional, Any, List
 import sys
 import importlib.resources as resources
 import argparse
+import warnings
 
 import gymnasium as gym
 import ruamel.yaml as yaml
@@ -201,15 +202,47 @@ def run(
         key: value for key, value in constraint_kwargs.items() if value is not None
     }
 
-    env_fn = lambda: make_env(
+    if config.run.record_video and config.run.record_every == 0:
+        warnings.warn(
+            "Video recording is enabled, but record_every=0. "
+            "Only evaluation episodes will be recorded; training episodes will not be recorded."
+        )
+
+    train_env = make_env(
         config.env.id,
         config.constraint.type,
         config.env.max_episode_steps,
         label_fn=label_fn,
+        env_kwargs= {
+            "render_mode": "rgb_array",
+        },
+        record_video=config.run.record_video,
+        record_video_episode_trigger=None,
+        video_folder=f"{config.run.logdir}/videos",
+        video_kwargs={
+            "step_trigger": lambda x: (x % config.run.record_every == 0) and (config.run.record_every != 0),
+            "video_length": config.env.max_episode_steps,
+            "name_prefix": "training",
+        },
         **constraint_kwargs,
     )
 
-    train_env = env_fn()
+    eval_env_fn = lambda: make_env(
+        config.env.id,
+        config.constraint.type,
+        config.env.max_episode_steps,
+        label_fn=label_fn,
+        env_kwargs= {
+            "render_mode": "rgb_array",
+        },
+        record_video=config.run.record_video,
+        record_video_episode_trigger=lambda x: (x % config.run.eval_episodes == 0) and (config.run.eval_episodes != 0),
+        video_folder=f"{config.run.logdir}/videos",
+        video_kwargs={
+            "name_prefix": "eval",
+        },
+        **constraint_kwargs,
+    )
     
     algo_cls = ALGO_REGISTRY.get(algo)
     algo_kwargs = dict(config[algo])
@@ -219,7 +252,7 @@ def run(
         "seed": config.run.seed,
         "device": config.run.device,
         "verbose": config.run.verbose,
-        "env_fn": env_fn,
+        "env_fn": eval_env_fn,
     }
 
     model = algo_cls(train_env, **base_kwargs, **algo_kwargs)
@@ -234,7 +267,6 @@ def run(
     }
 
     model.train(config.run.total_timesteps, **run_kwargs)
-
 
 @app.command(
     context_settings={
