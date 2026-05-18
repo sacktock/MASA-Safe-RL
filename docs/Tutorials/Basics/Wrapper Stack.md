@@ -23,7 +23,10 @@ os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
 The manual path uses the same pieces that `make_env` applies internally.
 
 ```python
+from pathlib import Path
 from pprint import pprint
+
+from gymnasium.wrappers import RecordVideo
 
 from masa.plugins.helpers import load_plugins
 from masa.common.constraints.cmdp import CumulativeCostEnv
@@ -170,6 +173,47 @@ The final row reaches the blue state, so both environments should report:
 - `constraint["step"]["cost"] == 1.0`,
 - `constraint["step"]["violation"] == 1.0`.
 
+## Record the Finished Stack
+
+`RecordVideo` is not part of the semantic MASA stack. When `record_video=True`, `make_env` wraps the completed stack with Gymnasium's video recorder, so labels, constraints, and monitors behave the same while frames are saved from `render()`.
+
+```python
+video_dir = Path("videos/tutorial_wrapper_stack")
+
+video_env = make_env(
+    "colour_grid_world",
+    "cmdp",
+    len(actions),
+    label_fn=label_fn,
+    cost_fn=cost_fn,
+    budget=0.0,
+    env_kwargs={
+        "render_mode": "rgb_array",
+        "render_window_size": 96,
+    },
+    record_video=True,
+    record_video_episode_trigger=lambda episode_id: True,
+    video_folder=str(video_dir),
+)
+
+assert isinstance(video_env, RecordVideo)
+
+try:
+    video_env.reset(seed=2)
+    for action in actions:
+        _, _, terminated, truncated, _ = video_env.step(action)
+        if terminated or truncated:
+            break
+finally:
+    video_env.close()
+
+recorded_videos = sorted(video_dir.glob("*.mp4"))
+for path in recorded_videos:
+    print(path)
+
+assert recorded_videos
+```
+
 ## Why Order Matters
 
 - `TimeLimit` comes first so truncation is part of the base interaction before safety monitoring.
@@ -177,5 +221,6 @@ The final row reaches the blue state, so both environments should report:
 - `CumulativeCostEnv` updates the stateful safety monitor.
 - `ConstraintMonitor` reads the constraint and writes `info["constraint"]`.
 - `RewardMonitor` is last here so it can add reward and episode-length metrics without changing safety logic.
+- When enabled, `RecordVideo` sits outside the completed stack and observes rendered frames without changing MASA metadata.
 
 Most users should call `make_env`. Manual construction is useful when you need to understand, debug, or extend the stack.

@@ -97,6 +97,8 @@ def test_wrapper_stack_notebook_is_valid_and_executable():
         "is_wrapped",
         "get_wrapped",
         "colour_grid_world",
+        "RecordVideo",
+        "record_video",
     ):
         assert token in source
 
