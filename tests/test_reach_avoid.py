@@ -4,7 +4,6 @@ from __future__ import annotations
 def test_reach_avoid_make_env_tracks_avoid_and_reach_labels():
     from masa.common.utils import make_env
     from masa.envs.tabular.colour_grid_world import label_fn
-    from masa.plugins.helpers import load_plugins
 
     def build_env():
         return make_env(

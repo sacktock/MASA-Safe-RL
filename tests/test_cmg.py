@@ -36,7 +36,7 @@ def test_constrained_markov_game_env_tracks_overlapping_budgets():
     assert set(obs) == {"player_0", "player_1"}
     assert infos["player_0"]["labels"] == set()
     assert infos["player_1"]["labels"] == set()
-    assert env.constraint_type == "cmg"
+    assert env.constraint_type == "CMG"
     assert env.constraint_step_metrics()["shared_cum_cost"] == 0.0
 
     _, _, _, truncations, infos = env.step(

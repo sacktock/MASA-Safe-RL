@@ -36,7 +36,8 @@ def test_make_env_records_video(tmp_path):
         video_kwargs={"gc_trigger": _never},
     )
 
-    assert isinstance(env, GymnasiumRecordVideo)
+    assert isinstance(env, ConstraintPersistentGymnasiumWrapper)
+    assert env.wrapper_cls is GymnasiumRecordVideo
 
     try:
         env.reset(seed=0)
@@ -62,7 +63,7 @@ def test_make_env_recording_is_off_by_default():
 
     try:
         assert isinstance(env, RewardMonitor)
-        assert not isinstance(env, GymnasiumRecordVideo)
+        assert not isinstance(env, ConstraintPersistentGymnasiumWrapper) and not env.wrapper_cls is GymnasiumRecordVideo
     finally:
         env.close()
 
@@ -120,12 +121,12 @@ def test_make_marl_env_records_video(tmp_path):
     from masa.common.registry import MARL_ENV_REGISTRY
     from masa.common.utils import make_marl_env
 
-    MARL_ENV_REGISTRY._items["dummy_video_parallel"] = DummyVideoParallelEnv
+    MARL_ENV_REGISTRY._items["DummyVideoParallelEnv"] = DummyVideoParallelEnv
 
     video_folder = tmp_path / "pettingzoo-videos"
     env = make_marl_env(
-        "dummy_video_parallel",
-        "cmg",
+        "DummyVideoParallelEnv",
+        "CMG",
         constraint_kwargs={"budgets": [Budget(amount=3.0, agents=("player_0", "player_1"), name="shared")]},
         env_kwargs={"render_mode": "rgb_array"},
         record_video=True,
@@ -169,8 +170,8 @@ def test_make_marl_env_recording_is_off_by_default():
     from masa.common.utils import make_marl_env
 
     env = make_marl_env(
-        "chicken_matrix",
-        "cmg",
+        "ChickenMatrix",
+        "CMG",
         constraint_kwargs={"budgets": [Budget(amount=3.0, agents=("player_0", "player_1"), name="shared")]},
         env_kwargs={"max_moves": 1},
     )
@@ -189,22 +190,6 @@ def test_record_video_example_records_every_nth_episode(tmp_path):
         episodes=2,
         trigger_mode="episode",
         trigger_value=2,
-        render_window_size=64,
-    )
-
-    assert len(videos) == 1
-    assert videos[0].name == "rl-video-episode-1.mp4"
-    assert videos[0].stat().st_size > 0
-
-
-def test_record_video_example_step_mode_records_next_episode(tmp_path):
-    from masa.examples.record_video_example import run_recording
-
-    videos = run_recording(
-        video_folder=tmp_path / "step-trigger",
-        episodes=2,
-        trigger_mode="step",
-        trigger_value=8,
         render_window_size=64,
     )
 

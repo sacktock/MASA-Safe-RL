@@ -169,12 +169,12 @@ def test_cartpole_envs_render_rgb_array_ansi_and_notebook():
     import numpy as np
     import pytest
 
-    from masa.envs.continuous.cartpole import ContinuousCartPole
-    from masa.envs.discrete.cartpole import DiscreteCartPole
+    from masa.envs.continuous.cartpole import ContinuousCartpole
+    from masa.envs.discrete.cartpole import DiscreteCartpole
 
     env_cases = (
-        (DiscreteCartPole, 1),
-        (ContinuousCartPole, np.array([1.0], dtype=np.float32)),
+        (DiscreteCartpole, 1),
+        (ContinuousCartpole, np.array([1.0], dtype=np.float32)),
     )
 
     for env_cls, action in env_cases:
@@ -216,8 +216,8 @@ def test_cartpole_envs_render_rgb_array_ansi_and_notebook():
 
     assert notebook["nbformat"] == 4
     source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
-    assert "disc_cartpole" in source
-    assert "cont_cartpole" in source
+    assert "DiscreteCartpole" in source
+    assert "ContinuousCartpole" in source
     assert "widgets.ToggleButtons" in source
     assert "render_mode=\"human\"" in source
     assert "render_mode=\"rgb_array\"" in source
