@@ -40,7 +40,7 @@ def test_first_masa_experiment_notebook_is_valid_and_executable():
         'info["labels"]',
         'info["constraint"]',
     ):
-        assert token in source
+        assert token in source, f"{token} missing"
 
     client = NotebookClient(
         notebook,
@@ -69,7 +69,7 @@ def test_labels_costs_and_infos_notebook_is_valid_and_executable():
         "truncated",
         "budget=0.0",
     ):
-        assert token in source
+        assert token in source, f"{token} missing"
 
     client = NotebookClient(
         notebook,
@@ -101,7 +101,7 @@ def test_wrapper_stack_notebook_is_valid_and_executable():
         "record_video",
         "step_trigger",
     ):
-        assert token in source
+        assert token in source, f"{token} missing"
 
     client = NotebookClient(
         notebook,
@@ -136,7 +136,7 @@ def test_constraints_tour_notebook_is_valid_and_executable():
         "render_grid_trace_svg",
         "render_constraint_semantics_svg",
     ):
-        assert token in source
+        assert token in source, f"{token} missing"
     assert "<svg" not in source
 
     client = NotebookClient(
@@ -170,7 +170,7 @@ def test_ltl_safety_colour_bomb_notebook_is_valid_and_executable():
         "render_colour_bomb_trace_svg",
         "render_ltl_rollout_timeline_svg",
     ):
-        assert token in source
+        assert token in source, f"{token} missing"
     assert "<svg" not in source
 
     client = NotebookClient(
@@ -202,7 +202,7 @@ def test_tabular_safe_rl_baselines_notebook_is_valid_and_executable():
         "override_rate",
         "satisfied",
     ):
-        assert token in source
+        assert token in source, f"{token} missing"
     assert "<svg" not in source
 
     client = NotebookClient(
@@ -234,7 +234,7 @@ def test_continuous_safe_rl_baselines_notebook_is_valid_and_executable():
         "stub",
         "constraint",
     ):
-        assert token in source
+        assert token in source, f"{token} missing"
     assert "<svg" not in source
 
     client = NotebookClient(
@@ -269,7 +269,7 @@ def test_create_a_new_environment_notebook_is_valid_and_executable():
         'info["labels"]',
         'info["constraint"]',
     ):
-        assert token in source
+        assert token in source, f"{token} missing"
     assert "<svg" not in source
 
     client = NotebookClient(
@@ -305,7 +305,7 @@ def test_probabilistic_shielding_minipacman_notebook_is_valid_and_executable():
         "bounds",
         "alpha=0.01",
     ):
-        assert token in source
+        assert token in source, f"{token} missing"
     assert "<svg" not in source
 
     client = NotebookClient(
@@ -341,7 +341,7 @@ def test_safety_abstractions_pacman_coins_notebook_is_valid_and_executable():
         "project_candidate_action",
         "alpha=0.01",
     ):
-        assert token in source
+        assert token in source, f"{token} missing"
     assert "<svg" not in source
 
     client = NotebookClient(
@@ -375,7 +375,7 @@ def test_vectorization_and_normalization_notebook_is_valid_and_executable():
         "make_never_bomb_dfa",
         "Box(83,)",
     ):
-        assert token in source
+        assert token in source, f"{token} missing"
     assert "<svg" not in source
 
     client = NotebookClient(
@@ -411,7 +411,7 @@ def test_multi_agent_cmg_notebook_is_valid_and_executable():
         "shared_satisfied",
         "satisfied",
     ):
-        assert token in source
+        assert token in source, f"{token} missing"
     assert "<svg" not in source
 
     client = NotebookClient(

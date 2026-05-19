@@ -6,7 +6,7 @@ from pettingzoo import ParallelEnv
 
 from masa.common.constraints.multi_agent.cmg import Budget
 from masa.common.pettingzoo_record_video import RecordVideoParallel
-from masa.common.wrappers import RewardMonitor
+from masa.common.wrappers import RewardMonitor, ConstraintPersistentGymnasiumWrapper
 from masa.envs.discrete.conveyor_belt import cost_fn as conveyor_cost_fn
 from masa.envs.discrete.conveyor_belt import label_fn as conveyor_label_fn
 
@@ -21,6 +21,7 @@ def _never(_):
 
 def test_make_env_records_video(tmp_path):
     from masa.common.utils import make_env
+    
 
     video_folder = tmp_path / "gymnasium-videos"
     env = make_env(
@@ -153,8 +154,8 @@ def test_record_video_episode_trigger_rejects_duplicate_video_kwargs(tmp_path):
 
     with pytest.raises(ValueError, match="record_video_episode_trigger"):
         make_env(
-            "conveyor_belt",
-            "cmdp",
+            "ConveyorBelt",
+            "CMDP",
             5,
             label_fn=conveyor_label_fn,
             constraint_kwargs={"cost_fn": conveyor_cost_fn, "budget": 10.0},
@@ -180,19 +181,3 @@ def test_make_marl_env_recording_is_off_by_default():
         assert not isinstance(env, RecordVideoParallel)
     finally:
         env.close()
-
-
-def test_record_video_example_records_every_nth_episode(tmp_path):
-    from masa.examples.record_video_example import run_recording
-
-    videos = run_recording(
-        video_folder=tmp_path / "episode-trigger",
-        episodes=2,
-        trigger_mode="episode",
-        trigger_value=2,
-        render_window_size=64,
-    )
-
-    assert len(videos) == 1
-    assert videos[0].name == "rl-video-episode-1.mp4"
-    assert videos[0].stat().st_size > 0

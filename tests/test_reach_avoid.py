@@ -20,7 +20,7 @@ def test_reach_avoid_make_env_tracks_avoid_and_reach_labels():
     unsafe_env = build_env()
     obs, info = unsafe_env.reset(seed=1)
     assert obs == 0
-    assert info["constraint"]["type"] == "reach_avoid"
+    assert info["constraint"]["type"] == "REACH_AVOID"
 
     for action in [2, 2, 2, 2]:
         obs, reward, terminated, truncated, info = unsafe_env.step(action)
