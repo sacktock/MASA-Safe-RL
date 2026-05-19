@@ -6,12 +6,10 @@ def test_reach_avoid_make_env_tracks_avoid_and_reach_labels():
     from masa.envs.tabular.colour_grid_world import label_fn
     from masa.plugins.helpers import load_plugins
 
-    load_plugins()
-
     def build_env():
         return make_env(
-            "colour_grid_world",
-            "reach_avoid",
+            "ColourGridWorld",
+            "REACH_AVOID",
             40,
             label_fn=label_fn,
             constraint_kwargs={

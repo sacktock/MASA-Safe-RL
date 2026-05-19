@@ -31,14 +31,12 @@ def test_safety_gridworld_ports_basic_behavior():
 
 
 def test_new_envs_are_registered():
-    from masa.plugins.helpers import load_plugins
+    import masa
     from masa.common.registry import ENV_REGISTRY
 
-    load_plugins()
-
-    assert ENV_REGISTRY.get("island_navigation").__name__ == "IslandNavigation"
-    assert ENV_REGISTRY.get("conveyor_belt").__name__ == "ConveyorBelt"
-    assert ENV_REGISTRY.get("sokoban").__name__ == "Sokoban"
+    assert ENV_REGISTRY.get("IslandNavigation").__name__ == "IslandNavigation"
+    assert ENV_REGISTRY.get("ConveyorBelt").__name__ == "ConveyorBelt"
+    assert ENV_REGISTRY.get("Sokoban").__name__ == "Sokoban"
 
 
 def test_new_envs_render_rgb_array_and_notebook():

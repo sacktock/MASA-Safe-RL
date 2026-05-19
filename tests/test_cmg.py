@@ -68,27 +68,25 @@ def test_constrained_markov_game_env_tracks_overlapping_budgets():
 
 
 def test_marl_envs_are_registered():
-    from masa.plugins.helpers import load_plugins
+    import masa
     from masa.common.registry import MARL_CONSTRAINT_REGISTRY, MARL_ENV_REGISTRY
 
-    load_plugins()
-
-    assert MARL_ENV_REGISTRY.get("bertrand_matrix").__name__ == "BertrandMatrix"
-    assert MARL_ENV_REGISTRY.get("chicken_matrix").__name__ == "ChickenMatrix"
-    assert MARL_ENV_REGISTRY.get("congestion_matrix").__name__ == "CongestionMatrix"
-    assert MARL_ENV_REGISTRY.get("dpgg_matrix").__name__ == "DPGGMatrix"
-    assert MARL_ENV_REGISTRY.get("inspection_matrix").__name__ == "InspectionMatrix"
-    assert MARL_CONSTRAINT_REGISTRY.get("cmg").__name__ == "ConstrainedMarkovGameEnv"
+    assert MARL_ENV_REGISTRY.get("BertrandMatrix").__name__ == "BertrandMatrix"
+    assert MARL_ENV_REGISTRY.get("ChickenMatrix").__name__ == "ChickenMatrix"
+    assert MARL_ENV_REGISTRY.get("CongestionMatrix").__name__ == "CongestionMatrix"
+    assert MARL_ENV_REGISTRY.get("DPGGMatrix").__name__ == "DPGGMatrix"
+    assert MARL_ENV_REGISTRY.get("InspectionMatrix").__name__ == "InspectionMatrix"
+    assert MARL_CONSTRAINT_REGISTRY.get("CMG").__name__ == "ConstrainedMarkovGameEnv"
 
 
 def test_make_marl_env_uses_central_wrapper_path():
     from masa.common.utils import make_marl_env
 
     env = make_marl_env(
-        "chicken_matrix",
-        "cmg",
+        "ChickenMatrix",
+        "CMG",
         env_kwargs={"max_moves": 1},
-        budgets=[Budget(amount=1.5, agents=("player_0", "player_1"), name="shared")],
+        constraint_kwargs={"budgets": [Budget(amount=1.5, agents=("player_0", "player_1"), name="shared")]}
     )
 
     assert isinstance(env, ConstrainedMarkovGameEnv)

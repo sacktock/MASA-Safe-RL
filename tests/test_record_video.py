@@ -24,8 +24,8 @@ def test_make_env_records_video(tmp_path):
 
     video_folder = tmp_path / "gymnasium-videos"
     env = make_env(
-        "conveyor_belt",
-        "cmdp",
+        "ConveyorBelt",
+        "CMDP",
         5,
         label_fn=conveyor_label_fn,
         constraint_kwargs={"cost_fn": conveyor_cost_fn, "budget": 10.0},
@@ -53,8 +53,8 @@ def test_make_env_recording_is_off_by_default():
     from masa.common.utils import make_env
 
     env = make_env(
-        "conveyor_belt",
-        "cmdp",
+        "ConveyorBelt",
+        "CMDP",
         5,
         label_fn=conveyor_label_fn,
         constraint_kwargs={"cost_fn": conveyor_cost_fn, "budget": 10.0},

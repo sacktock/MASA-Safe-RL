@@ -33,8 +33,8 @@ def test_first_masa_experiment_notebook_is_valid_and_executable():
     source = _notebook_source(notebook)
     for token in (
         "make_env",
-        "bridge_crossing",
-        "pctl",
+        "BridgeCrossing",
+        "PCTL",
         "QL",
         "num_frames=20",
         'info["labels"]',
@@ -59,8 +59,8 @@ def test_labels_costs_and_infos_notebook_is_valid_and_executable():
 
     source = _notebook_source(notebook)
     for token in (
-        "colour_grid_world",
-        "cmdp",
+        "ColourGridWorld",
+        "CMDP",
         "label_fn",
         "cost_fn",
         'info["labels"]',
@@ -96,8 +96,8 @@ def test_wrapper_stack_notebook_is_valid_and_executable():
         "make_env",
         "is_wrapped",
         "get_wrapped",
-        "colour_grid_world",
-        "RecordVideo",
+        "ColourGridWorld",
+        "ConstraintPersistentGymnasiumWrapper",
         "record_video",
         "step_trigger",
     ):
@@ -120,14 +120,14 @@ def test_constraints_tour_notebook_is_valid_and_executable():
 
     source = _notebook_source(notebook)
     for token in (
-        "cmdp",
-        "prob",
-        "pctl",
-        "reach_avoid",
-        "ltl_safety",
+        "CMDP",
+        "PROB",
+        "PCTL",
+        "REACH_AVOID",
+        "LTL_SAFETY",
         "DFA",
         "Atom",
-        "colour_grid_world",
+        "ColourGridWorld",
         "avoid_label",
         "reach_label",
         "notebooks.tutorials.helpers.constraints_tour",
@@ -156,9 +156,9 @@ def test_ltl_safety_colour_bomb_notebook_is_valid_and_executable():
 
     source = _notebook_source(notebook)
     for token in (
-        "colour_bomb_grid_world",
-        "colour_bomb_grid_world_v2",
-        "ltl_safety",
+        "ColourBombGridWorld",
+        "ColourBombGridWorldV2",
+        "LTL_SAFETY",
         "DFA",
         "Atom",
         "property_2",
@@ -190,18 +190,13 @@ def test_tabular_safe_rl_baselines_notebook_is_valid_and_executable():
 
     source = _notebook_source(notebook)
     for token in (
-        "colour_grid_world",
-        "cmdp",
+        "ColourGridWorld",
+        "CMDP",
         "QL",
-        "QL_Lambda",
+        "QL_LAMBDA",
         "LCRL",
         "SEM",
         "RECREG",
-        "q_learning",
-        "q_learning_lambda",
-        "lcrl",
-        "sem",
-        "recreg",
         "num_frames=20",
         "cost_lambda",
         "override_rate",
@@ -228,8 +223,8 @@ def test_continuous_safe_rl_baselines_notebook_is_valid_and_executable():
     source = _notebook_source(notebook)
     for token in (
         "continuous",
-        "cont_cartpole",
-        "cmdp",
+        "ContinuousCartpole",
+        "CMDP",
         "PPO",
         "CPO",
         "PPO Lagrangian",
@@ -264,7 +259,7 @@ def test_create_a_new_environment_notebook_is_valid_and_executable():
         "spaces.Discrete",
         "ENV_REGISTRY",
         "make_env",
-        "cmdp",
+        "CMDP",
         "label_fn",
         "cost_fn",
         "tutorial_tiny_delivery",
@@ -294,8 +289,8 @@ def test_probabilistic_shielding_minipacman_notebook_is_valid_and_executable():
 
     source = _notebook_source(notebook)
     for token in (
-        "mini_pacman",
-        "pctl",
+        "MiniPacman",
+        "PCTL",
         "ProbShieldWrapperDisc",
         "init_safety_bound",
         "safety_lb",
@@ -330,8 +325,8 @@ def test_safety_abstractions_pacman_coins_notebook_is_valid_and_executable():
 
     source = _notebook_source(notebook)
     for token in (
-        "mini_pacman_with_coins",
-        "pacman_with_coins",
+        "MiniPacmanWithCoins",
+        "PacmanWithCoins",
         "ProbShieldWrapperDisc",
         "safety_abstraction",
         "abstr_label_fn",
@@ -372,10 +367,10 @@ def test_vectorization_and_normalization_notebook_is_valid_and_executable():
         "VecNormWrapper",
         "OneHotObsWrapper",
         "FlattenDictObsWrapper",
-        "colour_grid_world",
-        "cont_cartpole",
-        "colour_bomb_grid_world",
-        "ltl_safety",
+        "ColourGridWorld",
+        "ContinuousCartpole",
+        "ColourBomgGridWorld",
+        "LTL_SAFETY",
         'obs_type="dict"',
         "make_never_bomb_dfa",
         "Box(83,)",
@@ -401,9 +396,8 @@ def test_multi_agent_cmg_notebook_is_valid_and_executable():
     source = _notebook_source(notebook)
     for token in (
         "make_marl_env",
-        "chicken_matrix",
         "ChickenMatrix",
-        "cmg",
+        "CMG",
         "Budget",
         "Actions",
         "ParallelEnv",
