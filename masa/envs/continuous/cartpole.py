@@ -20,7 +20,7 @@ def label_fn(obs):
 
 cost_fn = lambda labels: 0.0 if "stable" in labels else 1.0
 
-class ContinuousCartPole(ContinuousEnv):
+class ContinuousCartpole(ContinuousEnv):
     metadata = {"render_modes": ["ansi", "rgb_array", "human"], "render_fps": 30}
 
     def __init__(

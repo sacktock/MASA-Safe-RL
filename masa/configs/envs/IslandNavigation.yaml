@@ -1,12 +1,12 @@
 defaults:
   env:
-    id: island_navigation
+    id: IslandNavigation
     max_episode_steps: 300
     label_fn: masa.envs.discrete.island_navigation:label_fn
     cost_fn: masa.envs.discrete.island_navigation:cost_fn
 
   constraint:
-    type: cmdp
+    type: CMDP
     cost_budget: 0
 
   run:

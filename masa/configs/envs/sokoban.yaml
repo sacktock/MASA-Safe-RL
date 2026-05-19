@@ -1,12 +1,12 @@
 defaults:
   env:
-    id: sokoban
+    id: Sokoban
     max_episode_steps: 300
     label_fn: masa.envs.discrete.sokoban:label_fn
     cost_fn: masa.envs.discrete.sokoban:cost_fn
 
   constraint:
-    type: cmdp
+    type: CMDP
     cost_budget: 0
 
   run:

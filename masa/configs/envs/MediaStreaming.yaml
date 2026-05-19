@@ -1,13 +1,13 @@
 defaults:
   env:
-    id: media_streaming
+    id: MediaStreaming
     max_episode_steps: 40
     label_fn: masa.envs.tabular.media_streaming:label_fn
     cost_fn: masa.envs.tabular.media_streaming:cost_fn
 
   constraint:
-    type: cmdp
-    cost_budget: 1
+    type: CMDP
+    cost_budget: 0
 
   run:
     total_timesteps: 25000

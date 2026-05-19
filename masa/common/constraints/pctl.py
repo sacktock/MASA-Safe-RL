@@ -93,8 +93,8 @@ class PCTL(Constraint):
 
     @property
     def constraint_type(self) -> str:
-        """Stable identifier string: ``"pctl"``."""
-        return "pctl"
+        """Stable identifier string: ``"PCTL"``."""
+        return "PCTL"
 
 class PCTLEnv(BaseConstraintEnv):
     """Gymnasium wrapper for the :class:`PCTL` monitor.

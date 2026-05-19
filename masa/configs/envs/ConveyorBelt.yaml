@@ -1,12 +1,12 @@
 defaults:
   env:
-    id: conveyor_belt
+    id: ConveyorBelt
     max_episode_steps: 50
     label_fn: masa.envs.discrete.conveyor_belt:label_fn
     cost_fn: masa.envs.discrete.conveyor_belt:cost_fn
 
   constraint:
-    type: cmdp
+    type: CMDP
     cost_budget: 0
 
   run:

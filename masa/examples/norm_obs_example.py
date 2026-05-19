@@ -11,8 +11,14 @@ def main():
         max_episode_steps: int, 
         *,
         label_fn: Optional[LabelFn] = None, 
-        **constraint_kwargs
-    ):
+        constraint_kwargs: Optional[dict[str, Any]] = None,
+        env_kwargs: Optional[dict[str, Any]] = None,
+        record_video: bool = False,
+        record_video_episode_trigger: Optional[Callable[[int], bool]] = None,
+        video_folder: str = "videos",
+        video_kwargs: Optional[dict[str, Any]] = None,
+        **kw
+    ) -> gym.Env:
     '''
 
     # Import the labelling and cost functions for the ContinuousCartpole
@@ -26,7 +32,7 @@ def main():
 
     # Intialize the environment (env_id, constraint, max_epsiode_steps)
     # make_env wraps the environment in TimeLimit -> LabelledEnv -> PCTLEnv -> ConstraintMonitor -> RewardMonitor
-    env = make_env("cont_cartpole", "pctl", 500, label_fn=label_fn, **constraint_kwargs)
+    env = make_env("ContinuousCartpole", "PCTL", 500, label_fn=label_fn, constraint_kwargs=constraint_kwargs)
     # PPO will automatically wrap any env in DummyVecWrapper it is has not already been wrapped
     # Since we want VecNormWrapper to be the top level we wrap it before passing to PPO
     env = DummyVecWrapper(env)
@@ -78,7 +84,7 @@ def main():
     #   policy_kwargs: Optional[dict[str, Any]] = None,
 
     # First lets initialize the eval_env
-    eval_env = make_env("cont_cartpole", "pctl", 500, label_fn=label_fn, **constraint_kwargs)
+    eval_env = make_env("ContinuousCartpole", "PCTL", 500, label_fn=label_fn, constraint_kwargs=constraint_kwargs)
     eval_env = NormWrapper(
         eval_env,
         norm_obs=True,

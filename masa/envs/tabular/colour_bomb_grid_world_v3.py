@@ -7,11 +7,13 @@ from collections import defaultdict
 from masa.envs.tabular.base import TabularEnv
 from masa.envs.tabular.utils import create_advanced_transition_matrix
 from masa.envs.tabular.renderers.colour_bomb_grid_world import ColourBombGridWorldRenderer, validate_renderer_options
+from functools import lru_cache
 
 GRID_SIZE = 15
 N_ACTIONS = 5
 
 N_COLOURED_ZONES = 5
+N_STATES = (GRID_SIZE**2) * N_COLOURED_ZONES
 
 START_STATES = []
 GREEN_STATES = []
@@ -41,6 +43,7 @@ for i in range(N_COLOURED_ZONES):
     BOMB_STATES += list(np.array([76, 181, 123,82,207,8,58]) + z)
     MEDIC_STATES += list(np.array([154, 93, 38, 205, 74]) + z)
 SLIP_PROB = 0.1
+GOAL_STATES = GREEN_STATES + YELLOW_STATES + RED_STATES + BLUE_STATES + PINK_STATES
 
 LABEL_DICT = defaultdict(set)
 for _state in START_STATES:
@@ -64,6 +67,19 @@ label_fn = lambda obs: LABEL_DICT[obs]
 
 cost_fn = lambda labels: 1.0 if "bomb" in labels else 0.0
 
+@lru_cache(maxsize=1)
+def get_transition_matrix():
+    return create_advanced_transition_matrix(
+        GRID_SIZE,
+        N_COLOURED_ZONES,
+        N_STATES,
+        N_ACTIONS,
+        GOAL_STATES,
+        slip_prob=SLIP_PROB,
+        safe_states=MEDIC_STATES,
+        wall_states=WALL_STATES
+    )
+
 class ColourBombGridWorldV3(TabularEnv):
     metadata = {"render_modes": ["ansi", "rgb_array", "human"], "render_fps": 4}
 
@@ -81,7 +97,7 @@ class ColourBombGridWorldV3(TabularEnv):
 
         self._n_coloured_zones = N_COLOURED_ZONES
 
-        self._n_states = (self._grid_size**2)*self._n_coloured_zones
+        self._n_states = N_STATES
         self._n_actions = N_ACTIONS
 
         self.observation_space = spaces.Discrete(self._n_states)
@@ -98,7 +114,7 @@ class ColourBombGridWorldV3(TabularEnv):
         self._bomb_states = BOMB_STATES
         self._medic_states = MEDIC_STATES
 
-        self._goal_states = GREEN_STATES + YELLOW_STATES + RED_STATES + BLUE_STATES + PINK_STATES
+        self._goal_states = GOAL_STATES
 
         self._active_colour_dict = dict({
             0: "green",
@@ -110,7 +126,7 @@ class ColourBombGridWorldV3(TabularEnv):
 
         self._safe_states = MEDIC_STATES
 
-        self._transition_matrix = create_advanced_transition_matrix(self._grid_size, self._n_coloured_zones, self._n_states, self._n_actions, self._goal_states, slip_prob=SLIP_PROB, safe_states=self._safe_states, wall_states=WALL_STATES)
+        self._transition_matrix = get_transition_matrix()
 
         # after reaching a goal state, transition to a random start state
         for _state in self._goal_states:

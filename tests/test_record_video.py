@@ -28,13 +28,12 @@ def test_make_env_records_video(tmp_path):
         "cmdp",
         5,
         label_fn=conveyor_label_fn,
+        constraint_kwargs={"cost_fn": conveyor_cost_fn, "budget": 10.0},
         env_kwargs={"render_mode": "rgb_array", "render_window_size": 64},
         record_video=True,
         record_video_episode_trigger=_always,
         video_folder=str(video_folder),
         video_kwargs={"gc_trigger": _never},
-        cost_fn=conveyor_cost_fn,
-        budget=10.0,
     )
 
     assert isinstance(env, GymnasiumRecordVideo)
@@ -58,8 +57,7 @@ def test_make_env_recording_is_off_by_default():
         "cmdp",
         5,
         label_fn=conveyor_label_fn,
-        cost_fn=conveyor_cost_fn,
-        budget=10.0,
+        constraint_kwargs={"cost_fn": conveyor_cost_fn, "budget": 10.0},
     )
 
     try:
@@ -128,12 +126,12 @@ def test_make_marl_env_records_video(tmp_path):
     env = make_marl_env(
         "dummy_video_parallel",
         "cmg",
+        constraint_kwargs={"budgets": [Budget(amount=3.0, agents=("player_0", "player_1"), name="shared")]},
         env_kwargs={"render_mode": "rgb_array"},
         record_video=True,
         record_video_episode_trigger=_always,
         video_folder=str(video_folder),
         video_kwargs={"gc_trigger": _never},
-        budgets=[Budget(amount=3.0, agents=("player_0", "player_1"), name="shared")],
     )
 
     assert isinstance(env, RecordVideoParallel)
@@ -158,13 +156,12 @@ def test_record_video_episode_trigger_rejects_duplicate_video_kwargs(tmp_path):
             "cmdp",
             5,
             label_fn=conveyor_label_fn,
+            constraint_kwargs={"cost_fn": conveyor_cost_fn, "budget": 10.0},
             env_kwargs={"render_mode": "rgb_array", "render_window_size": 64},
             record_video=True,
             record_video_episode_trigger=_always,
             video_folder=str(tmp_path / "duplicate-trigger"),
             video_kwargs={"episode_trigger": _always},
-            cost_fn=conveyor_cost_fn,
-            budget=10.0,
         )
 
 
@@ -174,8 +171,8 @@ def test_make_marl_env_recording_is_off_by_default():
     env = make_marl_env(
         "chicken_matrix",
         "cmg",
+        constraint_kwargs={"budgets": [Budget(amount=3.0, agents=("player_0", "player_1"), name="shared")]}
         env_kwargs={"max_moves": 1},
-        budgets=[Budget(amount=3.0, agents=("player_0", "player_1"), name="shared")],
     )
 
     try:

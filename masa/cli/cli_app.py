@@ -7,10 +7,13 @@ import warnings
 
 import gymnasium as gym
 import ruamel.yaml as yaml
-from masa.plugins.helpers import load_plugins
+import masa
+from masa.algorithms import ALGORITHMS
+from masa.envs import ENVIRONMENTS
+from masa.common.constraints import CONSTRAINTS
+from masa.common import registry
 from masa.common.configs import Config, Flags, Path
 from masa.common.utils import make_env, load_callable
-from masa.common.registry import ALGO_REGISTRY, ENV_REGISTRY, CONSTRAINT_REGISTRY
 
 import runpy
 import typer
@@ -31,7 +34,7 @@ def load_yaml(package: str, filename: str) -> dict[str, Any]:
 def select_cfg(
     package: str,
     filename: str,
-    selected: str,
+    selected: List[str],
 ) -> dict[str, Any]:
     configs = load_yaml(package, filename)
     config = Config(configs["defaults"])
@@ -55,7 +58,7 @@ def deep_update(config: Config, overrides: dict[str, Any]) -> Config:
     
 
 def parse_config(env_id, env_cfgs, algo, algo_cfgs) -> Config:
-    configs = load_yaml("masa.configs", "defaults.yaml")
+    configs = load_yaml("masa.configs", "Defaults.yaml")
     config = Config(configs["defaults"])
 
     env_configs = load_yaml("masa.configs.envs", f"{env_id}.yaml")
@@ -155,21 +158,20 @@ def run(
             --ppo.learning_rate 0.0003 \
             --constraint.cost_budget 10
     """
-    load_plugins()
 
-    if algo not in ALGO_REGISTRY:
+    if algo not in ALGORITHMS:
         raise typer.BadParameter(
-            f"Unknown algorithm '{algo}'. Available: {list(ALGO_REGISTRY.keys())}"
+            f"Unknown algorithm '{algo}'. Available: {list(registry.ALGO_REGISTRY.keys())}"
         )
     
-    if env_id not in ENV_REGISTRY:
+    if env_id not in ENVIRONMENTS:
         raise typer.BadParameter(
-            f"Unknown env '{env_id}'. Available: {list(ENV_REGISTRY.keys())}"
+            f"Unknown env '{env_id}'. Available: {list(registry.ENV_REGISTRY.keys())}"
         )
 
-    if constraint is not None and constraint not in CONSTRAINT_REGISTRY:
+    if constraint is not None and constraint not in CONSTRAINTS:
         raise typer.BadParameter(
-            f"Unknown constraint '{constraint}'. Available: {list(CONSTRAINT_REGISTRY.keys())}"
+            f"Unknown constraint '{constraint}'. Available: {list(registry.CONSTRAINT_REGISTRY.keys())}"
         )
 
     config = parse_config(env_id, env_cfgs, algo, algo_cfgs)
@@ -179,10 +181,13 @@ def run(
 
     config = Flags(config).parse(list(ctx.args))
 
+    if constraint is not None:
+        config = config.update({"constraint.type": constraint})
+
     if total_timesteps is not None:
         config = config.update({"run.total_timesteps": total_timesteps})
     config = config.update({"run.seed": seed})
-    
+
     print_config(config, algo)
 
     label_fn = load_callable(getattr(config.env, "label_fn", "masa.common.dummy:label_fn"))
@@ -208,14 +213,15 @@ def run(
             "Only evaluation episodes will be recorded; training episodes will not be recorded."
         )
 
+    env_kwargs = {"render_mode": "rgb_array"} if config.run.record_video else {} 
+
     train_env = make_env(
         config.env.id,
         config.constraint.type,
         config.env.max_episode_steps,
         label_fn=label_fn,
-        env_kwargs= {
-            "render_mode": "rgb_array",
-        },
+        constraint_kwargs=constraint_kwargs,
+        env_kwargs=env_kwargs,
         record_video=config.run.record_video,
         record_video_episode_trigger=None,
         video_folder=f"{config.run.logdir}/videos",
@@ -224,7 +230,6 @@ def run(
             "video_length": config.env.max_episode_steps,
             "name_prefix": "training",
         },
-        **constraint_kwargs,
     )
 
     eval_env_fn = lambda: make_env(
@@ -232,19 +237,17 @@ def run(
         config.constraint.type,
         config.env.max_episode_steps,
         label_fn=label_fn,
-        env_kwargs= {
-            "render_mode": "rgb_array",
-        },
+        constraint_kwargs=constraint_kwargs,
+        env_kwargs=env_kwargs,
         record_video=config.run.record_video,
         record_video_episode_trigger=lambda x: (x % config.run.eval_episodes == 0) and (config.run.eval_episodes != 0),
         video_folder=f"{config.run.logdir}/videos",
         video_kwargs={
             "name_prefix": "eval",
         },
-        **constraint_kwargs,
     )
     
-    algo_cls = ALGO_REGISTRY.get(algo)
+    algo_cls = registry.get_algorithm(algo)
     algo_kwargs = dict(config[algo])
 
     base_kwargs = {

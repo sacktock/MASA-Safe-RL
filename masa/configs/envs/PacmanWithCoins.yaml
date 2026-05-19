@@ -1,6 +1,6 @@
 defaults:
   env:
-    id: Pacman
+    id: PacmanWithCoins
     max_episode_steps: 1000
     label_fn: masa.envs.tabular.pacman:label_fn
     cost_fn: masa.envs.tabular.pacman:cost_fn

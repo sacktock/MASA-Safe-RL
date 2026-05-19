@@ -1,16 +1,6 @@
 from __future__ import annotations
-
-import argparse
+from masa.algorithms.ppo import PPO
 from pathlib import Path
-from typing import Literal
-
-from masa.common.utils import make_env
-from masa.envs.tabular.colour_grid_world import cost_fn, label_fn
-
-
-DEFAULT_VIDEO_FOLDER = "videos/record_video_colour_grid_world"
-ACTION_SEQUENCE = (1, 1, 2, 2, 2, 2, 4, 4)
-TriggerMode = Literal["episode", "step"]
 
 
 class RecordNextEpisodeEveryNSteps:
@@ -19,6 +9,7 @@ class RecordNextEpisodeEveryNSteps:
     def __init__(self, interval: int):
         if interval < 1:
             raise ValueError("interval must be at least 1")
+
         self.interval = interval
         self.total_steps = 0
         self.next_threshold = interval
@@ -26,146 +17,131 @@ class RecordNextEpisodeEveryNSteps:
 
     def observe_step(self) -> None:
         self.total_steps += 1
+
         while self.total_steps >= self.next_threshold:
             self.pending_recordings += 1
             self.next_threshold += self.interval
 
     def __call__(self, episode_id: int) -> bool:
         del episode_id
+
         if self.pending_recordings < 1:
             return False
+
         self.pending_recordings -= 1
         return True
 
+def main():
+    # Import the masa make_env function
+    from masa.common.utils import make_env
+    '''
+    def make_env(
+        env_id: str, 
+        constraint: str, 
+        max_episode_steps: int, 
+        *,
+        label_fn: Optional[LabelFn] = None, 
+        constraint_kwargs: Optional[dict[str, Any]] = None,
+        env_kwargs: Optional[dict[str, Any]] = None,
+        record_video: bool = False,
+        record_video_episode_trigger: Optional[Callable[[int], bool]] = None,
+        video_folder: str = "videos",
+        video_kwargs: Optional[dict[str, Any]] = None,
+        **kw
+    ) -> gym.Env:
+    '''
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Record short ColourGridWorld rollouts with Gymnasium's RecordVideo wrapper."
-    )
-    parser.add_argument(
-        "--video-folder",
-        default=DEFAULT_VIDEO_FOLDER,
-        help=f"Directory for generated MP4 files. Defaults to {DEFAULT_VIDEO_FOLDER!r}.",
-    )
-    parser.add_argument(
-        "--episodes",
-        type=int,
-        default=4,
-        help="Number of short episodes to record.",
-    )
-    parser.add_argument(
-        "--trigger-mode",
-        choices=("episode", "step"),
-        default="episode",
-        help=(
-            "Use 'episode' to record every Nth episode, or 'step' to record "
-            "the next episode after every N total environment steps."
-        ),
-    )
-    parser.add_argument(
-        "--trigger-value",
-        type=int,
-        default=1,
-        help=(
-            "Interval for the selected trigger mode. With --trigger-mode episode, "
-            "10 records episodes 10, 20, 30, ... . With --trigger-mode step, "
-            "100 records the next episode after total steps 100, 200, 300, ... ."
-        ),
-    )
-    parser.add_argument(
-        "--seed",
-        type=int,
-        default=0,
-        help="Base reset seed. Episode index is added to this value.",
-    )
-    parser.add_argument(
-        "--render-window-size",
-        type=int,
-        default=256,
-        help="Square RGB frame size requested from the environment renderer.",
-    )
-    return parser.parse_args()
+    # Import the labelling and cost functions for the PacmanWithCoins
+    from masa.envs.discrete.pacman_with_coins import label_fn, cost_fn
 
-
-def run_recording(
-    *,
-    video_folder: str | Path = DEFAULT_VIDEO_FOLDER,
-    episodes: int = 4,
-    trigger_mode: TriggerMode = "episode",
-    trigger_value: int = 1,
-    seed: int = 0,
-    render_window_size: int = 256,
-) -> list[Path]:
-    if episodes < 1:
-        raise ValueError("episodes must be at least 1")
-    if trigger_value < 1:
-        raise ValueError("trigger_value must be at least 1")
-    if render_window_size < 1:
-        raise ValueError("render_window_size must be at least 1")
-
-    step_trigger = None
-    if trigger_mode == "episode":
-        episode_trigger = lambda episode_id: (episode_id + 1) % trigger_value == 0
-    elif trigger_mode == "step":
-        step_trigger = RecordNextEpisodeEveryNSteps(trigger_value)
-        episode_trigger = step_trigger
-    else:
-        raise ValueError("trigger_mode must be 'episode' or 'step'")
-
-    output_dir = Path(video_folder)
-    env = make_env(
-        "colour_grid_world",
-        "cmdp",
-        len(ACTION_SEQUENCE),
-        label_fn=label_fn,
+    # We're going to use the PCTL constraint, which has key word args: (cost_fn CostFn: = DummyCostFn, alpha: float = 0.01) 
+    constraint_kwargs = dict(
         cost_fn=cost_fn,
-        budget=0.0,
-        env_kwargs={
-            "render_mode": "rgb_array",
-            "render_window_size": render_window_size,
-        },
+        alpha=0.01,
+    )
+
+    # Intialize the environment (env_id, constraint, max_epsiode_steps) with video logging
+    # make_env wraps the environment in TimeLimit -> LabelledEnv -> PCTLEnv -> ConstraintMonitor -> RewardMonitor -> RecordVideo
+    env = make_env(
+        "PacmanWithCoins", 
+        "PCTL", 
+        1000, 
+        label_fn=label_fn, 
+        constraint_kwargs=constraint_kwargs,
+        env_kwargs = {"render_mode": "rgb_array"},
         record_video=True,
-        record_video_episode_trigger=episode_trigger,
-        video_folder=str(output_dir),
+        record_video_episode_trigger=RecordNextEpisodeEveryNSteps(10_000),
+        video_folder="videos/PPO-PacmanWithCoins-Seed-0",
+        video_kwargs={
+            "name_prefix": "training",
+            "video_length": 1000,
+        },
     )
 
-    try:
-        for episode in range(episodes):
-            env.reset(seed=seed + episode)
-            for action in ACTION_SEQUENCE:
-                _, _, terminated, truncated, _ = env.step(action)
-                if step_trigger is not None:
-                    step_trigger.observe_step()
-                if terminated or truncated:
-                    break
-    finally:
-        env.close()
+    # PPO is a on-policy algorithm that takes one arg: env
+    #   and key word args:
+    #   tensorboard_logdir: Optional[str] = None,
+    #   wandb_project: Optional[str] = None,
+    #   wandb_name: Optional[str] = None,
+    #   seed: Optional[int] = None,
+    #   monitor: bool = True,
+    #   device: str = "auto",
+    #   verbose: int = 0,
+    #   env_fn: Optional[Callable[[], gym.Env]] = None,
+    #   eval_env: Optional[gym.Env] = None, 
+    #   learning_rate: Union[float, optax.Schedule] = 3e-4,
+    #   n_steps: int = 2048,
+    #   batch_size: int = 64,
+    #   n_epochs: int = 10,
+    #   gamma: float = 0.99,
+    #   gae_lambda: float = 0.95,
+    #   clip_range: Union[float, optax.Schedule] = 0.2,
+    #   normalize_advantage: bool = True,
+    #   ent_coef: float = 0.0,
+    #   vf_coef: float = 1.0,
+    #   max_grad_norm: float = 0.5,
+    #   policy_class: type[BaseJaxPolicy] = PPOPolicy,
+    #   policy_kwargs: Optional[dict[str, Any]] = None,
 
-    recorded_files = sorted(output_dir.glob("*.mp4"))
-    if not recorded_files:
-        raise RuntimeError(
-            f"No MP4 files were created in {output_dir}. "
-            "Increase --episodes or lower --trigger-value for sparse triggers."
-        )
-    return recorded_files
-
-
-def main() -> None:
-    args = parse_args()
-    recorded_files = run_recording(
-        video_folder=args.video_folder,
-        episodes=args.episodes,
-        trigger_mode=args.trigger_mode,
-        trigger_value=args.trigger_value,
-        seed=args.seed,
-        render_window_size=args.render_window_size,
+    # First lets initialize the eval_env with video logging 
+    eval_env = make_env(
+        "PacmanWithCoins", 
+        "PCTL", 
+        1000, 
+        label_fn=label_fn, 
+        constraint_kwargs=constraint_kwargs,
+        env_kwargs = {"render_mode": "rgb_array"},
+        record_video=True,
+        record_video_episode_trigger=lambda x: x % 10 == 0, # log one evale epsiode every 10 epsiodes
+        video_folder="videos/PPO-PacmanWithCoins-Seed-0",
+        video_kwargs={
+            "name_prefix": "eval",
+        },
     )
 
-    print(f"Trigger: {args.trigger_mode} every {args.trigger_value}")
-    print("Recorded video files:")
-    for path in recorded_files:
-        print(path)
+    algo = PPO(
+        env,
+        tensorboard_logdir=None, # ignoring tensorboard logging
+        seed=0,
+        monitor=True, # monitors training progress
+        device="auto", 
+        verbose=0, # verbosity level for monitoring
+        eval_env=eval_env, # separate environment instance for eval
+    )
 
+    # Now we begin training
+    algo.train(
+        num_frames=500_000, # total number of frames (environment interactions)
+        num_eval_episodes=10, # total number of evaluation episodes to run
+        eval_freq=10_000, # how frequently to run evaluation (default=0 => never run evaluation)
+        log_freq=10_000, # how frequenntly to log metrics to stdout or tensorboard
+        # prefill: Optional[int] = None (not implemented yet)
+        # save_freq: int = 0, (not implemented yet)
+        stats_window_size=100, # sliding window size for metrics logging
+    )
+
+    env.close()
+    eval_env.close()
 
 if __name__ == "__main__":
     main()

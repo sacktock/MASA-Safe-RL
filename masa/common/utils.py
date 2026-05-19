@@ -5,14 +5,9 @@ import warnings
 import gymnasium as gym
 from gymnasium.wrappers import RecordVideo as GymnasiumRecordVideo
 from pettingzoo import ParallelEnv
-from masa.plugins.helpers import load_plugins
-from masa.common.registry import (
-    CONSTRAINT_REGISTRY,
-    ENV_REGISTRY,
-    MARL_CONSTRAINT_REGISTRY,
-    MARL_ENV_REGISTRY,
-)
-from masa.common.wrappers import TimeLimit, ConstraintMonitor, RewardMonitor
+import masa
+from masa.common import registry
+from masa.common.wrappers import TimeLimit, ConstraintMonitor, RewardMonitor, ConstraintPersistentGymnasiumWrapper
 from masa.common.labelled_env import LabelledEnv
 from masa.common.labelled_pz_env import LabelledParallelEnv
 from masa.common.label_fn import LabelFn
@@ -51,12 +46,13 @@ def make_env(
     max_episode_steps: int, 
     *,
     label_fn: Optional[LabelFn] = None, 
+    constraint_kwargs: Optional[dict[str, Any]] = None,
     env_kwargs: Optional[dict[str, Any]] = None,
     record_video: bool = False,
     record_video_episode_trigger: Optional[Callable[[int], bool]] = None,
     video_folder: str = "videos",
     video_kwargs: Optional[dict[str, Any]] = None,
-    **constraint_kwargs
+    **kw
 ) -> gym.Env:
     r"""
     Construct a fully wrapped MASA environment using the canonical wrapper order.
@@ -86,6 +82,9 @@ def make_env(
             Optional function mapping observations to atomic predicate labels.
             If provided, labels are computed on every ``reset`` and ``step`` and
             stored under ``info["labels"]``.
+        constraint_kwargs:
+           Optional keyword arguments forwarded to the constraint wrapper
+           constructor.
         env_kwargs:
             Optional keyword arguments forwarded to the base environment
             constructor.
@@ -101,9 +100,6 @@ def make_env(
         video_kwargs:
             Optional keyword arguments forwarded to
             :class:`~gymnasium.wrappers.RecordVideo`.
-        **constraint_kwargs:
-            Additional keyword arguments forwarded to the constraint wrapper
-            constructor.
 
     Returns:
         A fully wrapped Gymnasium environment compatible with MASA algorithms,
@@ -122,20 +118,20 @@ def make_env(
         - :class:`masa.common.wrappers.RewardMonitor`
     """
 
-    load_plugins()
-    env_ctor = ENV_REGISTRY.get(env_id)
-    constraint_ctor = CONSTRAINT_REGISTRY.get(constraint)
+    env_ctor = registry.get_env(env_id)
+    constraint_ctor = registry.get_constraint(constraint)
     env = env_ctor(**dict(env_kwargs or {}))
     # must wrap time limit first
     env = TimeLimit(env, max_episode_steps)
     if label_fn is not None:
         env = LabelledEnv(env, label_fn)
-    env = constraint_ctor(env, **constraint_kwargs)
+    env = constraint_ctor(env, **dict(constraint_kwargs or {}))
     env = ConstraintMonitor(env)
     env = RewardMonitor(env)
     if record_video:
-        env = GymnasiumRecordVideo(
+        env = ConstraintPersistentGymnasiumWrapper(
             env,
+            GymnasiumRecordVideo,
             video_folder=video_folder,
             **_resolve_video_kwargs(video_kwargs, record_video_episode_trigger),
         )
@@ -147,12 +143,13 @@ def make_marl_env(
     constraint: str,
     *,
     label_fn: Optional[dict[str, LabelFn] | LabelFn] = None,
+    constraint_kwargs: Optional[dict[str, Any]] = None,
     env_kwargs: Optional[dict[str, Any]] = None,
     record_video: bool = False,
     record_video_episode_trigger: Optional[Callable[[int], bool]] = None,
     video_folder: str = "videos",
     video_kwargs: Optional[dict[str, Any]] = None,
-    **constraint_kwargs,
+    **kw
 ) -> ParallelEnv:
     r"""
     Construct a fully wrapped MASA multi-agent environment.
@@ -173,6 +170,10 @@ def make_marl_env(
             Optional labelling function, or per-agent mapping of labelling
             functions. If omitted, the base environment's ``label_fn`` attribute
             is used.
+        constraint_kwargs:
+            Optional keyword arguments forwarded to the constraint wrapper
+            constructor. If ``cost_fn`` is omitted and the base environment
+            exposes one, it is forwarded automatically.
         env_kwargs:
             Optional keyword arguments forwarded to the base environment
             constructor.
@@ -189,19 +190,14 @@ def make_marl_env(
         video_kwargs:
             Optional keyword arguments forwarded to
             :class:`~masa.common.pettingzoo_record_video.RecordVideoParallel`.
-        **constraint_kwargs:
-            Additional keyword arguments forwarded to the constraint wrapper
-            constructor. If ``cost_fn`` is omitted and the base environment
-            exposes one, it is forwarded automatically.
 
     Returns:
         A wrapped PettingZoo parallel environment compatible with MASA MARL
         constraints.
     """
 
-    load_plugins()
-    env_ctor = MARL_ENV_REGISTRY.get(env_id)
-    constraint_ctor = MARL_CONSTRAINT_REGISTRY.get(constraint)
+    env_ctor = registry.get_marl_env(env_id)
+    constraint_ctor = registry.get_marl_constraint(constraint)
 
     raw_env = env_ctor(**dict(env_kwargs or {}))
     resolved_label_fn = label_fn if label_fn is not None else getattr(raw_env, "label_fn", None)
@@ -211,13 +207,15 @@ def make_marl_env(
             "Pass label_fn=... to make_marl_env."
         )
 
+    constraint_kwargs = dict(constraint_kwargs or {})
+
     if "cost_fn" not in constraint_kwargs:
         cost_fn = getattr(raw_env, "cost_fn", None)
         if cost_fn is not None:
             constraint_kwargs["cost_fn"] = cost_fn
 
     env = LabelledParallelEnv(raw_env, resolved_label_fn)
-    env = constraint_ctor(env, **constraint_kwargs)
+    env = constraint_ctor(env, **dict(constraint_kwargs or {}))
     if record_video:
         env = RecordVideoParallel(
             env,

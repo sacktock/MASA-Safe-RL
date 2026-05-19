@@ -1,13 +1,13 @@
 defaults:
   env:
-    id: colour_bomb_grid_world
+    id: ColourBombGridWorld
     max_episode_steps: 100
     label_fn: masa.envs.tabular.colour_bomb_grid_world:label_fn
     cost_fn: masa.envs.tabular.colour_bomb_grid_world:cost_fn
 
   constraint:
-    type: cmdp
-    cost_budget: 1
+    type: CMDP
+    cost_budget: 0
 
   run:
     total_timesteps: 100000
@@ -16,7 +16,7 @@ defaults:
     log_every: 1000
     stats_window_size: 100
 
-property_2:
+Property2:
   constraint:
     type: ltl_safety
     dfa: masa.examples.colour_bomb_grid_world.property_2:make_dfa

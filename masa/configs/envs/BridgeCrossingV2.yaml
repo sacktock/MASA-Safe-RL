@@ -1,13 +1,13 @@
 defaults:
   env:
-    id: bridge_crossing_v2
+    id: BridgeCrossingV2
     max_episode_steps: 400
     label_fn: masa.envs.tabular.bridge_crossing_v2:label_fn
     cost_fn: masa.envs.tabular.bridge_crossing_v2:cost_fn
 
   constraint:
-    type: cmdp
-    cost_budget: 1
+    type: CMDP
+    cost_budget: 0
 
   run:
     total_timesteps: 100000

@@ -8,6 +8,7 @@ from masa.envs.discrete.base import DiscreteEnv
 from masa.envs.tabular.utils import create_pacman_transition_dict, create_pacman_end_component
 from masa.envs.discrete.renderers.pacman import PacmanWithCoinsRenderer, validate_renderer_options
 from masa.envs.tabular.renderers.pacman import PacmanHat, RGBColor
+from functools import lru_cache
 
 STANDARD_MAP = np.array([
     [1,1,1,1,1,1,1,1,1,1],
@@ -27,15 +28,18 @@ AGENT_DIRECTION = 1
 GHOST_START = (3, 5)
 GHOST_DIRECTION = 1
 
-_, _, TRANSITION_MATRIX, N_STATES, STATE_MAP, REVERSE_STATE_MAP = \
-create_pacman_transition_dict(
-    STANDARD_MAP, 
-    return_matrix=True, 
-    n_directions=N_DIRECTIONS, 
-    n_actions=N_ACTIONS, 
-    n_ghosts=N_GHOSTS, 
-    ghost_rand_prob=GHOST_RAND_PROB
-)
+@lru_cache(maxsize=1)
+def get_pacman_dynamics():
+    return create_pacman_transition_dict(
+        STANDARD_MAP, 
+        return_matrix=True, 
+        n_directions=N_DIRECTIONS, 
+        n_actions=N_ACTIONS, 
+        n_ghosts=N_GHOSTS, 
+        ghost_rand_prob=GHOST_RAND_PROB
+    )
+
+_, _, TRANSITION_MATRIX, N_STATES, STATE_MAP, REVERSE_STATE_MAP = get_pacman_dynamics()
 
 def safety_abstraction(obs: np.ndarray) -> int:
     agent_slice = obs[:, :, 1 : 1 + N_DIRECTIONS]

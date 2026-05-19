@@ -7,6 +7,7 @@ from collections import defaultdict
 from masa.envs.tabular.base import TabularEnv
 from masa.envs.tabular.utils import create_pacman_transition_dict, create_pacman_end_component
 from masa.envs.tabular.renderers.pacman import PacmanHat, PacmanRenderer, RGBColor, validate_renderer_options
+from functools import lru_cache
 
 STANDARD_MAP = np.array([
     [1,1,1,1,1,1,1,1,1,1],
@@ -27,17 +28,20 @@ AGENT_DIRECTION = 1
 GHOST_START = (3, 5)
 GHOST_DIRECTION = 1
 
-_, _, TRANSITION_MATRIX, N_STATES, STATE_MAP, REVERSE_STATE_MAP = \
-create_pacman_transition_dict(
-    STANDARD_MAP, 
-    return_matrix=True, 
-    n_directions=N_DIRECTIONS, 
-    n_actions=N_ACTIONS, 
-    n_ghosts=N_GHOSTS, 
-    ghost_rand_prob=GHOST_RAND_PROB, 
-    food_x=FOOD[0], 
-    food_y=FOOD[1]
-)
+@lru_cache(maxsize=1)
+def get_pacman_dynamics():
+    return create_pacman_transition_dict(
+        STANDARD_MAP, 
+        return_matrix=True, 
+        n_directions=N_DIRECTIONS, 
+        n_actions=N_ACTIONS, 
+        n_ghosts=N_GHOSTS, 
+        ghost_rand_prob=GHOST_RAND_PROB, 
+        food_x=FOOD[0], 
+        food_y=FOOD[1]
+    )
+
+_, _, TRANSITION_MATRIX, N_STATES, STATE_MAP, REVERSE_STATE_MAP = get_pacman_dynamics()
 
 def label_fn(obs):
     (agent_y, agent_x, agent_direction, ghost_y, ghost_x, ghost_direction, food) = REVERSE_STATE_MAP[obs]

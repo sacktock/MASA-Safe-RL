@@ -1,12 +1,12 @@
 defaults:  
   env:
-    id: disc_cartpole
+    id: ContinuousCartpole
     max_episode_steps: 500
-    label_fn: masa.envs.discrete.cartpole:label_fn
-    cost_fn: masa.envs.discrete.cartpole:cost_fn
+    label_fn: masa.envs.continuous.cartpole:label_fn
+    cost_fn: masa.envs.continuous.cartpole:cost_fn
 
   constraint:
-    type: cmdp
+    type: CMDP
     cost_budget: 0
 
   run:

@@ -1,14 +1,14 @@
 
 defaults:
   env:
-    id: disc_cartpole
+    id: DiscreteCartpole
     max_episode_steps: 200
     label_fn: masa.common.dummy:label_fn
     cost_fn: masa.common.dummy:cost_fn
 
   constraint:
     type: cmdp
-    cost_budget: 20.0
+    cost_budget: 1.0
     alpha: 0.01
     avoid_label: unsafe
     reach_label: target

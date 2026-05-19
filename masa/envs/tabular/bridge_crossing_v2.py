@@ -7,14 +7,17 @@ from collections import defaultdict
 from masa.envs.tabular.base import TabularEnv
 from masa.envs.tabular.utils import create_transition_matrix
 from masa.envs.tabular.renderers.bridge_crossing import BridgeCrossingRenderer, validate_renderer_options
+from functools import lru_cache
 
 GRID_SIZE = 20
+N_STATES = GRID_SIZE**2
 N_ACTIONS = 5
 GRID = np.arange(GRID_SIZE**2).reshape(GRID_SIZE, GRID_SIZE)
 START_STATE = int(GRID[-1, 0])
 GOAL_STATES = list(GRID[:7, :].flatten())
 LAVA_STATES = list(GRID[8:12, 2:16].flatten()) + list([GRID[11, 1]])
 SLIP_PROB = 0.04
+TERMINAL_STATES = GOAL_STATES + LAVA_STATES
 
 LABEL_DICT = defaultdict(set)
 LABEL_DICT[START_STATE] = {"start"}
@@ -26,6 +29,16 @@ for _state in LAVA_STATES:
 label_fn = lambda obs: LABEL_DICT[obs] 
 
 cost_fn = lambda labels: 1.0 if "lava" in labels else 0.0
+
+@lru_cache(maxsize=1)
+def get_transition_matrix():
+    return create_transition_matrix(
+        GRID_SIZE, 
+        N_STATES,
+        N_ACTIONS,
+        slip_prob=SLIP_PROB,
+        terminal_states=TERMINAL_STATES
+    )
 
 class BridgeCrossingV2(TabularEnv):
     metadata = {"render_modes": ["ansi", "rgb_array", "human"], "render_fps": 4}
@@ -42,7 +55,7 @@ class BridgeCrossingV2(TabularEnv):
         self._ncol = self._grid_size
         self._nrow = self._grid_size
 
-        self._n_states = self._grid_size**2
+        self._n_states = N_STATES
         self._n_actions = N_ACTIONS
 
         self.observation_space = spaces.Discrete(self._n_states)
@@ -52,9 +65,9 @@ class BridgeCrossingV2(TabularEnv):
         self._goal_states = GOAL_STATES
         self._lava_states = LAVA_STATES
 
-        self._terminal_states = self._goal_states + self._lava_states
+        self._terminal_states = TERMINAL_STATES
 
-        self._transition_matrix = create_transition_matrix(self._grid_size, self._n_states, self._n_actions, slip_prob=SLIP_PROB, terminal_states=self._terminal_states)
+        self._transition_matrix = get_transition_matrix()
 
         self.np_random = None
         self._state = None

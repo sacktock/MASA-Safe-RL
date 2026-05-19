@@ -7,8 +7,10 @@ from collections import defaultdict
 from masa.envs.tabular.base import TabularEnv
 from masa.envs.tabular.utils import create_transition_matrix
 from masa.envs.tabular.renderers.colour_bomb_grid_world import ColourBombGridWorldRenderer, validate_renderer_options
+from functools import lru_cache
 
 GRID_SIZE = 9
+N_STATES = GRID_SIZE**2
 N_ACTIONS = 5
 START_STATE = 74
 GREEN_STATES = [65]
@@ -18,6 +20,7 @@ PINK_STATES = [7, 8, 16, 17]
 WALL_STATES = [11, 12, 13, 14, 15, 29, 30, 50, 52, 53, 55, 56, 57, 59, 64, 66, 69]
 BOMB_STATES = [27, 43, 78]
 SLIP_PROB = 0.1
+GOAL_STATES = YELLOW_STATES + BLUE_STATES + PINK_STATES
 
 LABEL_DICT = defaultdict(set)
 LABEL_DICT[START_STATE] = {"start"}
@@ -36,6 +39,17 @@ label_fn = lambda obs: LABEL_DICT[obs]
 
 cost_fn = lambda labels: 1.0 if "bomb" in labels else 0.0
 
+@lru_cache(maxsize=1)
+def get_transition_matrix():
+    return create_transition_matrix(
+        GRID_SIZE, 
+        N_STATES,
+        N_ACTIONS,
+        slip_prob=SLIP_PROB,
+        terminal_states=GOAL_STATES,
+        wall_states=WALL_STATES
+    )
+
 class ColourBombGridWorld(TabularEnv):
     metadata = {"render_modes": ["ansi", "rgb_array", "human"], "render_fps": 4}
 
@@ -51,7 +65,7 @@ class ColourBombGridWorld(TabularEnv):
         self._ncol = self._grid_size
         self._nrow = self._grid_size
 
-        self._n_states = self._grid_size**2
+        self._n_states = N_STATES
         self._n_actions = N_ACTIONS
 
         self.observation_space = spaces.Discrete(self._n_states)
@@ -67,10 +81,10 @@ class ColourBombGridWorld(TabularEnv):
         self._wall_states = WALL_STATES
         self._bomb_states = BOMB_STATES
         self._medic_states = []
-        self._goal_states = YELLOW_STATES + BLUE_STATES + PINK_STATES
+        self._goal_states = GOAL_STATES
         self._active_colour_dict = {}
 
-        self._transition_matrix = create_transition_matrix(self._grid_size, self._n_states, self._n_actions, slip_prob=SLIP_PROB, terminal_states=self._goal_states, wall_states=WALL_STATES)
+        self._transition_matrix = get_transition_matrix()
 
         self.np_random = None
         self._state = None

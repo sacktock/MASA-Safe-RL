@@ -11,8 +11,14 @@ def main():
         max_episode_steps: int, 
         *,
         label_fn: Optional[LabelFn] = None, 
-        **constraint_kwargs
-    ):
+        constraint_kwargs: Optional[dict[str, Any]] = None,
+        env_kwargs: Optional[dict[str, Any]] = None,
+        record_video: bool = False,
+        record_video_episode_trigger: Optional[Callable[[int], bool]] = None,
+        video_folder: str = "videos",
+        video_kwargs: Optional[dict[str, Any]] = None,
+        **kw
+    ) -> gym.Env:
     '''
 
     # Import the labelling function for the ColourBombGridWorldV2 environment
@@ -27,7 +33,7 @@ def main():
 
     # First lets initialize the eval_env (env_id, constraint, max_epsiode_steps)
     # make_env wraps the environment in TimeLimit -> LabelledEnv -> LTLSafetyEnv -> ConstraintMonitor -> RewardMonitor
-    env = make_env("colour_bomb_grid_world_v2", "ltl_safety", 250, label_fn=label_fn, **constraint_kwargs)
+    env = make_env("ColourBombGridWorldV2", "LTL_SAFETY", 250, label_fn=label_fn, constraint_kwargs=constraint_kwargs)
 
     # Now we're going to wrap our environment in ProbShieldWrapperCont
     # The wrapper takes one arg: env
@@ -70,7 +76,7 @@ def main():
     # First lets initialize the eval_env
     # We can reuse constraint kwargs here as dfa_to_costfn internally creates a deepcopy of the dfa
     eval_env = ProbShieldWrapperCont(
-        make_env("colour_bomb_grid_world_v2", "ltl_safety", 250, label_fn=label_fn, **constraint_kwargs),
+        make_env("ColourBombGridWorldV2", "LTL_SAFETY", 250, label_fn=label_fn, constraint_kwargs=constraint_kwargs),
         init_safety_bound=0.01,
         theta=1e-15,
         max_vi_steps=10_000,

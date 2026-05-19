@@ -375,9 +375,8 @@ class LTLSafety(Constraint):
 
     @property
     def constraint_type(self) -> str:
-        """Stable identifier string: ``"ltl_safety"``."""
-        return "ltl_safety"
-
+        """Stable identifier string: ``"LTL_SAFETY"``."""
+        return "LTL_SAFETY"
 
 class LTLSafetyEnv(BaseConstraintEnv):
     """Gymnasium wrapper that monitors LTL safety and augments observations.

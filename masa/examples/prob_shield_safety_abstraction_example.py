@@ -11,8 +11,14 @@ def main():
         max_episode_steps: int, 
         *,
         label_fn: Optional[LabelFn] = None, 
-        **constraint_kwargs
-    ):
+        constraint_kwargs: Optional[dict[str, Any]] = None,
+        env_kwargs: Optional[dict[str, Any]] = None,
+        record_video: bool = False,
+        record_video_episode_trigger: Optional[Callable[[int], bool]] = None,
+        video_folder: str = "videos",
+        video_kwargs: Optional[dict[str, Any]] = None,
+        **kw
+    ) -> gym.Env:
     '''
 
     # Import the labelling and cost functions for the PacmanWithCoins
@@ -26,7 +32,7 @@ def main():
 
     # Intialize the environment (env_id, constraint, max_epsiode_steps)
     # make_env wraps the environment in TimeLimit -> LabelledEnv -> PCTLEnv -> ConstraintMonitor -> RewardMonitor
-    env = make_env("pacman_with_coins", "pctl", 1000, label_fn=label_fn, **constraint_kwargs)
+    env = make_env("PacmanWithCoins", "PCTL", 1000, label_fn=label_fn, constraint_kwargs=constraint_kwargs)
 
     # Now we're going to wrap our environment in ProbShieldWrapperDisc
     # The wrapper takes one arg: env
@@ -73,7 +79,7 @@ def main():
 
     # First lets initialize the eval_env
     eval_env = ProbShieldWrapperDisc(
-        make_env("pacman_with_coins", "pctl", 1000, label_fn=label_fn, **constraint_kwargs), 
+        make_env("PacmanWithCoins", "PCTL", 1000, label_fn=label_fn, constraint_kwargs=constraint_kwargs), 
         label_fn=abstr_label_fn,
         cost_fn=cost_fn,
         safety_abstraction=safety_abstraction,

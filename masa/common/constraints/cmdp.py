@@ -111,8 +111,8 @@ class CumulativeCost(Constraint):
 
     @property
     def constraint_type(self) -> str:
-        """Stable identifier string: ``"cmdp"``."""
-        return "cmdp"
+        """Stable identifier string: ``"CMDP"``."""
+        return "CMDP"
 
 class CumulativeCostEnv(BaseConstraintEnv):
     """Gymnasium wrapper that attaches :class:`CumulativeCost` to an environment.

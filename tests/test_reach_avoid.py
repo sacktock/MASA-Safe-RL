@@ -14,8 +14,10 @@ def test_reach_avoid_make_env_tracks_avoid_and_reach_labels():
             "reach_avoid",
             40,
             label_fn=label_fn,
-            avoid_label="blue",
-            reach_label="goal",
+            constraint_kwargs={
+                "avoid_label":"blue",
+                "reach_label":"goal",
+            }
         )
 
     unsafe_env = build_env()
