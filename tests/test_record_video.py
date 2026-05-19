@@ -64,7 +64,7 @@ def test_make_env_recording_is_off_by_default():
 
     try:
         assert isinstance(env, RewardMonitor)
-        assert not isinstance(env, ConstraintPersistentGymnasiumWrapper) and not env.wrapper_cls is GymnasiumRecordVideo
+        assert not isinstance(env, ConstraintPersistentGymnasiumWrapper) and not hasattr(env, "wrapper_cls")
     finally:
         env.close()
 

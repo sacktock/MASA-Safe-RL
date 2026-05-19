@@ -303,7 +303,7 @@ def test_probabilistic_shielding_minipacman_notebook_is_valid_and_executable():
         "project_candidate_action",
         "safe_actions",
         "bounds",
-        "alpha=0.01",
+        "\"alpha\": 0.01",
     ):
         assert token in source, f"{token} missing"
     assert "<svg" not in source
@@ -339,7 +339,7 @@ def test_safety_abstractions_pacman_coins_notebook_is_valid_and_executable():
         "successor_states_matrix",
         "probabilities",
         "project_candidate_action",
-        "alpha=0.01",
+        "\"alpha\": 0.01",
     ):
         assert token in source, f"{token} missing"
     assert "<svg" not in source
@@ -369,7 +369,7 @@ def test_vectorization_and_normalization_notebook_is_valid_and_executable():
         "FlattenDictObsWrapper",
         "ColourGridWorld",
         "ContinuousCartpole",
-        "ColourBomgGridWorld",
+        "ColourBombGridWorld",
         "LTL_SAFETY",
         'obs_type="dict"',
         "make_never_bomb_dfa",
