@@ -171,7 +171,7 @@ def test_make_marl_env_recording_is_off_by_default():
     env = make_marl_env(
         "chicken_matrix",
         "cmg",
-        constraint_kwargs={"budgets": [Budget(amount=3.0, agents=("player_0", "player_1"), name="shared")]}
+        constraint_kwargs={"budgets": [Budget(amount=3.0, agents=("player_0", "player_1"), name="shared")]},
         env_kwargs={"max_moves": 1},
     )
 
