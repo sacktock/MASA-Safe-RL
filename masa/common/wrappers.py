@@ -387,7 +387,6 @@ class ConstraintMonitor(ConstraintPersistentWrapper):
         info = dict(info or {})
         info.setdefault("constraint", {})["type"] = self._constraint_env.constraint_type
         info["constraint"]["step"] = self._step_metrics()
-        info["constraint"]["episode"] = self._episode_metrics()
         if terminated or truncated:
             info["constraint"]["episode"] = self._episode_metrics()
         return observation, reward, terminated, truncated, info
