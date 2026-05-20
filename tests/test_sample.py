@@ -228,6 +228,53 @@ def test_cartpole_envs_render_rgb_array_ansi_and_notebook():
     assert "play_env" in source
 
 
+def test_mountain_car_envs_render_rgb_array_ansi():
+    import numpy as np
+    import pytest
+
+    from masa.envs.continuous.mountain_car import ContinuousMountainCar
+    from masa.envs.discrete.mountain_car import DiscreteMountainCar
+
+    env_cases = (
+        (DiscreteMountainCar, 1),
+        (ContinuousMountainCar, np.array([1.0], dtype=np.float32)),
+    )
+
+    for env_cls, action in env_cases:
+        env = env_cls(render_mode="rgb_array", render_window_size=192)
+        env.reset(seed=0)
+        frame = env.render()
+        assert frame.shape == (192, 192, 3)
+        assert frame.dtype.name == "uint8"
+        assert frame.mean() > 0
+        env.step(action)
+        next_frame = env.render()
+        assert next_frame.shape == frame.shape
+        assert next_frame.mean() > 0
+        env.close()
+
+    for env_cls, action in env_cases:
+        env = env_cls(render_mode="ansi")
+        env.reset(seed=0)
+        env.step(action)
+        rendered = env.render()
+        assert isinstance(rendered, str)
+        for token in ("position", "velocity", "status", "last_action"):
+            assert token in rendered
+        env.close()
+
+    for env_cls, _ in env_cases:
+        env = env_cls()
+        env.reset(seed=0)
+        assert env.render() is None
+        env.close()
+
+        with pytest.raises(ValueError):
+            env_cls(render_mode="bad")
+        with pytest.raises(ValueError):
+            env_cls(render_window_size=0)
+
+
 def test_colour_grid_world_render_rgb_array_ansi_and_notebook():
     import json
 
