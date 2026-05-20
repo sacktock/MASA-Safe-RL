@@ -178,7 +178,7 @@ def test_cartpole_envs_render_rgb_array_ansi_and_notebook():
     )
 
     for env_cls, action in env_cases:
-        assert env_cls.metadata["render_fps"] == 60
+        assert env_cls.metadata["render_fps"] == 30
         env = env_cls(render_mode="rgb_array", render_window_size=192)
         env.reset(seed=0)
         frame = env.render()
