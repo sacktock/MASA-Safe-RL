@@ -244,6 +244,7 @@ def test_mountain_car_envs_render_rgb_array_ansi():
     )
 
     for env_cls, action in env_cases:
+        assert env_cls.metadata["render_fps"] == 60
         env = env_cls(render_mode="rgb_array", render_window_size=192)
         env.reset(seed=0)
         frame = env.render()
@@ -304,6 +305,7 @@ def test_mountain_car_envs_render_rgb_array_ansi():
     assert "render_window_size=512" in source
     assert "pygame.K_LEFT" in source
     assert "pygame.K_SPACE" in source
+    assert "pygame.key.get_pressed()" in source
     assert "play_env" in source
 
 
