@@ -9,6 +9,23 @@ registry.ENV_REGISTRY.register(
 )
 
 registry.ENV_REGISTRY.register(
+    "Obstacle", "masa.envs.continuous.obstacle:Obstacle"
+)
+
+registry.ENV_REGISTRY.register(
+    "ObstacleV2", "masa.envs.continuous.obstacle_v2:ObstacleV2"
+)
+
+registry.ENV_REGISTRY.register(
+    "ObstacleV3", "masa.envs.continuous.obstacle_v3:ObstacleV3"
+)
+
+registry.ENV_REGISTRY.register(
+    "ObstacleV4", "masa.envs.continuous.obstacle_v4:ObstacleV4"
+)
+
+
+registry.ENV_REGISTRY.register(
     "DiscreteCartpole", "masa.envs.discrete.cartpole:DiscreteCartpole"
 )
 
