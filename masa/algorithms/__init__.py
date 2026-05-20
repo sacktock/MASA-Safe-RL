@@ -55,6 +55,11 @@ registry.ALGO_REGISTRY.register(
     "masa.algorithms.on_policy:TRPOLag",
 )
 
+registry.ALGO_REGISTRY.register(
+    "CPO",
+    "masa.algorithms.on_policy:CPO",
+)
+
 ALGORITHMS = registry.ALGO_REGISTRY.keys()
 
 __all__ = ALGORITHMS

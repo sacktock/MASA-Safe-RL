@@ -11,7 +11,6 @@ import gymnasium as gym
 from gymnasium import spaces
 from typing import Any, Tuple, Optional, Union, Callable
 from masa.common.base_class import BaseJaxPolicy
-from masa.common.buffers import CostRolloutBuffer
 from masa.algorithms.on_policy import PPO
 from masa.algorithms.on_policy.abstract_classes import OnPolicyNaiveLagrangeAlgorithm
 from masa.common.policies import PPOLagPolicy
