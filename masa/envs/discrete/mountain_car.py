@@ -25,7 +25,7 @@ def label_fn(obs):
 cost_fn = lambda labels: 1.0 if "wall" in labels else 0.0
 
 class DiscreteMountainCar(DiscreteEnv):
-    metadata = {"render_modes": ["ansi", "rgb_array", "human"], "render_fps": 60}
+    metadata = {"render_modes": ["ansi", "rgb_array", "human"], "render_fps": 30}
 
     def __init__(
         self,

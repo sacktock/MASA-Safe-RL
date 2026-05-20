@@ -21,7 +21,7 @@ def label_fn(obs):
 cost_fn = lambda labels: 0.0 if "stable" in labels else 1.0
 
 class DiscreteCartpole(DiscreteEnv):
-    metadata = {"render_modes": ["ansi", "rgb_array", "human"], "render_fps": 30}
+    metadata = {"render_modes": ["ansi", "rgb_array", "human"], "render_fps": 15}
 
     def __init__(
         self,
