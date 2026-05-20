@@ -11,7 +11,7 @@ import jax.random as jr
 from jax import jit
 from functools import partial
 
-class QL_Lambda(QL):
+class QL_LAMBDA(QL):
 
     def __init__(
         self,

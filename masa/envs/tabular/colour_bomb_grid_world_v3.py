@@ -1,16 +1,19 @@
 from __future__ import annotations
-from typing import Any
+from typing import Any, Literal
 from gymnasium import spaces
 import numpy as np
 from masa.common.label_fn import LabelFn
 from collections import defaultdict 
 from masa.envs.tabular.base import TabularEnv
 from masa.envs.tabular.utils import create_advanced_transition_matrix
+from masa.envs.tabular.renderers.colour_bomb_grid_world import ColourBombGridWorldRenderer, validate_renderer_options
+from functools import lru_cache
 
 GRID_SIZE = 15
 N_ACTIONS = 5
 
 N_COLOURED_ZONES = 5
+N_STATES = (GRID_SIZE**2) * N_COLOURED_ZONES
 
 START_STATES = []
 GREEN_STATES = []
@@ -40,6 +43,7 @@ for i in range(N_COLOURED_ZONES):
     BOMB_STATES += list(np.array([76, 181, 123,82,207,8,58]) + z)
     MEDIC_STATES += list(np.array([154, 93, 38, 205, 74]) + z)
 SLIP_PROB = 0.1
+GOAL_STATES = GREEN_STATES + YELLOW_STATES + RED_STATES + BLUE_STATES + PINK_STATES
 
 LABEL_DICT = defaultdict(set)
 for _state in START_STATES:
@@ -63,10 +67,29 @@ label_fn = lambda obs: LABEL_DICT[obs]
 
 cost_fn = lambda labels: 1.0 if "bomb" in labels else 0.0
 
-class ColourBombGridWorldV3(TabularEnv):
+@lru_cache(maxsize=1)
+def get_transition_matrix():
+    return create_advanced_transition_matrix(
+        GRID_SIZE,
+        N_COLOURED_ZONES,
+        N_STATES,
+        N_ACTIONS,
+        GOAL_STATES,
+        slip_prob=SLIP_PROB,
+        safe_states=MEDIC_STATES,
+        wall_states=WALL_STATES
+    )
 
-    def __init__(self):
+class ColourBombGridWorldV3(TabularEnv):
+    metadata = {"render_modes": ["ansi", "rgb_array", "human"], "render_fps": 4}
+
+    def __init__(
+        self,
+        render_mode: Literal["ansi", "rgb_array", "human"] | None = None,
+        render_window_size: int = 512,
+    ):
         super().__init__()
+        validate_renderer_options(render_mode, render_window_size)
 
         self._grid_size = GRID_SIZE
         self._ncol = self._grid_size
@@ -74,15 +97,24 @@ class ColourBombGridWorldV3(TabularEnv):
 
         self._n_coloured_zones = N_COLOURED_ZONES
 
-        self._n_states = (self._grid_size**2)*self._n_coloured_zones
+        self._n_states = N_STATES
         self._n_actions = N_ACTIONS
 
         self.observation_space = spaces.Discrete(self._n_states)
         self.action_space = spaces.Discrete(self._n_actions)
 
         self._start_states = START_STATES
+        self._start_state = self._start_states[0]
+        self._green_states = GREEN_STATES
+        self._yellow_states = YELLOW_STATES
+        self._red_states = RED_STATES
+        self._blue_states = BLUE_STATES
+        self._pink_states = PINK_STATES
+        self._wall_states = WALL_STATES
+        self._bomb_states = BOMB_STATES
+        self._medic_states = MEDIC_STATES
 
-        self._goal_states = GREEN_STATES + YELLOW_STATES + RED_STATES + BLUE_STATES + PINK_STATES
+        self._goal_states = GOAL_STATES
 
         self._active_colour_dict = dict({
             0: "green",
@@ -94,7 +126,7 @@ class ColourBombGridWorldV3(TabularEnv):
 
         self._safe_states = MEDIC_STATES
 
-        self._transition_matrix = create_advanced_transition_matrix(self._grid_size, self._n_coloured_zones, self._n_states, self._n_actions, self._goal_states, slip_prob=SLIP_PROB, safe_states=self._safe_states, wall_states=WALL_STATES)
+        self._transition_matrix = get_transition_matrix()
 
         # after reaching a goal state, transition to a random start state
         for _state in self._goal_states:
@@ -105,6 +137,10 @@ class ColourBombGridWorldV3(TabularEnv):
 
         self.np_random = None
         self._state = None
+        self._step_count = 0
+        self.render_mode = render_mode
+        self.render_window_size = int(render_window_size)
+        self._renderer = ColourBombGridWorldRenderer(self)
 
 
     def reset(self, *, seed: int | None = None, options: Dict[str, Any] | None = None):
@@ -118,12 +154,31 @@ class ColourBombGridWorldV3(TabularEnv):
             self.np_random = np.random.default_rng(seed)
 
         self._state = self.np_random.choice(self._start_states)
+        self._step_count = 0
+        if self.render_mode == "human":
+            self.render()
         return self._state, {}
 
     def step(self, action):
         assert self.action_space.contains(action), f"Invalid action {action}!"
         self._state = self.np_random.choice(self._n_states, p=self._transition_matrix[:, self._state, action])
+        self._step_count += 1
 
         reward = 1.0 if self._active_colour_dict[self._state//(self._grid_size**2)] in label_fn(self._state) else 0.0
 
+        if self.render_mode == "human":
+            self.render()
         return self._state, reward, False, False, {}
+
+    def render(self):
+        return self._renderer.render()
+
+    def close(self) -> None:
+        self._renderer.close()
+
+    @property
+    def human_window_closed(self) -> bool:
+        return self._renderer.human_window_closed
+
+    def handle_pygame_event(self, event: Any) -> bool:
+        return self._renderer.handle_pygame_event(event)

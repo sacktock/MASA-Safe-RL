@@ -13,6 +13,8 @@ All three use the Gymnasium single-agent API with:
 - default `label_fn` and `cost_fn` helpers for MASA constraints,
 - `rgb_array` and `human` rendering modes.
 
+The render window target size is controlled with `render_window_size=512` on each environment constructor.
+
 These environments are useful when reward and safety come apart on purpose. The agent can often improve return by approaching or
 triggering unsafe situations, so they are natural testbeds for CMDP budgets, reach-avoid constraints, and automaton-based safety
 specifications.
@@ -46,7 +48,8 @@ env = make_env(
 )
 ```
 
-To inspect the visual layouts interactively, see `notebooks/environments/play_safety_gridworlds.ipynb`.
+To inspect the visual layouts interactively, see `notebooks/envs/play_safety_gridworlds.ipynb`, which includes a button selector
+for `island_navigation`, `conveyor_belt`, and `sokoban`.
 
 ```{toctree}
 :hidden:

@@ -23,6 +23,7 @@ If a move would cross a wall or boundary, the blocked object stays in place.
 - Action space: `Discrete(4)`
 - Default episode limit in MASA configs: `50`
 - Rendering: `rgb_array` and `human`
+- Render window target size: `render_window_size=512`
 
 The observation is a single discrete index encoding:
 

@@ -1,5 +1,5 @@
 from masa.common.wrappers import NormWrapper, VecNormWrapper, DummyVecWrapper
-from masa.algorithms.ppo import PPO
+from masa.algorithms.on_policy import PPO
 
 def main():
     # Import the masa make_env function
@@ -11,8 +11,14 @@ def main():
         max_episode_steps: int, 
         *,
         label_fn: Optional[LabelFn] = None, 
-        **constraint_kwargs
-    ):
+        constraint_kwargs: Optional[dict[str, Any]] = None,
+        env_kwargs: Optional[dict[str, Any]] = None,
+        record_video: bool = False,
+        record_video_episode_trigger: Optional[Callable[[int], bool]] = None,
+        video_folder: str = "videos",
+        video_kwargs: Optional[dict[str, Any]] = None,
+        **kw
+    ) -> gym.Env:
     '''
 
     # Import the labelling and cost functions for the ContinuousCartpole
@@ -26,7 +32,7 @@ def main():
 
     # Intialize the environment (env_id, constraint, max_epsiode_steps)
     # make_env wraps the environment in TimeLimit -> LabelledEnv -> PCTLEnv -> ConstraintMonitor -> RewardMonitor
-    env = make_env("cont_cartpole", "pctl", 500, label_fn=label_fn, **constraint_kwargs)
+    env = make_env("ContinuousCartpole", "PCTL", 500, label_fn=label_fn, constraint_kwargs=constraint_kwargs)
     # PPO will automatically wrap any env in DummyVecWrapper it is has not already been wrapped
     # Since we want VecNormWrapper to be the top level we wrap it before passing to PPO
     env = DummyVecWrapper(env)
@@ -55,6 +61,8 @@ def main():
     # PPO is a on-policy algorithm that takes one arg: env
     #   and key word args:
     #   tensorboard_logdir: Optional[str] = None,
+    #   wandb_project: Optional[str] = None,
+    #   wandb_name: Optional[str] = None,
     #   seed: Optional[int] = None,
     #   monitor: bool = True,
     #   device: str = "auto",
@@ -76,7 +84,7 @@ def main():
     #   policy_kwargs: Optional[dict[str, Any]] = None,
 
     # First lets initialize the eval_env
-    eval_env = make_env("cont_cartpole", "pctl", 500, label_fn=label_fn, **constraint_kwargs)
+    eval_env = make_env("ContinuousCartpole", "PCTL", 500, label_fn=label_fn, constraint_kwargs=constraint_kwargs)
     eval_env = NormWrapper(
         eval_env,
         norm_obs=True,
@@ -109,7 +117,7 @@ def main():
         log_freq=5000, # how frequenntly to log metrics to stdout or tensorboard
         # prefill: Optional[int] = None (not implemented yet)
         # save_freq: int = 0, (not implemented yet)
-        stats_window_size = 100, # sliding window size for metrics logging
+        stats_window_size=100, # sliding window size for metrics logging
     )
 
 if __name__ == "__main__":

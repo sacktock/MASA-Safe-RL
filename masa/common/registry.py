@@ -1,5 +1,7 @@
-from typing import Callable, Dict, Union
+from __future__ import annotations
+from typing import Callable, Dict, Union, Iterator, Optional
 import importlib
+import inspect
 
 Factory = Union[Callable, str]
 
@@ -7,8 +9,7 @@ class Registry:
     def __init__(self):
         self._items: Dict[str, Callable] = {}
 
-
-    def register(self, name: str, ctor: Callable):
+    def register(self, name: str, ctor: Callable) -> Callable:
         if name in self._items:
             raise KeyError(f"{name} already registered")
         self._items[name] = ctor
@@ -27,7 +28,18 @@ class Registry:
     def keys(self) -> list[str]:
         return list([str(key) for key in self._items.keys()])
 
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._items)
+
 
 ENV_REGISTRY = Registry()
+MARL_ENV_REGISTRY = Registry()
 ALGO_REGISTRY = Registry()
 CONSTRAINT_REGISTRY = Registry()
+MARL_CONSTRAINT_REGISTRY = Registry()
+
+get_env = ENV_REGISTRY.get
+get_marl_env = MARL_ENV_REGISTRY.get
+get_algorithm = ALGO_REGISTRY.get
+get_constraint = CONSTRAINT_REGISTRY.get
+get_marl_constraint = MARL_CONSTRAINT_REGISTRY.get

@@ -1,5 +1,5 @@
 from masa.prob_shield.prob_shield_wrapper_v1 import ProbShieldWrapperDisc
-from masa.algorithms.ppo import PPO
+from masa.algorithms.on_policy import PPO
 from masa.common.wrappers import FlattenDictObsWrapper, VecWrapper, OneHotObsWrapper
 from typing import Dict, Any
 import flax.linen as nn
@@ -15,8 +15,14 @@ def main():
         max_episode_steps: int, 
         *,
         label_fn: Optional[LabelFn] = None, 
-        **constraint_kwargs
-    ):
+        constraint_kwargs: Optional[dict[str, Any]] = None,
+        env_kwargs: Optional[dict[str, Any]] = None,
+        record_video: bool = False,
+        record_video_episode_trigger: Optional[Callable[[int], bool]] = None,
+        video_folder: str = "videos",
+        video_kwargs: Optional[dict[str, Any]] = None,
+        **kw
+    ) -> gym.Env:
     '''
 
     # Import the labelling function for the ColourBombGridWorldV2 environment
@@ -32,14 +38,7 @@ def main():
 
     # First lets initialize the eval_env (env_id, constraint, max_epsiode_steps)
     # make_env wraps the environment in TimeLimit -> LabelledEnv -> LTLSafetyEnv -> ConstraintMonitor -> RewardMonitor
-    eval_env = make_env("colour_bomb_grid_world_v2", "ltl_safety", 250, label_fn=label_fn, **constraint_kwargs)
-    # Because we're using obs_stype=dict here we need to use a safety abstraction 
-    #   as ProbShieldWrapperDisc expected either a discrete state space or obs -> discrete state safety abstraction
-    #orig_space_n = eval_env.observation_space["orig"].n
-    #def safety_abstraction(obs: Dict[str, Any]) -> int:
-    #    state = obs["orig"]
-    #    aut_state = obs["automaton"]
-    #    return orig_space_n * aut_state + state
+    eval_env = make_env("ColourBombGridWorldV2", "LTL_SAFETY", 250, label_fn=label_fn, constraint_kwargs=constraint_kwargs)
 
     # Now we're going to wrap our environment in ProbShieldWrapperDisc
     # The wrapper takes one arg: env
@@ -47,31 +46,31 @@ def main():
     #   theta: float = 1e-10,
     #   max_vi_steps: int = 1000,
     #   init_safety_bound: float = 0.5,
+    #   granularity: int = 20,
     eval_env = ProbShieldWrapperDisc(
         eval_env,
-        #safety_abstraction=safety_abstraction, # discrete safety abstraction for the environment: maps observations to concerete discrete states
         init_safety_bound = 0.01, # Safety constraint from the intial state
         theta = 1e-15, # early stopping condition for value iteration
         max_vi_steps= 10_000, # number of value iteration steps
-        granularity = 20,
+        granularity = 20, # granulairty with which is discretize the successor state betas
     )
 
     # We're going to use VecWrapper for the training env so we need to define a environment creatation function
     def create_env():
         # Intialize the environment 
-        env = make_env("colour_bomb_grid_world_v2", "ltl_safety", 250, label_fn=label_fn, **constraint_kwargs)
+        env = make_env("ColourBombGridWorldV2", "LTL_SAFETY", 250, label_fn=label_fn, constraint_kwargs=constraint_kwargs)
 
         # Wrap in ProbShieldWrapperDisc
         env = ProbShieldWrapperDisc(
             env, 
-            #safety_abstraction=safety_abstraction, 
-            init_safety_bound = 0.01, 
-            theta = 1e-15, 
-            max_vi_steps= 10_000, 
-            granularity = 20,
+            init_safety_bound=0.01, 
+            theta=1e-15, 
+            max_vi_steps=10_000, 
+            granularity=20,
         )
 
-        # Now we're going to wrap our environment in OneHotObsWrappe and FlattenDictObsWrapper so the observations are compatible with ParameterizedPPO
+        # Now we're going to wrap our environment in OneHotObsWrapper 
+        #   and FlattenDictObsWrapper so the observations are compatible with ParameterizedPPO
         env = OneHotObsWrapper(env)
         env = FlattenDictObsWrapper(env)
 
@@ -85,6 +84,8 @@ def main():
     # PPO is a on-policy algorithm that takes one arg: env
     #   and key word args:
     #   tensorboard_logdir: Optional[str] = None,
+    #   wandb_project: Optional[str] = None,
+    #   wandb_name: Optional[str] = None,
     #   seed: Optional[int] = None,
     #   monitor: bool = True,
     #   device: str = "auto",
@@ -135,7 +136,7 @@ def main():
         log_freq=10_000, # how frequenntly to log metrics to stdout or tensorboard
         # prefill: Optional[int] = None (not implemented yet)
         # save_freq: int = 0, (not implemented yet)
-        stats_window_size = 100, # sliding window size for metrics logging
+        stats_window_size=100, # sliding window size for metrics logging
     )
 
 if __name__ == "__main__":

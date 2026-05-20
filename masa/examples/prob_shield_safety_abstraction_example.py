@@ -1,5 +1,5 @@
 from masa.prob_shield.prob_shield_wrapper_v1 import ProbShieldWrapperDisc
-from masa.algorithms.ppo import PPO
+from masa.algorithms.on_policy import PPO
 
 def main():
     # Import the masa make_env function
@@ -11,8 +11,14 @@ def main():
         max_episode_steps: int, 
         *,
         label_fn: Optional[LabelFn] = None, 
-        **constraint_kwargs
-    ):
+        constraint_kwargs: Optional[dict[str, Any]] = None,
+        env_kwargs: Optional[dict[str, Any]] = None,
+        record_video: bool = False,
+        record_video_episode_trigger: Optional[Callable[[int], bool]] = None,
+        video_folder: str = "videos",
+        video_kwargs: Optional[dict[str, Any]] = None,
+        **kw
+    ) -> gym.Env:
     '''
 
     # Import the labelling and cost functions for the PacmanWithCoins
@@ -26,7 +32,7 @@ def main():
 
     # Intialize the environment (env_id, constraint, max_epsiode_steps)
     # make_env wraps the environment in TimeLimit -> LabelledEnv -> PCTLEnv -> ConstraintMonitor -> RewardMonitor
-    env = make_env("pacman_with_coins", "pctl", 1000, label_fn=label_fn, **constraint_kwargs)
+    env = make_env("PacmanWithCoins", "PCTL", 1000, label_fn=label_fn, constraint_kwargs=constraint_kwargs)
 
     # Now we're going to wrap our environment in ProbShieldWrapperDisc
     # The wrapper takes one arg: env
@@ -40,15 +46,17 @@ def main():
         label_fn=abstr_label_fn, # labelling function for the abstract discrete states
         cost_fn=cost_fn, # the usual cost function for the environment: 1.0 if ghost else 0.0
         safety_abstraction=safety_abstraction, # discrete safety abstraction for the environment: maps observations to concerete discrete states
-        theta = 1e-15, # early stopping condition for value iteration
-        max_vi_steps= 10_000, # number of value iteration steps
-        init_safety_bound = 0.01, # Safety constraint from the intial state
-        granularity = 20, # Granulairty with which is discretize the successor state betas
+        theta=1e-15, # early stopping condition for value iteration
+        max_vi_steps=10_000, # number of value iteration steps
+        init_safety_bound=0.01, # Safety constraint from the intial state
+        granularity=20, # granulairty with which is discretize the successor state betas
     )
 
     # PPO is a on-policy algorithm that takes one arg: env
     #   and key word args:
     #   tensorboard_logdir: Optional[str] = None,
+    #   wandb_project: Optional[str] = None,
+    #   wandb_name: Optional[str] = None,
     #   seed: Optional[int] = None,
     #   monitor: bool = True,
     #   device: str = "auto",
@@ -71,14 +79,14 @@ def main():
 
     # First lets initialize the eval_env
     eval_env = ProbShieldWrapperDisc(
-        make_env("pacman_with_coins", "pctl", 1000, label_fn=label_fn, **constraint_kwargs), 
+        make_env("PacmanWithCoins", "PCTL", 1000, label_fn=label_fn, constraint_kwargs=constraint_kwargs), 
         label_fn=abstr_label_fn,
         cost_fn=cost_fn,
         safety_abstraction=safety_abstraction,
-        theta = 1e-15,
-        max_vi_steps= 10_000,
-        init_safety_bound = 0.01,
-        granularity = 20,
+        theta=1e-15,
+        max_vi_steps=10_000,
+        init_safety_bound=0.01,
+        granularity=20,
     )
 
     # Now let's initialize PPO
@@ -102,7 +110,7 @@ def main():
         log_freq=10_000, # how frequenntly to log metrics to stdout or tensorboard
         # prefill: Optional[int] = None (not implemented yet)
         # save_freq: int = 0, (not implemented yet)
-        stats_window_size = 100, # sliding window size for metrics logging
+        stats_window_size=100, # sliding window size for metrics logging
     )
 
 if __name__ == "__main__":

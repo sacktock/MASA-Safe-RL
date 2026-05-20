@@ -61,7 +61,7 @@ class ReachAvoid(Constraint):
 
     """
 
-    def __init__(avoid_label: str, reach_label: str):
+    def __init__(self, avoid_label: str, reach_label: str):
         self.avoid_label = avoid_label
         self.reach_label = reach_label
 
@@ -111,8 +111,8 @@ class ReachAvoid(Constraint):
 
     @property
     def constraint_type(self) -> str:
-        """Stable identifier string: ``"reach_avoid"``."""
-        return "reach_avoid"
+        """Stable identifier string: ``"REACH_AVOID"``."""
+        return "REACH_AVOID"
 
 class ReachAvoidEnv(BaseConstraintEnv):
     """Gymnasium wrapper for the :class:`ReachAvoid` monitor.

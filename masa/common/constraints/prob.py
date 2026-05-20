@@ -111,9 +111,8 @@ class ProbabilisticSafety(Constraint):
     
     @property
     def constraint_type(self) -> str:
-        """Stable identifier string: ``"prob"``."""
-        return "prob"
-
+        """Stable identifier string: ``"PROB"``."""
+        return "PROB"
 
 class ProbabilisticSafetyEnv(BaseConstraintEnv):
     """Gymnasium wrapper for :class:`ProbabilisticSafety`.

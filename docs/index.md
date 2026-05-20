@@ -83,10 +83,11 @@ Algorithms/Shielded
 
 Tutorials/Basics
 Tutorials/Constraints
-Tutorials/LTL-Safety
 Tutorials/Wrappers
 Tutorials/Environments
-Tutorials/Algorithms
+Tutorials/Baselines
+Tutorials/Shielding
+Tutorials/Multi-Agent
 ```
 
 ```{toctree}

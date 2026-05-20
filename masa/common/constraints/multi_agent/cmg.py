@@ -160,7 +160,7 @@ class ConstrainedMarkovGame:
 
     @property
     def constraint_type(self) -> str:
-        return "cmg"
+        return "CMG"
 
 
 class ConstrainedMarkovGameEnv(ParallelEnv):

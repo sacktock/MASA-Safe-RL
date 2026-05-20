@@ -2,6 +2,27 @@ from __future__ import annotations
 from masa.common.ltl import *
 
 def make_dfa() -> DFA:
+    """Builds a DFA for post-bomb medic recovery.
+
+    The automaton encodes the bounded temporal requirement that whenever the
+    agent hits a ``bomb`` state, it must subsequently reach a ``medic`` state
+    within ten steps and remain in ``medic`` for two consecutive steps.
+
+    .. math::
+
+        G\\left(\\texttt{bomb} \\implies
+        X\\,F_{\\leq 10}\\,G_{\\leq 2}\\,\\texttt{medic}\\right)
+
+    State ``0`` is the nominal safe state. States ``1`` through ``10`` count
+    how many steps have elapsed since the bomb was observed while waiting for
+    ``medic``. States ``11`` through ``20`` represent having observed the first
+    required ``medic`` step. State ``21`` is the accepting violation state,
+    reached if the agent fails to satisfy the bounded recovery condition.
+
+    Returns:
+        DFA: A :class:`DFA` whose accepting state indicates violation of the
+        bounded medic-recovery requirement.
+    """
     dfa = DFA([i for i in range(22)], 0, [21])
     dfa.add_edge(0, 1, Atom('bomb'))
 

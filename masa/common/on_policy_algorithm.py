@@ -2,6 +2,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 import jax.random as jr
 import jax.numpy as jnp
+from abc import ABC
 import optax
 from jax import jit
 import jax
@@ -21,7 +22,7 @@ from tqdm.auto import tqdm
 def nullcontext(arg=None):
     yield arg
 
-class OnPolicyAlgorithm(BaseAlgorithm):
+class OnPolicyAlgorithm(BaseAlgorithm, ABC):
 
     def __init__(
         self,

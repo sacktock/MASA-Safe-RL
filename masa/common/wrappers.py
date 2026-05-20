@@ -1,6 +1,7 @@
 from __future__ import annotations
 import gymnasium as gym
 from gymnasium import spaces
+from gymnasium.wrappers import RecordVideo as GymnasiumRecordVideo
 from masa.common.constraints.base import BaseConstraintEnv
 from masa.common.ltl import DFACostFn, DFA, ShapedCostFn
 from masa.common.running_mean_std import RunningMeanStd
@@ -206,6 +207,63 @@ class ConstraintPersistentObsWrapper(ConstraintPersistentWrapper):
         """
         obs, rew, term, trunc, info = self.env.step(action)
         return self._get_obs(obs), rew, term, trunc, info
+
+class ConstraintPersistentGymnasiumWrapper(ConstraintPersistentWrapper):
+    """
+    Apply an arbitrary Gymnasium wrapper while preserving constraint access.
+
+    Example:
+        env = ConstraintPersistentGymnasiumWrapper(
+            env,
+            GymnasiumRecordVideo,
+            video_folder="videos",
+        )
+    """
+
+    def __init__(
+        self,
+        env: gym.Env,
+        wrapper_cls: gym.Wrapper,
+        *wrapper_args: Any,
+        **wrapper_kwargs: Any,
+    ):
+        wrapped_env = wrapper_cls(env, *wrapper_args, **wrapper_kwargs)
+        super().__init__(wrapped_env)
+        self.wrapper_cls = wrapper_cls
+
+    @property
+    def _constraint(self):
+        return self._find_attr("_constraint")
+
+    @property
+    def cost_fn(self):
+        constraint = self._constraint
+        return getattr(constraint, "cost_fn", None) if constraint is not None else None
+
+    @property
+    def label_fn(self):
+        return self._find_attr("label_fn")
+
+    def _find_attr(self, name: str):
+        current = self.env
+        visited = set()
+
+        while current is not None:
+            if id(current) in visited:
+                return None
+            visited.add(id(current))
+
+            if hasattr(current, name):
+                return getattr(current, name)
+
+            if hasattr(current, "venv"):
+                current = current.venv
+            elif isinstance(current, gym.Wrapper):
+                current = current.env
+            else:
+                return None
+
+        return None
         
 class TimeLimit(ConstraintPersistentWrapper):
     """

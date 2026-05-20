@@ -218,6 +218,7 @@ __marimo__/
 # other
 runs/
 logdir/
+videos/
 wandb/
 wandb_runs
 wandb_csvs*

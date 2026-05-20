@@ -1,5 +1,5 @@
 from masa.prob_shield.prob_shield_wrapper_v1 import ProbShieldWrapperDisc
-from masa.algorithms.ppo import PPO
+from masa.algorithms.on_policy import PPO
 
 def main():
     # Import the masa make_env function
@@ -11,8 +11,14 @@ def main():
         max_episode_steps: int, 
         *,
         label_fn: Optional[LabelFn] = None, 
-        **constraint_kwargs
-    ):
+        constraint_kwargs: Optional[dict[str, Any]] = None,
+        env_kwargs: Optional[dict[str, Any]] = None,
+        record_video: bool = False,
+        record_video_episode_trigger: Optional[Callable[[int], bool]] = None,
+        video_folder: str = "videos",
+        video_kwargs: Optional[dict[str, Any]] = None,
+        **kw
+    ) -> gym.Env:
     '''
 
     # Import the labelling function for the ColourBombGridWorldV2 environment
@@ -21,13 +27,13 @@ def main():
     from masa.examples.colour_bomb_grid_world.property_3 import make_dfa
 
     # We're going to use the LTLSafety constraint, which has key word args: (dfa: DFA) 
-    constraint_kwargs = constraint_kwargs = dict(
+    constraint_kwargs = dict(
         dfa=make_dfa(), # creates an instance of the dfa
     )
 
     # Intialize the environment (env_id, constraint, max_epsiode_steps)
     # make_env wraps the environment in TimeLimit -> LabelledEnv -> LTLSafetyEnv -> ConstraintMonitor -> RewardMonitor
-    env = make_env("colour_bomb_grid_world_v2", "ltl_safety", 250, label_fn=label_fn, **constraint_kwargs)
+    env = make_env("ColourBombGridWorldV2", "LTL_SAFETY", 250, label_fn=label_fn, constraint_kwargs=constraint_kwargs)
 
     # Now we're going to wrap our environment in ProbShieldWrapperDisc
     # The wrapper takes one arg: env
@@ -38,15 +44,17 @@ def main():
     #   granularity: int = 20,
     env = ProbShieldWrapperDisc(
         env, 
-        init_safety_bound = 0.01, # Safety constraint from the intial state
-        theta = 1e-15, # early stopping condition for value iteration
-        max_vi_steps= 10_000, # number of value iteration steps
-        granularity = 20, # Granulairty with which is discretize the successor state betas
+        init_safety_bound=0.01, # Safety constraint from the intial state
+        theta=1e-15, # early stopping condition for value iteration
+        max_vi_steps=10_000, # number of value iteration steps
+        granularity=20, # granulairty with which is discretize the successor state betas
     )
 
     # PPO is a on-policy algorithm that takes one arg: env
     #   and key word args:
     #   tensorboard_logdir: Optional[str] = None,
+    #   wandb_project: Optional[str] = None,
+    #   wandb_name: Optional[str] = None,
     #   seed: Optional[int] = None,
     #   monitor: bool = True,
     #   device: str = "auto",
@@ -70,11 +78,11 @@ def main():
     # First lets initialize the eval_env
     # We can reuse constraint kwargs here as dfa_to_costfn internally creates a deepcopy of the dfa
     eval_env = ProbShieldWrapperDisc(
-        make_env("colour_bomb_grid_world_v2", "ltl_safety", 250, label_fn=label_fn, **constraint_kwargs),
-        init_safety_bound = 0.01,
-        theta = 1e-15,
-        max_vi_steps= 10_000,
-        granularity = 20,
+        make_env("ColourBombGridWorldV2", "LTL_SAFETY", 250, label_fn=label_fn, constraint_kwargs=constraint_kwargs),
+        init_safety_bound=0.01,
+        theta=1e-15,
+        max_vi_steps=10_000,
+        granularity=20,
     )
 
     # Now let's initialize PPO
@@ -98,7 +106,7 @@ def main():
         log_freq=10_000, # how frequently to log metrics to stdout or tensorboard
         # prefill: Optional[int] = None (not implemented yet)
         # save_freq: int = 0, (not implemented yet)
-        stats_window_size = 100, # sliding window size for metrics logging
+        stats_window_size=100, # sliding window size for metrics logging
     )
 
 if __name__ == "__main__":

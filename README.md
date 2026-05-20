@@ -27,7 +27,7 @@ If you use MASA-Safe-RL in your research please cite it in your publications.
 
 #### Prequisites
 
-Python 3.10+ is required, although later Python versions may not be supported.
+Python 3.10+ is required (3.10 recommonded), later versions may be supported.
 
 #### Installation with conda 
 - Install conda, e.g., via [anaconda](https://anaconda.org/channels/anaconda/packages/conda/overview).
@@ -55,7 +55,11 @@ pip install -e .
 
 #### Installation with PyPI
 
-Coming soon!
+MASA-Safe-RL is now available on PyPI: [MASA-Safe-RL](https://pypi.org/project/MASA-Safe-RL/). 
+
+```bash
+pip install -U MASA-Safe-RL
+```
 
 ### Enabling GPU Acceleration with JAX (Optional)
 
@@ -83,13 +87,13 @@ uv sync --group cuda13
 ```
 
 ## How to run MASA
-- You can run masa with the prebuilt `run` script. The script is not fully configurable so it is often better to create your own examples.
-```
-python -m masa.run --env-id bridge_crossing --algo ppo --custom-cfgs bridge_crossing --seed 0
+- You can run masa with the prebuilt CLI:
+```bash
+masa run --env-id bridge_crossing --algo ppo --seed 0
 ```
 - You can run examples from the ```\examples``` folder via:
-```
-python -m masa.examples.prob_shield_example
+```bash
+masa example prob_shield_example
 ```
 
 ## Editing documentation
@@ -108,7 +112,6 @@ For live reload while editing, run:
 ```bash
 uv run --locked --group docs sphinx-autobuild docs docs/_build/html
 ```
-
 
 ## Getting in Touch
 

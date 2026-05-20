@@ -137,3 +137,124 @@ class RolloutBuffer():
                 self.advantages[batch_inds].flatten(),
                 self.log_probs[batch_inds].flatten())
         return data
+
+class CostRolloutBuffer(RolloutBuffer):
+    """
+    Rollout buffer with additional storage for constraint costs and
+    cost-based returns / advantages.
+    """
+
+    def __init__(
+        self, 
+        buffer_size: int, 
+        observation_space: spaces.Space, 
+        action_space: spaces.Space, 
+        n_envs: int, 
+        gamma: float = 0.99, 
+        gae_lambda: float = 1.0,
+        cost_gamma: float = 0.99,
+        cost_gae_lambda: float = 1.0,
+    ):
+        super().__init__(
+            buffer_size,
+            observation_space,
+            action_space,
+            n_envs,
+            gamma=gamma,
+            gae_lambda=gae_lambda,
+        )
+
+        self.cost_gamma = cost_gamma
+        self.cost_gae_lambda = cost_gae_lambda
+
+    def reset(self):
+        super().reset()
+
+        self.costs = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
+        self.cost_returns = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
+        self.cost_values = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
+        self.cost_advantages = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
+
+    def compute_returns_and_advantages(
+        self,
+        last_value: Optional[np.ndarray] = None,
+        last_cost_value: Optional[np.ndarray] = None,
+        done: np.ndarray = np.array(False),
+    ):
+
+        if last_value is None:
+            last_value = np.array(0.0)
+
+        if last_cost_value is None:
+            last_cost_value = np.array(0.0)
+
+        last_gae_lam = 0
+        last_cost_gae_lam = 0
+
+        for step in reversed(range(self.buffer_size)):
+            if step == (self.buffer_size - 1):
+                next_non_terminal = 1.0 - done.astype(np.float32)
+                next_value = last_value
+                next_cost_value = last_cost_value
+            else:
+                next_non_terminal = 1.0 - self.episode_starts[step + 1].astype(np.float32)
+                next_value = self.values[step + 1]
+                next_cost_value = self.cost_values[step + 1]
+            # reward
+            delta = self.rewards[step] + self.gamma * next_value * next_non_terminal - self.values[step]
+            last_gae_lam = delta + self.gamma * self.gae_lambda * next_non_terminal * last_gae_lam
+            self.advantages[step] = last_gae_lam
+
+            # cost
+            cost_delta = self.costs[step] + self.cost_gamma * next_cost_value * next_non_terminal - self.cost_values[step]
+            last_cost_gae_lam = cost_delta + self.cost_gamma * self.cost_gae_lambda * next_non_terminal * last_cost_gae_lam
+            self.cost_advantages[step] = last_cost_gae_lam
+
+        self.returns = self.advantages + self.values
+        self.cost_returns = self.cost_advantages + self.cost_values
+
+    def add(
+        self,
+        obs: np.ndarray,
+        actions: np.ndarray,
+        rewards: np.ndarray,
+        costs: np.ndarray,
+        episode_starts: np.ndarray,
+        values: np.ndarray,
+        cost_values: np.ndarray,
+        log_probs: np.ndarray,
+    ):
+
+        success = super().add(
+            obs=obs,
+            actions=actions,
+            rewards=rewards,
+            episode_starts=episode_starts,
+            values=values,
+            log_probs=log_probs,
+        )
+
+        if not success:
+            return False
+
+        self.costs[self.pos - 1] = np.array(costs)
+        self.cost_values[self.pos - 1] = np.array(cost_values)
+
+        return True
+
+    def _get_samples(self, batch_inds: np.ndarray):
+        data = (
+            self.observations[batch_inds].reshape(-1, *self.obs_shape),
+            self.actions[batch_inds].reshape(-1, self.act_dim),
+            self.rewards[batch_inds].flatten(),
+            self.costs[batch_inds].flatten(),
+            self.values[batch_inds].flatten(),
+            self.cost_values[batch_inds].flatten(),
+            self.returns[batch_inds].flatten(),
+            self.cost_returns[batch_inds].flatten(),
+            self.advantages[batch_inds].flatten(),
+            self.cost_advantages[batch_inds].flatten(),
+            self.log_probs[batch_inds].flatten(),
+        )
+        return data
+

@@ -1,0 +1,12 @@
+defaults:
+  task_alpha: 0.1
+  task_gamma: 0.9
+  risk_alpha: 0.1
+  risk_gamma: 0.99
+  step_wise_risk: 0.01
+  exploration: boltzmann
+  boltzmann_temp: 0.05
+  initial_epsilon: 1.0
+  final_epsilon: 0.1
+  epsilon_decay: linear
+  epsilon_decay_frames: 10000
