@@ -48,7 +48,7 @@ The same interface accepts `--tensorboard <logdir>` instead of `--wandb`.
 
 ## Benchmark pipeline
 
-The pipeline ships with one generic spec called `performance` that uses the standard MASA evaluation metrics (`eval/rollout/ep_reward` and `eval/rollout/satisfied`). Run it against your W&B project:
+The pipeline ships with two generic specs: `performance`, which uses the standard MASA evaluation metrics (`eval/rollout/ep_reward` and `eval/rollout/satisfied`), and `margin`, which draws per-horizon fan charts of the shield's safety budget from `train/stats/margin_<t>` metrics. Run them against your W&B project:
 
 ```bash
 python -m masa.plotting --config masa/plotting/configs/example.yaml --stages all
@@ -75,13 +75,13 @@ Bust the caches:
 --force-process     rebuild the long form and quantile frames
 ```
 
-Load extra figure specs from another module (the package ships only `performance` by default):
+Load extra figure specs from another module (the package ships `performance` and `margin` by default):
 
 ```bash
 python -m masa.plotting --config <your-yaml> --specs-from <dotted.module>
 ```
 
-Use this flag to register your own `PlotSpec` modules alongside the default `performance` spec.
+Use this flag to register your own `PlotSpec` modules alongside the default `performance` and `margin` specs.
 
 ## Configuration
 

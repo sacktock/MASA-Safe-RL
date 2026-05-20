@@ -1,9 +1,9 @@
 """PlotSpec registry.
 
-Importing this module registers the generic ``performance`` spec. Extra spec
-modules (for example ``masa.plotting.examples.probshield``) can be loaded at
-runtime via the ``--specs-from <module>`` CLI flag or by importing them from
-Python before resolving specs.
+Importing this module registers the generic ``performance`` and ``margin``
+specs. Extra spec modules can be loaded at runtime via the
+``--specs-from <module>`` CLI flag or by importing them from Python before
+resolving specs.
 """
 
 from __future__ import annotations
