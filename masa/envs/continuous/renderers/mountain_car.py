@@ -175,9 +175,8 @@ class MountainCarRenderer:
     def _draw_scene(self, surface: Any, snapshot: "_MountainCarSnapshot", size: int) -> None:
         import pygame
 
-        margin = max(24, size // 14)
-        panel = pygame.Rect(margin, margin, size - margin * 2, size - margin * 2)
-        pygame.draw.rect(surface, PANEL_COLOR, panel, border_radius=max(8, size // 32))
+        surface.fill(PANEL_COLOR)
+        panel = surface.get_rect()
 
         track_left = panel.left + max(18, panel.width // 16)
         track_right = panel.right - max(18, panel.width // 16)
@@ -229,25 +228,21 @@ class MountainCarRenderer:
         car_height = max(22, size // 20)
         wheel_radius = max(5, size // 60)
         up_offset = car_height // 2 + wheel_radius
-        center = _offset_point(ground, -math.sin(angle) * up_offset, -math.cos(angle) * up_offset)
+        center = _rotated_offset(ground, 0.0, -up_offset, angle)
 
         body_points = _rotated_rect(center, car_width, car_height, angle)
         shadow_points = [(x + max(2, size // 120), y + max(2, size // 120)) for x, y in body_points]
         pygame.draw.polygon(surface, CAR_SHADOW_COLOR, shadow_points)
         pygame.draw.polygon(surface, CAR_COLOR if snapshot.status != "wall" else WALL_COLOR, body_points)
 
-        window_center = _offset_point(center, 0, -car_height * 0.12)
+        window_center = _rotated_offset(center, 0.0, -car_height * 0.12, angle)
         window_points = _rotated_rect(window_center, car_width * 0.36, car_height * 0.45, angle)
         pygame.draw.polygon(surface, WINDOW_COLOR, window_points)
 
         wheel_axis_offset = car_width * 0.28
         wheel_y_offset = car_height * 0.48
         for side in (-1, 1):
-            wheel_center = _offset_point(
-                center,
-                math.cos(angle) * wheel_axis_offset * side + math.sin(angle) * wheel_y_offset,
-                math.sin(angle) * wheel_axis_offset * side - math.cos(angle) * wheel_y_offset,
-            )
+            wheel_center = _rotated_offset(center, wheel_axis_offset * side, wheel_y_offset, angle)
             pygame.draw.circle(surface, WHEEL_COLOR, wheel_center, wheel_radius)
 
     def _draw_text(self, surface: Any, text: str, pos: Position, size: int, color: RGBColor) -> None:
@@ -367,6 +362,14 @@ def _rotated_rect(center: Position, width: float, height: float, angle: float) -
     ]
 
 
+def _rotated_offset(origin: Position, along: float, down: float, angle: float) -> Position:
+    return _offset_point(
+        origin,
+        math.cos(angle) * along - math.sin(angle) * down,
+        math.sin(angle) * along + math.cos(angle) * down,
+    )
+
+
 def _offset_point(origin: Position, dx: float, dy: float) -> Position:
     return int(origin[0] + dx), int(origin[1] + dy)
 
@@ -394,4 +397,3 @@ def _last_action_force(last_action: Any, power: float) -> float | None:
 
 
 __all__ = ["MountainCarRenderer", "RGBColor", "validate_renderer_options"]
-

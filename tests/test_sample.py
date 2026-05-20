@@ -230,11 +230,13 @@ def test_cartpole_envs_render_rgb_array_ansi_and_notebook():
 
 def test_mountain_car_envs_render_rgb_array_ansi():
     import json
+    import math
 
     import numpy as np
     import pytest
 
     from masa.envs.continuous.mountain_car import ContinuousMountainCar
+    from masa.envs.continuous.renderers import mountain_car as mountain_car_renderer
     from masa.envs.discrete.mountain_car import DiscreteMountainCar
 
     env_cases = (
@@ -249,6 +251,8 @@ def test_mountain_car_envs_render_rgb_array_ansi():
         assert frame.shape == (192, 192, 3)
         assert frame.dtype.name == "uint8"
         assert frame.mean() > 0
+        np.testing.assert_allclose(frame[0, 0], mountain_car_renderer.PANEL_COLOR, atol=4)
+        np.testing.assert_allclose(frame[0, -1], mountain_car_renderer.PANEL_COLOR, atol=4)
         env.step(action)
         next_frame = env.render()
         assert next_frame.shape == frame.shape
@@ -275,6 +279,17 @@ def test_mountain_car_envs_render_rgb_array_ansi():
             env_cls(render_mode="bad")
         with pytest.raises(ValueError):
             env_cls(render_window_size=0)
+
+    ground = (100, 100)
+    car_center = mountain_car_renderer._rotated_offset(ground, 0.0, -20.0, 0.0)
+    wheel_center = mountain_car_renderer._rotated_offset(car_center, 0.0, 10.0, 0.0)
+    assert car_center[1] < ground[1]
+    assert wheel_center[1] > car_center[1]
+
+    uphill_angle = -math.pi / 6.0
+    uphill_center = mountain_car_renderer._rotated_offset(ground, 0.0, -20.0, uphill_angle)
+    uphill_wheel = mountain_car_renderer._rotated_offset(uphill_center, 0.0, 10.0, uphill_angle)
+    assert uphill_wheel[1] > uphill_center[1]
 
     with open("notebooks/envs/play_mountain_car.ipynb", "r", encoding="utf-8") as fh:
         notebook = json.load(fh)
