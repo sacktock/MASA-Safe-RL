@@ -287,3 +287,51 @@ class PPOPolicy(BaseJaxPolicy):
         dist = actor_state.apply_fn(actor_state.params, feats)
         action = dist.sample(seed=key)
         return action
+
+class PPOLagPolicy(PPOPolicy):
+
+    def build(self, key: jax.Array, lr_schedule: Union[optax.Schedule, float], max_grad_norm: float) -> jax.Array:
+        key = super().build(key, lr_schedule, max_grad_norm)
+        key, cost_critic_key = jr.split(key, 2)
+
+        optimizer = self.optimizer_class(
+            learning_rate=lr_schedule,
+            **self.optimizer_kwargs,
+        )
+        
+        obs = jnp.array([self.observation_space.sample()])
+        obs = self.featurizer.apply(self.featurizer_state.params, obs)
+
+        self.cost_critic = Critic(
+            net_arch=self.critic_net_arch,
+            activation_fn=self.activation_fn,
+        )
+
+        self.cost_critic_state = TrainState.create(
+            apply_fn=self.cost_critic.apply,
+            params=self.cost_critic.init(cost_critic_key, obs),
+            tx=optax.chain(
+                optax.clip_by_global_norm(max_grad_norm),
+                optimizer,
+            ),
+        )
+
+        self.cost_critic.apply = jit(self.cost_critic.apply)
+
+        return key
+
+    def predict_all(self, key: jax.Array, observation: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        return self._predict_all(key, self.featurizer_state, self.actor_state, self.critic_state, self.cost_critic_state, observation)
+
+    @staticmethod
+    @jit
+    def _predict_all(
+        key: jax.Array, featurizer_state: TrainState, actor_state: TrainState, critic_state: TrainState, cost_critic_state: TrainState, observations: jnp.ndarray
+    ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+        features = featurizer_state.apply_fn(featurizer_state.params, observations)
+        dist = actor_state.apply_fn(actor_state.params, features)
+        actions = dist.sample(seed=key)
+        log_probs = dist.log_prob(actions)
+        values = critic_state.apply_fn(critic_state.params, features).flatten()
+        cost_values = cost_critic_state.apply_fn(cost_critic_state.params, features).flatten()
+        return actions, log_probs, values, cost_values

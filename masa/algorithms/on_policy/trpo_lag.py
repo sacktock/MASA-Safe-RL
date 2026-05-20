@@ -5,19 +5,20 @@ import optax
 from jax import jit
 import jax
 from functools import partial
+from contextlib import nullcontext
 from flax.training.train_state import TrainState
 import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
-from typing import Any, Tuple, Optional, Union, Callable
+from typing import Optional, Callable, Union, Any
+from tqdm.auto import tqdm
 from masa.common.base_class import BaseJaxPolicy
 from masa.common.buffers import CostRolloutBuffer
-from masa.algorithms.on_policy import PPO
-from masa.common.policies import PPOLagPolicy
 from masa.common.metrics import TrainLogger
-from tqdm.auto import tqdm
+from masa.algorithms.on_policy import TRPO
+from masa.common.policies import PPOLagPolicy
 
-class PPOLag(PPO):
+class TRPOLag(TRPO):
 
     def __init__(
         self,
@@ -33,15 +34,19 @@ class PPOLag(PPO):
         eval_env: Optional[gym.Env] = None, 
         learning_rate: Union[float, optax.Schedule] = 3e-4,
         n_steps: int = 2048,
-        batch_size: int = 64,
-        n_epochs: int = 10,
+        n_critic_updates: int = 10,
         gamma: float = 0.99,
         gae_lambda: float = 0.95,
-        clip_range: Union[float, optax.Schedule] = 0.2,
         normalize_advantage: bool = True,
         ent_coef: float = 0.0,
         vf_coef: float = 1.0,
         max_grad_norm: float = 0.5,
+        target_kl: float = 0.01,
+        cg_iters: int = 10,
+        cg_damping: float = 0.1,
+        fvp_sample_freq: int = 4,
+        line_search_steps: int = 10,
+        line_search_decay: float = 0.8,
         policy_class: type[BaseJaxPolicy] = PPOLagPolicy,
         policy_kwargs: Optional[dict[str, Any]] = None,
         # Lagrange parameters
@@ -76,15 +81,19 @@ class PPOLag(PPO):
             eval_env=eval_env,
             learning_rate=learning_rate,
             n_steps=n_steps,
-            batch_size=batch_size,
-            n_epochs=n_epochs,
+            n_critic_updates=n_critic_updates,
             gamma=gamma,
             gae_lambda=gae_lambda,
-            clip_range=clip_range,
             normalize_advantage=normalize_advantage,
             ent_coef=ent_coef,
             vf_coef=vf_coef,
             max_grad_norm=max_grad_norm,
+            target_kl=target_kl,
+            cg_iters=cg_iters,
+            cg_damping=cg_damping,
+            fvp_sample_freq=fvp_sample_freq,
+            line_search_steps=line_search_steps,
+            line_search_decay=line_search_decay,
             policy_class=policy_class,
             policy_kwargs=policy_kwargs,
         )
@@ -112,51 +121,18 @@ class PPOLag(PPO):
             self.lagrangian_multiplier = min(self.lagrangian_multiplier, self.lagrangian_upper_bound)
 
     @staticmethod
-    @partial(jit, static_argnames=["normalize_advantage"])
-    def _one_update(
+    @jit
+    def _value_update(
         featurizer_state: TrainState,
-        actor_state: TrainState,
         critic_state: TrainState,
         cost_critic_state: TrainState,
         observations: jnp.ndarray,
-        actions: jnp.ndarray,
-        reward_advantages: jnp.ndarray,
-        cost_advantages: jnp.ndarray,
         returns: jnp.ndarray,
         cost_returns: jnp.ndarray,
-        old_log_prob: jnp.ndarray,
-        clip_range: float,
-        ent_coef: float,
         vf_coef: float,
-        lagrangian_multiplier: float,
-        normalize_advantage: bool = True,
     ):
-        advantages = (reward_advantages - lagrangian_multiplier * cost_advantages) / (1.0 + lagrangian_multiplier)
-
-        if normalize_advantage and len(advantages) > 1:
-            advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
-
-        def actor_critic_loss(featurizer_params, actor_params, critic_params, cost_critic_params):
+        def critic_loss(featurizer_params, critic_params, cost_critic_params):
             features = featurizer_state.apply_fn(featurizer_params, observations)
-            dist = actor_state.apply_fn(actor_params, features)
-            log_prob = dist.log_prob(actions)
-            entropy = dist.entropy()
-
-            # ratio between old and new policy, should be one at the first iteration
-            ratio = jnp.exp(log_prob - old_log_prob)
-            # clipped surrogate loss
-            policy_loss_1 = advantages * ratio
-            policy_loss_2 = advantages * jnp.clip(ratio, 1 - clip_range, 1 + clip_range)
-            policy_loss = -jnp.minimum(policy_loss_1, policy_loss_2).mean()
-
-            # Entropy loss favor exploration
-            # Approximate entropy when no analytical form
-            # entropy_loss = -jnp.mean(-log_prob)
-            # analytical form
-            entropy_loss = -jnp.mean(entropy)
-
-            total_policy_loss = policy_loss + ent_coef * entropy_loss
-
             # Critic loss
             critic_values = critic_state.apply_fn(critic_params, features).flatten()
             cost_critic_values = cost_critic_state.apply_fn(cost_critic_params, features).flatten()
@@ -164,20 +140,17 @@ class PPOLag(PPO):
                 ((returns - critic_values)**2).mean() +
                 ((cost_returns - cost_critic_values)**2).mean()
             )
+            return value_loss
 
-            total_loss = total_policy_loss + value_loss
-            return total_loss, (total_policy_loss, value_loss)
-
-        (loss, (pg_loss, vf_loss)), grads = jax.value_and_grad(actor_critic_loss, argnums=(0, 1, 2, 3), has_aux=True)(
-            featurizer_state.params, actor_state.params, critic_state.params, cost_critic_state.params
+        loss, grads = jax.value_and_grad(critic_loss, argnums=(0, 1, 2))(
+            featurizer_state.params, critic_state.params, cost_critic_state.params,
         )
 
         featurizer_state = featurizer_state.apply_gradients(grads=grads[0])
-        actor_state = actor_state.apply_gradients(grads=grads[1])
-        critic_state = critic_state.apply_gradients(grads=grads[2])
-        cost_critic_state = cost_critic_state.apply_gradients(grads=grads[3])
+        critic_state = critic_state.apply_gradients(grads=grads[1])
+        cost_critic_state = cost_critic_state.apply_gradients(grads=grads[2])
 
-        return (featurizer_state, actor_state, critic_state, cost_critic_state), (pg_loss, vf_loss)
+        return (featurizer_state, critic_state, cost_critic_state), loss
 
     def rollout(
         self, 
@@ -315,57 +288,132 @@ class PPOLag(PPO):
         logger: Optional[TrainLogger] = None,
         tqdm_position: int = 1
     ):
-        
-        clip_range = self.clip_range_schedule(step)
-        current_lr = self.lr_schedule(step)
+
+        self.key, subkey = jr.split(self.key)
+        rollout_data = next(self.rollout_buffer.get(subkey, self.n_steps))
+        observations, actions, rewards, costs, values, cost_values, returns, cost_returns, reward_advantages, cost_advantages, old_log_probs = rollout_data
+
+        if isinstance(self.action_space, spaces.Discrete):
+            # Convert discrete action from float to int
+            actions = actions.flatten().astype(np.int32)
+
+        advantages = (reward_advantages - self.lagrangian_multiplier * cost_advantages) / (1.0 + self.lagrangian_multiplier)
+
+        if self.normalize_advantage and len(advantages) > 1:
+            advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+
+        old_actor_params = self.policy.actor_state.params
+
+        def actor_loss(actor_params):
+            return self._surrogate_loss(
+                actor_params,
+                self.policy.featurizer_state,
+                self.policy.actor_state,
+                observations,
+                actions,
+                advantages,
+                old_log_probs,
+                self.ent_coef,
+            )
+
+        loss_before, grads = jax.value_and_grad(actor_loss)(old_actor_params)
+
+        flat_grads = self.flatten_params(grads)
+
+        fvp_observations = observations[::self.fvp_sample_freq]
+
+        def fvp(v):
+            return self._fisher_vector_product(
+                old_actor_params,
+                v,
+                self.policy.featurizer_state,
+                self.policy.actor_state,
+                fvp_observations,
+                self.cg_damping,
+            )
+
+        step_direction = self.conjugate_gradient(
+            fvp,
+            -flat_grads,
+            self.cg_iters,
+        )
+
+        shs = 0.5 * jnp.dot(
+            step_direction,
+            fvp(step_direction),
+        )
+
+        step_size = jnp.sqrt(
+            self.target_kl / (shs + 1e-8)
+        )
+
+        full_step = step_direction * step_size
+
+        old_flat = self.flatten_params(old_actor_params)
+
+        expected_improve = -jnp.dot(flat_grads, full_step)
+
+        accepted = False
+
+        for i in range(self.line_search_steps):
+            frac = self.line_search_decay ** i
+            candidate = old_flat + frac * full_step
+            candidate_params = self.unflatten_params(
+                candidate,
+                old_actor_params,
+            )
+            loss = actor_loss(candidate_params)
+            kl = self._mean_kl(
+                old_actor_params, 
+                candidate_params, 
+                self.policy.featurizer_state,
+                self.policy.actor_state,
+                observations,
+            )
+            improve = loss_before - loss
+            last_kl = kl
+            if improve > 0 and kl < self.target_kl:
+                self.policy.actor_state = self.policy.actor_state.replace(params=candidate_params)
+                accepted = True
+                break
 
         with tqdm(
-            total=self.n_epochs*self.n_steps//(self.batch_size//self.n_envs),
-            desc="optimize",
+            total=self.n_critic_updates,
+            desc="optimize_critic",
             position=tqdm_position,
             leave=False,
             dynamic_ncols=True,
             colour="cyan",
         ) as pbar:
 
-            for _ in range(self.n_epochs):
-                self.key, subkey = jr.split(self.key)
-                for rollout_data in self.rollout_buffer.get(subkey, self.batch_size//self.n_envs):
+            for _ in range(self.n_critic_updates):
 
-                    observations, actions, rewards, costs, values, cost_values, returns, cost_returns, reward_advantages, cost_advantages, old_log_probs = rollout_data
+                (self.policy.featurizer_state, self.policy.critic_state, self.policy.cost_critic_state), vf_loss = \
+                self._value_update(
+                    featurizer_state=self.policy.featurizer_state,
+                    critic_state=self.policy.critic_state,
+                    cost_critic_state=self.policy.cost_critic_state,
+                    observations=observations,
+                    returns=returns,
+                    cost_returns=cost_returns,
+                    vf_coef=self.vf_coef,
+                )
 
-                    if isinstance(self.action_space, spaces.Discrete):
-                        # Convert discrete action from float to int
-                        actions = actions.flatten().astype(np.int32)
+                pbar.update(1)
 
-                    (self.policy.featurizer_state, self.policy.actor_state, self.policy.critic_state, self.policy.cost_critic_state), (pg_loss, vf_loss) = \
-                    self._one_update(
-                        featurizer_state=self.policy.featurizer_state,
-                        actor_state=self.policy.actor_state,
-                        critic_state=self.policy.critic_state,
-                        cost_critic_state=self.policy.cost_critic_state,
-                        observations=observations,
-                        actions=actions,
-                        reward_advantages=reward_advantages,
-                        cost_advantages=cost_advantages,
-                        returns=returns,
-                        cost_returns=cost_returns,
-                        old_log_prob=old_log_probs,
-                        clip_range=clip_range,
-                        ent_coef=self.ent_coef,
-                        vf_coef=self.vf_coef,
-                        lagrangian_multiplier=self.lagrangian_multiplier,
-                        normalize_advantage=self.normalize_advantage,
-                    )
-
-                    pbar.update(1)
-                
         if logger:
-            logger.add("train/stats", {
-                "policy_loss": float(pg_loss),
+            logger.add(
+                "train/stats",{
+                "policy_loss": float(loss_before),
                 "value_loss": float(vf_loss),
-                "clip_range": float(clip_range),
-                "lr": float(current_lr),
+                "kl": float(kl),
+                "accepted": float(accepted),
+                "expected_improve": float(expected_improve),
+                "step_size": float(step_size),
+                "grad_norm": float(jnp.linalg.norm(flat_grads)),
+                "xHx": float(shs * 2.0),
+                "final_kl": float(last_kl),
+                "lr": float(self.lr_schedule(step)),
                 "lagrangian_multiplier": float(self.lagrangian_multiplier),
                 "mean_cost_advantage": float(cost_advantages.mean()),
                 "mean_cost_return": float(cost_returns.mean()),
