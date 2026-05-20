@@ -1,0 +1,21 @@
+defaults:  
+  env:
+    id: ContinuousMountainCar
+    max_episode_steps: 1000
+    label_fn: masa.envs.continuous.mountain_car:label_fn
+    cost_fn: masa.envs.continuous.mountain_car:cost_fn
+
+  constraint:
+    type: CMDP
+    cost_budget: 0
+
+  run:
+    total_timesteps: 100000
+    eval_every: 5000
+    eval_episodes: 1
+    log_every: 5000
+    stats_window_size: 10
+
+short:
+  env:
+    max_episode_steps: 200

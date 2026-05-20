@@ -5,7 +5,15 @@ registry.ENV_REGISTRY.register(
 )
 
 registry.ENV_REGISTRY.register(
+    "ContinuousMountainCar", "masa.envs.continuous.mountain_car:ContinuousMountainCar"
+)
+
+registry.ENV_REGISTRY.register(
     "DiscreteCartpole", "masa.envs.discrete.cartpole:DiscreteCartpole"
+)
+
+registry.ENV_REGISTRY.register(
+    "DiscreteMountainCar", "masa.envs.discrete.mountain_car:DiscreteMountainCar"
 )
 
 registry.ENV_REGISTRY.register(

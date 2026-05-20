@@ -73,7 +73,6 @@ def parse_config(env_id, env_cfgs, algo, algo_cfgs) -> Config:
         algo_cfgs,
     )
 
-    config = config.update(env_config)
     base = {algo: {**algo_config}, **config}
     config = Config(base)
 
