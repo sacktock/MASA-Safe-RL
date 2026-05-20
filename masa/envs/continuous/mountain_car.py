@@ -5,6 +5,7 @@ import numpy as np
 import math
 from masa.common.label_fn import LabelFn
 from masa.envs.continuous.base import ContinuousEnv
+from masa.envs.continuous.renderers.mountain_car import MountainCarRenderer, validate_renderer_options
 
 GOAL_POSITION = 0.45 # was 0.5 in gymnasium, 0.45 in Arnaud de Broissia's version
 MAX_SPEED = 0.07
@@ -31,7 +32,7 @@ class ContinuousMountainCar(ContinuousEnv):
         render_mode: Literal["ansi", "rgb_array", "human"] | None = None,
         render_window_size: int = 512,
     ):
-        #validate_renderer_options(render_mode, render_window_size)
+        validate_renderer_options(render_mode, render_window_size)
 
         self._min_position = WALL_POSITION
         self._max_position = 0.6
@@ -69,7 +70,7 @@ class ContinuousMountainCar(ContinuousEnv):
 
         self.render_mode = render_mode
         self.render_window_size = int(render_window_size)
-        #TODO: self._renderer = MountainCarRenderer(self)
+        self._renderer = MountainCarRenderer(self)
 
     def _obs(self):
         return self._state
@@ -117,16 +118,15 @@ class ContinuousMountainCar(ContinuousEnv):
 
         return self._obs(), reward, terminal, False, {}
 
-    '''def render(self):
+    def render(self):
         return self._renderer.render()
 
     def close(self) -> None:
-        self._renderer.closE()
+        self._renderer.close()
 
     @property
     def human_window_closed(self) -> bool:
         return self._renderer.human_window_closed
 
     def handle_pygame_event(self, event: Any) -> bool:
-        return self._renderer.handle_pygame_event(event)'''
-        
+        return self._renderer.handle_pygame_event(event)

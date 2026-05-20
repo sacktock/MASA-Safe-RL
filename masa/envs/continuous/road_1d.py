@@ -5,6 +5,7 @@ import numpy as np
 import math
 from masa.common.label_fn import LabelFn
 from masa.envs.continuous.base import ContinuousEnv
+from masa.envs.continuous.renderers.road_1d import Road1DRenderer, validate_renderer_options
 
 GOAL_POSITION = 3.0
 MAX_SPEED = 0.1
@@ -28,14 +29,14 @@ def label_fn(obs):
 cost_fn = lambda labels: 1.0 if "over" in labels else 0.0
 
 class Road1D(ContinuousEnv):
-    metadata = {"render_modes": ["ansi", "rgb_array", "human"], "render_fps": 30}
+    metadata = {"render_modes": ["ansi", "rgb_array", "human"], "render_fps": 25}
 
     def __init__(
         self,
         render_mode: Literal["ansi", "rgb_array", "human"] | None = None,
         render_window_size: int = 512,
     ):
-        #validate_renderer_options(render_mode, render_window_size)
+        validate_renderer_options(render_mode, render_window_size)
 
         self._dt = 1.0
         self._power = 0.0001
@@ -73,7 +74,7 @@ class Road1D(ContinuousEnv):
 
         self.render_mode = render_mode
         self.render_window_size = int(render_window_size)
-        #TODO: self._renderer = Road1D(self)
+        self._renderer = Road1DRenderer(self)
 
     def _obs(self):
         return self._state
@@ -123,15 +124,15 @@ class Road1D(ContinuousEnv):
 
         return self._obs(), reward, terminal, False, {}
 
-    '''def render(self):
+    def render(self):
         return self._renderer.render()
 
     def close(self) -> None:
-        self._renderer.closE()
+        self._renderer.close()
 
     @property
     def human_window_closed(self) -> bool:
         return self._renderer.human_window_closed
 
     def handle_pygame_event(self, event: Any) -> bool:
-        return self._renderer.handle_pygame_event(event)'''
+        return self._renderer.handle_pygame_event(event)
