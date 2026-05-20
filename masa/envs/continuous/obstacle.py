@@ -14,13 +14,13 @@ OBSTACLES = [
 ]
 
 GOAL_POSITION = np.array([3.0, 0.0])
-
+MAX_SPEED = 0.05
 MIN_POSITION = -0.5
 MAX_POSITION = 3.5
 
 def label_fn(obs):
     labels = set()
-    position = obs[:2]
+    position, velocity = obs[:2], obs[2:]
     for obstacle in OBSTACLES:
         lower = obstacle[:, 0]
         upper = obstacle[:, 1]
@@ -31,7 +31,10 @@ def label_fn(obs):
         labels.add("goal")
 
     if np.any(position >= MAX_POSITION) or np.any(position <= MIN_POSITION):
-        labels.add("wall")
+        labels.add("boundary")
+
+    if np.any(np.abs(velocity) >= MAX_SPEED):
+        labels.add("max_speed")
 
     return labels
 
@@ -49,7 +52,7 @@ class Obstacle(ContinuousEnv):
 
         self._dt = 1.0
         self._power = 0.001
-        self._max_speed = 0.05
+        self._max_speed = MAX_SPEED
         self._min_position = MIN_POSITION
         self._max_position = MAX_POSITION
 

@@ -24,6 +24,13 @@ registry.ENV_REGISTRY.register(
     "ObstacleV4", "masa.envs.continuous.obstacle_v4:ObstacleV4"
 )
 
+registry.ENV_REGISTRY.register(
+    "Road1D", "masa.envs.continuous.road_1d:Road1D"
+)
+
+registry.ENV_REGISTRY.register(
+    "Road2D", "masa.envs.continuous.road_2d:Road2D"
+)
 
 registry.ENV_REGISTRY.register(
     "DiscreteCartpole", "masa.envs.discrete.cartpole:DiscreteCartpole"

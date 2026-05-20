@@ -21,7 +21,7 @@ BOUNDARIES = [
 ]
 
 GOAL_POSITION = np.array([3.0, 3.0])
-
+MAX_SPEED =  0.05
 MIN_POSITION = -0.5
 MAX_POSITION = 3.5
 
@@ -37,20 +37,21 @@ def label_fn(obs):
     for boundary in BOUNDARIES:
         lower = boundary[:, 0]
         upper = boundary[:, 1]
-        if np.all(position >= lower) and np.all(position <= upper):
-            labels.add("inside")
-        else:
-            labels.add("outside")
+        if not (np.all(position >= lower) and np.all(position <= upper)):
+            labels.add("boundary")
 
     if np.all(position >= GOAL_POSITION):
         labels.add("goal")
 
     if np.any(position >= MAX_POSITION) or np.any(position <= MIN_POSITION):
-        labels.add("wall")
+        labels.add("boundary")
+
+    if np.any(np.abs(velocity) >= MAX_SPEED):
+        labels.add("max_speed")
 
     return labels
 
-cost_fn = lambda labels: 1.0 if {"obstacle", "outside"} & labels else 0.0 # set intersection
+cost_fn = lambda labels: 1.0 if {"obstacle", "boundary"} & labels else 0.0 # set intersection
 
 class ObstacleV3(ContinuousEnv):
     metadata = {"render_modes": ["ansi", "rgb_array", "human"], "render_fps": 30}
@@ -64,7 +65,7 @@ class ObstacleV3(ContinuousEnv):
 
         self._dt = 1.0
         self._power = 0.001
-        self._max_speed = 0.05
+        self._max_speed = MAX_SPEED
         self._min_position = MIN_POSITION
         self._max_position = MAX_POSITION
 
