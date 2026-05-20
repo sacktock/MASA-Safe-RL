@@ -143,7 +143,7 @@ saving); the snippet mirrors the general style used in MASA runs.
 
 .. code-block:: python
 
-   from masa.algorithms.ppo import PPO
+   from masa.algorithms.on_policy import PPO
 
    # (Optional) create a separate evaluation environment with the same wrapper stack.
    def make_eval_env():
