@@ -139,22 +139,15 @@ class PPOPolicy(BaseJaxPolicy):
         self.actor_class = actor_class
         self.critic_class = critic_class
 
-        self.key = self.noise_key = jax.random.PRNGKey(0)
+        self.key = self.noise_key = jr.PRNGKey(0)
 
-    def build(self, key: jax.Array, lr_schedule: Union[optax.Schedule, float], max_grad_norm: float) -> jax.Array:
-        key, feat_key, actor_key, critic_key = jax.random.split(key, 4)
-        key, self.key = jax.random.split(key, 2)
-
-        self.reset_noise()
-
-        obs = jnp.array([self.observation_space.sample()])
-
+    def _build_actor_kwargs(self):
         if isinstance(self.action_space, spaces.Box):
-            actor_kwargs: dict[str, Any] = {
+            return {
                 "action_dim": int(np.prod(self.action_space.shape)),
             }
         elif isinstance(self.action_space, spaces.Discrete):
-            actor_kwargs = {
+            return {
                 "action_dim": int(self.action_space.n),
                 "num_discrete_choices": int(self.action_space.n),
             }
@@ -163,7 +156,7 @@ class PPOPolicy(BaseJaxPolicy):
                 "Only one-dimensional MultiDiscrete action spaces are supported, "
                 f"but found MultiDiscrete({(self.action_space.nvec).tolist()})."
             )
-            actor_kwargs = {
+            return {
                 "action_dim": int(np.sum(self.action_space.nvec)),
                 "num_discrete_choices": self.action_space.nvec,  # type: ignore[dict-item]
             }
@@ -173,12 +166,20 @@ class PPOPolicy(BaseJaxPolicy):
                 "You can flatten it instead."
             )
             # Handle binary action spaces as discrete action spaces with two choices.
-            actor_kwargs = {
+            return {
                 "action_dim": 2 * self.action_space.n,
                 "num_discrete_choices": 2 * np.ones(self.action_space.n, dtype=int),
             }
         else:
             raise NotImplementedError(f"{self.action_space}")
+
+    def build(self, key: jax.Array, lr_schedule: Union[optax.Schedule, float], max_grad_norm: float) -> jax.Array:
+        key, feat_key, actor_key, critic_key = jr.split(key, 4)
+        key, self.key = jr.split(key, 2)
+
+        self.reset_noise()
+
+        obs = jnp.array([self.observation_space.sample()])
 
         if self.features_extractor_class is not None:
             self.featurizer = self.features_extractor_class(
@@ -204,6 +205,8 @@ class PPOPolicy(BaseJaxPolicy):
         self.featurizer.apply = jit(self.featurizer.apply)
 
         obs = self.featurizer.apply(self.featurizer_state.params, obs)
+
+        actor_kwargs = self._build_actor_kwargs()
 
         self.actor = self.actor_class(
             net_arch=self.actor_net_arch,

@@ -36,6 +36,11 @@ registry.ALGO_REGISTRY.register(
 )
 
 registry.ALGO_REGISTRY.register(
+    "PPOLag",
+    "masa.algorithms.on_policy:PPOLag",
+)
+
+registry.ALGO_REGISTRY.register(
     "A2C",
     "masa.algorithms.on_policy:A2C",
 )
