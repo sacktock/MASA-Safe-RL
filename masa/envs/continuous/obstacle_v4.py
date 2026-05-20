@@ -5,6 +5,7 @@ import numpy as np
 import math
 from masa.common.label_fn import LabelFn
 from masa.envs.continuous.base import ContinuousEnv
+from masa.envs.continuous.renderers.obstacle import ObstacleRenderer, validate_renderer_options
 
 OBSTACLES = [
     np.array([
@@ -65,7 +66,7 @@ class ObstacleV4(ContinuousEnv):
         render_mode: Literal["ansi", "rgb_array", "human"] | None = None,
         render_window_size: int = 512,
     ):
-        #validate_renderer_options(render_mode, render_window_size)
+        validate_renderer_options(render_mode, render_window_size)
 
         self._dt = 1.0
         self._power = 0.001
@@ -109,7 +110,7 @@ class ObstacleV4(ContinuousEnv):
 
         self.render_mode = render_mode
         self.render_window_size = int(render_window_size)
-        #TODO: self._renderer = ObstacleRenderer(self)
+        self._renderer = ObstacleRenderer(self)
 
     def _obs(self):
         return self._state
@@ -161,15 +162,15 @@ class ObstacleV4(ContinuousEnv):
 
         return self._obs(), reward, terminal, False, {}
 
-    '''def render(self):
+    def render(self):
         return self._renderer.render()
 
     def close(self) -> None:
-        self._renderer.closE()
+        self._renderer.close()
 
     @property
     def human_window_closed(self) -> bool:
         return self._renderer.human_window_closed
 
     def handle_pygame_event(self, event: Any) -> bool:
-        return self._renderer.handle_pygame_event(event)'''
+        return self._renderer.handle_pygame_event(event)
