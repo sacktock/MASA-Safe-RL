@@ -55,7 +55,7 @@ def label_fn(obs):
 cost_fn = lambda labels: 1.0 if {"obstacle", "boundary"} & labels else 0.0 # set intersection
 
 class ObstacleV3(ContinuousEnv):
-    metadata = {"render_modes": ["ansi", "rgb_array", "human"], "render_fps": 30}
+    metadata = {"render_modes": ["ansi", "rgb_array", "human"], "render_fps": 60}
 
     def __init__(
         self,
