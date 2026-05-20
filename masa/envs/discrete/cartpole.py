@@ -5,7 +5,7 @@ import numpy as np
 import math
 from masa.common.label_fn import LabelFn
 from masa.envs.discrete.base import DiscreteEnv
-from masa.envs.discrete.renderers.cartpole import CartPoleRenderer, validate_renderer_options
+from masa.envs.continuous.renderers.cartpole import CartPoleRenderer, validate_renderer_options
 
 THETA_THESHOLD_RADIANS = 0.2095 # ~ 3/4 pi radians
 X_THRESHOLD = 2.4
