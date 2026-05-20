@@ -34,9 +34,9 @@ class Config:
     cache_dir: Path
     output_dir: Path
     metrics: Optional[list[str]] = None
+    envs: Optional[list[str]] = None
     palette: str = "colorblind"
     force_download: bool = False
-    force_process: bool = False
     seed_for_logged_quantiles: int = 1
 
     def variant_by_name(self) -> dict[str, VariantStyle]:
@@ -86,9 +86,9 @@ def load_config(path: str | Path) -> Config:
         cache_dir=_resolve(raw["cache_dir"]),
         output_dir=_resolve(raw["output_dir"]),
         metrics=raw.get("metrics"),
+        envs=raw.get("envs"),
         palette=raw.get("palette", "colorblind"),
         force_download=raw.get("force_download", False),
-        force_process=raw.get("force_process", False),
         seed_for_logged_quantiles=raw.get("seed_for_logged_quantiles", 1),
     )
 

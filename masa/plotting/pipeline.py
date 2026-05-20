@@ -9,7 +9,7 @@ import pandas as pd
 
 from .config import Config
 from .io_utils import get_logger
-from .processing import load_or_build
+from .processing import build_frames
 from .sources import CachedWandbSource
 from .specs import PlotSpec, all_specs
 from .specs.base import RenderContext
@@ -33,7 +33,7 @@ class Pipeline:
             return []
 
     def process(self) -> tuple[pd.DataFrame, pd.DataFrame]:
-        return load_or_build(self.config)
+        return build_frames(self.config)
 
     def render(self,
                long_df: pd.DataFrame,
@@ -45,7 +45,13 @@ class Pipeline:
         if long_df.empty:
             self.log.error("render stage aborted: long-form frame is empty.")
             return []
-        envs = sorted(long_df["env"].unique())
+        envs = self._select_envs(sorted(long_df["env"].unique()))
+        if not envs:
+            self.log.error(
+                f"render stage aborted: config.envs={self.config.envs!r} "
+                f"matches none of the envs in the data."
+            )
+            return []
         self.log.info(f"Rendering {len(specs)} spec(s) across {len(envs)} env(s).")
         outputs: list[Path] = []
         for spec in specs:
@@ -100,6 +106,13 @@ class Pipeline:
 
     # -- helpers ----------------------------------------------------------
 
+    def _select_envs(self, discovered: list[str]) -> list[str]:
+        """Restrict to ``config.envs`` if set; otherwise return all discovered envs."""
+        if not self.config.envs:
+            return discovered
+        keep = set(self.config.envs)
+        return [e for e in discovered if e in keep]
+
     def _make_ctx(self, env: str, long_df: pd.DataFrame, q_df: pd.DataFrame) -> RenderContext:
         env_metrics = (long_df.loc[long_df["env"] == env, "metric"].unique()
                        if not long_df.empty else [])
@@ -130,6 +143,7 @@ class Pipeline:
                 if m:
                     envs.append(m.group("env"))
             envs = sorted(set(envs))
+        envs = self._select_envs(envs)
         self.log.info(f"envs (cache) : {envs or '(none discovered yet)'}")
         for spec in chosen:
             for env in envs or ["<env>"]:

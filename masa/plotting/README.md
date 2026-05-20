@@ -68,11 +68,10 @@ Render only a subset of registered figures:
 python -m masa.plotting --config <your-yaml> --specs performance
 ```
 
-Bust the caches:
+Bust the download cache (the long-form and quantile frames are always rebuilt in memory, so only the per-run W&B cache needs busting):
 
 ```text
 --force-download    refetch every run from W&B
---force-process     rebuild the long form and quantile frames
 ```
 
 Load extra figure specs from another module (the package ships `performance` and `margin` by default):
@@ -102,6 +101,7 @@ output_dir: ./plots
 palette: colorblind
 seed_for_logged_quantiles: 1
 metrics: null   # null fetches every non internal column
+envs: null      # null renders every env found in the data; or list a subset
 
 variants:
   - {name: baseline,  label: 'Baseline',  colour: '#0072B2', order: 0}
@@ -144,11 +144,11 @@ Config (config.py)
 
 ### Stage 3: process
 
-`processing.build_long_form(config)` reads every CSV in `cache_dir`, matches the filename against `run_schema.pattern` to recover `(env, variant, seed)`, melts every metric column into rows, drops NaNs, and concatenates the result. The output frame uses the canonical long form schema `[env, variant, seed, step, metric, value]` and is cached as `cache_dir/long.csv`.
+`processing.build_long_form(config)` reads every CSV in `cache_dir`, matches the filename against `run_schema.pattern` to recover `(env, variant, seed)`, melts every metric column into rows, coerces each cell to a scalar (stringified `wandb.Histogram` payloads are collapsed to their median), drops NaNs, and concatenates the result. The output frame uses the canonical long form schema `[env, variant, seed, step, metric, value]`.
 
-`processing.build_quantile_frame(long)` groups that long form by `(env, variant, step, metric)` and computes five quantiles (`q05`, `q25`, `q50`, `q75`, `q95`) across seeds. The result is cached as `cache_dir/quantiles.csv` and feeds every `aggregated` panel.
+`processing.build_quantile_frame(long)` groups that long form by `(env, variant, step, metric)` and computes five quantiles (`q05`, `q25`, `q50`, `q75`, `q95`) across seeds, feeding every `aggregated` panel.
 
-Both frames are loaded from cache on subsequent runs unless `--force-process` is set.
+Both frames are rebuilt in memory on every run. Only the per-run W&B download is cached on disk (`cache_dir/{run.name}.csv`); the in-memory melt and groupby are cheap enough that a persistent frame cache isn't worth the staleness risk.
 
 ### Stage 4: render
 

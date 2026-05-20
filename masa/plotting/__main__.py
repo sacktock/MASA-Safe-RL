@@ -69,8 +69,6 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
                         "May be passed multiple times.")
     p.add_argument("--force-download", action="store_true",
                    help="Refetch every run even if a cached CSV exists.")
-    p.add_argument("--force-process", action="store_true",
-                   help="Rebuild the long form and quantile frames even if cached.")
     p.add_argument("--dry-run", action="store_true",
                    help="Print the resolved plan and exit without W&B or disk writes.")
     p.add_argument("-v", "--verbose", action="store_true")
@@ -86,8 +84,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     cfg = load_config(args.config)
     if args.force_download:
         cfg = replace(cfg, force_download=True)
-    if args.force_process:
-        cfg = replace(cfg, force_process=True)
 
     spec_ids = [s.strip() for s in args.specs.split(",") if s.strip()] if args.specs else None
     specs = all_specs(spec_ids)

@@ -246,7 +246,7 @@ class CachedWandbSource:
     run's history to ``Config.cache_dir/{run.name}.csv``. Re runs skip the API
     call when a CSV already exists, unless ``Config.force_download`` is set.
     The downstream long form and quantile frames are built by
-    :func:`masa.plotting.processing.load_or_build`.
+    :func:`masa.plotting.processing.build_frames`.
     """
 
     def __init__(self, config: Config):

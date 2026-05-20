@@ -27,6 +27,10 @@ seed_for_logged_quantiles: 1
 # column from each run's history (recommended unless your project is huge).
 metrics: null
 
+# Restrict rendering to these envs. null renders every env discovered in the
+# data; otherwise list the env names you want, e.g. [cartpole, mountain_car].
+envs: null
+
 # Variants you want to compare. Add or remove entries freely.
 # 'name' must match the variant captured by run_schema.pattern.
 variants:
