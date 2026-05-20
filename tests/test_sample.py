@@ -229,6 +229,8 @@ def test_cartpole_envs_render_rgb_array_ansi_and_notebook():
 
 
 def test_mountain_car_envs_render_rgb_array_ansi():
+    import json
+
     import numpy as np
     import pytest
 
@@ -274,6 +276,21 @@ def test_mountain_car_envs_render_rgb_array_ansi():
         with pytest.raises(ValueError):
             env_cls(render_window_size=0)
 
+    with open("notebooks/envs/play_mountain_car.ipynb", "r", encoding="utf-8") as fh:
+        notebook = json.load(fh)
+
+    assert notebook["nbformat"] == 4
+    source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
+    assert "DiscreteMountainCar" in source
+    assert "ContinuousMountainCar" in source
+    assert "widgets.ToggleButtons" in source
+    assert "render_mode=\"human\"" in source
+    assert "render_mode=\"rgb_array\"" in source
+    assert "render_window_size=512" in source
+    assert "pygame.K_LEFT" in source
+    assert "pygame.K_SPACE" in source
+    assert "play_env" in source
+
 
 def test_road_2d_render_rgb_array_ansi():
     import numpy as np
@@ -316,6 +333,8 @@ def test_road_2d_render_rgb_array_ansi():
 
 
 def test_road_1d_render_rgb_array_ansi():
+    import json
+
     import numpy as np
     import pytest
 
@@ -354,8 +373,25 @@ def test_road_1d_render_rgb_array_ansi():
     with pytest.raises(ValueError):
         Road1D(render_window_size=0)
 
+    with open("notebooks/envs/play_roads.ipynb", "r", encoding="utf-8") as fh:
+        notebook = json.load(fh)
+
+    assert notebook["nbformat"] == 4
+    source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
+    assert "Road1D" in source
+    assert "Road2D" in source
+    assert "widgets.ToggleButtons" in source
+    assert "render_mode=\"human\"" in source
+    assert "render_mode=\"rgb_array\"" in source
+    assert "render_window_size=512" in source
+    assert "pygame.K_LEFT" in source
+    assert "pygame.K_SPACE" in source
+    assert "play_env" in source
+
 
 def test_obstacle_envs_render_rgb_array_ansi():
+    import json
+
     import numpy as np
     import pytest
 
@@ -400,6 +436,21 @@ def test_obstacle_envs_render_rgb_array_ansi():
             env_cls(render_mode="bad")
         with pytest.raises(ValueError):
             env_cls(render_window_size=0)
+
+    with open("notebooks/envs/play_obstacles.ipynb", "r", encoding="utf-8") as fh:
+        notebook = json.load(fh)
+
+    assert notebook["nbformat"] == 4
+    source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
+    for env_name in ("Obstacle", "ObstacleV2", "ObstacleV3", "ObstacleV4"):
+        assert env_name in source
+    assert "widgets.ToggleButtons" in source
+    assert "render_mode=\"human\"" in source
+    assert "render_mode=\"rgb_array\"" in source
+    assert "render_window_size=512" in source
+    assert "pygame.K_LEFT" in source
+    assert "pygame.K_SPACE" in source
+    assert "play_env" in source
 
 
 def test_colour_grid_world_render_rgb_array_ansi_and_notebook():
