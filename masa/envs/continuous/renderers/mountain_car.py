@@ -174,76 +174,69 @@ class MountainCarRenderer:
 
     def _draw_scene(self, surface: Any, snapshot: "_MountainCarSnapshot", size: int) -> None:
         import pygame
+        from pygame import gfxdraw
 
         surface.fill(PANEL_COLOR)
         panel = surface.get_rect()
+        scale = _gym_scale(snapshot, size)
 
-        track_left = panel.left + max(18, panel.width // 16)
-        track_right = panel.right - max(18, panel.width // 16)
-        track_top = panel.top + int(panel.height * 0.26)
-        track_bottom = panel.bottom - int(panel.height * 0.22)
-
-        hill_points = _hill_points(snapshot, track_left, track_right, track_top, track_bottom)
-        hill_polygon = hill_points + [(track_right, panel.bottom), (track_left, panel.bottom)]
+        hill_points = _hill_points(snapshot, scale, size)
+        hill_polygon = hill_points + [(panel.right, panel.bottom), (panel.left, panel.bottom)]
         pygame.draw.polygon(surface, HILL_SHADOW_COLOR, [(x, y + max(2, size // 120)) for x, y in hill_polygon])
         pygame.draw.polygon(surface, HILL_COLOR, hill_polygon)
-        pygame.draw.lines(surface, TEXT_COLOR, False, hill_points, width=max(2, size // 150))
+        pygame.draw.aalines(surface, TEXT_COLOR, False, hill_points)
 
-        wall_x, wall_y = _point_for_position(snapshot.min_position, snapshot, track_left, track_right, track_top, track_bottom)
-        pygame.draw.line(surface, WALL_COLOR, (wall_x, wall_y - size // 14), (wall_x, wall_y + size // 16), width=max(3, size // 120))
+        wall_width = max(3, size // 120)
+        wall_x, wall_y = _screen_point(snapshot.min_position, _hill_height(snapshot.min_position) * scale, snapshot, scale, size)
+        wall_x = max(wall_width // 2, wall_x)
+        pygame.draw.line(surface, WALL_COLOR, (wall_x, wall_y - size // 14), (wall_x, wall_y + size // 16), width=wall_width)
 
-        goal_x, goal_y = _point_for_position(snapshot.goal_position, snapshot, track_left, track_right, track_top, track_bottom)
-        flag_height = max(42, size // 6)
-        pygame.draw.line(surface, GOAL_COLOR, (goal_x, goal_y), (goal_x, goal_y - flag_height), width=max(3, size // 120))
+        goal_x, goal_y = _screen_point(snapshot.goal_position, _hill_height(snapshot.goal_position) * scale, snapshot, scale, size)
+        flag_height = max(32, int(size * 50 / 600))
+        flag_width = max(16, int(size * 25 / 600))
+        flag_tip_offset = max(3, int(size * 5 / 600))
+        pygame.draw.line(surface, GOAL_COLOR, (goal_x, goal_y), (goal_x, goal_y - flag_height), width=max(2, size // 180))
         flag = [
             (goal_x, goal_y - flag_height),
-            (goal_x + max(26, size // 10), goal_y - flag_height + max(9, size // 36)),
-            (goal_x, goal_y - flag_height + max(18, size // 18)),
+            (goal_x, goal_y - flag_height + flag_tip_offset * 2),
+            (goal_x + flag_width, goal_y - flag_height + flag_tip_offset),
         ]
-        pygame.draw.polygon(surface, GOAL_COLOR, flag)
+        gfxdraw.aapolygon(surface, flag, GOAL_COLOR)
+        gfxdraw.filled_polygon(surface, flag, GOAL_COLOR)
 
-        car_x, car_y = _point_for_position(snapshot.position, snapshot, track_left, track_right, track_top, track_bottom)
-        car_angle = _slope_angle(snapshot.position, snapshot, track_left, track_right, track_top, track_bottom)
-        self._draw_car(surface, (car_x, car_y), car_angle, snapshot, size)
+        self._draw_car(surface, snapshot, scale, size)
 
         action_force = _last_action_force(snapshot.last_action, snapshot.power)
         action_label = "last action: none" if action_force is None else f"last force: {action_force:.4f}"
         action_color = MUTED_TEXT_COLOR if action_force is None else GOAL_COLOR if action_force > 0 else WALL_COLOR if action_force < 0 else TEXT_COLOR
         self._draw_text(surface, "MountainCar", (panel.left + size // 28, panel.top + size // 28), max(18, size // 18), TEXT_COLOR)
         self._draw_text(surface, f"x {snapshot.position:.2f}  v {snapshot.velocity:.3f}", (panel.left + size // 28, panel.top + size // 10), max(14, size // 25), MUTED_TEXT_COLOR)
-        self._draw_text(surface, snapshot.status, (panel.left + size // 28, panel.bottom - size // 12), max(16, size // 22), GOAL_COLOR if snapshot.status == "goal" else WALL_COLOR if snapshot.status == "wall" else TEXT_COLOR)
-        self._draw_text(surface, action_label, (panel.left + size // 3, panel.bottom - size // 12), max(16, size // 22), action_color)
+        self._draw_text(surface, snapshot.status, (panel.left + size // 28, panel.top + size // 6), max(16, size // 22), GOAL_COLOR if snapshot.status == "goal" else WALL_COLOR if snapshot.status == "wall" else TEXT_COLOR)
+        self._draw_text(surface, action_label, (panel.left + size // 3, panel.top + size // 6), max(16, size // 22), action_color)
 
     def _draw_car(
         self,
         surface: Any,
-        ground: Position,
-        angle: float,
         snapshot: "_MountainCarSnapshot",
+        scale: float,
         size: int,
     ) -> None:
         import pygame
+        from pygame import gfxdraw
 
-        car_width = max(38, size // 7)
-        car_height = max(22, size // 20)
-        wheel_radius = max(5, size // 60)
-        up_offset = car_height // 2 + wheel_radius
-        center = _rotated_offset(ground, 0.0, -up_offset, angle)
+        body_points, window_points, wheel_centers, wheel_radius = _car_geometry(snapshot, scale, size)
 
-        body_points = _rotated_rect(center, car_width, car_height, angle)
         shadow_points = [(x + max(2, size // 120), y + max(2, size // 120)) for x, y in body_points]
         pygame.draw.polygon(surface, CAR_SHADOW_COLOR, shadow_points)
-        pygame.draw.polygon(surface, CAR_COLOR if snapshot.status != "wall" else WALL_COLOR, body_points)
+        body_color = CAR_COLOR if snapshot.status != "wall" else WALL_COLOR
+        gfxdraw.aapolygon(surface, body_points, body_color)
+        gfxdraw.filled_polygon(surface, body_points, body_color)
+        gfxdraw.aapolygon(surface, window_points, WINDOW_COLOR)
+        gfxdraw.filled_polygon(surface, window_points, WINDOW_COLOR)
 
-        window_center = _rotated_offset(center, 0.0, -car_height * 0.12, angle)
-        window_points = _rotated_rect(window_center, car_width * 0.36, car_height * 0.45, angle)
-        pygame.draw.polygon(surface, WINDOW_COLOR, window_points)
-
-        wheel_axis_offset = car_width * 0.28
-        wheel_y_offset = car_height * 0.48
-        for side in (-1, 1):
-            wheel_center = _rotated_offset(center, wheel_axis_offset * side, wheel_y_offset, angle)
-            pygame.draw.circle(surface, WHEEL_COLOR, wheel_center, wheel_radius)
+        for wheel_x, wheel_y in wheel_centers:
+            gfxdraw.aacircle(surface, wheel_x, wheel_y, wheel_radius, WHEEL_COLOR)
+            gfxdraw.filled_circle(surface, wheel_x, wheel_y, wheel_radius, WHEEL_COLOR)
 
     def _draw_text(self, surface: Any, text: str, pos: Position, size: int, color: RGBColor) -> None:
         import pygame
@@ -299,79 +292,90 @@ def _hill_height(position: float) -> float:
     return math.sin(3.0 * position) * 0.45 + 0.55
 
 
-def _hill_bounds(snapshot: _MountainCarSnapshot) -> tuple[float, float]:
-    positions = np.linspace(snapshot.min_position, snapshot.max_position, 120)
-    heights = [_hill_height(float(position)) for position in positions]
-    return min(heights), max(heights)
-
-
-def _point_for_position(
-    position: float,
-    snapshot: _MountainCarSnapshot,
-    track_left: int,
-    track_right: int,
-    track_top: int,
-    track_bottom: int,
-) -> Position:
-    min_height, max_height = _hill_bounds(snapshot)
-    clipped = max(snapshot.min_position, min(snapshot.max_position, position))
-    x_ratio = (clipped - snapshot.min_position) / (snapshot.max_position - snapshot.min_position)
-    height_ratio = (_hill_height(clipped) - min_height) / (max_height - min_height)
-    x = int(track_left + x_ratio * (track_right - track_left))
-    y = int(track_bottom - height_ratio * (track_bottom - track_top))
-    return x, y
+def _gym_scale(snapshot: _MountainCarSnapshot, size: int) -> float:
+    return size / (snapshot.max_position - snapshot.min_position)
 
 
 def _hill_points(
     snapshot: _MountainCarSnapshot,
-    track_left: int,
-    track_right: int,
-    track_top: int,
-    track_bottom: int,
+    scale: float,
+    size: int,
 ) -> list[Position]:
     return [
-        _point_for_position(position, snapshot, track_left, track_right, track_top, track_bottom)
-        for position in np.linspace(snapshot.min_position, snapshot.max_position, 96)
+        _screen_point(float(position), _hill_height(float(position)) * scale, snapshot, scale, size)
+        for position in np.linspace(snapshot.min_position, snapshot.max_position, 100)
     ]
 
 
-def _slope_angle(
+def _screen_point(
     position: float,
+    y_from_bottom: float,
     snapshot: _MountainCarSnapshot,
-    track_left: int,
-    track_right: int,
-    track_top: int,
-    track_bottom: int,
-) -> float:
-    delta = 0.01
-    left = _point_for_position(position - delta, snapshot, track_left, track_right, track_top, track_bottom)
-    right = _point_for_position(position + delta, snapshot, track_left, track_right, track_top, track_bottom)
-    return math.atan2(right[1] - left[1], right[0] - left[0])
+    scale: float,
+    size: int,
+) -> Position:
+    x = (position - snapshot.min_position) * scale
+    return int(round(x)), int(round(size - y_from_bottom))
 
 
-def _rotated_rect(center: Position, width: float, height: float, angle: float) -> list[Position]:
+def _car_geometry(
+    snapshot: _MountainCarSnapshot,
+    scale: float,
+    size: int,
+) -> tuple[list[Position], list[Position], list[Position], int]:
+    position = max(snapshot.min_position, min(snapshot.max_position, snapshot.position))
+    car_width = max(28.0, size * 40 / 600)
+    car_height = max(14.0, size * 20 / 600)
+    clearance = max(6.0, size * 10 / 600)
+    base_x = (position - snapshot.min_position) * scale
+    base_y = clearance + _hill_height(position) * scale
+    angle = math.cos(3.0 * position)
+
+    body_points = _local_points_to_screen(
+        [(-car_width / 2, 0.0), (-car_width / 2, car_height), (car_width / 2, car_height), (car_width / 2, 0.0)],
+        base_x,
+        base_y,
+        angle,
+        size,
+    )
+    window_points = _local_points_to_screen(
+        [
+            (-car_width * 0.22, car_height * 0.48),
+            (car_width * 0.22, car_height * 0.48),
+            (car_width * 0.16, car_height * 0.78),
+            (-car_width * 0.16, car_height * 0.78),
+        ],
+        base_x,
+        base_y,
+        angle,
+        size,
+    )
+    wheel_centers = _local_points_to_screen(
+        [(car_width / 4, 0.0), (-car_width / 4, 0.0)],
+        base_x,
+        base_y,
+        angle,
+        size,
+    )
+    return body_points, window_points, wheel_centers, max(4, int(round(car_height / 2.5)))
+
+
+def _local_points_to_screen(
+    points: list[tuple[float, float]],
+    base_x: float,
+    base_y: float,
+    angle: float,
+    size: int,
+) -> list[Position]:
     cos_angle = math.cos(angle)
     sin_angle = math.sin(angle)
-    corners = [(-width / 2, -height / 2), (width / 2, -height / 2), (width / 2, height / 2), (-width / 2, height / 2)]
     return [
         (
-            int(center[0] + x * cos_angle - y * sin_angle),
-            int(center[1] + x * sin_angle + y * cos_angle),
+            int(round(base_x + x * cos_angle - y * sin_angle)),
+            int(round(size - (base_y + x * sin_angle + y * cos_angle))),
         )
-        for x, y in corners
+        for x, y in points
     ]
-
-
-def _rotated_offset(origin: Position, along: float, down: float, angle: float) -> Position:
-    return _offset_point(
-        origin,
-        math.cos(angle) * along - math.sin(angle) * down,
-        math.sin(angle) * along + math.cos(angle) * down,
-    )
-
-
-def _offset_point(origin: Position, dx: float, dy: float) -> Position:
-    return int(origin[0] + dx), int(origin[1] + dy)
 
 
 def _status(position: float, velocity: float, min_position: float, max_speed: float, goal_position: float) -> str:

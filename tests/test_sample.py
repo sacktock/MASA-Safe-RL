@@ -230,7 +230,6 @@ def test_cartpole_envs_render_rgb_array_ansi_and_notebook():
 
 def test_mountain_car_envs_render_rgb_array_ansi():
     import json
-    import math
 
     import numpy as np
     import pytest
@@ -280,16 +279,17 @@ def test_mountain_car_envs_render_rgb_array_ansi():
         with pytest.raises(ValueError):
             env_cls(render_window_size=0)
 
-    ground = (100, 100)
-    car_center = mountain_car_renderer._rotated_offset(ground, 0.0, -20.0, 0.0)
-    wheel_center = mountain_car_renderer._rotated_offset(car_center, 0.0, 10.0, 0.0)
-    assert car_center[1] < ground[1]
-    assert wheel_center[1] > car_center[1]
-
-    uphill_angle = -math.pi / 6.0
-    uphill_center = mountain_car_renderer._rotated_offset(ground, 0.0, -20.0, uphill_angle)
-    uphill_wheel = mountain_car_renderer._rotated_offset(uphill_center, 0.0, 10.0, uphill_angle)
-    assert uphill_wheel[1] > uphill_center[1]
+    env = DiscreteMountainCar(render_mode="rgb_array", render_window_size=192)
+    env.reset(seed=0)
+    snapshot = env._renderer._snapshot()
+    scale = mountain_car_renderer._gym_scale(snapshot, env.render_window_size)
+    body_points, _, wheel_centers, _ = mountain_car_renderer._car_geometry(snapshot, scale, env.render_window_size)
+    assert wheel_centers[0][1] > sum(point[1] for point in body_points) / len(body_points)
+    assert wheel_centers[1][1] > sum(point[1] for point in body_points) / len(body_points)
+    hill_points = mountain_car_renderer._hill_points(snapshot, scale, env.render_window_size)
+    assert hill_points[0][0] == 0
+    assert hill_points[-1][0] == env.render_window_size
+    env.close()
 
     with open("notebooks/envs/play_mountain_car.ipynb", "r", encoding="utf-8") as fh:
         notebook = json.load(fh)
