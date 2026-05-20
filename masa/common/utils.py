@@ -81,10 +81,12 @@ def make_env(
         label_fn:
             Optional function mapping observations to atomic predicate labels.
             If provided, labels are computed on every ``reset`` and ``step`` and
-            stored under ``info["labels"]``.
+            stored under ``info["labels"]``. If omitted, the base environment's 
+            ``label_fn`` attribute is used.
         constraint_kwargs:
            Optional keyword arguments forwarded to the constraint wrapper
-           constructor.
+           constructor. If ``cost_fn`` is omitted and the base environment
+           exposes one, it is forwarded automatically.
         env_kwargs:
             Optional keyword arguments forwarded to the base environment
             constructor.
@@ -123,9 +125,15 @@ def make_env(
     env = env_ctor(**dict(env_kwargs or {}))
     # must wrap time limit first
     env = TimeLimit(env, max_episode_steps)
+    label_fn = label_fn if label_fn is not None else getattr(env, "label_fn", None)
     if label_fn is not None:
         env = LabelledEnv(env, label_fn)
-    env = constraint_ctor(env, **dict(constraint_kwargs or {}))
+    constraint_kwargs = dict(constraint_kwargs or {})
+    if "cost_fn" not in constraint_kwargs:
+        cost_fn = getattr(env, "cost_fn", None)
+        if cost_fn is not None:
+            constraint_kwargs["cost_fn"] = costfn
+    env = constraint_ctor(env, **constraint_kwargs)
     env = ConstraintMonitor(env)
     env = RewardMonitor(env)
     if record_video:
@@ -215,7 +223,7 @@ def make_marl_env(
             constraint_kwargs["cost_fn"] = cost_fn
 
     env = LabelledParallelEnv(raw_env, resolved_label_fn)
-    env = constraint_ctor(env, **dict(constraint_kwargs or {}))
+    env = constraint_ctor(env, **constraint_kwargs)
     if record_video:
         env = RecordVideoParallel(
             env,
