@@ -275,6 +275,46 @@ def test_mountain_car_envs_render_rgb_array_ansi():
             env_cls(render_window_size=0)
 
 
+def test_road_2d_render_rgb_array_ansi():
+    import numpy as np
+    import pytest
+
+    from masa.envs.continuous.road_2d import Road2D
+
+    action = np.array([1.0, 1.0], dtype=np.float32)
+
+    env = Road2D(render_mode="rgb_array", render_window_size=192)
+    env.reset(seed=0)
+    frame = env.render()
+    assert frame.shape == (192, 192, 3)
+    assert frame.dtype.name == "uint8"
+    assert frame.mean() > 0
+    env.step(action)
+    next_frame = env.render()
+    assert next_frame.shape == frame.shape
+    assert next_frame.mean() > 0
+    env.close()
+
+    env = Road2D(render_mode="ansi")
+    env.reset(seed=0)
+    env.step(action)
+    rendered = env.render()
+    assert isinstance(rendered, str)
+    for token in ("position", "velocity", "status", "last_action"):
+        assert token in rendered
+    env.close()
+
+    env = Road2D()
+    env.reset(seed=0)
+    assert env.render() is None
+    env.close()
+
+    with pytest.raises(ValueError):
+        Road2D(render_mode="bad")
+    with pytest.raises(ValueError):
+        Road2D(render_window_size=0)
+
+
 def test_colour_grid_world_render_rgb_array_ansi_and_notebook():
     import json
 
