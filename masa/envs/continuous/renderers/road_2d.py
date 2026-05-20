@@ -11,13 +11,16 @@ os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 Position = tuple[int, int]
 RGBColor = tuple[int, int, int]
 
-BACKGROUND_COLOR = (237, 238, 232)
-PANEL_COLOR = (226, 230, 224)
-ROAD_COLOR = (239, 241, 235)
-GRID_COLOR = (199, 205, 196)
+BACKGROUND_COLOR = (232, 235, 229)
+PANEL_COLOR = (217, 224, 217)
+ROAD_COLOR = (72, 81, 86)
+ROAD_EDGE_COLOR = (241, 244, 236)
+ROAD_SHOULDER_COLOR = (137, 149, 145)
+LANE_MARKING_COLOR = (246, 226, 131)
+GRID_COLOR = (122, 135, 133)
 GOAL_COLOR = (92, 166, 111)
-GOAL_FILL_COLOR = (202, 225, 204)
-BOUNDARY_COLOR = (72, 82, 96)
+GOAL_FILL_COLOR = (118, 184, 128)
+BOUNDARY_COLOR = (38, 47, 58)
 AGENT_COLOR = (66, 121, 210)
 AGENT_SHADOW_COLOR = (39, 67, 126)
 VELOCITY_COLOR = (198, 126, 63)
@@ -182,6 +185,7 @@ class Road2DRenderer:
         margin = max(24, size // 14)
         panel = pygame.Rect(margin, margin, size - margin * 2, size - margin * 2)
         pygame.draw.rect(surface, PANEL_COLOR, panel, border_radius=max(8, size // 32))
+        pygame.draw.rect(surface, ROAD_EDGE_COLOR, panel, width=max(2, size // 180), border_radius=max(8, size // 32))
 
         map_margin = max(22, size // 13)
         map_rect = pygame.Rect(
@@ -190,6 +194,9 @@ class Road2DRenderer:
             panel.width - map_margin * 2,
             panel.height - map_margin * 2 - size // 12,
         )
+        shoulder_rect = map_rect.inflate(max(16, size // 34), max(16, size // 34))
+        pygame.draw.rect(surface, ROAD_SHOULDER_COLOR, shoulder_rect, border_radius=max(10, size // 48))
+        pygame.draw.rect(surface, ROAD_EDGE_COLOR, shoulder_rect, width=max(2, size // 120), border_radius=max(10, size // 48))
         pygame.draw.rect(surface, ROAD_COLOR, map_rect, border_radius=max(6, size // 70))
         pygame.draw.rect(surface, BOUNDARY_COLOR, map_rect, width=max(3, size // 110), border_radius=max(6, size // 70))
 
@@ -218,13 +225,61 @@ class Road2DRenderer:
     def _draw_grid(self, surface: Any, snapshot: "_Road2DSnapshot", map_rect: Any, size: int) -> None:
         import pygame
 
+        edge_inset = max(5, size // 72)
+        pygame.draw.line(
+            surface,
+            ROAD_EDGE_COLOR,
+            (map_rect.left + edge_inset, map_rect.top + edge_inset),
+            (map_rect.right - edge_inset, map_rect.top + edge_inset),
+            width=max(2, size // 150),
+        )
+        pygame.draw.line(
+            surface,
+            ROAD_EDGE_COLOR,
+            (map_rect.left + edge_inset, map_rect.bottom - edge_inset),
+            (map_rect.right - edge_inset, map_rect.bottom - edge_inset),
+            width=max(2, size // 150),
+        )
+        pygame.draw.line(
+            surface,
+            ROAD_EDGE_COLOR,
+            (map_rect.left + edge_inset, map_rect.top + edge_inset),
+            (map_rect.left + edge_inset, map_rect.bottom - edge_inset),
+            width=max(2, size // 150),
+        )
+        pygame.draw.line(
+            surface,
+            ROAD_EDGE_COLOR,
+            (map_rect.right - edge_inset, map_rect.top + edge_inset),
+            (map_rect.right - edge_inset, map_rect.bottom - edge_inset),
+            width=max(2, size // 150),
+        )
+
         for value in range(math.ceil(snapshot.min_position), math.floor(snapshot.max_position) + 1):
             x = _x_to_px(float(value), snapshot, map_rect)
             y = _y_to_px(float(value), snapshot, map_rect)
-            width = max(2, size // 130) if value == 0 else max(1, size // 260)
-            color = MUTED_TEXT_COLOR if value == 0 else GRID_COLOR
-            pygame.draw.line(surface, color, (x, map_rect.top), (x, map_rect.bottom), width=width)
-            pygame.draw.line(surface, color, (map_rect.left, y), (map_rect.right, y), width=width)
+            if value == 0:
+                _draw_dashed_line(
+                    surface,
+                    (x, map_rect.top + edge_inset),
+                    (x, map_rect.bottom - edge_inset),
+                    LANE_MARKING_COLOR,
+                    width=max(2, size // 130),
+                    dash_length=max(10, size // 34),
+                    gap_length=max(8, size // 48),
+                )
+                _draw_dashed_line(
+                    surface,
+                    (map_rect.left + edge_inset, y),
+                    (map_rect.right - edge_inset, y),
+                    LANE_MARKING_COLOR,
+                    width=max(2, size // 130),
+                    dash_length=max(10, size // 34),
+                    gap_length=max(8, size // 48),
+                )
+                continue
+            pygame.draw.line(surface, GRID_COLOR, (x, map_rect.top + edge_inset), (x, map_rect.bottom - edge_inset), width=max(1, size // 260))
+            pygame.draw.line(surface, GRID_COLOR, (map_rect.left + edge_inset, y), (map_rect.right - edge_inset, y), width=max(1, size // 260))
 
     def _draw_goal_region(self, surface: Any, snapshot: "_Road2DSnapshot", map_rect: Any) -> None:
         import pygame
@@ -232,8 +287,8 @@ class Road2DRenderer:
         goal_left = _x_to_px(float(snapshot.goal_position[0]), snapshot, map_rect)
         goal_bottom = _y_to_px(float(snapshot.goal_position[1]), snapshot, map_rect)
         goal_rect = pygame.Rect(goal_left, map_rect.top, map_rect.right - goal_left, goal_bottom - map_rect.top)
-        pygame.draw.rect(surface, GOAL_FILL_COLOR, goal_rect)
-        pygame.draw.rect(surface, GOAL_COLOR, goal_rect, width=max(2, map_rect.width // 120))
+        _draw_translucent_rect(surface, goal_rect, GOAL_FILL_COLOR, alpha=120)
+        pygame.draw.rect(surface, GOAL_COLOR, goal_rect, width=max(3, map_rect.width // 100))
 
     def _draw_arrow(self, surface: Any, start: Position, vector: np.ndarray, color: RGBColor, size: int) -> None:
         import pygame
@@ -306,6 +361,43 @@ def _fit_size(source: Position, target: Position) -> Position:
     target_width, target_height = target
     scale = min(target_width / source_width, target_height / source_height)
     return max(1, int(source_width * scale)), max(1, int(source_height * scale))
+
+
+def _draw_translucent_rect(surface: Any, rect: Any, color: RGBColor, *, alpha: int, border_radius: int = 0) -> None:
+    import pygame
+
+    overlay = pygame.Surface(rect.size, pygame.SRCALPHA)
+    pygame.draw.rect(overlay, (*color, alpha), overlay.get_rect(), border_radius=border_radius)
+    surface.blit(overlay, rect.topleft)
+
+
+def _draw_dashed_line(
+    surface: Any,
+    start: Position,
+    end: Position,
+    color: RGBColor,
+    *,
+    width: int,
+    dash_length: int,
+    gap_length: int,
+) -> None:
+    import pygame
+
+    dx = end[0] - start[0]
+    dy = end[1] - start[1]
+    length = math.hypot(dx, dy)
+    if length <= 0:
+        return
+
+    step_x = dx / length
+    step_y = dy / length
+    cursor = 0.0
+    while cursor < length:
+        next_cursor = min(cursor + dash_length, length)
+        segment_start = (int(start[0] + step_x * cursor), int(start[1] + step_y * cursor))
+        segment_end = (int(start[0] + step_x * next_cursor), int(start[1] + step_y * next_cursor))
+        pygame.draw.line(surface, color, segment_start, segment_end, width=width)
+        cursor += dash_length + gap_length
 
 
 def _point_for_position(position: np.ndarray, snapshot: _Road2DSnapshot, map_rect: Any) -> Position:
