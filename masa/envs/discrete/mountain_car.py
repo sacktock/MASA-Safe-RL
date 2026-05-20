@@ -4,7 +4,7 @@ from gymnasium import spaces
 import numpy as np
 import math
 from masa.common.label_fn import LabelFn
-from masa.envs.continuous.base import ContinuousEnv
+from masa.envs.discrete.base import DiscreteEnv
 from masa.envs.continuous.renderers.mountain_car import MountainCarRenderer, validate_renderer_options
 
 GOAL_POSITION = 0.45 # was 0.5 in gymnasium, 0.45 in Arnaud de Broissia's version
@@ -24,7 +24,7 @@ def label_fn(obs):
 
 cost_fn = lambda labels: 1.0 if "wall" in labels else 0.0
 
-class DiscreteMountainCar(ContinuousEnv):
+class DiscreteMountainCar(DiscreteEnv):
     metadata = {"render_modes": ["ansi", "rgb_array", "human"], "render_fps": 60}
 
     def __init__(

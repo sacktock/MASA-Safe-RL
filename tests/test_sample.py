@@ -238,7 +238,10 @@ def test_mountain_car_envs_render_rgb_array_ansi():
 
     from masa.envs.continuous.mountain_car import ContinuousMountainCar
     from masa.envs.continuous.renderers import mountain_car as mountain_car_renderer
+    from masa.envs.discrete.base import DiscreteEnv
     from masa.envs.discrete.mountain_car import DiscreteMountainCar
+
+    assert issubclass(DiscreteMountainCar, DiscreteEnv)
 
     env_cases = (
         (DiscreteMountainCar, 1),
