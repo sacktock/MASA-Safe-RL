@@ -32,12 +32,12 @@ registry.ALGO_REGISTRY.register(
 
 registry.ALGO_REGISTRY.register(
     "PPO",
-    "masa.algorithms.ppo:PPO",
+    "masa.algorithms.on_policy:PPO",
 )
 
 registry.ALGO_REGISTRY.register(
     "A2C",
-    "masa.algorithms.a2c:A2C",
+    "masa.algorithms.on_policy:A2C",
 )
 
 ALGORITHMS = registry.ALGO_REGISTRY.keys()

@@ -1,5 +1,5 @@
 from masa.common.wrappers import NormWrapper, VecNormWrapper, DummyVecWrapper
-from masa.algorithms.ppo import PPO
+from masa.algorithms.on_policy import PPO
 
 def main():
     # Import the masa make_env function

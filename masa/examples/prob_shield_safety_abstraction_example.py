@@ -1,5 +1,5 @@
 from masa.prob_shield.prob_shield_wrapper_v1 import ProbShieldWrapperDisc
-from masa.algorithms.ppo import PPO
+from masa.algorithms.on_policy import PPO
 
 def main():
     # Import the masa make_env function

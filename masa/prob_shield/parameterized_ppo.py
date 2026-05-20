@@ -11,7 +11,7 @@ import jax
 from functools import partial
 from flax.training.train_state import TrainState
 
-from masa.algorithms.ppo import PPO
+from masa.algorithms.on_policy import PPO
 from masa.common.base_class import BaseJaxPolicy
 from masa.prob_shield.parameterized_policy import ParameterizedPPOPolicy
 from masa.common.metrics import Stats, Dist

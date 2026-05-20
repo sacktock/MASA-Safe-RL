@@ -1,5 +1,5 @@
 from __future__ import annotations
-from masa.algorithms.ppo import PPO
+from masa.algorithms.on_policy import PPO
 from pathlib import Path
 
 
