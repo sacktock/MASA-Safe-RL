@@ -27,7 +27,7 @@ MAX_POSITION = 3.5
 
 def label_fn(obs):
     labels = set()
-    position = obs[:2]
+    position, velocity = obs[:2], obs[2:]
     for obstacle in OBSTACLES:
         lower = obstacle[:, 0]
         upper = obstacle[:, 1]
