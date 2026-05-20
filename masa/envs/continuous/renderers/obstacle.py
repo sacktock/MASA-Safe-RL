@@ -19,6 +19,10 @@ GOAL_COLOR = (92, 166, 111)
 GOAL_FILL_COLOR = (202, 225, 204)
 OBSTACLE_COLOR = (202, 76, 75)
 OBSTACLE_FILL_COLOR = (236, 199, 197)
+OBSTACLE_STRIPE_COLOR = (219, 104, 91)
+OBSTACLE_HIGHLIGHT_COLOR = (248, 225, 218)
+OBSTACLE_SHADOW_COLOR = (113, 55, 63)
+OBSTACLE_HIT_COLOR = (148, 43, 58)
 BOUNDARY_COLOR = (72, 82, 96)
 BOUNDARY_FILL_COLOR = (217, 209, 202)
 AGENT_COLOR = (66, 121, 210)
@@ -249,14 +253,48 @@ class ObstacleRenderer:
         pygame.draw.rect(surface, GOAL_COLOR, goal_rect, width=max(2, map_rect.width // 120))
 
     def _draw_obstacles(self, surface: Any, snapshot: "_ObstacleSnapshot", map_rect: Any) -> None:
-        import pygame
-
         for obstacle in snapshot.obstacles:
             lower = obstacle[:, 0]
             upper = obstacle[:, 1]
             rect = _rect_for_bounds(float(lower[0]), float(upper[0]), float(lower[1]), float(upper[1]), snapshot, map_rect)
-            pygame.draw.rect(surface, OBSTACLE_FILL_COLOR, rect)
-            pygame.draw.rect(surface, OBSTACLE_COLOR, rect, width=max(2, map_rect.width // 120))
+            is_hit = bool(np.all(snapshot.position >= lower) and np.all(snapshot.position <= upper))
+            self._draw_obstacle_region(surface, rect, map_rect, is_hit)
+
+    def _draw_obstacle_region(self, surface: Any, rect: Any, map_rect: Any, is_hit: bool) -> None:
+        import pygame
+
+        radius = max(4, map_rect.width // 48)
+        border_width = max(3, map_rect.width // (82 if is_hit else 105))
+        shadow_offset = max(2, map_rect.width // 130)
+        stripe_width = max(2, map_rect.width // 135)
+        stripe_spacing = max(10, map_rect.width // 22)
+
+        shadow_rect = rect.move(shadow_offset, shadow_offset)
+        _draw_alpha_rect(surface, OBSTACLE_SHADOW_COLOR, 58, shadow_rect, border_radius=radius)
+        _draw_alpha_rect(surface, OBSTACLE_FILL_COLOR, 224, rect, border_radius=radius)
+
+        stripe_rect = rect.inflate(-border_width * 3, -border_width * 3)
+        if stripe_rect.width > stripe_width and stripe_rect.height > stripe_width:
+            previous_clip = surface.get_clip()
+            surface.set_clip(stripe_rect)
+            for offset in range(-stripe_rect.height, stripe_rect.width + stripe_rect.height, stripe_spacing):
+                start = (stripe_rect.left + offset, stripe_rect.bottom)
+                end = (stripe_rect.left + offset + stripe_rect.height, stripe_rect.top)
+                pygame.draw.line(surface, OBSTACLE_STRIPE_COLOR, start, end, width=stripe_width)
+            surface.set_clip(previous_clip)
+
+        outline_color = OBSTACLE_HIT_COLOR if is_hit else OBSTACLE_COLOR
+        pygame.draw.rect(surface, outline_color, rect, width=border_width, border_radius=radius)
+
+        inset = rect.inflate(-border_width * 2, -border_width * 2)
+        if inset.width > 0 and inset.height > 0:
+            pygame.draw.rect(
+                surface,
+                OBSTACLE_HIGHLIGHT_COLOR,
+                inset,
+                width=max(1, border_width // 2),
+                border_radius=max(1, radius - border_width),
+            )
 
     def _draw_boundary_regions(self, surface: Any, snapshot: "_ObstacleSnapshot", map_rect: Any) -> None:
         import pygame
@@ -387,6 +425,14 @@ def _rect_for_bounds(
     top = _y_to_px(y_max, snapshot, map_rect)
     bottom = _y_to_px(y_min, snapshot, map_rect)
     return pygame.Rect(left, top, max(1, right - left), max(1, bottom - top))
+
+
+def _draw_alpha_rect(surface: Any, color: RGBColor, alpha: int, rect: Any, *, border_radius: int = 0) -> None:
+    import pygame
+
+    overlay = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
+    pygame.draw.rect(overlay, (*color, alpha), rect, border_radius=border_radius)
+    surface.blit(overlay, (0, 0))
 
 
 def _vector_to_screen(vector: np.ndarray, max_norm: float, max_length: float) -> np.ndarray:
