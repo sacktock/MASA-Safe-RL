@@ -13,44 +13,26 @@ from typing import Any, Tuple, Optional, Union, Callable
 from masa.common.base_class import BaseJaxPolicy
 from masa.common.buffers import CostRolloutBuffer
 from masa.algorithms.on_policy import PPO
+from masa.algorithms.on_policy.abstract_classes import OnPolicyNaiveLagrangeAlgorithm
 from masa.common.policies import PPOLagPolicy
 from masa.common.metrics import TrainLogger
 from tqdm.auto import tqdm
 
-class PPOLag(PPO):
+class PPOLag(OnPolicyNaiveLagrangeAlgorithm, PPO):
 
     def __init__(
         self,
-        env: gym.Env,
-        tensorboard_logdir: Optional[str] = None,
-        wandb_project: Optional[str] = None,
-        wandb_name: Optional[str] = None,
-        seed: Optional[int] = None,
-        monitor: bool = True,
-        device: str = "auto",
-        verbose: int = 0,
-        env_fn: Optional[Callable[[], gym.Env]] = None,
-        eval_env: Optional[gym.Env] = None, 
-        learning_rate: Union[float, optax.Schedule] = 3e-4,
-        n_steps: int = 2048,
-        batch_size: int = 64,
-        n_epochs: int = 10,
-        gamma: float = 0.99,
-        gae_lambda: float = 0.95,
-        clip_range: Union[float, optax.Schedule] = 0.2,
-        normalize_advantage: bool = True,
-        ent_coef: float = 0.0,
-        vf_coef: float = 1.0,
-        max_grad_norm: float = 0.5,
-        policy_class: type[BaseJaxPolicy] = PPOLagPolicy,
-        policy_kwargs: Optional[dict[str, Any]] = None,
+        *args,
         # Lagrange parameters
+        policy_class: type[BaseJaxPolicy] = PPOLagPolicy,
         cost_limit: float = 25.0,
         cost_gamma: float = 0.99,
         cost_gae_lambda: float = 0.95,
         lagrangian_multiplier_init: float = 0.0,
         lambda_lr: float = 0.01,
         lagrangian_upper_bound: Optional[float] = None,
+        **kwargs,
+        
     ):
 
         self.cost_limit = cost_limit
@@ -63,53 +45,7 @@ class PPOLag(PPO):
             max(lagrangian_multiplier_init, 0.0)
         )
 
-        super().__init__(
-            env=env,
-            tensorboard_logdir=tensorboard_logdir,
-            wandb_project=wandb_project,
-            wandb_name=wandb_name,
-            seed=seed,
-            monitor=monitor,
-            device=device,
-            verbose=verbose,
-            env_fn=env_fn,
-            eval_env=eval_env,
-            learning_rate=learning_rate,
-            n_steps=n_steps,
-            batch_size=batch_size,
-            n_epochs=n_epochs,
-            gamma=gamma,
-            gae_lambda=gae_lambda,
-            clip_range=clip_range,
-            normalize_advantage=normalize_advantage,
-            ent_coef=ent_coef,
-            vf_coef=vf_coef,
-            max_grad_norm=max_grad_norm,
-            policy_class=policy_class,
-            policy_kwargs=policy_kwargs,
-        )
-
-    def _setup_buffer(self):
-        self.rollout_buffer = CostRolloutBuffer(
-            self.n_steps,
-            self.observation_space,
-            self.action_space,
-            self.n_envs,
-            gamma=self.gamma,
-            gae_lambda=self.gae_lambda,
-            cost_gamma=self.cost_gamma,
-            cost_gae_lambda=self.cost_gae_lambda,
-        )
-
-    def _setup_model(self):
-        super()._setup_model()
-        self.cost_critic = self.policy.cost_critic  # type: ignore[assignment]
-
-    def _update_lagrange_multiplier(self, mean_ep_cost: float):
-        self.lagrangian_multiplier += self.lambda_lr * (mean_ep_cost - self.cost_limit)
-        self.lagrangian_multiplier = max(0.0, self.lagrangian_multiplier)
-        if self.lagrangian_upper_bound is not None:
-            self.lagrangian_multiplier = min(self.lagrangian_multiplier, self.lagrangian_upper_bound)
+        super().__init__(*args, policy_class=policy_class, **kwargs)
 
     @staticmethod
     @partial(jit, static_argnames=["normalize_advantage"])
@@ -120,19 +56,15 @@ class PPOLag(PPO):
         cost_critic_state: TrainState,
         observations: jnp.ndarray,
         actions: jnp.ndarray,
-        reward_advantages: jnp.ndarray,
-        cost_advantages: jnp.ndarray,
+        advantages: jnp.ndarray,
         returns: jnp.ndarray,
         cost_returns: jnp.ndarray,
         old_log_prob: jnp.ndarray,
         clip_range: float,
         ent_coef: float,
         vf_coef: float,
-        lagrangian_multiplier: float,
         normalize_advantage: bool = True,
     ):
-        advantages = (reward_advantages - lagrangian_multiplier * cost_advantages) / (1.0 + lagrangian_multiplier)
-
         if normalize_advantage and len(advantages) > 1:
             advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
@@ -179,136 +111,6 @@ class PPOLag(PPO):
 
         return (featurizer_state, actor_state, critic_state, cost_critic_state), (pg_loss, vf_loss)
 
-    def rollout(
-        self, 
-        step: int,
-        logger: Optional[TrainLogger] = None,
-        tqdm_position: int = 1,
-    ):
-        steps = 0
-        self.rollout_buffer.reset()
-        self._last_obs = np.array(self._last_obs)
-        self._last_episode_start = np.array(self._last_episode_start)
-
-        ep_costs = []
-
-        pbar_context = (
-            tqdm(
-                total=self.n_steps,
-                desc="rollout",
-                position=tqdm_position,
-                leave=False,
-                dynamic_ncols=True,
-                colour="green",
-            )
-            if self.use_tqdm_rollout else nullcontext()
-        )
-
-        with pbar_context as pbar:
-            while steps < self.n_steps:
-                self.policy.reset_noise()
-
-                obs = self.prepare_obs(self._last_obs, n_envs=self.n_envs)
-                actions, log_probs, values, cost_values = self.policy.predict_all(self.policy.noise_key, obs)
-
-                actions = np.array(actions)
-                log_probs = np.array(log_probs)
-                values = np.array(values)
-                cost_values = np.array(cost_values)
-
-                new_obs, rewards, terminated, truncated, infos = self.env.step(self.prepare_act(actions, n_envs=self.n_envs))
-
-                costs = np.array([info["constraint"]["step"].get("cost", 0.0) for info in infos])
-
-                for info in infos:
-                    if "episode" in info["constraint"]:
-                        ep_costs.append(info["constraint"]["episode"].get("cum_cost", 0.0))
-
-                new_obs = np.array(new_obs)
-                rewards = np.array(rewards)
-            
-                steps += 1
-                
-                if self.use_tqdm_rollout:
-                    pbar.update(1)
-
-                if isinstance(self.action_space, spaces.Discrete):
-                    # Reshape in case of discrete action
-                    actions = np.array(actions)
-                    actions = actions.reshape(-1, 1)
-
-                dones = np.array([False]*self.n_envs)
-
-                for idx, info in enumerate(infos):
-                    if truncated[idx]:
-                        truncated_obs = new_obs[idx].reshape(1, -1)
-                        feats = self.featurizer.apply(self.policy.featurizer_state.params, truncated_obs)
-                        terminal_value = np.array(
-                            self.critic.apply(
-                                self.policy.critic_state.params,
-                                feats,
-                            ).flatten()
-                        ).item()
-                        rewards[idx] += self.gamma * terminal_value
-
-                        terminal_cost_value = np.array(
-                            self.cost_critic.apply(
-                                self.policy.cost_critic_state.params,
-                                feats,
-                            ).flatten()
-                        ).item()
-                        costs[idx] += self.cost_gamma * terminal_cost_value
-
-                    if terminated[idx] or truncated[idx]:
-                        dones[idx] = True
-
-                self.rollout_buffer.add(
-                    self._last_obs,
-                    actions,
-                    rewards,
-                    costs,
-                    self._last_episode_start,
-                    values,
-                    cost_values,
-                    log_probs,
-                )
-
-                if np.any(dones):
-                    reset_obs, _ = self.env.reset_done(dones)
-                    for i, done in enumerate(dones):
-                        if done and reset_obs[i] is not None:
-                            new_obs[i] = reset_obs[i]
-
-                self._last_obs = new_obs
-                self._last_episode_start = dones
-
-                if logger:
-                    for info in infos:
-                        logger.add("train/rollout", info)
-
-        assert isinstance(self._last_obs, np.ndarray) 
-        final_obs = self.prepare_obs(self._last_obs, n_envs=self.n_envs)
-        feats = self.featurizer.apply(self.policy.featurizer_state.params, final_obs)
-        last_value = np.array(
-            self.critic.apply(
-                self.policy.critic_state.params,
-                feats,
-            ).flatten()
-        )
-        last_cost_value = np.array(
-            self.policy.cost_critic.apply(
-                self.policy.cost_critic_state.params,
-                feats,
-            ).flatten()
-        )
-
-        self.rollout_buffer.compute_returns_and_advantages(last_value=last_value, last_cost_value=last_cost_value, done=self._last_episode_start)
-
-        # update lagrange multiplier after rollout
-        if len(ep_costs) > 0:
-            mean_ep_cost = float(np.mean(ep_costs))
-            self._update_lagrange_multiplier(mean_ep_cost)
-
     def optimize(
         self,
         step: int, 
@@ -338,6 +140,8 @@ class PPOLag(PPO):
                         # Convert discrete action from float to int
                         actions = actions.flatten().astype(np.int32)
 
+                    advantages = (reward_advantages - self.lagrangian_multiplier * cost_advantages) / (1.0 + self.lagrangian_multiplier)
+
                     (self.policy.featurizer_state, self.policy.actor_state, self.policy.critic_state, self.policy.cost_critic_state), (pg_loss, vf_loss) = \
                     self._one_update(
                         featurizer_state=self.policy.featurizer_state,
@@ -346,15 +150,13 @@ class PPOLag(PPO):
                         cost_critic_state=self.policy.cost_critic_state,
                         observations=observations,
                         actions=actions,
-                        reward_advantages=reward_advantages,
-                        cost_advantages=cost_advantages,
+                        advantages=advantages,
                         returns=returns,
                         cost_returns=cost_returns,
                         old_log_prob=old_log_probs,
                         clip_range=clip_range,
                         ent_coef=self.ent_coef,
                         vf_coef=self.vf_coef,
-                        lagrangian_multiplier=self.lagrangian_multiplier,
                         normalize_advantage=self.normalize_advantage,
                     )
 
