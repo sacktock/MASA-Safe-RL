@@ -309,7 +309,12 @@ def test_mountain_car_envs_render_rgb_array_ansi():
     assert "render_mode=\"rgb_array\"" in source
     assert "render_window_size=512" in source
     assert "pygame.K_LEFT" in source
-    assert "pygame.K_SPACE" in source
+    assert "pygame.K_RIGHT" in source
+    assert "pygame.K_SPACE" not in source
+    assert "pygame.K_a" not in source
+    assert "pygame.K_d" not in source
+    assert "pygame.K_DOWN" not in source
+    assert "pygame.K_s" not in source
     assert "pygame.key.get_pressed()" in source
     assert "play_env" in source
 
