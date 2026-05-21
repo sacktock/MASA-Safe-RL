@@ -25,7 +25,7 @@ class ParameterizedActor(nn.Module):
     max_successors: int
     trunk_arch: Sequence[int]
     head_arch: Sequence[int]
-    shared_trunk: bool = True
+    conditional_beta_network: bool = True
     activation_fn: Callable[[jnp.ndarray], jnp.ndarray] = nn.tanh
     embed_dim: int = 64
     log_std_init: float = 0.0
@@ -47,10 +47,9 @@ class ParameterizedActor(nn.Module):
 
     def _forward_features(self, x: jnp.ndarray):
         x = Flatten()(x)
-        if self.shared_trunk:
-            for h in self.trunk_arch:
-                x = nn.Dense(h)(x)
-                x = self.activation_fn(x)
+        for h in self.trunk_arch:
+            x = nn.Dense(h)(x)
+            x = self.activation_fn(x)
 
         logits_i = nn.Dense(self.n_actions)(x)
         logits_j = nn.Dense(self.n_actions)(x)
@@ -63,9 +62,10 @@ class ParameterizedActor(nn.Module):
         return emb_i_tbl, emb_j_tbl
 
     def _foward_beta_net(self, x: jnp.ndarray):
-        for h in self.head_arch:
-            x = nn.Dense(h)(x)
-            x = self.activation_fn(x)
+        if self.conditional_beta_network:
+            for h in self.head_arch:
+                x = nn.Dense(h)(x)
+                x = self.activation_fn(x)
 
         loc = nn.Dense(self.max_successors)(x)
         if self.mean_clip is not None:
@@ -85,19 +85,19 @@ class ParameterizedActor(nn.Module):
         i = actions[:, 0].astype(jnp.int32)
         j = actions[:, 1].astype(jnp.int32)
 
-        x, logits_i, logits_j = self._forward_features(x)
-        emb_i_tbl, emb_j_tbl = self._forward_embedding()
-        
+        y, logits_i, logits_j = self._forward_features(x)
+
         di = tfd.Categorical(logits=logits_i)
         dj = tfd.Categorical(logits=logits_j)
 
-        ei = emb_i_tbl[i]
-        ej = emb_j_tbl[j]
+        if self.conditional_beta_network:
+            emb_i_tbl, emb_j_tbl = self._forward_embedding()
+            ei = emb_i_tbl[i]
+            ej = emb_j_tbl[j]
+            y = jnp.concatenate([x, ei, ej], axis=1)
 
-        z = jnp.concatenate([x, ei, ej], axis=1)
-
-        loc, scale = self._foward_beta_net(z)
-
+        loc, scale = self._foward_beta_net(y)
+        
         beta_dist = self._beta_dist(loc, scale)
         betas = actions[:, 2:].astype(dtype=loc.dtype)
 
@@ -114,8 +114,7 @@ class ParameterizedActor(nn.Module):
     def sample_action(self, x: jnp.ndarray, key: jax.Array) -> Tuple[jnp.ndarray,jnp.ndarray,jnp.ndarray]:
         key_i, key_j, key_b = jax.random.split(key, 3)
 
-        x, logits_i, logits_j = self._forward_features(x)
-        emb_i_tbl, emb_j_tbl = self._forward_embedding()
+        y, logits_i, logits_j = self._forward_features(x)
 
         di = tfd.Categorical(logits=logits_i)
         dj = tfd.Categorical(logits=logits_j)
@@ -123,12 +122,13 @@ class ParameterizedActor(nn.Module):
         i = di.sample(seed=key_i)
         j = dj.sample(seed=key_j)
 
-        ei = emb_i_tbl[i]
-        ej = emb_j_tbl[j]
+        if self.conditional_beta_network:
+            emb_i_tbl, emb_j_tbl = self._forward_embedding()
+            ei = emb_i_tbl[i]
+            ej = emb_j_tbl[j]
+            y = jnp.concatenate([x, ei, ej], axis=1)
 
-        z = jnp.concatenate([x, ei, ej], axis=1)
-
-        loc, scale = self._foward_beta_net(z)
+        loc, scale = self._foward_beta_net(y)
 
         beta_dist = self._beta_dist(loc, scale)
         betas = beta_dist.sample(seed=key_b)
@@ -146,18 +146,18 @@ class ParameterizedActor(nn.Module):
     @nn.compact
     def select_action(self, x: jnp.ndarray) -> jnp.ndarray:
 
-        x, logits_i, logits_j = self._forward_features(x)
+        y, logits_i, logits_j = self._forward_features(x)
         emb_i_tbl, emb_j_tbl = self._forward_embedding()
 
         i = jnp.argmax(logits_i, axis=1)
         j = jnp.argmax(logits_j, axis=1)
 
-        ei = emb_i_tbl[i]
-        ej = emb_j_tbl[j]
+        if self.conditional_beta_network:
+            ei = emb_i_tbl[i]
+            ej = emb_j_tbl[j]
+            y = jnp.concatenate([x, ei, ej], axis=1)
 
-        z = jnp.concatenate([x, ei, ej], axis=1)
-
-        loc, _ = self._foward_beta_net(z)
+        loc, _ = self._foward_beta_net(y)
 
         margin = jnp.array(self.eps*2, dtype=loc.dtype)
         betas = jnp.clip(jax.nn.sigmoid(loc), margin, 1.0 - margin)
@@ -173,7 +173,7 @@ class ParameterizedPPOPolicy(BaseJaxPolicy):
         net_arch: Optional[Union[list[int], dict[str, list[int]]]] = None,
         log_std_init: float = -1.0,
         activation_fn: Callable[[jnp.ndarray], jnp.ndarray] = nn.tanh,
-        shared_trunk: bool = True,
+        conditional_beta_network: bool = True,
         features_extractor_class: Optional[type[NatureCNN]] = None,
         features_extractor_kwargs: Optional[dict[str, Any]] = None,
         optimizer_class: Callable[..., optax.GradientTransformation] = optax.adam,
@@ -207,7 +207,7 @@ class ParameterizedPPOPolicy(BaseJaxPolicy):
         self.max_successors = max_successors
         self.log_std_init = log_std_init
         self.activation_fn = activation_fn
-        self.shared_trunk = shared_trunk
+        self.conditional_beta_network = conditional_beta_network
         self.features_extractor_class = features_extractor_class
         self.features_extractor_kwargs = features_extractor_kwargs
         self.optimizer_class = optimizer_class
@@ -255,7 +255,7 @@ class ParameterizedPPOPolicy(BaseJaxPolicy):
             max_successors=self.max_successors,
             trunk_arch=self.actor_net_arch,
             head_arch=self.actor_net_arch,
-            shared_trunk=self.shared_trunk,
+            conditional_beta_network=self.conditional_beta_network,
             activation_fn=self.activation_fn,
             log_std_init=self.log_std_init
         )

@@ -83,7 +83,8 @@ def main():
     )
 
     policy_kwargs = dict(
-        log_std_init=-2.0,
+        log_std_init=-1.5,
+        conditional_beta_network=True
     )
 
     algo = ParameterizedPPO(

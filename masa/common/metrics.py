@@ -658,7 +658,16 @@ class RolloutLogger(BaseLogger):
             if len(val) > 1:
                 # Temporarily drop last (current) value from the mean.
                 last = val.pop()
-                self.stats_to_log[key] = float(np.mean(val)) if len(val) > 0 else float(last)
+                if len(val) > 0:
+                    if key.endswith("max") or key.endswith("mag"):
+                        agg = np.max(val)
+                    elif key.endswith("min"):
+                        agg = np.min(val)
+                    else:
+                        agg = np.mean(val)
+                else:
+                    agg = last
+                self.stats_to_log[key] = float(agg)
                 val.append(last)
 
     def _log_to_tensorboard(self, step: int):
