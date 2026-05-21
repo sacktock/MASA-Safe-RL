@@ -24,7 +24,7 @@ class TRPO(OnPolicyAlgorithm):
         n_steps: int = 2048,
         n_critic_updates: int = 10,
         gamma: float = 0.99,
-        gae_lambda: float = 0.95
+        gae_lambda: float = 0.95,
         normalize_advantage: bool = True,
         ent_coef: float = 0.0,
         vf_coef: float = 1.0,
@@ -62,7 +62,7 @@ class TRPO(OnPolicyAlgorithm):
         self.fvp_sample_freq = fvp_sample_freq
         self.line_search_steps = line_search_steps
         self.line_search_decay = line_search_decay
-        
+
 
     @staticmethod
     @jit
