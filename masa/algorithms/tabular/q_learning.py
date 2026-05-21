@@ -16,16 +16,7 @@ class QL(TabularAlgorithm):
 
     def __init__(
         self,
-        env: gym.Env,
-        tensorboard_logdir: Optional[str] = None,
-        wandb_project: Optional[str] = None,
-        wandb_name: Optional[str] = None,
-        seed: Optional[int] = None,
-        monitor: bool = True,
-        device: str = "auto",
-        verbose: int = 0,
-        env_fn: Optional[Callable[[], gym.Env]] = None,
-        eval_env: Optional[gym.Env] = None, 
+        *args, 
         alpha: float = 0.1,
         gamma: float = 0.9,
         exploration: str = 'boltzmann',
@@ -34,19 +25,12 @@ class QL(TabularAlgorithm):
         final_epsilon: float = 0.1,
         epsilon_decay: str = 'linear',
         epsilon_decay_frames: int = 10000, 
+        **kwargs
     ):
 
         super().__init__(
-            env, 
-            tensorboard_logdir=tensorboard_logdir,
-            wandb_project=wandb_project,
-            wandb_name=wandb_name,
-            seed=seed,
-            monitor=monitor,
-            device=device,
-            verbose=verbose,
-            env_fn=env_fn,
-            eval_env=eval_env,
+            *args,
+            **kwargs,
         )
 
         assert exploration in ["boltzmann", "epsilon_greedy"], f"Unsupported exploration type: {exploration}"

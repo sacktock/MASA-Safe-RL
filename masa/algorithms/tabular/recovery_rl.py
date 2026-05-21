@@ -26,48 +26,20 @@ class RECOVERY_RL(QL):
 
     def __init__(
         self,
-        env: gym.Env,
-        tensorboard_logdir: Optional[str] = None,
-        wandb_project: Optional[str] = None,
-        wandb_name: Optional[str] = None,
-        seed: Optional[int] = None,
-        monitor: bool = True,
-        device: str = "auto",
-        verbose: int = 0,
-        env_fn: Optional[Callable[[], gym.Env]] = None,
-        eval_env: Optional[gym.Env] = None, 
+        *args,
         task_alpha: float = 0.1,
         task_gamma: float = 0.9,
         risk_alpha: float = 0.1,
         risk_gamma: float = 0.99,
         step_wise_risk: float = 0.01,
-        exploration: str = "boltzmann",
-        boltzmann_temp: float = 0.05,
-        initial_epsilon: float = 1.0,
-        final_epsilon: float = 0.1,
-        epsilon_decay: str = "linear",
-        epsilon_decay_frames: int = 10000, 
+        **kwargs
     ):
 
         super().__init__(
-            env, 
-            tensorboard_logdir=tensorboard_logdir,
-            wandb_project=wandb_project,
-            wandb_name=wandb_name,
-            seed=seed,
-            monitor=monitor,
-            device=device,
-            verbose=verbose,
-            env_fn=env_fn,
-            eval_env=eval_env,
+            *args,
             alpha=task_alpha,
             gamma=task_gamma,
-            exploration=exploration,
-            boltzmann_temp=boltzmann_temp,
-            initial_epsilon=initial_epsilon,
-            final_epsilon=final_epsilon,
-            epsilon_decay=epsilon_decay,
-            epsilon_decay_frames=epsilon_decay_frames,
+            **kwargs,
         )
 
         self.risk_alpha = risk_alpha

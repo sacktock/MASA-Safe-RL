@@ -19,61 +19,25 @@ class TRPO(OnPolicyAlgorithm):
 
     def __init__(
         self,
-        env: gym.Env,
-        tensorboard_logdir: Optional[str] = None,
-        wandb_project: Optional[str] = None,
-        wandb_name: Optional[str] = None,
-        seed: Optional[int] = None,
-        monitor: bool = True,
-        device: str = "auto",
-        verbose: int = 0,
-        env_fn: Optional[Callable[[], gym.Env]] = None,
-        eval_env: Optional[gym.Env] = None, 
-        learning_rate: Union[float, optax.Schedule] = 3e-4,
-        n_steps: int = 2048,
+        *args,
+        policy_class: type[BaseJaxPolicy] = PPOPolicy,
         n_critic_updates: int = 10,
-        gamma: float = 0.99,
-        gae_lambda: float = 0.95,
         normalize_advantage: bool = True,
-        ent_coef: float = 0.0,
-        vf_coef: float = 1.0,
-        max_grad_norm: float = 0.5,
         target_kl: float = 0.01,
         cg_iters: int = 10,
         cg_damping: float = 0.1,
         fvp_sample_freq: int = 4,
         line_search_steps: int = 10,
         line_search_decay: float = 0.8,
-        policy_class: type[BaseJaxPolicy] = PPOPolicy,
-        policy_kwargs: Optional[dict[str, Any]] = None,
+        **kwargs,
     ):
-
         super().__init__(
-            env, 
-            tensorboard_logdir=tensorboard_logdir,
-            wandb_project=wandb_project,
-            wandb_name=wandb_name,
-            seed=seed,
-            monitor=monitor,
-            device=device,
-            verbose=verbose,
-            env_fn=env_fn,
-            eval_env=eval_env,
+            *args,
             use_tqdm_rollout=True, # Turn on tqdm progress bar for rollout
-            learning_rate=learning_rate,
-            n_steps=n_steps,
-            gamma=gamma,
-            gae_lambda=gae_lambda,
-            ent_coef=ent_coef,
-            vf_coef=vf_coef,
-            max_grad_norm=max_grad_norm,
             policy_class=policy_class,
-            policy_kwargs=policy_kwargs
+            **kwargs
         )
-
-        if normalize_advantage:
-            assert n_steps > 1, "n_steps must be > 1 when normalize_advantage = True"
-
+        
         self.normalize_advantage = normalize_advantage
         self.n_critic_updates = n_critic_updates
         self.target_kl = target_kl
@@ -82,6 +46,8 @@ class TRPO(OnPolicyAlgorithm):
         self.fvp_sample_freq = fvp_sample_freq
         self.line_search_steps = line_search_steps
         self.line_search_decay = line_search_decay
+
+        
 
     @staticmethod
     @jit

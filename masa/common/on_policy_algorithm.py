@@ -27,15 +27,7 @@ class OnPolicyAlgorithm(BaseAlgorithm, ABC):
     def __init__(
         self,
         env: gym.Env,
-        tensorboard_logdir: Optional[str] = None,
-        wandb_project: Optional[str] = None, # W&B project name (enables W&B if set)
-        wandb_name: Optional[str] = None, # Specific name for this W&B run
-        seed: Optional[int] = None,
-        monitor: bool = True,
-        device: str = "auto",
-        verbose: int = 0,
-        env_fn: Optional[Callable[[], gym.Env]] = None,
-        eval_env: Optional[gym.Env] = None,
+        *args,
         use_tqdm_rollout: bool = False,
         learning_rate: Union[float, optax.Schedule] = 3e-4,
         n_steps: int = 16,
@@ -46,24 +38,12 @@ class OnPolicyAlgorithm(BaseAlgorithm, ABC):
         max_grad_norm: float = 0.5,
         policy_class: type[BaseJaxPolicy] = PPOPolicy,
         policy_kwargs: Optional[dict[str, Any]] = None,
+        **kwargs,
     ):
 
         env = self._wrap_env(env)
 
-        super().__init__(
-            env, 
-            tensorboard_logdir=tensorboard_logdir,
-            wandb_project=wandb_project,
-            wandb_name=wandb_name,
-            seed=seed,
-            monitor=monitor,
-            device=device,
-            verbose=verbose,
-            supported_action_spaces=(spaces.Discrete, spaces.Box, spaces.MultiBinary, spaces.MultiDiscrete, spaces.Dict),
-            supported_observation_spaces=(spaces.Box,),
-            env_fn=env_fn,
-            eval_env=eval_env,
-        )
+        super().__init__(env, *args, **kwargs)
 
         if policy_kwargs is None:
             policy_kwargs = {}

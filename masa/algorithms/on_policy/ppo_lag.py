@@ -51,7 +51,7 @@ class PPOLag(OnPolicyNaiveLagrangeAlgorithm, PPO):
         super().__init__(*args, policy_class=policy_class, **kwargs)
 
     @staticmethod
-    @hit
+    @jit
     def _one_update(
         featurizer_state: TrainState,
         actor_state: TrainState,
@@ -67,8 +67,6 @@ class PPOLag(OnPolicyNaiveLagrangeAlgorithm, PPO):
         ent_coef: float,
         vf_coef: float,
     ):
-        if normalize_advantage and len(advantages) > 1:
-            advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
         def actor_critic_loss(featurizer_params, actor_params, critic_params, cost_critic_params):
             features = featurizer_state.apply_fn(featurizer_params, observations)
