@@ -20,138 +20,6 @@ import tensorflow_probability.substrates.jax as tfp
 tfd = tfp.distributions
 tfb = tfp.bijectors
 
-@dataclass
-class ParamActionDist:
-    # tensors from the network
-    logits_i: jnp.ndarray          # (B, N)
-    logits_j: jnp.ndarray          # (B, N)
-    beta_loc_table: jnp.ndarray    # (B, N, N, K)
-    beta_scale_table: jnp.ndarray  # (B, N, N, K)
-    eps: float = 1e-6
-
-    def _beta_params(self, i: jnp.ndarray, j: jnp.ndarray):
-        # i,j: (B,)
-        # gather (B, K) from (B, N, N, K)
-        B = i.shape[0]
-        # Expand indices for take_along_axis
-        i_idx = i.reshape(B, 1, 1, 1)
-        j_idx = j.reshape(B, 1, 1, 1)
-
-        loc_ij = jnp.take_along_axis(self.beta_loc_table, i_idx, axis=1)   # (B,1,N,K)
-        loc_ij = jnp.take_along_axis(loc_ij, j_idx, axis=2).squeeze((1,2)) # (B,K)
-
-        sc_ij = jnp.take_along_axis(self.beta_scale_table, i_idx, axis=1)
-        sc_ij = jnp.take_along_axis(sc_ij, j_idx, axis=2).squeeze((1,2))
-        return loc_ij, sc_ij
-
-    def _beta_dist(self, i, j):
-        loc, scale = self._beta_params(i, j)
-        base = tfd.MultivariateNormalDiag(loc=loc, scale_diag=scale)
-        eps = jnp.array(self.eps, dtype=self.loc.dtype)
-        bij = tfb.Chain([
-            tfb.Shift(eps),
-            tfb.Scale(1.0 - 2.0 * eps),
-            tfb.Sigmoid(),
-        ])
-        return tfd.TransformedDistribution(distribution=base, bijector=bij)
-
-    def sample(self, seed):
-        di = tfd.Categorical(logits=self.logits_i)
-        dj = tfd.Categorical(logits=self.logits_j)
-        # sample i, j
-        key_i, key_j, key_b = tfp.random.split_seed(seed, n=3)
-        i = di.sample(seed=key_i)  # (B,)
-        j = dj.sample(seed=key_j)  # (B,)
-        betas = self._beta_dist(i, j).sample(seed=key_b)  # (B, K)
-        # pack
-        return jnp.concatenate([i[:, None], j[:, None], betas], axis=1)
-
-    def mode(self):
-        i = jnp.argmax(self.logits_i, axis=1)
-        j = jnp.argmax(self.logits_j, axis=1)
-        # use mean of sigmoid-normal approximately via loc (not exact); ok for deterministic eval
-        loc, _ = self._beta_params(i, j)
-        margin = jnp.array(self.eps*2, dtype=loc.dtype)
-        betas = jnp.clip(jax.nn.sigmoid(loc), margin, 1.0 - margin)
-        return jnp.concatenate([i[:, None], j[:, None], betas], axis=1)
-
-    def log_prob(self, actions):
-        # actions shape (B, 2+K), first two are i,j (possibly floats)
-        i = actions[:, 0].astype(jnp.int32)
-        j = actions[:, 1].astype(jnp.int32)
-        betas = actions[:, 2:].astype(self.beta_loc_table.dtype)#.astype(jnp.float32)
-        margin = jnp.array(self.eps*2, dtype=self.beta_loc_table.dtype)
-        betas = jnp.clip(betas, margin, 1.0 - margin) # guard against nans
-        di = tfd.Categorical(logits=self.logits_i)
-        dj = tfd.Categorical(logits=self.logits_j)
-        lp = di.log_prob(i) + dj.log_prob(j)
-        lp += self._beta_dist(i, j).log_prob(betas)
-        return lp
-
-    def entropy(self, actions):
-        di = tfd.Categorical(logits=self.logits_i)
-        dj = tfd.Categorical(logits=self.logits_j)
-
-        i = actions[:, 0].astype(jnp.int32)
-        j = actions[:, 1].astype(jnp.int32)
-        betas = actions[:, 2:].astype(self.beta_loc_table.dtype)
-        margin = jnp.array(self.eps*2, dtype=self.beta_loc_table.dtype)
-        betas = jnp.clip(betas, margin, 1.0 - margin) # guard against nans
-        beta_ent_approx = -self._beta_dist(i, j).log_prob(betas)
-        
-        return di.entropy() + dj.entropy() + beta_ent_approx
-
-@dataclass
-class ActionDist:
-    logits_i: jnp.ndarray  # (B, N)
-    logits_j: jnp.ndarray  # (B, N)
-    loc: jnp.ndarray       # (B, K)
-    scale: jnp.ndarray     # (B, K)
-    eps: float = 1e-6
-
-    def _beta_dist(self):
-        eps = jnp.array(self.eps, dtype=self.loc.dtype)
-        base = tfd.MultivariateNormalDiag(loc=self.loc, scale_diag=self.scale)
-        bij = tfb.Chain([tfb.Shift(eps), tfb.Scale(1.0 - 2.0 * eps), tfb.Sigmoid()])
-        return tfd.TransformedDistribution(distribution=base, bijector=bij)
-
-    def sample(self, seed):
-        di = tfd.Categorical(logits=self.logits_i)
-        dj = tfd.Categorical(logits=self.logits_j)
-        key_i, key_j, key_b = tfp.random.split_seed(seed, n=3)
-        i = di.sample(seed=key_i)                    # (B,)
-        j = dj.sample(seed=key_j)                    # (B,)
-        betas = self._beta_dist().sample(seed=key_b) # (B, K)
-        return jnp.concatenate([i[:, None], j[:, None], betas], axis=1)
-
-    def mode(self):
-        i = jnp.argmax(self.logits_i, axis=1)
-        j = jnp.argmax(self.logits_j, axis=1)
-        margin = jnp.array(self.eps*2, dtype=self.loc.dtype)
-        betas = jnp.clip(jax.nn.sigmoid(self.loc), margin, 1.0 - margin)
-        return jnp.concatenate([i[:, None], j[:, None], betas], axis=1)
-
-    def log_prob(self, actions):
-        i = actions[:, 0].astype(jnp.int32)
-        j = actions[:, 1].astype(jnp.int32)
-        betas = actions[:, 2:].astype(self.loc.dtype)
-        margin = jnp.array(self.eps*2, dtype=self.loc.dtype)
-        betas = jnp.clip(betas, margin, 1.0 - margin) # guard against nans
-        di = tfd.Categorical(logits=self.logits_i)
-        dj = tfd.Categorical(logits=self.logits_j)
-        lp = di.log_prob(i) + dj.log_prob(j)
-        lp += self._beta_dist().log_prob(betas)
-        return lp
-
-    def entropy(self, actions):
-        di = tfd.Categorical(logits=self.logits_i)
-        dj = tfd.Categorical(logits=self.logits_j)
-        betas = actions[:, 2:].astype(self.loc.dtype)
-        margin = jnp.array(self.eps*2, dtype=self.loc.dtype)
-        betas = jnp.clip(betas, margin, 1.0 - margin) # guard against nans
-        beta_ent_approx = -self._beta_dist().log_prob(betas)
-        return di.entropy() + dj.entropy() + beta_ent_approx
-
 class ParameterizedActor(nn.Module):
     n_actions: int
     max_successors: int
@@ -167,8 +35,17 @@ class ParameterizedActor(nn.Module):
     mean_clip: Optional[float] = 10.0
     smooth_mean_clip: bool = True
 
+    def _beta_dist(self, loc, scale):
+        eps = jnp.array(self.eps, dtype=loc.dtype)
+        base = tfd.MultivariateNormalDiag(loc=loc, scale_diag=scale)
+        bij = tfb.Chain([tfb.Shift(eps), tfb.Scale(1.0 - 2.0 * eps), tfb.Sigmoid()])
+        return tfd.TransformedDistribution(distribution=base, bijector=bij)
+
     @nn.compact
-    def __call__(self, x: jnp.array) -> ParamActionDist:
+    def __call__(self, x: jnp.ndarray):
+        return self._forward_features(x)
+
+    def _forward_features(self, x: jnp.ndarray):
         x = Flatten()(x)
         if self.shared_trunk:
             for h in self.trunk_arch:
@@ -177,6 +54,18 @@ class ParameterizedActor(nn.Module):
 
         logits_i = nn.Dense(self.n_actions)(x)
         logits_j = nn.Dense(self.n_actions)(x)
+
+        return x, logits_i, logits_j
+
+    def _forward_embedding(self):
+        emb_i_tbl = self.param("emb_i", nn.initializers.normal(0.02), (self.n_actions, self.embed_dim))
+        emb_j_tbl = self.param("emb_j", nn.initializers.normal(0.02), (self.n_actions, self.embed_dim))
+        return emb_i_tbl, emb_j_tbl
+
+    def _foward_beta_net(self, x: jnp.ndarray):
+        for h in self.head_arch:
+            x = nn.Dense(h)(x)
+            x = self.activation_fn(x)
 
         loc = nn.Dense(self.max_successors)(x)
         if self.mean_clip is not None:
@@ -189,63 +78,90 @@ class ParameterizedActor(nn.Module):
         log_scale = jnp.clip(log_scale, self.log_std_min, self.log_std_max)
         scale = jnp.exp(log_scale) + self.eps
 
-        return ActionDist(
-            logits_i=logits_i,
-            logits_j=logits_j,
-            loc=loc,
-            scale=scale,
-        )
+        return loc, scale
 
-        # output:
-        # loc and scale
+    @nn.compact
+    def evaluate_actions(self, x: jnp.ndarray, actions: jnp.ndarray) -> Tuple[jnp.ndarray,jnp.ndarray]:
+        i = actions[:, 0].astype(jnp.int32)
+        j = actions[:, 1].astype(jnp.int32)
 
+        x, logits_i, logits_j = self._forward_features(x)
+        emb_i_tbl, emb_j_tbl = self._forward_embedding()
         
+        di = tfd.Categorical(logits=logits_i)
+        dj = tfd.Categorical(logits=logits_j)
 
-        emb_i_tbl = self.param("emb_i", nn.initializers.normal(0.02), (self.n_actions, self.embed_dim))
-        emb_j_tbl = self.param("emb_j", nn.initializers.normal(0.02), (self.n_actions, self.embed_dim))
+        ei = emb_i_tbl[i]
+        ej = emb_j_tbl[j]
 
-        # Build (B, N, E) and (B, N, E)
-        ei = jnp.broadcast_to(emb_i_tbl[None, :, :], (x.shape[0], self.n_actions, self.embed_dim))
-        ej = jnp.broadcast_to(emb_j_tbl[None, :, :], (x.shape[0], self.n_actions, self.embed_dim))
+        z = jnp.concatenate([x, ei, ej], axis=1)
 
-        # Make grid (B, N, N, *)
-        # x -> (B,1,1,F) broadcast
-        xb = x[:, None, None, :]
-        ei_grid = ei[:, :, None, :]   # (B, N, 1, E)
-        ej_grid = ej[:, None, :, :]   # (B, 1, N, E)
-        z = jnp.concatenate([jnp.broadcast_to(xb, (x.shape[0], self.n_actions, self.n_actions, x.shape[1])),
-                            jnp.broadcast_to(ei_grid, (x.shape[0], self.n_actions, self.n_actions, self.embed_dim)),
-                            jnp.broadcast_to(ej_grid, (x.shape[0], self.n_actions, self.n_actions, self.embed_dim))],
-                            axis=-1)
+        loc, scale = self._foward_beta_net(z)
 
-        # MLP over last dim; we can reshape to 2D, apply Dense, reshape back
-        y = z.reshape((x.shape[0]*self.n_actions*self.n_actions, -1))
-        for h in self.head_arch:
-            y = nn.Dense(h)(y)
-            y = self.activation_fn(y)
+        beta_dist = self._beta_dist(loc, scale)
+        betas = actions[:, 2:].astype(dtype=loc.dtype)
 
-        loc = nn.Dense(self.max_successors)(y)
-        if self.mean_clip is not None:
-            if self.smooth_mean_clip:
-                loc = self.mean_clip * jnp.tanh(loc)
-            else:
-                loc = jnp.clip(loc, -self.mean_clip, self.mean_clip)
+        margin = jnp.array(self.eps*2, dtype=loc.dtype)
+        betas = jnp.clip(betas, margin, 1.0 - margin)
+        beta_log_prob = beta_dist.log_prob(betas)
 
-        log_scale = nn.Dense(self.max_successors)(y) + self.log_std_init
-        log_scale = jnp.clip(log_scale, self.log_std_min, self.log_std_max)
-        scale = jnp.exp(log_scale) + self.eps
+        log_prob = di.log_prob(i) + dj.log_prob(j) + beta_log_prob
+        entropy = di.entropy() + dj.entropy() - beta_log_prob
 
-        #scale = jnp.nan_to_num(scale, nan=self.eps, posinf=jnp.exp(self.log_std_max), neginf=self.eps)
+        return log_prob, entropy
 
-        loc = loc.reshape((x.shape[0], self.n_actions, self.n_actions, self.max_successors))
-        scale = scale.reshape((x.shape[0], self.n_actions, self.n_actions, self.max_successors))
+    @nn.compact
+    def sample_action(self, x: jnp.ndarray, key: jax.Array) -> Tuple[jnp.ndarray,jnp.ndarray,jnp.ndarray]:
+        key_i, key_j, key_b = jax.random.split(key, 3)
 
-        return ParamActionDist(
-            logits_i=logits_i,
-            logits_j=logits_j,
-            beta_loc_table=loc,
-            beta_scale_table=scale,
-        )
+        x, logits_i, logits_j = self._forward_features(x)
+        emb_i_tbl, emb_j_tbl = self._forward_embedding()
+
+        di = tfd.Categorical(logits=logits_i)
+        dj = tfd.Categorical(logits=logits_j)
+
+        i = di.sample(seed=key_i)
+        j = dj.sample(seed=key_j)
+
+        ei = emb_i_tbl[i]
+        ej = emb_j_tbl[j]
+
+        z = jnp.concatenate([x, ei, ej], axis=1)
+
+        loc, scale = self._foward_beta_net(z)
+
+        beta_dist = self._beta_dist(loc, scale)
+        betas = beta_dist.sample(seed=key_b)
+
+        margin = jnp.array(self.eps*2, dtype=loc.dtype)
+        betas = jnp.clip(betas, margin, 1.0 - margin) # guard against nans
+        beta_log_prob = beta_dist.log_prob(betas)
+
+        action = jnp.concatenate([i[:, None], j[:, None], betas], axis=1)
+        log_prob = di.log_prob(i) + dj.log_prob(j) + beta_log_prob
+        entropy = di.entropy() + dj.entropy() - beta_log_prob
+
+        return action, log_prob, entropy
+
+    @nn.compact
+    def select_action(self, x: jnp.ndarray) -> jnp.ndarray:
+
+        x, logits_i, logits_j = self._forward_features(x)
+        emb_i_tbl, emb_j_tbl = self._forward_embedding()
+
+        i = jnp.argmax(logits_i, axis=1)
+        j = jnp.argmax(logits_j, axis=1)
+
+        ei = emb_i_tbl[i]
+        ej = emb_j_tbl[j]
+
+        z = jnp.concatenate([x, ei, ej], axis=1)
+
+        loc, _ = self._foward_beta_net(z)
+
+        margin = jnp.array(self.eps*2, dtype=loc.dtype)
+        betas = jnp.clip(jax.nn.sigmoid(loc), margin, 1.0 - margin)
+        return jnp.concatenate([i[:, None], j[:, None], betas], axis=1)
 
 class ParameterizedPPOPolicy(BaseJaxPolicy):
     def __init__(
@@ -302,7 +218,7 @@ class ParameterizedPPOPolicy(BaseJaxPolicy):
         self.key = self.noise_key = jax.random.PRNGKey(0)
 
     def build(self, key: jax.Array, lr_schedule: Union[optax.Schedule, float], max_grad_norm: float) -> jax.Array:
-        key, feat_key, actor_key, critic_key = jax.random.split(key, 4)
+        key, feat_key, actor_key, actor_noise_key, critic_key = jax.random.split(key, 5)
         key, self.key = jax.random.split(key, 2)
 
         self.reset_noise()
@@ -346,7 +262,7 @@ class ParameterizedPPOPolicy(BaseJaxPolicy):
 
         self.actor_state = TrainState.create(
             apply_fn=self.actor.apply,
-            params=self.actor.init(actor_key, obs),
+            params=self.actor.init(actor_key, obs, actor_noise_key, method="sample_action"),
             tx=optax.chain(
                 optax.clip_by_global_norm(max_grad_norm),
                 optimizer,
@@ -393,9 +309,12 @@ class ParameterizedPPOPolicy(BaseJaxPolicy):
         key: jax.Array, featurizer_state: TrainState, actor_state: TrainState, critic_state: TrainState, observations: jnp.ndarray
     ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
         feats = featurizer_state.apply_fn(featurizer_state.params, observations)
-        dist = actor_state.apply_fn(actor_state.params, feats)
-        actions = dist.sample(seed=key)
-        log_probs = dist.log_prob(actions)
+        actions, log_probs, entropy = actor_state.apply_fn(
+            actor_state.params,
+            feats,
+            key,
+            method="sample_action",
+        )
         values = critic_state.apply_fn(critic_state.params, feats).flatten()
         return actions, log_probs, values
 
@@ -405,7 +324,12 @@ class ParameterizedPPOPolicy(BaseJaxPolicy):
         featurizer_state: TrainState, actor_state: TrainState, obs: jnp.ndarray
     ) -> jnp.ndarray:
         feats = featurizer_state.apply_fn(featurizer_state.params, obs)
-        return actor_state.apply_fn(actor_state.params, feats).mode()
+        action, _, _ = actor_state.apply_fn(
+            actor_state.params,
+            feats,
+            method="select_action",
+        )
+        return action
         
     @staticmethod
     @jit
@@ -413,6 +337,10 @@ class ParameterizedPPOPolicy(BaseJaxPolicy):
         key: jax.Array, featurizer_state: TrainState, actor_state: TrainState, obs: jnp.ndarray
     ) -> jnp.ndarray:
         feats = featurizer_state.apply_fn(featurizer_state.params, obs)
-        dist = actor_state.apply_fn(actor_state.params, feats)
-        action = dist.sample(seed=key)
+        action, _, _ = actor_state.apply_fn(
+            actor_state.params,
+            feats,
+            key,
+            method="sample_action",
+        )
         return action

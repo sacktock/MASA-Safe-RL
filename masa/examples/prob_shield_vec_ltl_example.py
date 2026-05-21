@@ -77,7 +77,7 @@ def main():
         return env
 
     # Now we're going to use VecWrapper to synchronously run 8 environments
-    n_envs = 8
+    n_envs = 2
     envs = [create_env() for _ in range(n_envs)]
     env = VecWrapper(envs)
 
@@ -114,13 +114,15 @@ def main():
     algo = PPO(
         env,
         tensorboard_logdir=None, # ignoring tensorboard logging
+        wandb_project="MASA-Safe-RL", # W&B project name — enables native logging
+        wandb_name="prob_shield_colour_bomb_discV1_1env", # W&B run name 
         seed=0,
         monitor=True, # monitors training progress
         device="auto", 
         verbose=0, # verbosity level for monitoring
         eval_env=eval_env, # separate environment instance for eval
         learning_rate=1e-4,
-        n_steps=128,
+        n_steps=128,  
         batch_size=256,
         n_epochs=4,
         clip_range=optax.schedules.linear_schedule(0.1, 0.0, 300_000),
@@ -137,6 +139,7 @@ def main():
         # prefill: Optional[int] = None (not implemented yet)
         # save_freq: int = 0, (not implemented yet)
         stats_window_size=100, # sliding window size for metrics logging
+        stats_window_overrides={"train/rollout/satisfied": 1000, "eval/rollout/satisfied": 1000}
     )
 
 if __name__ == "__main__":

@@ -132,9 +132,12 @@ class ParameterizedPPO(PPO):
 
         def actor_critic_loss(featurizer_params, actor_params, critic_params):
             features = featurizer_state.apply_fn(featurizer_params, observations)
-            dist = actor_state.apply_fn(actor_params, features)
-            log_prob = dist.log_prob(actions)
-            entropy = dist.entropy(actions)
+            log_prob, entropy = actor_state.apply_fn(
+                actor_params,
+                features,
+                actions,
+                method="evaluate_actions",
+            )
             
             # ratio between old and new policy, should be one at the first iteration
             ratio = jnp.exp(log_prob - old_log_prob)
