@@ -20,18 +20,34 @@ class PPO(OnPolicyAlgorithm):
     def __init__(
         self,
         *args,
+        learning_rate: Union[float, optax.Schedule] = 3e-4,
+        n_steps: int = 2048,
         batch_size: int = 64,
         n_epochs: int = 10,
-        normalize_advantage: bool = True,
+        gamma: float = 0.99,
+        gae_lambda: float = 0.95,
         clip_range: Union[float, optax.Schedule] = 0.2,
+        normalize_advantage: bool = True,
+        ent_coef: float = 0.0,
+        vf_coef: float = 1.0,
+        max_grad_norm: float = 0.5,
         policy_class: type[BaseJaxPolicy] = PPOPolicy,
+        policy_kwargs: Optional[dict[str, Any]] = None,
         **kwargs
         
     ):
         super().__init__(
             *args,
             use_tqdm_rollout=True, # Turn on tqdm progress bar for rollout
+            learning_rate=learning_rate,
+            n_steps=n_steps,
+            gamma=gamma,
+            gae_lambda=gae_lambda,
+            ent_coef=ent_coef,
+            vf_coef=vf_coef,
+            max_grad_norm=max_grad_norm,
             policy_class=policy_class,
+            policy_kwargs=policy_kwargs,
             **kwargs,
         )
 
