@@ -4,7 +4,8 @@ defaults:
   n_critic_updates: 10
   gamma: 0.99
   gae_lambda: 0.95
-  normalize_advantage: True
+  normalize_reward_advantages: True
+  normalize_cost_advantages: True
   ent_coef: 0.0
   vf_coef: 1.0
   max_grad_norm: 0.5
@@ -12,7 +13,7 @@ defaults:
   cg_iters: 15
   cg_damping: 0.1
   fvp_sample_freq: 1
-  line_search_steps: 10
+  line_search_steps: 15
   line_search_decay: 0.8
   policy_kwargs: {net_arch: [64, 64], log_std_init: 0.0}
   cost_limit: 25.0

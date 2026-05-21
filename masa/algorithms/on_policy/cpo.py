@@ -24,12 +24,16 @@ class CPO(OnPolicyCostAlgorithm, TRPO):
         self,
         *args,
         policy_class: type[BaseJaxPolicy] = PPOLagPolicy,
+        normalize_reward_advantages: bool = True,
+        normalize_cost_advantages: bool = True,
         # CPO parameters
         cost_limit: float = 25.0,
         cost_gamma: float = 0.99,
         cost_gae_lambda: float = 0.95,
         **kwargs,
     ):
+        self.normalize_reward_advantages = normalize_reward_advantages
+        self.normalize_cost_advantages = normalize_cost_advantages
 
         self.cost_limit = cost_limit
         self.cost_gamma = cost_gamma
@@ -131,8 +135,11 @@ class CPO(OnPolicyCostAlgorithm, TRPO):
             # Convert discrete action from float to int
             actions = actions.flatten().astype(np.int32)
 
-        if self.normalize_advantage and len(reward_advantages) > 1:
+        if self.normalize_reward_advantages and len(reward_advantages) > 1:
             reward_advantages = (reward_advantages - reward_advantages.mean()) / (reward_advantages.std() + 1e-8)
+
+        if self.normalize_cost_advantages:
+            cost_advantages = cost_advantages - cost_advantages.mean()
 
         def actor_reward_loss(actor_params):
             return self._surrogate_loss(
