@@ -88,6 +88,34 @@ class CPO(OnPolicyCostAlgorithm, TRPO):
         ratio = jnp.exp(log_prob - old_log_prob)
         return (ratio * cost_advantages).mean() # positive - minimize cost
 
+    def _determine_case(
+        self,
+        cost_grads: jnp.ndarray,
+        c: float,
+        q: jnp.ndarray,
+        r: jnp.ndarray,
+        s: jnp.ndarray,
+    ):
+
+        if jnp.linalg.norm(cost_grads) <= 1e-8 and c < 0:
+            A = jnp.zeros(1)
+            B = jnp.zeros(1)
+            optim_case = 4
+        else:
+            A = q - (r ** 2) / (s + 1e-8)
+            B = 2.0 * self.target_kl - (c ** 2) / (s + 1e-8)
+
+            if c < 0 and B < 0: # entire trust region is feasible
+                optim_case = 3
+            elif c < 0 and B >= 0: # part of the trust region is feasible
+                optim_case = 2
+            elif c >= 0 and B >= 0: # entire trust region is infeasible
+                optim_case = 1
+            else: # entire trust region is infeasible
+                optim_case = 0
+
+        return optim_case, A, B
+
     def optimize(
         self,
         step: int, 
@@ -105,8 +133,6 @@ class CPO(OnPolicyCostAlgorithm, TRPO):
 
         if self.normalize_advantage and len(reward_advantages) > 1:
             reward_advantages = (reward_advantages - reward_advantages.mean()) / (reward_advantages.std() + 1e-8)
-
-        old_actor_params = self.policy.actor_state.params
 
         def actor_reward_loss(actor_params):
             return self._surrogate_loss(
@@ -131,8 +157,6 @@ class CPO(OnPolicyCostAlgorithm, TRPO):
                 old_log_probs,
             )
 
-        fvp_observations = observations[::self.fvp_sample_freq]
-
         def fvp(v):
             return self._fisher_vector_product(
                 old_actor_params,
@@ -143,48 +167,76 @@ class CPO(OnPolicyCostAlgorithm, TRPO):
                 self.cg_damping,
             )
 
-        reward_loss_before, reward_grads = jax.value_and_grad(actor_reward_loss)(old_actor_params)
-        cost_loss_before, cost_grads = jax.value_and_grad(actor_cost_loss)(old_actor_params)
+        fvp_observations = observations[::self.fvp_sample_freq]
+        old_actor_params = self.policy.actor_state.params
 
+        reward_loss_before, reward_grads = jax.value_and_grad(actor_reward_loss)(old_actor_params)
         reward_grads = self.flatten_params(reward_grads)
-        cost_grads = self.flatten_params(cost_grads)
 
         x = self.conjugate_gradient(fvp, -reward_grads, self.cg_iters)
+        assert jnp.all(jnp.isfinite(x)), "x is not finite"
+        xHx = jnp.dot(x, fvp(x))
+        assert xHx.item() >= 0, "xHx is negative"
+        alpha = jnp.sqrt(2 * self.target_kl / (xHx + 1e-8))
+
+        cost_loss_before, cost_grads = jax.value_and_grad(actor_cost_loss)(old_actor_params)
+        cost_grads = self.flatten_params(cost_grads)
+
         p = self.conjugate_gradient(fvp, cost_grads, self.cg_iters)
-
         c = self.mean_ep_cost - self.cost_limit
+        q = xHx
+        r = jnp.dot(-reward_grads, p) 
+        s = jnp.dot(cost_grads, p) 
 
-        denom = jnp.dot(cost_grads, p)
+        optim_case, A, B = self._determine_case(cost_grads, c, q, r, s)
 
-        lambda_cpo = jnp.where(
-            denom > 0,
-            jnp.maximum(0.0, (jnp.dot(cost_grads, x) + c)/ (denom + 1e-8)),
-            0.0
-        )
+        if optim_case in (3, 4):
+            # feasible use usual TRPO step
+            step_direction = alpha * x
+            lambda_star = 1.0 / (alpha + 1e-8)
+            nu_star = 0.0
+        elif optim_case in (1, 2):
+            # QCQP step
+            A_safe = jnp.maximum(A, 0.0)
+            B_safe = jnp.maximum(B, 1e-8)
 
-        step_direction = x - lambda_cpo * p
+            lambda_a = jnp.sqrt(A_safe / B_safe)
+            lambda_b = jnp.sqrt(q / (2.0 * self.target_kl + 1e-8))
 
-        shs = 0.5 * jnp.dot(
-            step_direction,
-            fvp(step_direction),
-        )
+            eps_c = c + 1e-8
 
-        step_size = jnp.sqrt(
-            self.target_kl / (shs + 1e-8)
-        )
+            if c < 0:
+                lambda_a_star = jnp.clip(lambda_a, 0.0, r / eps_c)
+                lambda_b_star = jnp.maximum(lambda_b, r / eps_c)
+            else:
+                lambda_a_star = jnp.maximum(lambda_a, r / eps_c)
+                lambda_b_star = jnp.clip(lambda_b, 0.0, r / eps_c)
 
-        full_step = step_direction * step_size
+            f_a = -0.5 * (A_safe / (lambda_a_star + 1e-8) + B_safe * lambda_a_star) - r * c / (s + 1e-8)
+            f_b = -0.5 * (q / (lambda_b_star + 1e-8) + 2.0 * self.target_kl * lambda_b_star)
+
+            lambda_star = jnp.where(f_a >= f_b, lambda_a_star, lambda_b_star)
+            nu_star = jnp.maximum(0.0, lambda_star * c - r) / (s + 1e-8)
+            step_direction = (1.0 / (lambda_star + 1e-8)) * (x - nu_star * p)
+        else:
+            # Infeasible recovery: reduce cost
+            lambda_star = 0.0
+            nu_star = jnp.sqrt(2.0 * self.target_kl / (s + 1e-8))
+            step_direction = -nu_star * p
 
         old_flat = self.flatten_params(old_actor_params)
 
-        expected_improve = -jnp.dot(reward_grads, full_step)
-        expected_cost_diff = jnp.dot(cost_grads, full_step)
+        expected_improve = -jnp.dot(reward_grads, step_direction)
+        expected_cost_diff = jnp.dot(cost_grads, step_direction)
 
         accepted = False
+        last_kl = jnp.array(0.0)
+        candidate_cost_diff = jnp.array(0.0)
+        reward_improve = jnp.array(0.0)
 
         for i in range(self.line_search_steps):
             frac = self.line_search_decay ** i
-            candidate = old_flat + frac * full_step
+            candidate = old_flat + frac * step_direction
             candidate_params = self.unflatten_params(
                 candidate,
                 old_actor_params,
@@ -201,7 +253,12 @@ class CPO(OnPolicyCostAlgorithm, TRPO):
             reward_improve = reward_loss_before - candidate_reward_loss 
             candidate_cost_diff = candidate_cost_loss - cost_loss_before
             last_kl = kl
-            if reward_improve > 0 and candidate_cost_diff <= max(-c, 0.0) and kl < self.target_kl:
+
+            reward_ok = reward_improve > 0 if optim_case > 1 else True
+            cost_ok = candidate_cost_diff <= max(-c, 0.0)
+            kl_ok = kl < self.target_kl
+
+            if reward_ok and cost_ok and kl_ok:
                 self.policy.actor_state = self.policy.actor_state.replace(params=candidate_params)
                 accepted = True
                 break
@@ -240,12 +297,14 @@ class CPO(OnPolicyCostAlgorithm, TRPO):
                 "accepted": float(accepted),
                 "expected_improve": float(expected_improve),
                 "expected_cost_diff": float(expected_cost_diff),
-                "step_size": float(step_size),
+                "lambda_star": float(lambda_star),
+                "nu_star": float(nu_star),
                 "reward_grad_norm": float(jnp.linalg.norm(reward_grads)),
                 "cost_grad_norm": float(jnp.linalg.norm(cost_grads)),
-                "xHx": float(shs * 2.0),
+                "xHx": float(xHx),
+                "actual_improve": float(reward_improve),
+                "actual_cost_diff": float(candidate_cost_diff),
                 "final_kl": float(last_kl),
-                "candidate_cost_diff": float(candidate_cost_diff),
                 "lr": float(self.lr_schedule(step)),
                 "mean_cost_advantage": float(cost_advantages.mean()),
                 "mean_cost_return": float(cost_returns.mean()),
