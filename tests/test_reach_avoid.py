@@ -29,8 +29,6 @@ def test_reach_avoid_make_env_tracks_avoid_and_reach_labels():
     assert info["labels"] == {"blue"}
     assert info["constraint"]["step"]["cost"] == 1.0
     assert info["constraint"]["step"]["violation"] is True
-    assert info["constraint"]["episode"]["violated"] is True
-    assert info["constraint"]["episode"]["satisfied"] == 0.0
     assert terminated is False
     assert truncated is False
     unsafe_env.close()

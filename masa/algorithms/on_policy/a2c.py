@@ -19,16 +19,7 @@ class A2C(OnPolicyAlgorithm):
 
     def __init__(
         self,
-        env: gym.Env,
-        tensorboard_logdir: Optional[str] = None,
-        wandb_project: Optional[str] = None,
-        wandb_name: Optional[str] = None,
-        seed: Optional[int] = None,
-        monitor: bool = True,
-        device: str = "auto",
-        verbose: int = 0,
-        env_fn: Optional[Callable[[], gym.Env]] = None,
-        eval_env: Optional[gym.Env] = None, 
+        *args,
         learning_rate: Union[float, optax.Schedule] = 3e-4,
         n_steps: int = 16,
         gamma: float = 0.99,
@@ -39,19 +30,10 @@ class A2C(OnPolicyAlgorithm):
         max_grad_norm: float = 0.5,
         policy_class: type[BaseJaxPolicy] = PPOPolicy,
         policy_kwargs: Optional[dict[str, Any]] = None,
+        **kwargs
     ):
-
         super().__init__(
-            env, 
-            tensorboard_logdir=tensorboard_logdir,
-            wandb_project=wandb_project,
-            wandb_name=wandb_name,
-            seed=seed,
-            monitor=monitor,
-            device=device,
-            verbose=verbose,
-            env_fn=env_fn,
-            eval_env=eval_env,
+            *args,
             use_tqdm_rollout=False, # Turn off tqdm progress bar for rollout
             learning_rate=learning_rate,
             n_steps=n_steps,
@@ -61,11 +43,9 @@ class A2C(OnPolicyAlgorithm):
             vf_coef=vf_coef,
             max_grad_norm=max_grad_norm,
             policy_class=policy_class,
-            policy_kwargs=policy_kwargs
+            policy_kwargs=policy_kwargs,
+            **kwargs
         )
-
-        if normalize_advantage:
-            assert n_steps * self.n_envs > 1, "n_steps * n_envs must be > 1 when normalize_advantage = True"
 
         self.normalize_advantage = normalize_advantage
 

@@ -9,29 +9,13 @@ class TabularAlgorithm(BaseAlgorithm):
 
     def __init__(
         self,
-        env: gym.Env,
-        tensorboard_logdir: Optional[str] = None,
-        wandb_project: Optional[str] = None,
-        wandb_name: Optional[str] = None,
-        seed: Optional[int] = None,
-        monitor: bool = True,
-        device: str = "auto",
-        verbose: int = 0,
-        env_fn: Optional[Callable[[], gym.Env]] = None,
-        eval_env: Optional[gym.Env] = None, 
+        *args,
+        **kwargs,
     ):
 
         super().__init__(
-            env, 
-            tensorboard_logdir=tensorboard_logdir,
-            wandb_project=wandb_project,
-            wandb_name=wandb_name,
-            seed=seed,
-            monitor=monitor,
-            device=device,
-            verbose=verbose,
+            *args,
             supported_action_spaces=(spaces.Discrete,),
             supported_observation_spaces=(spaces.Discrete,),
-            env_fn=env_fn,
-            eval_env=eval_env,
+            **kwargs,
         )

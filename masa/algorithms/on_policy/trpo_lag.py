@@ -13,7 +13,6 @@ from gymnasium import spaces
 from typing import Optional, Callable, Union, Any
 from tqdm.auto import tqdm
 from masa.common.base_class import BaseJaxPolicy
-from masa.common.buffers import CostRolloutBuffer
 from masa.common.metrics import TrainLogger
 from masa.algorithms.on_policy import TRPO
 from masa.algorithms.on_policy.abstract_classes import OnPolicyNaiveLagrangeAlgorithm
@@ -24,8 +23,10 @@ class TRPOLag(OnPolicyNaiveLagrangeAlgorithm, TRPO):
     def __init__(
         self,
         *args,
-        # Lagrange parameters
         policy_class: type[BaseJaxPolicy] = PPOLagPolicy,
+        normalize_reward_advantages: bool = True,
+        normalize_cost_advantages: bool = True,
+        # Lagrange parameters
         cost_limit: float = 25.0,
         cost_gamma: float = 0.99,
         cost_gae_lambda: float = 0.95,
@@ -34,6 +35,8 @@ class TRPOLag(OnPolicyNaiveLagrangeAlgorithm, TRPO):
         lagrangian_upper_bound: Optional[float] = None,
         **kwargs,
     ):
+        self.normalize_reward_advantages = normalize_reward_advantages
+        self.normalize_cost_advantages = normalize_cost_advantages
 
         self.cost_limit = cost_limit
         self.cost_gamma = cost_gamma
@@ -94,10 +97,13 @@ class TRPOLag(OnPolicyNaiveLagrangeAlgorithm, TRPO):
             # Convert discrete action from float to int
             actions = actions.flatten().astype(np.int32)
 
-        advantages = (reward_advantages - self.lagrangian_multiplier * cost_advantages) / (1.0 + self.lagrangian_multiplier)
+        if self.normalize_reward_advantages and len(reward_advantages) > 1:
+            reward_advantages = (reward_advantages - reward_advantages.mean()) / (reward_advantages.std() + 1e-8)
 
-        if self.normalize_advantage and len(advantages) > 1:
-            advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+        if self.normalize_cost_advantages:
+            cost_advantages = cost_advantages - cost_advantages.mean()
+
+        advantages = (reward_advantages - self.lagrangian_multiplier * cost_advantages) / (1.0 + self.lagrangian_multiplier)
 
         old_actor_params = self.policy.actor_state.params
 

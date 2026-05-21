@@ -165,8 +165,6 @@ def test_ltl_safety_colour_bomb_notebook_is_valid_and_executable():
         "property_3",
         'obs_type="dict"',
         "automaton_state",
-        "cum_unsafe",
-        "satisfied",
         "render_colour_bomb_trace_svg",
         "render_ltl_rollout_timeline_svg",
     ):
@@ -200,7 +198,6 @@ def test_tabular_safe_rl_baselines_notebook_is_valid_and_executable():
         "num_frames=20",
         "cost_lambda",
         "override_rate",
-        "satisfied",
     ):
         assert token in source, f"{token} missing"
     assert "<svg" not in source

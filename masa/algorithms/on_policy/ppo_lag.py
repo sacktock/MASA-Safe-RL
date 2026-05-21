@@ -11,7 +11,6 @@ import gymnasium as gym
 from gymnasium import spaces
 from typing import Any, Tuple, Optional, Union, Callable
 from masa.common.base_class import BaseJaxPolicy
-from masa.common.buffers import CostRolloutBuffer
 from masa.algorithms.on_policy import PPO
 from masa.algorithms.on_policy.abstract_classes import OnPolicyNaiveLagrangeAlgorithm
 from masa.common.policies import PPOLagPolicy
@@ -23,8 +22,10 @@ class PPOLag(OnPolicyNaiveLagrangeAlgorithm, PPO):
     def __init__(
         self,
         *args,
-        # Lagrange parameters
         policy_class: type[BaseJaxPolicy] = PPOLagPolicy,
+        normalize_reward_advantages: bool = True,
+        normalize_cost_advantages: bool = True,
+        # Lagrange parameters
         cost_limit: float = 25.0,
         cost_gamma: float = 0.99,
         cost_gae_lambda: float = 0.95,
@@ -34,6 +35,8 @@ class PPOLag(OnPolicyNaiveLagrangeAlgorithm, PPO):
         **kwargs,
         
     ):
+        self.normalize_reward_advantages = normalize_reward_advantages
+        self.normalize_cost_advantages = normalize_cost_advantages
 
         self.cost_limit = cost_limit
         self.cost_gamma = cost_gamma
@@ -48,7 +51,7 @@ class PPOLag(OnPolicyNaiveLagrangeAlgorithm, PPO):
         super().__init__(*args, policy_class=policy_class, **kwargs)
 
     @staticmethod
-    @partial(jit, static_argnames=["normalize_advantage"])
+    @jit
     def _one_update(
         featurizer_state: TrainState,
         actor_state: TrainState,
@@ -63,10 +66,7 @@ class PPOLag(OnPolicyNaiveLagrangeAlgorithm, PPO):
         clip_range: float,
         ent_coef: float,
         vf_coef: float,
-        normalize_advantage: bool = True,
     ):
-        if normalize_advantage and len(advantages) > 1:
-            advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
         def actor_critic_loss(featurizer_params, actor_params, critic_params, cost_critic_params):
             features = featurizer_state.apply_fn(featurizer_params, observations)
@@ -140,6 +140,12 @@ class PPOLag(OnPolicyNaiveLagrangeAlgorithm, PPO):
                         # Convert discrete action from float to int
                         actions = actions.flatten().astype(np.int32)
 
+                    if self.normalize_reward_advantages and len(reward_advantages) > 1:
+                        reward_advantages = (reward_advantages - reward_advantages.mean()) / (reward_advantages.std() + 1e-8)
+
+                    if self.normalize_cost_advantages:
+                        cost_advantages = cost_advantages - cost_advantages.mean()
+
                     advantages = (reward_advantages - self.lagrangian_multiplier * cost_advantages) / (1.0 + self.lagrangian_multiplier)
 
                     (self.policy.featurizer_state, self.policy.actor_state, self.policy.critic_state, self.policy.cost_critic_state), (pg_loss, vf_loss) = \
@@ -157,7 +163,6 @@ class PPOLag(OnPolicyNaiveLagrangeAlgorithm, PPO):
                         clip_range=clip_range,
                         ent_coef=self.ent_coef,
                         vf_coef=self.vf_coef,
-                        normalize_advantage=self.normalize_advantage,
                     )
 
                     pbar.update(1)

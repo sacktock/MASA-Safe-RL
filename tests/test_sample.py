@@ -178,6 +178,7 @@ def test_cartpole_envs_render_rgb_array_ansi_and_notebook():
     )
 
     for env_cls, action in env_cases:
+        assert env_cls.metadata["render_fps"] == 15
         env = env_cls(render_mode="rgb_array", render_window_size=192)
         env.reset(seed=0)
         frame = env.render()
@@ -225,6 +226,257 @@ def test_cartpole_envs_render_rgb_array_ansi_and_notebook():
     assert "pygame.K_LEFT" in source
     assert "pygame.K_SPACE" in source
     assert "np.array([0.0]" in source
+    assert "pygame.key.get_pressed()" in source
+    assert "play_env" in source
+
+
+def test_mountain_car_envs_render_rgb_array_ansi():
+    import json
+
+    import numpy as np
+    import pytest
+
+    from masa.envs.continuous.mountain_car import ContinuousMountainCar
+    from masa.envs.continuous.renderers import mountain_car as mountain_car_renderer
+    from masa.envs.discrete.base import DiscreteEnv
+    from masa.envs.discrete.mountain_car import DiscreteMountainCar
+
+    assert issubclass(DiscreteMountainCar, DiscreteEnv)
+
+    env_cases = (
+        (DiscreteMountainCar, 1),
+        (ContinuousMountainCar, np.array([1.0], dtype=np.float32)),
+    )
+
+    for env_cls, action in env_cases:
+        assert env_cls.metadata["render_fps"] == 30
+        env = env_cls(render_mode="rgb_array", render_window_size=192)
+        env.reset(seed=0)
+        frame = env.render()
+        assert frame.shape == (192, 192, 3)
+        assert frame.dtype.name == "uint8"
+        assert frame.mean() > 0
+        np.testing.assert_allclose(frame[0, 0], mountain_car_renderer.PANEL_COLOR, atol=4)
+        np.testing.assert_allclose(frame[0, -1], mountain_car_renderer.PANEL_COLOR, atol=4)
+        env.step(action)
+        next_frame = env.render()
+        assert next_frame.shape == frame.shape
+        assert next_frame.mean() > 0
+        env.close()
+
+    for env_cls, action in env_cases:
+        env = env_cls(render_mode="ansi")
+        env.reset(seed=0)
+        env.step(action)
+        rendered = env.render()
+        assert isinstance(rendered, str)
+        for token in ("position", "velocity", "status", "last_action"):
+            assert token in rendered
+        env.close()
+
+    for env_cls, _ in env_cases:
+        env = env_cls()
+        env.reset(seed=0)
+        assert env.render() is None
+        env.close()
+
+        with pytest.raises(ValueError):
+            env_cls(render_mode="bad")
+        with pytest.raises(ValueError):
+            env_cls(render_window_size=0)
+
+    env = DiscreteMountainCar(render_mode="rgb_array", render_window_size=192)
+    env.reset(seed=0)
+    snapshot = env._renderer._snapshot()
+    scale = mountain_car_renderer._gym_scale(snapshot, env.render_window_size)
+    body_points, _, wheel_centers, _ = mountain_car_renderer._car_geometry(snapshot, scale, env.render_window_size)
+    assert wheel_centers[0][1] > sum(point[1] for point in body_points) / len(body_points)
+    assert wheel_centers[1][1] > sum(point[1] for point in body_points) / len(body_points)
+    hill_points = mountain_car_renderer._hill_points(snapshot, scale, env.render_window_size)
+    assert hill_points[0][0] == 0
+    assert hill_points[-1][0] == env.render_window_size
+    env.close()
+
+    with open("notebooks/envs/play_mountain_car.ipynb", "r", encoding="utf-8") as fh:
+        notebook = json.load(fh)
+
+    assert notebook["nbformat"] == 4
+    source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
+    assert "DiscreteMountainCar" in source
+    assert "ContinuousMountainCar" in source
+    assert "widgets.ToggleButtons" in source
+    assert "render_mode=\"human\"" in source
+    assert "render_mode=\"rgb_array\"" in source
+    assert "render_window_size=512" in source
+    assert "pygame.K_LEFT" in source
+    assert "pygame.K_RIGHT" in source
+    assert "pygame.K_SPACE" not in source
+    assert "pygame.K_a" not in source
+    assert "pygame.K_d" not in source
+    assert "pygame.K_DOWN" not in source
+    assert "pygame.K_s" not in source
+    assert "pygame.key.get_pressed()" in source
+    assert "play_env" in source
+
+
+def test_road_2d_render_rgb_array_ansi():
+    import numpy as np
+    import pytest
+
+    from masa.envs.continuous.road_2d import Road2D
+
+    action = np.array([1.0, 1.0], dtype=np.float32)
+
+    env = Road2D(render_mode="rgb_array", render_window_size=192)
+    env.reset(seed=0)
+    frame = env.render()
+    assert frame.shape == (192, 192, 3)
+    assert frame.dtype.name == "uint8"
+    assert frame.mean() > 0
+    env.step(action)
+    next_frame = env.render()
+    assert next_frame.shape == frame.shape
+    assert next_frame.mean() > 0
+    env.close()
+
+    env = Road2D(render_mode="ansi")
+    env.reset(seed=0)
+    env.step(action)
+    rendered = env.render()
+    assert isinstance(rendered, str)
+    for token in ("position", "velocity", "status", "last_action"):
+        assert token in rendered
+    env.close()
+
+    env = Road2D()
+    env.reset(seed=0)
+    assert env.render() is None
+    env.close()
+
+    with pytest.raises(ValueError):
+        Road2D(render_mode="bad")
+    with pytest.raises(ValueError):
+        Road2D(render_window_size=0)
+
+
+def test_road_1d_render_rgb_array_ansi():
+    import json
+
+    import numpy as np
+    import pytest
+
+    from masa.envs.continuous.road_1d import Road1D
+
+    action = np.array([1.0], dtype=np.float32)
+
+    env = Road1D(render_mode="rgb_array", render_window_size=192)
+    env.reset(seed=0)
+    frame = env.render()
+    assert frame.shape == (192, 192, 3)
+    assert frame.dtype.name == "uint8"
+    assert frame.mean() > 0
+    env.step(action)
+    next_frame = env.render()
+    assert next_frame.shape == frame.shape
+    assert next_frame.mean() > 0
+    env.close()
+
+    env = Road1D(render_mode="ansi")
+    env.reset(seed=0)
+    env.step(action)
+    rendered = env.render()
+    assert isinstance(rendered, str)
+    for token in ("position", "velocity", "status", "last_action"):
+        assert token in rendered
+    env.close()
+
+    env = Road1D()
+    env.reset(seed=0)
+    assert env.render() is None
+    env.close()
+
+    with pytest.raises(ValueError):
+        Road1D(render_mode="bad")
+    with pytest.raises(ValueError):
+        Road1D(render_window_size=0)
+
+    with open("notebooks/envs/play_roads.ipynb", "r", encoding="utf-8") as fh:
+        notebook = json.load(fh)
+
+    assert notebook["nbformat"] == 4
+    source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
+    assert "Road1D" in source
+    assert "Road2D" in source
+    assert "widgets.ToggleButtons" in source
+    assert "render_mode=\"human\"" in source
+    assert "render_mode=\"rgb_array\"" in source
+    assert "render_window_size=512" in source
+    assert "pygame.K_LEFT" in source
+    assert "pygame.K_SPACE" in source
+    assert "play_env" in source
+
+
+def test_obstacle_envs_render_rgb_array_ansi():
+    import json
+
+    import numpy as np
+    import pytest
+
+    from masa.envs.continuous.obstacle import Obstacle
+    from masa.envs.continuous.obstacle_v2 import ObstacleV2
+    from masa.envs.continuous.obstacle_v3 import ObstacleV3
+    from masa.envs.continuous.obstacle_v4 import ObstacleV4
+
+    action = np.array([1.0, 1.0], dtype=np.float32)
+    env_classes = (Obstacle, ObstacleV2, ObstacleV3, ObstacleV4)
+
+    for env_cls in env_classes:
+        env = env_cls(render_mode="rgb_array", render_window_size=192)
+        env.reset(seed=0)
+        frame = env.render()
+        assert frame.shape == (192, 192, 3)
+        assert frame.dtype.name == "uint8"
+        assert frame.mean() > 0
+        env.step(action)
+        next_frame = env.render()
+        assert next_frame.shape == frame.shape
+        assert next_frame.mean() > 0
+        env.close()
+
+    for env_cls in env_classes:
+        env = env_cls(render_mode="ansi")
+        env.reset(seed=0)
+        env.step(action)
+        rendered = env.render()
+        assert isinstance(rendered, str)
+        for token in ("position", "velocity", "status", "last_action"):
+            assert token in rendered
+        env.close()
+
+    for env_cls in env_classes:
+        env = env_cls()
+        env.reset(seed=0)
+        assert env.render() is None
+        env.close()
+
+        with pytest.raises(ValueError):
+            env_cls(render_mode="bad")
+        with pytest.raises(ValueError):
+            env_cls(render_window_size=0)
+
+    with open("notebooks/envs/play_obstacles.ipynb", "r", encoding="utf-8") as fh:
+        notebook = json.load(fh)
+
+    assert notebook["nbformat"] == 4
+    source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
+    for env_name in ("Obstacle", "ObstacleV2", "ObstacleV3", "ObstacleV4"):
+        assert env_name in source
+    assert "widgets.ToggleButtons" in source
+    assert "render_mode=\"human\"" in source
+    assert "render_mode=\"rgb_array\"" in source
+    assert "render_window_size=512" in source
+    assert "pygame.K_LEFT" in source
+    assert "pygame.K_SPACE" in source
     assert "play_env" in source
 
 

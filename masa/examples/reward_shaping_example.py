@@ -1,5 +1,5 @@
 from masa.common.wrappers import RewardShapingWrapper
-from masa.algorithms.tabular import RECREG, QL, QL_Lambda
+from masa.algorithms.tabular import RECREG
 
 def main():
     # Import the masa make_env function
@@ -42,7 +42,7 @@ def main():
     env = RewardShapingWrapper(
         env, 
         gamma=0.99,
-        impl="vi" # which implementation to use ("none", "vi", "cycle")
+        impl="cycle" # which implementation to use ("none", "vi", "cycle")
     )
 
     # The RewardShapingWrapper implements two different types of potential-based reward shaping
@@ -84,7 +84,7 @@ def main():
     # Now let's initialize RECREG
     algo = RECREG(
         env,
-        tensorboard_logdir=None, # ignoring tensorboard logging
+        tensorboard_logdir="runs/masa/recreg_model_free_reward_shaping_cycle_colour_bomb_grid_world_v2_property_3_seed_0", # ignoring tensorboard logging
         seed=0,
         monitor=True, # monitors training progress
         device="cpu", # keep everything on the cpu 
@@ -103,10 +103,10 @@ def main():
 
     # Now we begin training
     algo.train(
-        num_frames=300_000, # total number of frames (environment interactions)
+        num_frames=500_000, # total number of frames (environment interactions)
         num_eval_episodes=10, # total number of evaluation episodes to run
-        eval_freq=5_000, # how frequently to run evaluation (default=0 => never run evaluation)
-        log_freq=5_000, # how frequenntly to log metrics to stdout or tensorboard
+        eval_freq=10_000, # how frequently to run evaluation (default=0 => never run evaluation)
+        log_freq=10_000, # how frequenntly to log metrics to stdout or tensorboard
         # prefill: Optional[int] = None (not implemented yet)
         # save_freq: int = 0, (not implemented yet)
         stats_window_size=100, # sliding window size for metrics logging

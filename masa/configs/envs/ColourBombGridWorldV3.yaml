@@ -10,18 +10,18 @@ defaults:
     cost_budget: 0
 
   run:
-    total_timesteps: 250000
-    eval_every: 5000
+    total_timesteps: 1000000
+    eval_every: 10000
     eval_episodes: 10
-    log_every: 5000
+    log_every: 10000
     stats_window_size: 100
 
 Property2:
   constraint:
-    type: ltl_dfa
+    type: LTL_SAFETY
     dfa: masa.examples.colour_bomb_grid_world.property_2:make_dfa
 
 Property3:
   constraint:
-    type: ltl_dfa
+    type: LTL_SAFETY
     dfa: masa.examples.colour_bomb_grid_world.property_3:make_dfa

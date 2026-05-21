@@ -19,17 +19,8 @@ class TRPO(OnPolicyAlgorithm):
 
     def __init__(
         self,
-        env: gym.Env,
-        tensorboard_logdir: Optional[str] = None,
-        wandb_project: Optional[str] = None,
-        wandb_name: Optional[str] = None,
-        seed: Optional[int] = None,
-        monitor: bool = True,
-        device: str = "auto",
-        verbose: int = 0,
-        env_fn: Optional[Callable[[], gym.Env]] = None,
-        eval_env: Optional[gym.Env] = None, 
-        learning_rate: Union[float, optax.Schedule] = 3e-4,
+        *args,
+        learning_rate: Union[float, optax.Schedule] = 1e-3,
         n_steps: int = 2048,
         n_critic_updates: int = 10,
         gamma: float = 0.99,
@@ -46,19 +37,10 @@ class TRPO(OnPolicyAlgorithm):
         line_search_decay: float = 0.8,
         policy_class: type[BaseJaxPolicy] = PPOPolicy,
         policy_kwargs: Optional[dict[str, Any]] = None,
+        **kwargs,
     ):
-
         super().__init__(
-            env, 
-            tensorboard_logdir=tensorboard_logdir,
-            wandb_project=wandb_project,
-            wandb_name=wandb_name,
-            seed=seed,
-            monitor=monitor,
-            device=device,
-            verbose=verbose,
-            env_fn=env_fn,
-            eval_env=eval_env,
+            *args,
             use_tqdm_rollout=True, # Turn on tqdm progress bar for rollout
             learning_rate=learning_rate,
             n_steps=n_steps,
@@ -68,12 +50,10 @@ class TRPO(OnPolicyAlgorithm):
             vf_coef=vf_coef,
             max_grad_norm=max_grad_norm,
             policy_class=policy_class,
-            policy_kwargs=policy_kwargs
+            policy_kwargs=policy_kwargs,
+            **kwargs
         )
-
-        if normalize_advantage:
-            assert n_steps > 1, "n_steps must be > 1 when normalize_advantage = True"
-
+        
         self.normalize_advantage = normalize_advantage
         self.n_critic_updates = n_critic_updates
         self.target_kl = target_kl
@@ -82,6 +62,7 @@ class TRPO(OnPolicyAlgorithm):
         self.fvp_sample_freq = fvp_sample_freq
         self.line_search_steps = line_search_steps
         self.line_search_decay = line_search_decay
+
 
     @staticmethod
     @jit
