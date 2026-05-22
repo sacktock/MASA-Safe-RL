@@ -78,7 +78,6 @@ class ParameterizedActorV2(nn.Module):
         scale = jnp.exp(log_scale) + self.eps
 
         return loc, scale
-
         
     @nn.compact
     def evaluate_actions(self, x: jnp.ndarray, actions: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
@@ -105,7 +104,7 @@ class ParameterizedActorV2(nn.Module):
         mix = jnp.clip(mix, margin, 1.0 - margin) # guard against nans
         mix_log_prob = mix_dist.log_prob(mix)
 
-        log_prpb = di.log_prob(i) + dj.log_prob(j) + mix_log_prob
+        log_prob = di.log_prob(i) + dj.log_prob(j) + mix_log_prob
         entropy = di.entropy() + dj.entropy() - mix_log_prob # approximate entropy with negative log_prob
 
         return log_prob, entropy
@@ -128,7 +127,7 @@ class ParameterizedActorV2(nn.Module):
             ej = emb_j_tbl[j]
             y = jnp.concatenate([x, ei, ej], axis=1) # concatenate state input with action embedding
 
-        loc, scale = self._foward_beta_net(y)
+        loc, scale = self._foward_mix_net(y)
 
         mix_dist = self._mix_dist(loc, scale)
         mix = mix_dist.sample(seed=key_m)
@@ -138,7 +137,7 @@ class ParameterizedActorV2(nn.Module):
         mix_log_prob = mix_dist.log_prob(mix)
 
         action = jnp.concatenate([i[:, None], j[:, None], mix], axis=1)
-        log_prpb = di.log_prob(i) + dj.log_prob(j) + mix_log_prob
+        log_prob = di.log_prob(i) + dj.log_prob(j) + mix_log_prob
         entropy = di.entropy() + dj.entropy() - mix_log_prob # approximate entropy with negative log_prob
 
         return action, log_prob, entropy
@@ -157,7 +156,7 @@ class ParameterizedActorV2(nn.Module):
             ej = emb_j_tbl[j]
             y = jnp.concatenate([x, ei, ej], axis=1) # concatenate state input with action embedding
 
-        loc, _ = self._foward_beta_net(y)
+        loc, _ = self._foward_mix_net(y)
 
         margin = jnp.array(self.eps*2, dtype=loc.dtype)
         mix = jnp.clip(jax.nn.sigmoid(loc), margin, 1.0 - margin)
@@ -252,7 +251,7 @@ class ParameterizedPPOPolicyV2(BaseJaxPolicy):
             n_actions=self.n_actions,
             trunk_arch=self.actor_net_arch,
             head_arch=self.actor_net_arch,
-            conditional_mix_network=self.conditional_mix_network
+            conditional_mix_network=self.conditional_mix_network,
             activation_fn=self.activation_fn,
             log_std_init=self.log_std_init
         )
