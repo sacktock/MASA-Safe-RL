@@ -469,7 +469,15 @@ class StatsLogger(BaseLogger):
         self.stats_to_log = {}
         for key, val in self.stats.items():
             if len(val) > 0:
-                self.stats_to_log[key] = float(np.mean(val))
+                if key.endswith("max") or key.endswith("mag"):
+                    agg = np.max(val)
+                elif key.endswith("min"):
+                    agg = np.min(val)
+                else:
+                    agg = np.mean(val)
+            else:
+                agg = last
+            self.stats_to_log[key] = float(agg)
 
     def _create_dists_to_log(self):
         """Collect distributions to emit as histograms."""
@@ -658,16 +666,7 @@ class RolloutLogger(BaseLogger):
             if len(val) > 1:
                 # Temporarily drop last (current) value from the mean.
                 last = val.pop()
-                if len(val) > 0:
-                    if key.endswith("max") or key.endswith("mag"):
-                        agg = np.max(val)
-                    elif key.endswith("min"):
-                        agg = np.min(val)
-                    else:
-                        agg = np.mean(val)
-                else:
-                    agg = last
-                self.stats_to_log[key] = float(agg)
+                self.stats_to_log[key] = float(np.mean(val)) if len(val) > 0 else float(last)
                 val.append(last)
 
     def _log_to_tensorboard(self, step: int):
