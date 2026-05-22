@@ -20,158 +20,11 @@ import tensorflow_probability.substrates.jax as tfp
 tfd = tfp.distributions
 tfb = tfp.bijectors
 
-@dataclass
-class ParamActionDist:
-    # tensors from the network
-    logits_i: jnp.ndarray   # (B, N)
-    logits_j: jnp.ndarray   # (B, N)
-
-    # Conditional mix lookup tables (pre-sigmoid Gaussian params)
-    mix_loc_table: jnp.ndarray    # (B, N, N, E, 1)
-    mix_scale_table: jnp.ndarray  # (B, N, N, E, 1)
-    eps: float = 1e-6
-
-    def _gather_mix_params(self, i: jnp.ndarray, j: jnp.ndarray):
-        """
-        i, j, e: (B,) int32
-        returns loc, scale: (B, 1)
-        """
-        B = i.shape[0]
-
-        # Step 1: gather along axis=1 (i)
-        loc_i = jnp.take_along_axis(self.mix_loc_table, i.reshape(B, 1, 1, 1), axis=1)
-        sc_i  = jnp.take_along_axis(self.mix_scale_table, i.reshape(B, 1, 1, 1), axis=1)
-
-        # Step 2: gather along axis=2 (j)
-        loc_ij = jnp.take_along_axis(loc_i, j.reshape(B, 1, 1, 1), axis=2)
-        sc_ij  = jnp.take_along_axis(sc_i,  j.reshape(B, 1, 1, 1), axis=2)
-
-        # Squeeze to (B,1)
-        loc = loc_ij.reshape(B, 1)
-        scale = sc_ij.reshape(B, 1)
-        return loc, scale
-
-    def _mix_dist(self, i: jnp.ndarray, j: jnp.ndarray):
-        loc, scale = self._gather_mix_params(i, j)  # (B,1)
-        base = tfd.MultivariateNormalDiag(loc=loc, scale_diag=scale)
-        eps = jnp.array(self.eps, dtype=loc.dtype)
-        bij = tfb.Chain([
-            tfb.Shift(eps),
-            tfb.Scale(1.0 - 2.0 * eps),
-            tfb.Sigmoid(),
-        ])
-        return tfd.TransformedDistribution(distribution=base, bijector=bij)
-
-    def sample(self, seed):
-        di = tfd.Categorical(logits=self.logits_i)
-        dj = tfd.Categorical(logits=self.logits_j)
-        # sample i, j, e
-        key_i, key_j, key_m = tfp.random.split_seed(seed, n=3)
-        i = di.sample(seed=key_i)                      # (B,)
-        j = dj.sample(seed=key_j)                      # (B,)
-        mix = self._mix_dist(i, j).sample(seed=key_m) # (B,1) in (0,1)
-
-        # Flat action expected by env: [i, j, edge_dim, mix]
-        return jnp.concatenate([i[:, None], j[:, None], mix], axis=1)
-
-    def mode(self):
-        i = jnp.argmax(self.logits_i, axis=1)
-        j = jnp.argmax(self.logits_j, axis=1)
-        
-        # use mean of sigmoid-normal approximately via loc (not exact); ok for deterministic eval
-        loc, _ = self._gather_mix_params(i, j)
-        margin = jnp.array(self.eps*2, dtype=loc.dtype)
-        mix = jnp.clip(jax.nn.sigmoid(loc), margin, 1.0 - margin)
-        return jnp.concatenate([i[:, None], j[:, None], mix], axis=1)
-
-    def log_prob(self, actions):
-        # actions shape (B, 2+K), first two are i,j (possibly floats)
-        i = actions[:, 0].astype(jnp.int32)
-        j = actions[:, 1].astype(jnp.int32)
-        mix = actions[:, 2].reshape((-1, 1)).astype(self.mix_loc_table.dtype)  # (B,1)
-        margin = jnp.array(self.eps*2, dtype=self.mix_loc_table.dtype)
-        mix = jnp.clip(mix, margin, 1.0 - margin) # guard against nans
-
-        di = tfd.Categorical(logits=self.logits_i)
-        dj = tfd.Categorical(logits=self.logits_j)
-        dm = self._mix_dist(i, j)
-
-        lp = di.log_prob(i) + dj.log_prob(j)
-        lp = lp + dm.log_prob(mix)  # (B,)
-        return lp
-
-    def entropy(self, actions):
-        di = tfd.Categorical(logits=self.logits_i)
-        dj = tfd.Categorical(logits=self.logits_j)
-
-        ent = di.entropy() + dj.entropy()
-
-        i = actions[:, 0].astype(jnp.int32)
-        j = actions[:, 1].astype(jnp.int32)
-        mix = actions[:, 2].reshape((-1, 1)).astype(self.mix_loc_table.dtype)
-        margin = jnp.array(self.eps*2, dtype=self.mix_loc_table.dtype)
-        mix = jnp.clip(mix, margin, 1.0 - margin) # guard against nans
-        mix_ent_approx = -self._mix_dist(i, j).log_prob(mix)
-
-        return ent + mix_ent_approx
-
-@dataclass
-class ActionDist:
-    logits_i: jnp.ndarray  # (B, N)
-    logits_j: jnp.ndarray  # (B, N)
-    loc: jnp.ndarray       # (B, 1)
-    scale: jnp.ndarray     # (B, 1)
-    eps: float = 1e-6
-
-    def _mix_dist(self):
-        eps = jnp.array(self.eps, dtype=self.loc.dtype)
-        base = tfd.MultivariateNormalDiag(loc=self.loc, scale_diag=self.scale)
-        bij = tfb.Chain([tfb.Shift(eps), tfb.Scale(1.0 - 2.0 * eps), tfb.Sigmoid()])
-        return tfd.TransformedDistribution(distribution=base, bijector=bij)
-
-    def sample(self, seed):
-        di = tfd.Categorical(logits=self.logits_i)
-        dj = tfd.Categorical(logits=self.logits_j)
-        key_i, key_j, key_m = tfp.random.split_seed(seed, n=3)
-        i = di.sample(seed=key_i)                   # (B,)
-        j = dj.sample(seed=key_j)                   # (B,)
-        mix = self._mix_dist().sample(seed=key_m)   # (B, 1)
-        return jnp.concatenate([i[:, None], j[:, None], mix], axis=1)
-
-    def mode(self):
-        i = jnp.argmax(self.logits_i, axis=1)
-        j = jnp.argmax(self.logits_j, axis=1)
-        margin = jnp.array(self.eps*2, dtype=self.loc.dtype)
-        mix = jnp.clip(jax.nn.sigmoid(self.loc), margin, 1.0 - margin)
-        return jnp.concatenate([i[:, None], j[:, None], mix], axis=1)
-
-    def log_prob(self, actions):
-        i = actions[:, 0].astype(jnp.int32)
-        j = actions[:, 1].astype(jnp.int32)
-        mix = actions[:, 2].reshape((-1, 1)).astype(self.loc.dtype)
-        margin = jnp.array(self.eps*2, dtype=self.loc.dtype)
-        mix = jnp.clip(mix, margin, 1.0 - margin) # guard against nans
-        di = tfd.Categorical(logits=self.logits_i)
-        dj = tfd.Categorical(logits=self.logits_j)
-        lp = di.log_prob(i) + dj.log_prob(j)
-        lp = lp + self._mix_dist().log_prob(mix)
-        return lp
-
-    def entropy(self, actions):
-        di = tfd.Categorical(logits=self.logits_i)
-        dj = tfd.Categorical(logits=self.logits_j)
-        mix = actions[:, 2].reshape((-1, 1)).astype(self.loc.dtype)
-        margin = jnp.array(self.eps*2, dtype=self.loc.dtype)
-        mix = jnp.clip(mix, margin, 1.0 - margin) # guard against nans
-        mix_ent_approx = -self._mix_dist().log_prob(mix)
-        return di.entropy() + dj.entropy() + mix_ent_approx
-
-
 class ParameterizedActorV2(nn.Module):
     n_actions: int
     trunk_arch: Sequence[int]
     head_arch: Sequence[int]
-    shared_trunk: bool = True
+    conditional_mix_network: bool = True
     activation_fn: Callable[[jnp.ndarray], jnp.ndarray] = nn.tanh
     embed_dim: int = 64
     log_std_init: float = 0.0
@@ -181,16 +34,37 @@ class ParameterizedActorV2(nn.Module):
     mean_clip: Optional[float] = 10.0
     smooth_mean_clip: bool = True
 
+    def _mix_dist(self, loc, scale):
+        eps = jnp.array(self.eps, dtype=loc.dtype)
+        base = tfd.MultivariateNormalDiag(loc=loc, scale_diag=scale)
+        bij = tfb.Chain([tfb.Shift(eps), tfb.Scale(1.0 - 2.0 * eps), tfb.Sigmoid()])
+        return tfd.TransformedDistribution(distribution=base, bijector=bij)
+
     @nn.compact
-    def __call__(self, x: jnp.array) -> ParamActionDist:
+    def __call__(self, x: jnp.ndarray):
+        return self._forward_features(x)
+
+    def _forward_features(self, x: jnp.ndarray):
         x = Flatten()(x)
-        if self.shared_trunk:
-            for h in self.trunk_arch:
-                x = nn.Dense(h)(x)
-                x = self.activation_fn(x)
+        for h in self.trunk_arch:
+            x = nn.Dense(h)(x)
+            x = self.activation_fn(x)
 
         logits_i = nn.Dense(self.n_actions)(x)
         logits_j = nn.Dense(self.n_actions)(x)
+
+        return x, logits_i, logits_j
+
+    def _forward_embedding(self):
+        emb_i_tbl = self.param("emb_i", nn.initializers.normal(0.02), (self.n_actions, self.embed_dim))
+        emb_j_tbl = self.param("emb_j", nn.initializers.normal(0.02), (self.n_actions, self.embed_dim))
+        return emb_i_tbl, emb_j_tbl
+
+    def _foward_mix_net(self, x: jnp.ndarray):
+        if self.conditional_mix_network:
+            for h in self.head_arch:
+                x = nn.Dense(h)(x)
+                x = self.activation_fn(x)
 
         loc = nn.Dense(1)(x)
         if self.mean_clip is not None:
@@ -203,58 +77,91 @@ class ParameterizedActorV2(nn.Module):
         log_scale = jnp.clip(log_scale, self.log_std_min, self.log_std_max)
         scale = jnp.exp(log_scale) + self.eps
 
-        return ActionDist(
-            logits_i=logits_i,
-            logits_j=logits_j,
-            loc=loc,
-            scale=scale,
-        )
+        return loc, scale
 
+        
+    @nn.compact
+    def evaluate_actions(self, x: jnp.ndarray, actions: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
+        i = actions[:, 0].astype(jnp.int32)
+        j = actions[:, 1].astype(jnp.int32)
 
-        emb_i_tbl = self.param("emb_i", nn.initializers.normal(0.02), (self.n_actions, self.embed_dim))
-        emb_j_tbl = self.param("emb_j", nn.initializers.normal(0.02), (self.n_actions, self.embed_dim))
+        y, logits_i, logits_j = self._forward_features(x)
 
-        # (B, N, E)
-        ei = jnp.broadcast_to(emb_i_tbl[None, :, :], (x.shape[0], self.n_actions, self.embed_dim))
-        ej = jnp.broadcast_to(emb_j_tbl[None, :, :], (x.shape[0], self.n_actions, self.embed_dim))
+        di = tfd.Categorical(logits=logits_i)
+        dj = tfd.Categorical(logits=logits_j)
 
-        xb = x[:, None, None, :]
-        ei_grid = ei[:, :, None, :]
-        ej_grid = ej[:, None, :, :]
-        z = jnp.concatenate(
-            [
-                jnp.broadcast_to(xb, (x.shape[0], self.n_actions, self.n_actions, x.shape[1])),
-                jnp.broadcast_to(ei_grid, (x.shape[0], self.n_actions, self.n_actions, self.embed_dim)),
-                jnp.broadcast_to(ej_grid, (x.shape[0], self.n_actions, self.n_actions, self.embed_dim))
-            ], axis=-1
-        )
+        if self.conditional_mix_network:
+            emb_i_tbl, emb_j_tbl = self._forward_embedding()
+            ei = emb_i_tbl[i]
+            ej = emb_j_tbl[j]
+            y = jnp.concatenate([x, ei, ej], axis=1) # concatenate state input with action embedding
 
-        y = z.reshape((x.shape[0]*self.n_actions*self.n_actions, -1))
-        for h in self.head_arch:
-            y = nn.Dense(h)(y)
-            y = self.activation_fn(y)
+        loc, scale = self._foward_mix_net(y)
 
-        mix_loc = nn.Dense(1)(y)
-        if self.mean_clip is not None:
-            if self.smooth_mean_clip:
-                mix_loc = self.mean_clip * jnp.tanh(mix_loc / self.mean_clip)
-            else:
-                mix_loc = jnp.clip(mix_loc, -self.mean_clip, self.mean_clip)
+        mix_dist = self._mix_dist(loc, scale)
+        mix = actions[:, 2:].reshape((-1, 1)).astype(dtype=loc.dtype)
 
-        mix_log_std = nn.Dense(1)(y) + self.log_std_init
-        mix_log_std = jnp.clip(mix_log_std, self.log_std_min, self.log_std_max)
-        mix_scale = jnp.exp(mix_log_std) + self.eps
+        margin = jnp.array(self.eps*2, dtype=loc.dtype)
+        mix = jnp.clip(mix, margin, 1.0 - margin) # guard against nans
+        mix_log_prob = mix_dist.log_prob(mix)
 
-        mix_loc = mix_loc.reshape((x.shape[0], self.n_actions, self.n_actions, 1))
-        mix_scale = mix_scale.reshape((x.shape[0], self.n_actions, self.n_actions, 1))
+        log_prpb = di.log_prob(i) + dj.log_prob(j) + mix_log_prob
+        entropy = di.entropy() + dj.entropy() - mix_log_prob # approximate entropy with negative log_prob
 
-        return ParamActionDist(
-            logits_i=logits_i,
-            logits_j=logits_j,
-            mix_loc_table=mix_loc,
-            mix_scale_table=mix_scale,
-            eps=self.eps,
-        )
+        return log_prob, entropy
+
+    @nn.compact
+    def sample_action(self, x: jnp.ndarray, key: jax.Array) -> Tuple[jnp.ndarray,jnp.ndarray,jnp.ndarray]:
+        key_i, key_j, key_m = jax.random.split(key, 3)
+
+        y, logits_i, logits_j = self._forward_features(x)
+
+        di = tfd.Categorical(logits=logits_i)
+        dj = tfd.Categorical(logits=logits_j)
+
+        i = di.sample(seed=key_i)
+        j = dj.sample(seed=key_j)
+
+        if self.conditional_mix_network:
+            emb_i_tbl, emb_j_tbl = self._forward_embedding()
+            ei = emb_i_tbl[i]
+            ej = emb_j_tbl[j]
+            y = jnp.concatenate([x, ei, ej], axis=1) # concatenate state input with action embedding
+
+        loc, scale = self._foward_beta_net(y)
+
+        mix_dist = self._mix_dist(loc, scale)
+        mix = mix_dist.sample(seed=key_m)
+
+        margin = jnp.array(self.eps*2, dtype=loc.dtype)
+        mix = jnp.clip(mix, margin, 1.0 - margin) # guard against nans
+        mix_log_prob = mix_dist.log_prob(mix)
+
+        action = jnp.concatenate([i[:, None], j[:, None], mix], axis=1)
+        log_prpb = di.log_prob(i) + dj.log_prob(j) + mix_log_prob
+        entropy = di.entropy() + dj.entropy() - mix_log_prob # approximate entropy with negative log_prob
+
+        return action, log_prob, entropy
+
+    @nn.compact
+    def select_action(self, x: jnp.ndarray) -> jnp.ndarray:
+
+        y, logits_i, logits_j = self._forward_features(x)
+
+        i = jnp.argmax(logits_i, axis=1)
+        j = jnp.argmax(logits_j, axis=1)
+
+        if self.conditional_mix_network:
+            emb_i_tbl, emb_j_tbl = self._forward_embedding()
+            ei = emb_i_tbl[i]
+            ej = emb_j_tbl[j]
+            y = jnp.concatenate([x, ei, ej], axis=1) # concatenate state input with action embedding
+
+        loc, _ = self._foward_beta_net(y)
+
+        margin = jnp.array(self.eps*2, dtype=loc.dtype)
+        mix = jnp.clip(jax.nn.sigmoid(loc), margin, 1.0 - margin)
+        return jnp.concatenate([i[:, None], j[:, None], mix], axis=1)
 
 class ParameterizedPPOPolicyV2(BaseJaxPolicy):
     def __init__(
@@ -265,7 +172,7 @@ class ParameterizedPPOPolicyV2(BaseJaxPolicy):
         net_arch: Optional[Union[list[int], dict[str, list[int]]]] = None,
         log_std_init: float = -1.0,
         activation_fn: Callable[[jnp.ndarray], jnp.ndarray] = nn.tanh,
-        shared_trunk: bool = True,
+        conditional_mix_network: bool = True,
         features_extractor_class: Optional[type[NatureCNN]] = None,
         features_extractor_kwargs: Optional[dict[str, Any]] = None,
         optimizer_class: Callable[..., optax.GradientTransformation] = optax.adam,
@@ -298,7 +205,7 @@ class ParameterizedPPOPolicyV2(BaseJaxPolicy):
         self.n_actions = n_actions
         self.log_std_init = log_std_init
         self.activation_fn = activation_fn
-        self.shared_trunk = shared_trunk
+        self.conditional_mix_network = conditional_mix_network
         self.features_extractor_class = features_extractor_class
         self.features_extractor_kwargs = features_extractor_kwargs
         self.optimizer_class = optimizer_class
@@ -309,7 +216,7 @@ class ParameterizedPPOPolicyV2(BaseJaxPolicy):
         self.key = self.noise_key = jax.random.PRNGKey(0)
 
     def build(self, key: jax.Array, lr_schedule: Union[optax.Schedule, float], max_grad_norm: float) -> jax.Array:
-        key, feat_key, actor_key, critic_key = jax.random.split(key, 4)
+        key, feat_key, actor_key, actor_noise_key, critic_key = jax.random.split(key, 5)
         key, self.key = jax.random.split(key, 2)
 
         self.reset_noise()
@@ -345,14 +252,14 @@ class ParameterizedPPOPolicyV2(BaseJaxPolicy):
             n_actions=self.n_actions,
             trunk_arch=self.actor_net_arch,
             head_arch=self.actor_net_arch,
-            shared_trunk=self.shared_trunk,
+            conditional_mix_network=self.conditional_mix_network
             activation_fn=self.activation_fn,
             log_std_init=self.log_std_init
         )
 
         self.actor_state = TrainState.create(
             apply_fn=self.actor.apply,
-            params=self.actor.init(actor_key, obs),
+            params=self.actor.init(actor_key, obs, actor_noise_key, method="sample_action"),
             tx=optax.chain(
                 optax.clip_by_global_norm(max_grad_norm),
                 optimizer,
@@ -399,9 +306,12 @@ class ParameterizedPPOPolicyV2(BaseJaxPolicy):
         key: jax.Array, featurizer_state: TrainState, actor_state: TrainState, critic_state: TrainState, observations: jnp.ndarray
     ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
         feats = featurizer_state.apply_fn(featurizer_state.params, observations)
-        dist = actor_state.apply_fn(actor_state.params, feats)
-        actions = dist.sample(seed=key)
-        log_probs = dist.log_prob(actions)
+        actions, log_probs, entropy = actor_state.apply_fn(
+            actor_state.params,
+            feats,
+            key,
+            method="sample_action",
+        )
         values = critic_state.apply_fn(critic_state.params, feats).flatten()
         return actions, log_probs, values
 
@@ -411,7 +321,12 @@ class ParameterizedPPOPolicyV2(BaseJaxPolicy):
         featurizer_state: TrainState, actor_state: TrainState, obs: jnp.ndarray
     ) -> jnp.ndarray:
         feats = featurizer_state.apply_fn(featurizer_state.params, obs)
-        return actor_state.apply_fn(actor_state.params, feats).mode()
+        action, _, _ = actor_state.apply_fn(
+            actor_state.params,
+            feats,
+            method="select_action",
+        )
+        return action
         
     @staticmethod
     @jit
@@ -419,6 +334,10 @@ class ParameterizedPPOPolicyV2(BaseJaxPolicy):
         key: jax.Array, featurizer_state: TrainState, actor_state: TrainState, obs: jnp.ndarray
     ) -> jnp.ndarray:
         feats = featurizer_state.apply_fn(featurizer_state.params, obs)
-        dist = actor_state.apply_fn(actor_state.params, feats)
-        action = dist.sample(seed=key)
+        action, _, _ = actor_state.apply_fn(
+            actor_state.params,
+            feats,
+            key,
+            method="sample_action",
+        )
         return action

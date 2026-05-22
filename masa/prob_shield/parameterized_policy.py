@@ -94,7 +94,7 @@ class ParameterizedActor(nn.Module):
             emb_i_tbl, emb_j_tbl = self._forward_embedding()
             ei = emb_i_tbl[i]
             ej = emb_j_tbl[j]
-            y = jnp.concatenate([x, ei, ej], axis=1)
+            y = jnp.concatenate([x, ei, ej], axis=1) # concatenate state input with action embedding
 
         loc, scale = self._foward_beta_net(y)
         
@@ -106,7 +106,7 @@ class ParameterizedActor(nn.Module):
         beta_log_prob = beta_dist.log_prob(betas)
 
         log_prob = di.log_prob(i) + dj.log_prob(j) + beta_log_prob
-        entropy = di.entropy() + dj.entropy() - beta_log_prob
+        entropy = di.entropy() + dj.entropy() - beta_log_prob # approximate entropy with negative log_prob
 
         return log_prob, entropy
 
@@ -126,7 +126,7 @@ class ParameterizedActor(nn.Module):
             emb_i_tbl, emb_j_tbl = self._forward_embedding()
             ei = emb_i_tbl[i]
             ej = emb_j_tbl[j]
-            y = jnp.concatenate([x, ei, ej], axis=1)
+            y = jnp.concatenate([x, ei, ej], axis=1) # concatenate state input with action embedding
 
         loc, scale = self._foward_beta_net(y)
 
@@ -139,7 +139,7 @@ class ParameterizedActor(nn.Module):
 
         action = jnp.concatenate([i[:, None], j[:, None], betas], axis=1)
         log_prob = di.log_prob(i) + dj.log_prob(j) + beta_log_prob
-        entropy = di.entropy() + dj.entropy() - beta_log_prob
+        entropy = di.entropy() + dj.entropy() - beta_log_prob # approximate entropy with negative log_prob
 
         return action, log_prob, entropy
 
@@ -147,15 +147,15 @@ class ParameterizedActor(nn.Module):
     def select_action(self, x: jnp.ndarray) -> jnp.ndarray:
 
         y, logits_i, logits_j = self._forward_features(x)
-        emb_i_tbl, emb_j_tbl = self._forward_embedding()
 
         i = jnp.argmax(logits_i, axis=1)
         j = jnp.argmax(logits_j, axis=1)
 
         if self.conditional_beta_network:
+            emb_i_tbl, emb_j_tbl = self._forward_embedding()
             ei = emb_i_tbl[i]
             ej = emb_j_tbl[j]
-            y = jnp.concatenate([x, ei, ej], axis=1)
+            y = jnp.concatenate([x, ei, ej], axis=1) # concatenate state input with action embedding
 
         loc, _ = self._foward_beta_net(y)
 
