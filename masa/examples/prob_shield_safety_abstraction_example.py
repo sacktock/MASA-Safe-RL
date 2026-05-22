@@ -93,9 +93,7 @@ def main():
     # PPO will automatically one-hot encode any discrete observations and flatten any dict observations
     algo = PPO(
         env,
-        tensorboard_logdir=None, # ignoring tensorboard logging
-        wandb_project="MASA-Safe-RL", # W&B project name — enables native logging
-        wandb_name="prob_shield_discv1_pacman_with_coins", # W&B run name        
+        tensorboard_logdir=None, # ignoring tensorboard logging    
         seed=0,
         monitor=True, # monitors training progress
         device="auto", 
@@ -106,7 +104,7 @@ def main():
 
     # Now we begin training
     algo.train(
-        num_frames=250_000, # total number of frames (environment interactions)
+        num_frames=500_000, # total number of frames (environment interactions)
         num_eval_episodes=10, # total number of evaluation episodes to run
         eval_freq=10_000, # how frequently to run evaluation (default=0 => never run evaluation)
         log_freq=10_000, # how frequenntly to log metrics to stdout or tensorboard
