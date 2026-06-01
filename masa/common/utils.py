@@ -26,7 +26,7 @@ def format_algo_id(constraint_id: str) -> str:
     """Convert constraint IDs to uppercase, preserving underscores."""
     return constraint_id.upper()
 
-def _resolve_registered_id(
+def resolve_registered_id(
     value: str,
     registry_keys: set[str],
     formatter,
@@ -154,13 +154,13 @@ def make_env(
         - :class:`masa.common.wrappers.RewardMonitor`
     """
 
-    env_id = _resolve_registered_id(
+    env_id = resolve_registered_id(
         env_id,
         set(registry.ENV_REGISTRY.keys()),
         format_env_id,
         "env",
     )
-    constraint = _resolve_registered_id(
+    constraint = resolve_registered_id(
         constraint,
         set(registry.CONSTRAINT_REGISTRY.keys()),
         format_constraint_id,
