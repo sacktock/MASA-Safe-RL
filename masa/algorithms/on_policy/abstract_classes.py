@@ -9,7 +9,6 @@ from gymnasium import spaces
 from masa.common.on_policy_algorithm import OnPolicyAlgorithm
 from masa.common.buffers import CostRolloutBuffer
 from masa.common.metrics import TrainLogger
-from masa.common.wrappers import CostOnFirstViolationWrapper, is_wrapped
 
 class OnPolicyCostAlgorithm(OnPolicyAlgorithm, ABC):
     """Abstract cost-aware on-policy algorithm mixin."""
