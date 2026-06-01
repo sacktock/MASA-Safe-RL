@@ -357,6 +357,8 @@ def benchmark(
         "env",
     )
 
+    benchmark_id = f"{env_id}_{variant}" if variant is not None else env_id
+
     algo = resolve_id(
         algo,
         set(registry.ALGO_REGISTRY.keys()),
@@ -366,6 +368,7 @@ def benchmark(
 
     config = parse_benchmark(env_id, variant, algo)
     config = config.update({"run.seed": seed})
+    config = config.update({"run.logdir": f"benchmarks/masa/{benchmark_id}/{algo}_{seed}"})
 
     run_with_config(config, algo)
 
