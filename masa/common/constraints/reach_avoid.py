@@ -107,7 +107,7 @@ class ReachAvoid(Constraint):
             - ``"violation"``: 1.0 if avoid violated else 0.0,
             - ``"reached"``: 1.0 if reach holds at this step else 0.0.
         """
-        return {"cost": float(not self.avoid), "violation": bool(not self.avoid), "reached": self.reach}
+        return {"cost": float(not self.avoid), "violation": bool(not self.avoid), "reached": self.reach, "cost_done": bool(not self.avoid or self.reach)}
 
     @property
     def constraint_type(self) -> str:

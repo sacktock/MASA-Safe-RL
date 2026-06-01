@@ -173,6 +173,7 @@ class CostRolloutBuffer(RolloutBuffer):
         super().reset()
 
         self.costs = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
+        self.cost_episode_starts = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
         self.cost_returns = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
         self.cost_values = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
         self.cost_advantages = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
@@ -182,6 +183,7 @@ class CostRolloutBuffer(RolloutBuffer):
         last_value: Optional[np.ndarray] = None,
         last_cost_value: Optional[np.ndarray] = None,
         done: np.ndarray = np.array(False),
+        cost_done=np.array(False),
     ):
 
         if last_value is None:
@@ -196,10 +198,14 @@ class CostRolloutBuffer(RolloutBuffer):
         for step in reversed(range(self.buffer_size)):
             if step == (self.buffer_size-1):
                 next_non_terminal = 1.0 - done.astype(np.float32)
+                next_cost_non_terminal = 1.0 - cost_done.astype(np.float32)
+
                 next_value = last_value
                 next_cost_value = last_cost_value
             else:
                 next_non_terminal = 1.0 - self.episode_starts[step+1].astype(np.float32)
+                next_cost_non_terminal = 1.0 - self.cost_episode_starts[step + 1].astype(np.float32)
+
                 next_value = self.values[step+1]
                 next_cost_value = self.cost_values[step+1]
             # reward
@@ -208,8 +214,8 @@ class CostRolloutBuffer(RolloutBuffer):
             self.advantages[step] = last_gae_lam
 
             # cost
-            cost_delta = self.costs[step] + self.cost_gamma * next_cost_value * next_non_terminal - self.cost_values[step]
-            last_cost_gae_lam = cost_delta + self.cost_gamma * self.cost_gae_lambda * next_non_terminal * last_cost_gae_lam
+            cost_delta = self.costs[step] + self.cost_gamma * next_cost_value * next_cost_non_terminal - self.cost_values[step]
+            last_cost_gae_lam = cost_delta + self.cost_gamma * self.cost_gae_lambda * next_cost_non_terminal * last_cost_gae_lam
             self.cost_advantages[step] = last_cost_gae_lam
 
         self.returns = self.advantages + self.values
@@ -222,6 +228,7 @@ class CostRolloutBuffer(RolloutBuffer):
         rewards: np.ndarray,
         costs: np.ndarray,
         episode_starts: np.ndarray,
+        cost_episode_starts: np.ndarray,
         values: np.ndarray,
         cost_values: np.ndarray,
         log_probs: np.ndarray,
@@ -240,8 +247,9 @@ class CostRolloutBuffer(RolloutBuffer):
             return False
 
         self.costs[self.pos-1] = np.array(costs)
+        self.cost_episode_starts[self.pos-1] = np.array(cost_episode_starts)
         self.cost_values[self.pos-1] = np.array(cost_values)
-
+        
         return True
 
     def _get_samples(self, batch_inds: np.ndarray):

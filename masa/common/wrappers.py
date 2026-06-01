@@ -212,6 +212,9 @@ class ConstraintPersistentGymnasiumWrapper(ConstraintPersistentWrapper):
     """
     Apply an arbitrary Gymnasium wrapper while preserving constraint access.
 
+    Args:
+        env: Base environment to wrap.
+
     Example:
         env = ConstraintPersistentGymnasiumWrapper(
             env,
@@ -1106,7 +1109,7 @@ class FlattenDictObsWrapper(ConstraintPersistentObsWrapper):
             parts.append(arr)
 
         return np.concatenate(parts).astype(np.float32)
-
+        
 class VecEnvWrapperBase(ConstraintPersistentWrapper):
     """
     Base class for simple Python-list vector environment wrappers.

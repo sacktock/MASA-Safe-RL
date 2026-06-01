@@ -371,7 +371,7 @@ class LTLSafety(Constraint):
             - ``"cost"``: current step cost,
             - ``"violation"``: 1.0 if ``cost >= 0.5`` else 0.0.
         """
-        return {"cost": self.step_cost, "violation": float(self.step_cost >= 0.5)}
+        return {"cost": self.step_cost, "violation": float(self.step_cost >= 0.5), "cost_done": float(self.step_cost >= 0.5)}
 
     @property
     def constraint_type(self) -> str:
