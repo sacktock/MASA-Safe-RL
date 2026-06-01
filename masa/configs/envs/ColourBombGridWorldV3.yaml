@@ -6,8 +6,8 @@ defaults:
     cost_fn: masa.envs.tabular.colour_bomb_grid_world_v3:cost_fn
   
   constraint:
-    type: CMDP
-    cost_budget: 0
+    type: PCTL
+    cost_budget: 0.025
 
   run:
     total_timesteps: 1000000

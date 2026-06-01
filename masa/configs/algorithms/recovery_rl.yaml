@@ -10,3 +10,66 @@ defaults:
   final_epsilon: 0.1
   epsilon_decay: linear
   epsilon_decay_frames: 10000
+
+MediaStreaming:
+  task_alpha: 0.1
+  task_gamma: 0.95
+  risk_alpha: 0.1
+  risk_gamma: 0.95
+  step_wise_risk: 0.001
+
+BridgeCrossing:
+  task_alpha: 0.1
+  task_gamma: 0.99
+  risk_alpha: 0.1
+  risk_gamma: 0.95
+  step_wise_risk: 0.000125
+
+BridgeCrossingV2:
+  task_alpha: 0.1
+  task_gamma: 0.99
+  risk_alpha: 0.1
+  risk_gamma: 0.95
+  step_wise_risk: 0.000025
+
+ColourBombGridWorld:
+  task_alpha: 0.05
+  task_gamma: 0.95
+  risk_alpha: 0.05
+  risk_gamma: 0.99
+  step_wise_risk: 0.005
+
+ColourBombGridWorld_Property2:
+  task_alpha: 0.05
+  task_gamma: 0.95
+  risk_alpha: 0.05
+  risk_gamma: 0.99
+  step_wise_risk: 0.005
+
+ColourBombGridWorldV2:
+  task_alpha: 0.05
+  task_gamma: 0.95
+  risk_alpha: 0.05
+  risk_gamma: 0.99
+  step_wise_risk: 0.0001
+
+ColourBombGridWorldV2_Property2:
+  task_alpha: 0.05
+  task_gamma: 0.95
+  risk_alpha: 0.05
+  risk_gamma: 0.99
+  step_wise_risk: 0.0001
+
+ColourBombGridWorldV2_Property3:
+  task_alpha: 0.05
+  task_gamma: 0.95
+  risk_alpha: 0.05
+  risk_gamma: 0.99
+  step_wise_risk: 0.0001
+
+MiniPacman:
+  task_alpha: 0.05
+  task_gamma: 0.95
+  risk_alpha: 0.05
+  risk_gamma: 0.95
+  step_wise_risk: 0.0001

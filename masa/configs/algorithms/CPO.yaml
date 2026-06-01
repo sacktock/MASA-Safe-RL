@@ -19,3 +19,48 @@ defaults:
   cost_limit: 25.0
   cost_gamma: 0.99
   cost_gae_lambda: 0.95
+
+MediaStreaming:
+  gamma: 0.95
+  cost_limit: 0.04
+  cost_gamma: 0.95
+
+BridgeCrossing:
+  gamma: 0.99
+  cost_limit: 0.05
+  cost_gamma: 0.95
+
+BridgeCrossingV2:
+  gamma: 0.99
+  cost_limit: 0.01
+  cost_gamma: 0.95
+
+ColourBombGridWorld:
+  gamma: 0.95
+  cost_limit: 0.05
+  cost_gamma: 0.99
+
+ColourBombGridWorld_Property2:
+  gamma: 0.95
+  cost_limit: 0.05
+  cost_gamma: 0.99
+
+ColourBombGridWorldV2:
+  gamma: 0.95
+  cost_limit: 0.025
+  cost_gamma: 0.99
+
+ColourBombGridWorldV2_Property2:
+  gamma: 0.95
+  cost_limit: 0.025
+  cost_gamma: 0.99
+
+ColourBombGridWorldV2_Property3:
+  gamma: 0.95
+  cost_limit: 0.025
+  cost_gamma: 0.99
+
+MiniPacman:
+  gamma: 0.95
+  cost_limit: 0.01
+  cost_gamma: 0.9

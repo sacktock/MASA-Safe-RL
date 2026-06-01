@@ -4,7 +4,7 @@ defaults:
   dm_alpha: 0.1
   dm_gamma: 0.95
   cm_alpha: 0.05
-  cm_gamma: 0.999
+  cm_gamma: 0.99
   cost_coef: 1.0
   r_min: 0.0
   exploration: boltzmann
@@ -13,3 +13,49 @@ defaults:
   final_epsilon: 0.1
   epsilon_decay: linear
   epsilon_decay_frames: 10000
+
+MediaStreaming:
+  q1_alpha: 0.1
+  q1_gamma: 0.95
+  cost_coef: 10.0
+  r_min: -1.0
+
+BridgeCrossing:
+  q1_alpha: 0.1
+  q1_gamma: 0.99
+  cost_coef: 10.0
+
+BridgeCrossingV2:
+  q1_alpha: 0.1
+  q1_gamma: 0.99
+  cost_coef: 10.0
+
+ColourBombGridWorld:
+  q1_alpha: 0.1
+  q1_gamma: 0.95
+  cost_coef: 10.0
+
+ColourBombGridWorld_Property2:
+  q1_alpha: 0.1
+  q1_gamma: 0.95
+  cost_coef: 10.0
+
+ColourBombGridWorldV2:
+  q1_alpha: 0.1
+  q1_gamma: 0.95
+  cost_coef: 10.0
+
+ColourBombGridWorldV2_Property2:
+  q1_alpha: 0.1
+  q1_gamma: 0.95
+  cost_coef: 10.0
+
+ColourBombGridWorldV2_Property3:
+  q1_alpha: 0.1
+  q1_gamma: 0.95
+  cost_coef: 10.0
+
+MiniPacman:
+  q1_alpha: 0.1
+  q1_gamma: 0.95
+  cost_coef: 10.0

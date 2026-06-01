@@ -8,3 +8,40 @@ defaults:
   final_epsilon: 0.1
   epsilon_decay: linear
   epsilon_decay_frames: 10000
+
+MediaStreaming:
+  alpha: 0.1
+  gamma: 0.95
+  r_min: -1.0
+
+BridgeCrossing:
+  alpha: 0.1
+  gamma: 0.99
+
+BridgeCrossingV2:
+  alpha: 0.1
+  gamma: 0.99
+
+ColourBombGridWorld:
+  alpha: 0.1
+  gamma: 0.95
+
+ColourBombGridWorld_Property2:
+  alpha: 0.1
+  gamma: 0.95
+
+ColourBombGridWorldV2:
+  alpha: 0.1
+  gamma: 0.95
+
+ColourBombGridWorldV2_Property2:
+  alpha: 0.1
+  gamma: 0.95
+
+ColourBombGridWorldV2_Property3:
+  alpha: 0.1
+  gamma: 0.95
+
+MiniPacman:
+  alpha: 0.1
+  gamma: 0.95

@@ -6,12 +6,12 @@ defaults:
     cost_fn: masa.envs.tabular.bridge_crossing:cost_fn
 
   constraint:
-    type: CMDP
-    cost_budget: 0
+    type: PCTL
+    alpha: 0.05
 
   run:
-    total_timesteps: 100000
-    eval_every: 5000
+    total_timesteps: 500000
+    eval_every: 10000
     eval_episodes: 10
-    log_every: 5000
+    log_every: 10000
     stats_window_size: 100

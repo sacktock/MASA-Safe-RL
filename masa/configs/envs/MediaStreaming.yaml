@@ -6,8 +6,8 @@ defaults:
     cost_fn: masa.envs.tabular.media_streaming:cost_fn
 
   constraint:
-    type: CMDP
-    cost_budget: 0
+    type: PCTL
+    alpha: 0.04
 
   run:
     total_timesteps: 25000
