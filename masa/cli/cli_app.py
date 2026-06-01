@@ -13,7 +13,7 @@ from masa.envs import ENVIRONMENTS
 from masa.common.constraints import CONSTRAINTS
 from masa.common import registry
 from masa.common.configs import Config, Flags, Path
-from masa.common.utils import make_env, load_callable
+from masa.common.utils import make_env, load_callable, format_algo_id, format_constraint_id, format_env_id
 
 import runpy
 import typer
@@ -26,6 +26,25 @@ app = typer.Typer(
     }
 )
 console = Console()
+
+def resolve_id(
+    value: str,
+    valid_ids: set[str],
+    formatter,
+    kind: str,
+) -> str:
+    if value in valid_ids:
+        return value
+    formatted = formatter(value)
+    if formatted in valid_ids:
+        typer.echo(
+            f"Warning: unknown {kind} '{value}', using '{formatted}' instead.",
+            err=True,
+        )
+        return formatted
+    raise typer.BadParameter(
+        f"Unknown {kind} '{value}'. Available: {sorted(valid_ids)}"
+    )
 
 def load_yaml(package: str, filename: str) -> dict[str, Any]:
     path = resources.files(package).joinpath(filename)
@@ -158,19 +177,26 @@ def run(
             --constraint.cost_budget 10
     """
 
-    if algo not in ALGORITHMS:
-        raise typer.BadParameter(
-            f"Unknown algorithm '{algo}'. Available: {list(registry.ALGO_REGISTRY.keys())}"
-        )
-    
-    if env_id not in ENVIRONMENTS:
-        raise typer.BadParameter(
-            f"Unknown env '{env_id}'. Available: {list(registry.ENV_REGISTRY.keys())}"
-        )
+    algo = resolve_id(
+        algo,
+        set(registry.ALGO_REGISTRY.keys()),
+        format_algo_id,
+        "algorithm",
+    )
 
-    if constraint is not None and constraint not in CONSTRAINTS:
-        raise typer.BadParameter(
-            f"Unknown constraint '{constraint}'. Available: {list(registry.CONSTRAINT_REGISTRY.keys())}"
+    env_id = resolve_id(
+        env_id,
+        set(registry.ENV_REGISTRY.keys()),
+        format_env_id,
+        "env",
+    )
+
+    if constraint is not None:
+        constraint = resolve_id(
+            constraint,
+            set(registry.CONSTRAINT_REGISTRY.keys()),
+            format_constraint_id,
+            "constraint",
         )
 
     config = parse_config(env_id, env_cfgs, algo, algo_cfgs)

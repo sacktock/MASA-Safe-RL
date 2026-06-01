@@ -12,6 +12,40 @@ from masa.common.labelled_env import LabelledEnv
 from masa.common.labelled_pz_env import LabelledParallelEnv
 from masa.common.label_fn import LabelFn
 from masa.common.pettingzoo_record_video import RecordVideoParallel
+import warnings
+
+def format_env_id(env_id: str) -> str:
+    """Convert snake_case environment IDs to PascalCase."""
+    return "".join(part.capitalize() for part in env_id.split("_"))
+
+def format_constraint_id(constraint_id: str) -> str:
+    """Convert constraint IDs to uppercase, preserving underscores."""
+    return constraint_id.upper()
+
+def format_algo_id(constraint_id: str) -> str:
+    """Convert constraint IDs to uppercase, preserving underscores."""
+    return constraint_id.upper()
+
+def _resolve_registered_id(
+    value: str,
+    registry_keys: set[str],
+    formatter,
+    kind: str,
+) -> str:
+    if value in registry_keys:
+        return value
+    formatted = formatter(value)
+    if formatted in registry_keys:
+        warnings.warn(
+            f"Unknown {kind} '{value}', using '{formatted}' instead.",
+            UserWarning,
+            stacklevel=2,
+        )
+        return formatted
+    raise ValueError(
+        f"Unknown {kind} '{value}'. Available: {sorted(registry_keys)}"
+    )
+
 
 def load_callable(path: str):
     """Load a callable from 'module_path:object_name' string."""
@@ -120,6 +154,18 @@ def make_env(
         - :class:`masa.common.wrappers.RewardMonitor`
     """
 
+    env_id = _resolve_registered_id(
+        env_id,
+        set(registry.ENV_REGISTRY.keys()),
+        format_env_id,
+        "env",
+    )
+    constraint = _resolve_registered_id(
+        constraint,
+        set(registry.CONSTRAINT_REGISTRY.keys()),
+        format_constraint_id,
+        "constraint",
+    )
     env_ctor = registry.get_env(env_id)
     constraint_ctor = registry.get_constraint(constraint)
     env = env_ctor(**dict(env_kwargs or {}))
@@ -204,9 +250,20 @@ def make_marl_env(
         constraints.
     """
 
+    env_id = resolve_registered_id(
+        env_id,
+        set(registry.MARL_ENV_REGISTRY.keys()),
+        format_env_id,
+        "env",
+    )
+    constraint = resolve_registered_id(
+        constraint,
+        set(registry.MARL_CONSTRAINT_REGISTRY.keys()),
+        format_constraint_id,
+        "constraint",
+    )
     env_ctor = registry.get_marl_env(env_id)
     constraint_ctor = registry.get_marl_constraint(constraint)
-
     raw_env = env_ctor(**dict(env_kwargs or {}))
     resolved_label_fn = label_fn if label_fn is not None else getattr(raw_env, "label_fn", None)
     if resolved_label_fn is None:
@@ -214,14 +271,11 @@ def make_marl_env(
             f"MARL env '{env_id}' does not expose a default label_fn. "
             "Pass label_fn=... to make_marl_env."
         )
-
     constraint_kwargs = dict(constraint_kwargs or {})
-
     if "cost_fn" not in constraint_kwargs:
         cost_fn = getattr(raw_env, "cost_fn", None)
         if cost_fn is not None:
             constraint_kwargs["cost_fn"] = cost_fn
-
     env = LabelledParallelEnv(raw_env, resolved_label_fn)
     env = constraint_ctor(env, **constraint_kwargs)
     if record_video:
