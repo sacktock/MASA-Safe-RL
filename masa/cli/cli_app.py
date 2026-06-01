@@ -106,9 +106,9 @@ def parse_benchmark(env_id, env_variant, algo) -> Config:
     config = config.update(env_config)
     
     if env_variant is not None:
-        if env_variant not in env_config:
+        if env_variant not in env_configs:
             raise ValueError(
-                f"Benchmark variant '{variant}' not found in {env_id}.yaml"
+                f"Benchmark variant '{env_variant}' not found in {env_id}.yaml"
             )
         config = config.update(env_configs[env_variant])
 
