@@ -469,7 +469,15 @@ class StatsLogger(BaseLogger):
         self.stats_to_log = {}
         for key, val in self.stats.items():
             if len(val) > 0:
-                self.stats_to_log[key] = float(np.mean(val))
+                if key.endswith("max") or key.endswith("mag"):
+                    agg = np.max(val)
+                elif key.endswith("min"):
+                    agg = np.min(val)
+                else:
+                    agg = np.mean(val)
+            else:
+                agg = last
+            self.stats_to_log[key] = float(agg)
 
     def _create_dists_to_log(self):
         """Collect distributions to emit as histograms."""

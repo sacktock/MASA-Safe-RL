@@ -80,6 +80,11 @@ def main():
         max_vi_steps=10_000,
     )
 
+    policy_kwargs = dict(
+        log_std_init=-1.0,
+        conditional_beta_network=False # flag makes the continuous beta actions conditional on an embedding of the discrete actions
+    )
+
     # Now let's initialize PPO
     # PPO will automatically one-hot encode any discrete observations and flatten any dict observations
     algo = ParameterizedPPO(
@@ -90,6 +95,7 @@ def main():
         device="auto", 
         verbose=0, # verbosity level for monitoring
         eval_env=eval_env, # separate environment instance for eval
+        policy_kwargs=policy_kwargs
         # Using the ParameterizedPPO specific defaults after this
     )
 

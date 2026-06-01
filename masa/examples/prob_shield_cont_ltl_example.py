@@ -1,5 +1,5 @@
-from masa.prob_shield.prob_shield_wrapper_v1 import ProbShieldWrapperCont
-from masa.prob_shield.parameterized_ppo import ParameterizedPPO
+from masa.prob_shield.prob_shield_wrapper_v2 import ProbShieldWrapperCont as ProbShieldWrapperContV2
+from masa.prob_shield.parameterized_ppo_v2 import ParameterizedPPOV2
 
 def main():
     # Import the masa make_env function
@@ -35,20 +35,21 @@ def main():
     # make_env wraps the environment in TimeLimit -> LabelledEnv -> LTLSafetyEnv -> ConstraintMonitor -> RewardMonitor
     env = make_env("ColourBombGridWorldV2", "LTL_SAFETY", 250, label_fn=label_fn, constraint_kwargs=constraint_kwargs)
 
-    # Now we're going to wrap our environment in ProbShieldWrapperCont
+    # Now we're going to wrap our environment in ProbShieldWrapperContV2
+    #   the V2 wrapper is designed to prevent margin collapse during early training for better exploration
     # The wrapper takes one arg: env
     #   and key word args: 
     #   theta: float = 1e-10,
     #   max_vi_steps: int = 1000,
     #   init_safety_bound: float = 0.5,
-    env = ProbShieldWrapperCont(
+    env = ProbShieldWrapperContV2(
         env, 
         init_safety_bound=0.01, # safety constraint from the intial state
         theta=1e-15, # early stopping condition for value iteration
         max_vi_steps=10_000, # number of value iteration steps
     )
 
-    # ParameterizedPPO is a on-policy algorithm that takes one arg: env
+    # ParameterizedPPOV2 is a on-policy algorithm that takes one arg: env
     #   and key word args:
     #   tensorboard_logdir: Optional[str] = None,
     #   wandb_project: Optional[str] = None,
@@ -73,20 +74,24 @@ def main():
     #   policy_class: type[BaseJaxPolicy] = ParameterizedPPOPolicy,
     #   policy_kwargs: Optional[dict[str, Any]] = None,
 
+    # ParameterizedPPOV2 is designed for ProbShieldWrapperContV2 as the action space has shifted from
+    #   N continuous actions to 1.
     # First lets initialize the eval_env
     # We can reuse constraint kwargs here as dfa_to_costfn internally creates a deepcopy of the dfa
-    eval_env = ProbShieldWrapperCont(
+    eval_env = ProbShieldWrapperContV2(
         make_env("ColourBombGridWorldV2", "LTL_SAFETY", 250, label_fn=label_fn, constraint_kwargs=constraint_kwargs),
         init_safety_bound=0.01,
         theta=1e-15,
         max_vi_steps=10_000,
     )
 
+    # We can initialize the policy with a greater log_std as margin collapse is not an issue
     policy_kwargs = dict(
-        log_std_init=-2.0,
+        log_std_init=1.0,
+        conditional_mix_network=True # flag makes the continuous mixing action conditional on an embedding of the discrete actions
     )
 
-    algo = ParameterizedPPO(
+    algo = ParameterizedPPOV2(
         env,
         tensorboard_logdir=None, # ignoring tensorboard logging
         seed=0,
@@ -95,12 +100,12 @@ def main():
         verbose=0, # verbosity level for monitoring
         eval_env=eval_env, # separate environment instance for eval
         policy_kwargs=policy_kwargs
-        # Using the ParameterizedPPO specific defaults after this
+        # Using the ParameterizedPPOV2 specific defaults after this
     )
 
     # Now we begin training
     algo.train(
-        num_frames=10_000_000, # total number of frames (environment interactions)
+        num_frames=1_000_000, # total number of frames (environment interactions)
         num_eval_episodes=10, # total number of evaluation episodes to run
         eval_freq=10_000, # how frequently to run evaluation (default=0 => never run evaluation)
         log_freq=10_000, # how frequenntly to log metrics to stdout or tensorboard

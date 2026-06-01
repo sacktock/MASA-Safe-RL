@@ -1978,7 +1978,7 @@ wheels = [
 
 [[package]]
 name = "masa-safe-rl"
-version = "0.2.5"
+version = "0.2.7"
 source = { editable = "." }
 dependencies = [
     { name = "flax", version = "0.10.7", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -2034,6 +2034,9 @@ docs = [
     { name = "sphinx-autobuild", version = "2024.10.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "sphinx-autobuild", version = "2025.8.25", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
 ]
+tutorial = [
+    { name = "matplotlib" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -2075,6 +2078,7 @@ docs = [
     { name = "sphinx", specifier = ">=8.1.3" },
     { name = "sphinx-autobuild", specifier = ">=2024.10.3" },
 ]
+tutorial = [{ name = "matplotlib", specifier = ">=3.10.9" }]
 
 [[package]]
 name = "matplotlib"

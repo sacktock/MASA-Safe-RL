@@ -37,7 +37,7 @@ def _egalitarian_constant_margin_fill(beta: np.ndarray, w: np.ndarray, q: float,
         # max uniform raise before someone saturates
         min_slack = float(np.min(1.0 - W[active]))
 
-        # raising all active by x increases w·W by x * sum_w
+        # raising all active by x increases w.W by x * sum_w
         x_needed = delta / sum_w
         x = min(x_needed, min_slack)
 
