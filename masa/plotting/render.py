@@ -129,7 +129,7 @@ def _draw_aggregated(ax, panel: Panel, ctx: RenderContext, drawn: set[str]) -> N
             continue
         steps = sub["step"].values / STEP_SCALE
         central = _maybe_smooth(sub[panel.central].values, panel.smooth_alpha)
-        ax.plot(steps, central, color=v.colour, linewidth=2.0)
+        ax.plot(steps, central, color=v.colour, linewidth=2.0, linestyle=v.linestyle)
         for band in panel.bands:
             if band.lower in sub.columns and band.upper in sub.columns:
                 lo = _maybe_smooth(sub[band.lower].values, panel.smooth_alpha)
@@ -177,7 +177,7 @@ def _draw_logged_quantile(ax, panel: Panel, ctx: RenderContext, drawn: set[str])
             continue
         steps = central_sub["step"].values / STEP_SCALE
         central_vals = _maybe_smooth(central_sub["value"].values, panel.smooth_alpha)
-        ax.plot(steps, central_vals, color=v.colour, linewidth=1.6)
+        ax.plot(steps, central_vals, color=v.colour, linewidth=1.6, linestyle=v.linestyle)
         for band in panel.bands:
             lo_col = f"{base}_{band.lower}"
             hi_col = f"{base}_{band.upper}"
@@ -215,7 +215,7 @@ def _finalise_panel(ax, panel: Panel) -> None:
 
 def _draw_legend(fig, variants: Sequence[VariantStyle], drawn: set[str]) -> None:
     ordered = [v for v in sorted(variants, key=lambda x: x.order) if v.name in drawn]
-    handles = [Line2D([0], [0], color=v.colour, linewidth=2.0) for v in ordered]
+    handles = [Line2D([0], [0], color=v.colour, linewidth=2.0, linestyle=v.linestyle) for v in ordered]
     labels = [v.label for v in ordered]
     fig.legend(handles, labels,
                loc="lower center", ncol=min(4, max(1, len(ordered))),

@@ -14,6 +14,7 @@ class VariantStyle:
     label: str
     colour: Optional[str] = None
     order: int = 0
+    linestyle: str = "-"
 
 
 @dataclass(frozen=True)
@@ -70,6 +71,7 @@ def load_config(path: str | Path) -> Config:
             label=v.get("label", v["name"]),
             colour=v.get("colour"),
             order=v.get("order", i),
+            linestyle=v.get("linestyle", "-"),
         )
         for i, v in enumerate(variants_raw)
     ]
@@ -109,6 +111,7 @@ def _fill_palette(variants: list[VariantStyle], palette_name: str) -> list[Varia
             label=variants[i].label,
             colour=palette_hex[i],
             order=variants[i].order,
+            linestyle=variants[i].linestyle,
         )
     return out
 
