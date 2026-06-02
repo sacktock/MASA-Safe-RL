@@ -93,7 +93,7 @@ def main():
     # PPO will automatically one-hot encode any discrete observations and flatten any dict observations
     algo = PPO(
         env,
-        tensorboard_logdir=None, # ignoring tensorboard logging
+        tensorboard_logdir=None, # ignoring tensorboard logging    
         seed=0,
         monitor=True, # monitors training progress
         device="auto", 
@@ -111,6 +111,7 @@ def main():
         # prefill: Optional[int] = None (not implemented yet)
         # save_freq: int = 0, (not implemented yet)
         stats_window_size=100, # sliding window size for metrics logging
+        stats_window_overrides={"train/rollout/satisfied": 2000, "eval/rollout/satisfied": 2000}
     )
 
 if __name__ == "__main__":
