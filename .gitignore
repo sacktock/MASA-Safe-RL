@@ -222,3 +222,4 @@ videos/
 wandb/
 *Prob_Shielding*
 benchmarks/
+benchmark*.py
