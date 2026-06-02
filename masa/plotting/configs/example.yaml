@@ -1,0 +1,38 @@
+# Example configuration for the MASA benchmark plotting pipeline.
+# Copy this file, fill in your W&B entity and project, list your variants,
+# and invoke with:
+#
+#   python -m masa.plotting --config <this-file> --stages all
+
+wandb_entity: your-wandb-entity
+wandb_project: your-project-name
+
+# Regex applied to every W&B run name. Must capture three named groups:
+# env, variant, seed. Runs that fail to match are logged and skipped.
+# Example run name that matches: cartpole_baseline_v1_seed3
+run_schema:
+  pattern: '^(?P<env>.+?)_(?P<variant>[a-z_]+_v\d+)_seed(?P<seed>\d+)$'
+
+# Paths are resolved relative to this YAML file's parent directory.
+cache_dir: ./wandb_cache   # per run CSV cache
+output_dir: ./plots        # rendered figures
+
+# Seaborn palette used to fill any variant whose colour is omitted.
+palette: colorblind
+
+# Only relevant for specs that use the logged_quantile source mode.
+seed_for_logged_quantiles: 1
+
+# Metric whitelist for the download step. null fetches every non internal
+# column from each run's history (recommended unless your project is huge).
+metrics: null
+
+# Restrict rendering to these envs. null renders every env discovered in the
+# data; otherwise list the env names you want, e.g. [cartpole, mountain_car].
+envs: null
+
+# Variants you want to compare. Add or remove entries freely.
+# 'name' must match the variant captured by run_schema.pattern.
+variants:
+  - {name: baseline,  label: 'Baseline',  colour: '#0072B2', order: 0}
+  - {name: my_method, label: 'My Method', colour: '#D55E00', order: 1}
