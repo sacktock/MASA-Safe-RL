@@ -116,6 +116,11 @@ registry.ENV_REGISTRY.register(
 )
 
 registry.ENV_REGISTRY.register(
+    "FrozenLake",
+    "masa.envs.tabular.frozen_lake:FrozenLake",
+)
+
+registry.ENV_REGISTRY.register(
     "MediaStreaming",
     "masa.envs.tabular.media_streaming:MediaStreaming",
 )
