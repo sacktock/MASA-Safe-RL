@@ -31,22 +31,22 @@ MediaStreaming:
   r_min: -1.0
 
 BridgeCrossing:
-  task_alpha: 0.1
+  task_alpha: 0.05
   task_gamma: 0.99
-  safe_alpha: 0.1
+  safe_alpha: 0.05
   safe_gamma: 0.95
-  model_free_alpha: 0.1
+  model_free_alpha: 0.05
   mode: model_free
   horizon: 4
   safety_prob: 0.05
   cost_coef: 10.0
 
 BridgeCrossingV2:
-  task_alpha: 0.05
-  task_gamma: 0.95
-  safe_alpha: 0.05
-  safe_gamma: 0.99
-  model_free_alpha: 0.05
+  task_alpha: 0.1
+  task_gamma: 0.99
+  safe_alpha: 0.1
+  safe_gamma: 0.95
+  model_free_alpha: 0.1
   mode: model_free
   horizon: 4
   safety_prob: 0.01
@@ -56,7 +56,7 @@ ColourBombGridWorld:
   task_alpha: 0.05
   task_gamma: 0.95
   safe_alpha: 0.05
-  safe_gamma: 0.99
+  safe_gamma: 0.95
   model_free_alpha: 0.05
   mode: model_free
   horizon: 2
@@ -67,7 +67,7 @@ ColourBombGridWorld_Property2:
   task_alpha: 0.05
   task_gamma: 0.95
   safe_alpha: 0.05
-  safe_gamma: 0.99
+  safe_gamma: 0.95
   model_free_alpha: 0.05
   mode: model_free
   horizon: 2
@@ -78,7 +78,7 @@ ColourBombGridWorldV2:
   task_alpha: 0.05
   task_gamma: 0.95
   safe_alpha: 0.05
-  safe_gamma: 0.99
+  safe_gamma: 0.95
   model_free_alpha: 0.05
   mode: model_free
   horizon: 9
@@ -89,7 +89,7 @@ ColourBombGridWorldV2_Property2:
   task_alpha: 0.05
   task_gamma: 0.95
   safe_alpha: 0.05
-  safe_gamma: 0.99
+  safe_gamma: 0.95
   model_free_alpha: 0.05
   mode: model_free
   horizon: 9

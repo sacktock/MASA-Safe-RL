@@ -320,7 +320,7 @@ class ProbShieldWrapperBase(ConstraintPersistentWrapper):
             intersections = np.empty((0, n_actions), dtype=np.float64)
 
         if intersections.shape[0] == 0:
-            warning.warn("Empty intersections in _project_act ... falling back to the closesly vertex.")
+            warnings.warn("Empty intersections in _project_act ... falling back to the closesly vertex.")
             idx = int(np.nanargmin(np.abs(self._current_safety_bound - expected_proj_safety)))
             safe_vertex = np.zeros(n_actions, dtype=np.float64)
             safe_vertex[idx] = 1.0

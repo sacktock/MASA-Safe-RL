@@ -384,7 +384,7 @@ class VTraceRolloutBuffer(RolloutBuffer):
             self.returns[batch_inds].flatten(),
             self.advantages[batch_inds].flatten(),
             self.log_probs[batch_inds].flatten(),
-            self.shield_log_probs[batch_inds].flatten()
+            #self.shield_log_probs[batch_inds].flatten()
         )
         return data
 
@@ -489,7 +489,7 @@ class VTraceCostRolloutBuffer(CostRolloutBuffer):
                 last_gae_lam = rho * delta + self.gamma * self.gae_lambda * next_non_terminal * c * last_gae_lam
                 self.advantages[step] = last_gae_lam
 
-                last_cost_gae_lam = rho * cost_delta + self.cost_gamma * self.cost_gae_lambda * next_cost_non_terminal * last_cost_gae_lam
+                last_cost_gae_lam = rho * cost_delta + self.cost_gamma * self.cost_gae_lambda * next_cost_non_terminal * c * last_cost_gae_lam
                 self.cost_advantages[step] = last_cost_gae_lam
 
         self.returns = self.advantages + self.values
@@ -542,7 +542,7 @@ class VTraceCostRolloutBuffer(CostRolloutBuffer):
             self.advantages[batch_inds].flatten(),
             self.cost_advantages[batch_inds].flatten(),
             self.log_probs[batch_inds].flatten(),
-            self.shield_log_probs[batch_inds].flatten()
+            #self.shield_log_probs[batch_inds].flatten()
         )
         return data
 
