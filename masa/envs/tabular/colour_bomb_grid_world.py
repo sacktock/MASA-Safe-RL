@@ -19,7 +19,7 @@ BLUE_STATES = [9, 10, 18, 19]
 PINK_STATES = [7, 8, 16, 17]
 WALL_STATES = [11, 12, 13, 14, 15, 29, 30, 50, 52, 53, 55, 56, 57, 59, 64, 66, 69]
 BOMB_STATES = [27, 43, 78]
-SLIP_PROB = 0.1
+DEFAULT_SLIP_PROBABILITY = 0.1
 GOAL_STATES = YELLOW_STATES + BLUE_STATES + PINK_STATES
 
 LABEL_DICT = defaultdict(set)
@@ -39,13 +39,13 @@ label_fn = lambda obs: LABEL_DICT[obs]
 
 cost_fn = lambda labels: 1.0 if "bomb" in labels else 0.0
 
-@lru_cache(maxsize=1)
-def get_transition_matrix():
+@lru_cache(maxsize=None)
+def get_transition_matrix(slip_prob: float = DEFAULT_SLIP_PROBABILITY):
     return create_transition_matrix(
         GRID_SIZE, 
         N_STATES,
         N_ACTIONS,
-        slip_prob=SLIP_PROB,
+        slip_prob=slip_prob,
         terminal_states=GOAL_STATES,
         wall_states=WALL_STATES
     )
@@ -57,9 +57,16 @@ class ColourBombGridWorld(TabularEnv):
         self,
         render_mode: Literal["ansi", "rgb_array", "human"] | None = None,
         render_window_size: int = 512,
+        slip_prob: float = DEFAULT_SLIP_PROBABILITY,
     ):
         super().__init__()
         validate_renderer_options(render_mode, render_window_size)
+
+        if not 0.0 <= slip_prob <= 1.0:
+            raise ValueError(
+                f"slip_prob must be in [0, 1], got {slip_prob}"
+            )
+        self._slip_prob = float(slip_prob)
 
         self._grid_size = GRID_SIZE
         self._ncol = self._grid_size
@@ -84,7 +91,7 @@ class ColourBombGridWorld(TabularEnv):
         self._goal_states = GOAL_STATES
         self._active_colour_dict = {}
 
-        self._transition_matrix = get_transition_matrix()
+        self._transition_matrix = get_transition_matrix(self._slip_prob)
 
         self.np_random = None
         self._state = None
@@ -133,3 +140,6 @@ class ColourBombGridWorld(TabularEnv):
 
     def handle_pygame_event(self, event: Any) -> bool:
         return self._renderer.handle_pygame_event(event)
+    
+    def get_transition_matrix(self):
+        return self._transition_matrix

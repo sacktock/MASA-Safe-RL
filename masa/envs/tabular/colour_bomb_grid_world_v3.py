@@ -42,7 +42,7 @@ for i in range(N_COLOURED_ZONES):
         [87,72,57,70,55,39,9,13,14,29,44,59]) + z)
     BOMB_STATES += list(np.array([76, 181, 123,82,207,8,58]) + z)
     MEDIC_STATES += list(np.array([154, 93, 38, 205, 74]) + z)
-SLIP_PROB = 0.1
+DEFAULT_SLIP_PROBABILITY = 0.1
 GOAL_STATES = GREEN_STATES + YELLOW_STATES + RED_STATES + BLUE_STATES + PINK_STATES
 
 LABEL_DICT = defaultdict(set)
@@ -67,15 +67,15 @@ label_fn = lambda obs: LABEL_DICT[obs]
 
 cost_fn = lambda labels: 1.0 if "bomb" in labels else 0.0
 
-@lru_cache(maxsize=1)
-def get_transition_matrix():
+@lru_cache(maxsize=None)
+def get_transition_matrix(slip_prob: float = DEFAULT_SLIP_PROBABILITY):
     return create_advanced_transition_matrix(
         GRID_SIZE,
         N_COLOURED_ZONES,
         N_STATES,
         N_ACTIONS,
         GOAL_STATES,
-        slip_prob=SLIP_PROB,
+        slip_prob=slip_prob,
         safe_states=MEDIC_STATES,
         wall_states=WALL_STATES
     )
@@ -87,9 +87,16 @@ class ColourBombGridWorldV3(TabularEnv):
         self,
         render_mode: Literal["ansi", "rgb_array", "human"] | None = None,
         render_window_size: int = 512,
+        slip_prob: float = DEFAULT_SLIP_PROBABILITY,
     ):
         super().__init__()
         validate_renderer_options(render_mode, render_window_size)
+
+        if not 0.0 <= slip_prob <= 1.0:
+            raise ValueError(
+                f"slip_prob must be in [0, 1], got {slip_prob}"
+            )
+        self._slip_prob = float(slip_prob)
 
         self._grid_size = GRID_SIZE
         self._ncol = self._grid_size
@@ -126,7 +133,7 @@ class ColourBombGridWorldV3(TabularEnv):
 
         self._safe_states = MEDIC_STATES
 
-        self._transition_matrix = get_transition_matrix()
+        self._transition_matrix = get_transition_matrix(slip_prob=self._slip_prob)
 
         # after reaching a goal state, transition to a random start state
         for _state in self._goal_states:
@@ -182,3 +189,6 @@ class ColourBombGridWorldV3(TabularEnv):
 
     def handle_pygame_event(self, event: Any) -> bool:
         return self._renderer.handle_pygame_event(event)
+    
+    def get_transition_matrix(self):
+        return self._transition_matrix
