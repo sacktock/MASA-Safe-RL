@@ -187,8 +187,8 @@ class OnPolicyCostAlgorithm(OnPolicyAlgorithm, ABC):
                     for i, cost_done in enumerate(cost_dones):
                         if self.constraint_type == "REACH_AVOID":
                             dones[i] = cost_done # terminate the episode if we reach the avoid state
-                        if self.constraint_type == "LTL_SAFETY":
-                            self.env.envs[i]._constraint.cost_fn.reset() # reset the DFA const function and continue the episode
+                        #if self.constraint_type == "LTL_SAFETY":
+                        #    self.env.envs[i]._constraint.cost_fn.reset() # reset the DFA const function and continue the episode
 
                 if np.any(dones):
                     reset_obs, _ = self.env.reset_done(dones)
