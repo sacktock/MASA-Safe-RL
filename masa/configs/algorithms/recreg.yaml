@@ -108,12 +108,11 @@ ColourBombGridWorldV2_Property3:
   cost_coef: 10.0
 
 MiniPacman:
-  ColourBombGridWorld:
-  task_alpha: 0.05
+  task_alpha: 0.1
   task_gamma: 0.95
-  safe_alpha: 0.05
+  safe_alpha: 0.1
   safe_gamma: 0.95
-  model_free_alpha: 0.05
+  model_free_alpha: 0.1
   mode: model_free
   horizon: 9
   safety_prob: 0.01

@@ -6,8 +6,8 @@ defaults:
     cost_fn: masa.envs.tabular.pacman:cost_fn
 
   constraint:
-    type: CMDP
-    cost_budget: 0
+    type: PCTL
+    cost_budget: 0.01
 
   run:
     total_timesteps: 10000000
