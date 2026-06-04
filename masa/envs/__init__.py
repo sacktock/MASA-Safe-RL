@@ -121,6 +121,16 @@ registry.ENV_REGISTRY.register(
 )
 
 registry.ENV_REGISTRY.register(
+    "MediaStreamingV2",
+    "masa.envs.tabular.media_streaming_v2:MediaStreamingV2",
+)
+
+registry.ENV_REGISTRY.register(
+    "MediaStreamingV3",
+    "masa.envs.tabular.media_streaming_v3:MediaStreamingV3",
+)
+
+registry.ENV_REGISTRY.register(
     "MiniPacman",
     "masa.envs.tabular.mini_pacman:MiniPacman",
 )
