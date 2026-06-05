@@ -177,8 +177,10 @@ def make_env(
     constraint_kwargs = dict(constraint_kwargs or {})
     if "cost_fn" not in constraint_kwargs:
         cost_fn = getattr(env, "cost_fn", None)
+        if cost_fn is None:
+            cost_fn = getattr(env.unwrapped, "cost_fn", None)
         if cost_fn is not None:
-            constraint_kwargs["cost_fn"] = costfn
+            constraint_kwargs["cost_fn"] = cost_fn
     env = constraint_ctor(env, **constraint_kwargs)
     env = ConstraintMonitor(env)
     env = RewardMonitor(env)
