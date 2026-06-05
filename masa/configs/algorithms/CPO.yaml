@@ -50,11 +50,6 @@ ColourBombGridWorldV2:
   cost_limit: 0.025
   cost_gamma: 0.95
 
-ColourBombGridWorldV2_Property1:
-  gamma: 0.95
-  cost_limit: 0.025
-  cost_gamma: 0.95
-
 ColourBombGridWorldV2_Property2:
   gamma: 0.95
   cost_limit: 0.025
