@@ -324,7 +324,7 @@ class ParameterizedPPO(PPO):
                     for info in infos:
                         logger.add("train/rollout", info)
                         logger.add("train/stats", {k: v for k, v in info.items() if k in ["margin_penalty", "proj_penalty"]})
-                        for t in [0, 50, 100, 200, 250]:
+                        for t in [0, 50, 100, 200]:
                             if f"margin_{t}" in info:
                                 self.margin_stats[f"margin_{t}"].update(info[f"margin_{t}"])
                                 self.margin_dists[f"margin_{t}"].update(info[f"margin_{t}"])

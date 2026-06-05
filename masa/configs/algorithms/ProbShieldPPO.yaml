@@ -10,7 +10,7 @@ defaults:
   ent_coef: 0.0
   vf_coef: 1.0
   max_grad_norm: 0.5
-  policy_kwargs: {net_arch: [64, 64], log_std_init: -1.0}
+  policy_kwargs: {net_arch: [64, 64], log_std_init: -1.0, conditional_beta_network: True}
   init_safety_bound: 0.01
   theta: 1e-15
   max_vi_steps: 10000
