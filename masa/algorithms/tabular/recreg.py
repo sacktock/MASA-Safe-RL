@@ -529,3 +529,37 @@ class RECREG(QL):
             )
 
 
+class RECREG_EXACT(RECREG):
+
+    def __init__(
+        self,
+        *args,
+        mode: str = "exact",
+        model_checking: str = "exact",
+        **kwargs,
+    ):
+
+        super().__init__(
+            *args,
+            mode=mode,
+            model_checking=model_checking,
+            **kwargs,
+        )
+
+
+class RECREG_MODEL_BASED(RECREG):
+
+    def __init__(
+        self,
+        *args,
+        mode: str = "model_based",
+        model_checking: str = "exact",
+        **kwargs,
+    ):
+
+        super().__init__(
+            *args,
+            mode=mode,
+            model_checking=model_checking,
+            **kwargs,
+        )

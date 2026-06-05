@@ -21,6 +21,16 @@ registry.ALGO_REGISTRY.register(
 )
 
 registry.ALGO_REGISTRY.register(
+    "RECREG_MODEL_BASED",
+    "masa.algorithms.tabular:RECREG_MODEL_BASED",
+)
+
+registry.ALGO_REGISTRY.register(
+    "RECREG_EXACT",
+    "masa.algorithms.tabular:RECREG_EXACT",
+)
+
+registry.ALGO_REGISTRY.register(
     "SEM",
     "masa.algorithms.tabular:SEM",
 )
@@ -58,6 +68,11 @@ registry.ALGO_REGISTRY.register(
 registry.ALGO_REGISTRY.register(
     "CPO",
     "masa.algorithms.on_policy:CPO",
+)
+
+registry.ALGO_REGISTRY.register(
+    "ProbShieldPPO",
+    "masa.algorithms.on_policy:ProbShieldPPO",
 )
 
 ALGORITHMS = registry.ALGO_REGISTRY.keys()

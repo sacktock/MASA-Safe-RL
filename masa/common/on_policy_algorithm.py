@@ -93,7 +93,7 @@ class OnPolicyAlgorithm(BaseAlgorithm, ABC):
             self.actor = self.policy.actor  # type: ignore[assignment]
             self.critic = self.policy.critic  # type: ignore[assignment]
 
-    def _wrap_env(self, env: gym.Env):
+    def _wrap_env(self, env: gym.Env) -> gym.Env:
 
         if is_wrapped(env, VecEnvWrapperBase):
             assert is_wrapped(env, OneHotObsWrapper) or not isinstance(env.observation_space, spaces.Discrete), \

@@ -4,6 +4,7 @@ from masa.algorithms.on_policy.ppo_lag import PPOLag
 from masa.algorithms.on_policy.trpo import TRPO
 from masa.algorithms.on_policy.trpo_lag import TRPOLag
 from masa.algorithms.on_policy.cpo import CPO
+from masa.algorithms.on_policy.prob_shield_ppo import ProbShieldPPO
 
 __all__ = [
     "PPO",
@@ -12,4 +13,5 @@ __all__ = [
     "TRPO",
     "TRPOLag",
     "CPO",
+    "ProbShieldPPO",
 ]
