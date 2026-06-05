@@ -16,7 +16,7 @@ GRID = np.arange(GRID_SIZE**2).reshape(GRID_SIZE, GRID_SIZE)
 START_STATE = int(GRID[-1, 0])
 GOAL_STATES = list(GRID[:7, :].flatten())
 LAVA_STATES = list(GRID[8:12, :8].flatten()) + list(GRID[8:12, -9:].flatten())
-SLIP_PROB = 0.04
+DEFAULT_SLIP_PROBABILITY = 0.04
 TERMINAL_STATES = GOAL_STATES + LAVA_STATES
 
 LABEL_DICT = defaultdict(set)
@@ -30,13 +30,13 @@ label_fn = lambda obs: LABEL_DICT[obs]
 
 cost_fn = lambda labels: 1.0 if "lava" in labels else 0.0
 
-@lru_cache(maxsize=1)
-def get_transition_matrix():
+@lru_cache(maxsize=None)
+def get_transition_matrix(slip_prob: float = DEFAULT_SLIP_PROBABILITY):
     return create_transition_matrix(
         GRID_SIZE, 
         N_STATES,
         N_ACTIONS,
-        slip_prob=SLIP_PROB,
+        slip_prob=slip_prob,
         terminal_states=TERMINAL_STATES
     )
 
@@ -47,9 +47,16 @@ class BridgeCrossing(TabularEnv):
         self,
         render_mode: Literal["ansi", "rgb_array", "human"] | None = None,
         render_window_size: int = 512,
+        slip_prob: float = DEFAULT_SLIP_PROBABILITY
     ):
         super().__init__()
         validate_renderer_options(render_mode, render_window_size)
+
+        if not 0.0 <= slip_prob <= 1.0:
+            raise ValueError(
+                f"slip_prob must be in [0, 1], got {slip_prob}"
+            )
+        self._slip_prob = float(slip_prob)
 
         self._grid_size = GRID_SIZE
         self._ncol = self._grid_size
@@ -67,7 +74,7 @@ class BridgeCrossing(TabularEnv):
 
         self._terminal_states = TERMINAL_STATES
 
-        self._transition_matrix = get_transition_matrix()
+        self._transition_matrix = get_transition_matrix(slip_prob=self._slip_prob)
 
         self.np_random = None
         self._state = None
@@ -118,3 +125,6 @@ class BridgeCrossing(TabularEnv):
 
     def handle_pygame_event(self, event: Any) -> bool:
         return self._renderer.handle_pygame_event(event)
+    
+    def get_transition_matrix(self):
+        return self._transition_matrix

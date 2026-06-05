@@ -17,7 +17,7 @@ GOAL_STATE = 80
 BLUE_STATE = 36
 GREEN_STATE = 40
 PURPLE_STATE = 4
-SLIP_PROB = 0.1
+DEFAULT_SLIP_PROBABILITY = 0.1
 
 LABEL_DICT = defaultdict(set)
 LABEL_DICT[START_STATE] = {"start"}
@@ -30,13 +30,13 @@ label_fn = lambda obs: LABEL_DICT[obs]
 
 cost_fn = lambda labels: 1.0 if "blue" in labels else 0.0
 
-@lru_cache(maxsize=1)
-def get_transition_matrix():
+@lru_cache(maxsize=None)
+def get_transition_matrix(slip_prob: float = DEFAULT_SLIP_PROBABILITY):
     return create_transition_matrix(
         GRID_SIZE,
         N_STATES,
         N_ACTIONS,
-        slip_prob=SLIP_PROB,
+        slip_prob=slip_prob,
         terminal_states=[GOAL_STATE]
     )
 
@@ -47,9 +47,16 @@ class ColourGridWorld(TabularEnv):
         self,
         render_mode: Literal["ansi", "rgb_array", "human"] | None = None,
         render_window_size: int = 512,
+        slip_prob: float = DEFAULT_SLIP_PROBABILITY
     ):
         super().__init__()
         validate_renderer_options(render_mode, render_window_size)
+
+        if not 0.0 <= slip_prob <= 1.0:
+            raise ValueError(
+                f"slip_prob must be in [0, 1], got {slip_prob}"
+            )
+        self._slip_prob = slip_prob
 
         self._grid_size = GRID_SIZE
         self._ncol = self._grid_size
@@ -67,7 +74,7 @@ class ColourGridWorld(TabularEnv):
         self._green_state = GREEN_STATE
         self._purple_state = PURPLE_STATE
 
-        self._transition_matrix = get_transition_matrix()
+        self._transition_matrix = get_transition_matrix(self._slip_prob)
 
         self.np_random = None
         self._state = None
@@ -116,3 +123,6 @@ class ColourGridWorld(TabularEnv):
 
     def handle_pygame_event(self, event: Any) -> bool:
         return self._renderer.handle_pygame_event(event)
+    
+    def get_transition_matrix(self):
+        return self._transition_matrix
