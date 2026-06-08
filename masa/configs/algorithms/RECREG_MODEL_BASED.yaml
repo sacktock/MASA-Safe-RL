@@ -114,7 +114,7 @@ MiniPacman:
   safe_gamma: 0.95
   mode: model_based
   model_checking: exact
-  horizon: 9
+  horizon: 20
   safety_prob: 0.01
   cost_coef: 10.0
   

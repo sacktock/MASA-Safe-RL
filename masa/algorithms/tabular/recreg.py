@@ -512,8 +512,13 @@ class RECREG(QL):
 
         if override:
             # Use boltzmann temperature=0.01 or epsilon=0.001 for backup policy
-            safe_act = self._act(key3, obs, self.B, deterministic, 0.01, 0.001)
-
+            if self.exploration == "boltzmann":
+                safe_act = self._act(key3, obs, self.B, deterministic, 0.01, 0.001)
+            elif self.exploration == "epsilon_greedy":
+                safe_act = self._act(key3, obs, self.B, True, 0.01, 0.001)
+            else:
+                raise NotImplementedError(f"Unexpected exploration: {self.exploration}")
+    
         return self.prepare_act(safe_act), self.prepare_act(act), override
 
     def act(self, key, obs, deterministic=False):
