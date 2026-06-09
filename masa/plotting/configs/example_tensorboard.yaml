@@ -1,0 +1,29 @@
+# MASA benchmark plotting pipeline -- TensorBoard source.
+#   python -m masa.plotting --config <this-file> --stages all
+
+source:
+  kind: tensorboard
+  # Benchmark root: one subdir per env, each holding {variant}_{seed} run dirs.
+  # Matches the training CLI layout: benchmarks/masa/{env}/{algo}_{seed}/events.*
+  logdir: ./benchmarks/masa
+
+# Matched against each run-dir name ({variant}_{seed}); env comes from the parent
+# dir. Optional -- this is the default for tensorboard sources.
+run_schema:
+  pattern: '^(?P<variant>.+)_(?P<seed>\d+)$'
+
+# Paths resolve relative to this file. cache_dir is unused here (omittable).
+output_dir: ./plots
+
+palette: colorblind
+seed_for_logged_quantiles: 1
+metrics: null      # null = every tag in the event files
+envs: null         # null = every env under logdir; or list a subset
+max_step: null     # clip curves at this step; null = keep all
+
+# A "variant" is the algorithm; 'name' must match run_schema's variant group.
+variants:
+  - {name: CPO,           label: 'CPO',             order: 0}
+  - {name: PPOLag,        label: 'PPO-Lagrangian',  order: 1}
+  - {name: TRPOLag,       label: 'TRPO-Lagrangian', order: 2}
+  - {name: ProbShieldPPO, label: 'ProbShield-PPO',  order: 3}

@@ -1,17 +1,7 @@
-"""CLI entry point.
+"""Benchmark pipeline CLI: load runs, aggregate quantiles, render PlotSpecs.
 
-Example (generic researcher, ships with the ``performance`` spec):
-
-    python -m masa.plotting \\
-        --config masa/plotting/configs/example.yaml \\
-        --stages all
-
-Example (load extra specs from another module before resolving):
-
-    python -m masa.plotting \\
-        --config <your-yaml> \\
-        --specs-from <your.spec.module> \\
-        --stages process,render
+    python -m masa.plotting --config configs/example_wandb.yaml --stages all
+    python -m masa.plotting --config <yaml> --specs-from <module> --specs my_plot
 """
 
 from __future__ import annotations
@@ -55,10 +45,10 @@ def _preload_spec_modules(modules: Sequence[str]) -> None:
 def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(
         prog="python -m masa.plotting",
-        description="Download W&B runs, aggregate to quantiles, render figures from PlotSpecs.",
+        description="Load runs from W&B or TensorBoard, aggregate to quantiles, render figures from PlotSpecs.",
     )
     p.add_argument("--config", required=True, type=Path,
-                   help="Path to a YAML config (see configs/example.yaml).")
+                   help="Path to a YAML config (see configs/example_wandb.yaml or example_tensorboard.yaml).")
     p.add_argument("--stages", default="all",
                    help="Comma separated subset of {download,process,render}, or 'all'.")
     p.add_argument("--specs", default=None,
