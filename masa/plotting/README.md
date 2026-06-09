@@ -3,9 +3,9 @@
 Plotting utilities for MASA training and evaluation runs. Two interfaces live in this package:
 
 * **Single run plotter** (`masa.plotting.api.plot_run`, `masa/plotting/run.py`): tidy seaborn line charts from one TensorBoard log directory or one W&B project. Use this when you have just trained an algorithm and want a quick visual of its metrics.
-* **Benchmark pipeline** (`python -m masa.plotting`): download many W&B runs, aggregate quantiles across seeds, and render a registry of declarative figure specs. Use this for paper grade plots that compare variants across environments.
+* **Benchmark pipeline** (`python -m masa.plotting`): load many runs from **W&B or TensorBoard**, aggregate quantiles across seeds, and render a registry of declarative figure specs. Use this for paper grade plots that compare variants across environments.
 
-Both interfaces share the data sources in [sources.py](sources.py). The benchmark pipeline adds a `CachedWandbSource` for per run CSV caching with bounded retries.
+Both interfaces share the data sources in [sources.py](sources.py). The W&B benchmark path adds a `CachedWandbSource` for per run CSV caching with bounded retries; the TensorBoard path reads local event files in place.
 
 ## Installation
 
@@ -51,10 +51,25 @@ The same interface accepts `--tensorboard <logdir>` instead of `--wandb`.
 The pipeline ships with two generic specs: `performance`, which uses the standard MASA evaluation metrics (`eval/rollout/ep_reward` and `eval/rollout/satisfied`), and `margin`, which draws per-horizon fan charts of the shield's safety budget from `train/stats/margin_<t>` metrics. Run them against your W&B project:
 
 ```bash
-python -m masa.plotting --config masa/plotting/configs/example.yaml --stages all
+python -m masa.plotting --config masa/plotting/configs/example_wandb.yaml --stages all
 ```
 
-`example.yaml` carries placeholder values. Copy it, fill in your W&B entity and project, list your variants, then point `--config` at your copy.
+`example_wandb.yaml` carries placeholder values. Copy it, fill in your entity and project, list your variants, then point `--config` at your copy.
+
+### Data source: W&B or TensorBoard
+
+The pipeline reads from either backend, selected by a `source:` block in the config:
+
+```yaml
+# W&B
+source: {kind: wandb, entity: your-entity, project: your-project}
+
+# TensorBoard: a benchmark root with one subdir per env, each holding
+# {variant}_{seed} run directories of event files.
+source: {kind: tensorboard, logdir: ./benchmarks/masa}
+```
+
+See [configs/example_wandb.yaml](configs/example_wandb.yaml) (W&B) and [configs/example_tensorboard.yaml](configs/example_tensorboard.yaml) (TensorBoard) for annotated templates. The source is resolved to a backend via the registry in [source_registry.py](source_registry.py); the pipeline never branches on the backend (see [Adding a new source backend](#adding-a-new-source-backend)). For backward compatibility, a config with top-level `wandb_entity` / `wandb_project` keys and no `source:` block is still read as a W&B source.
 
 Dry run prints the resolved plan with no W&B calls and no disk writes:
 
@@ -84,11 +99,13 @@ Use this flag to register your own `PlotSpec` modules alongside the default `per
 
 ## Configuration
 
-Annotated schema, taken from [configs/example.yaml](configs/example.yaml):
+Annotated W&B schema, taken from [configs/example_wandb.yaml](configs/example_wandb.yaml):
 
 ```yaml
-wandb_entity: your-wandb-entity
-wandb_project: your-project-name
+source:
+  kind: wandb
+  entity: your-wandb-entity   # optional; omit for your default entity
+  project: your-project-name
 
 # Regex with three named groups (env, variant, seed) applied to every run name.
 run_schema:
@@ -108,21 +125,23 @@ variants:
   - {name: my_method, label: 'My Method', colour: '#D55E00', order: 1}
 ```
 
+The TensorBoard config is identical except for the `source:` block (`kind: tensorboard`, `logdir: ...`); see [configs/example_tensorboard.yaml](configs/example_tensorboard.yaml).
+
 Adding or removing a variant is a YAML edit, no Python changes. Leaving `colour` unset auto assigns a value from the named seaborn palette. Runs whose names fail to match `run_schema.pattern` are logged and skipped.
 
 ## How the pipeline works
 
 ```
-example.yaml
+your-config.yaml
    |
    v
-Config (config.py)
+Config (config.py)  ──>  source_registry.get_source(config)   # picks backend by source.kind
    |
-   +--> download   (sources.py :: CachedWandbSource)
-   |       writes per run CSVs into cache_dir
+   +--> download   (source.download)
+   |       W&B: writes per-run CSVs into cache_dir;  TensorBoard: no-op (local files)
    |
-   +--> process    (processing.py)
-   |       reads per run CSVs
+   +--> process    (source.build_frames)
+   |       reads the backend's runs (W&B CSVs or TB event files)
    |       builds long form : [env, variant, seed, step, metric, value]
    |       builds quantiles : [env, variant, step, metric, q05, q25, q50, q75, q95]
    |
@@ -140,13 +159,15 @@ Config (config.py)
 
 ### Stage 2: download
 
-`CachedWandbSource.download()` calls `wandb.Api().runs(entity/project)` with tenacity retries (three attempts, exponential backoff). For each run, it writes the full history to `cache_dir/{run.name}.csv` via an atomic rename. If the file already exists and `force_download` is false, the API call is skipped. Failures on a single run are logged and the loop continues, so one bad run never breaks the batch.
+The pipeline resolves the backend with `source_registry.get_source(config)` and calls `source.download()`; nothing in the pipeline branches on the backend. For the TensorBoard backend this is a no-op (event files are read in place). For the W&B backend, `CachedWandbSource.download()` calls `wandb.Api().runs(entity/project)` with tenacity retries (three attempts, exponential backoff). For each run, it writes the full history to `cache_dir/{run.name}.csv` via an atomic rename. If the file already exists and `force_download` is false, the API call is skipped. Failures on a single run are logged and the loop continues, so one bad run never breaks the batch.
 
 ### Stage 3: process
 
 `processing.build_long_form(config)` reads every CSV in `cache_dir`, matches the filename against `run_schema.pattern` to recover `(env, variant, seed)`, melts every metric column into rows, coerces each cell to a scalar (stringified `wandb.Histogram` payloads are collapsed to their median), drops NaNs, and concatenates the result. The output frame uses the canonical long form schema `[env, variant, seed, step, metric, value]`.
 
 `processing.build_quantile_frame(long)` groups that long form by `(env, variant, step, metric)` and computes five quantiles (`q05`, `q25`, `q50`, `q75`, `q95`) across seeds, feeding every `aggregated` panel.
+
+For the TensorBoard backend, `processing.build_long_form_from_tb_root` reads event files under `logdir` instead of CSVs, producing the same canonical long form (`env` from each run's parent directory, `(variant, seed)` from the leaf directory name). Non-scalar tensor tags such as `tf.summary.histogram` margins are skipped.
 
 Both frames are rebuilt in memory on every run. Only the per-run W&B download is cached on disk (`cache_dir/{run.name}.csv`); the in-memory melt and groupby are cheap enough that a persistent frame cache isn't worth the staleness risk.
 
@@ -201,6 +222,34 @@ python -m masa.plotting --config <your-yaml> --specs-from my_specs
 
 The new spec is then available via `--specs my_plot`.
 
+## Adding a new source backend
+
+Backends are looked up in a registry, so the pipeline never branches on the backend. To add one (e.g. MLflow, or plain CSV files), subclass `BenchmarkSource` and register it:
+
+```python
+# my_source.py
+from masa.plotting.source_registry import BenchmarkSource, register_source
+
+@register_source("mlflow")
+class MLflowBenchmarkSource(BenchmarkSource):
+    def download(self):        # fetch/cache raw data; return paths (may be a no-op)
+        ...
+    def build_frames(self):    # -> (long_form, quantile) in the canonical schema
+        ...
+    def discover_envs(self):   # -> [env names] for the dry-run preview
+        ...
+```
+
+Then teach `config._resolve_source` to read your `source:` block (the keys your backend needs) and select it from any config:
+
+```yaml
+source:
+  kind: mlflow
+  tracking_uri: ...
+```
+
+Because `build_frames` returns the canonical frames, every registered `PlotSpec` renders for your backend with no further changes.
+
 ## File map
 
 | File                       | Role                                                          |
@@ -209,13 +258,15 @@ The new spec is then available via `--specs my_plot`.
 | `api.py`                   | `plot_run` single run interface                               |
 | `run.py`                   | Single run CLI                                                |
 | `plot.py`                  | `plot_metrics` seaborn renderer                               |
-| `sources.py`               | `TensorBoardSource`, `WandBSource`, `CachedWandbSource`       |
+| `sources.py`               | Low-level loaders: `TensorBoardSource`, `WandBSource`, `CachedWandbSource` |
+| `source_registry.py`       | `BenchmarkSource` registry; `get_source`, `register_source`  |
 | `config.py`                | `Config`, `VariantStyle`, `RunSchema`, `load_config`          |
 | `processing.py`            | Long form and quantile frame builders                         |
 | `render.py`                | Generic spec renderer                                         |
-| `pipeline.py`              | `Pipeline` orchestrator                                       |
+| `pipeline.py`              | Backend-agnostic `Pipeline` orchestrator                      |
 | `io_utils.py`              | Logging setup, atomic CSV writes                              |
-| `configs/example.yaml`     | Annotated template config                                     |
+| `configs/example_wandb.yaml` | Annotated template config (W&B source)                      |
+| `configs/example_tensorboard.yaml` | Annotated template config (TensorBoard source)        |
 | `specs/__init__.py`        | Spec registry (auto registers `performance`)                  |
 | `specs/base.py`            | `PlotSpec`, `Panel`, `Band`, `HLine`, `RenderContext`         |
 | `specs/performance.py`     | Generic 2 by 2 reward and satisfaction figure                 |

@@ -1,0 +1,27 @@
+# MASA benchmark plotting pipeline -- Weights & Biases source.
+#   python -m masa.plotting --config <this-file> --stages all
+
+source:
+  kind: wandb
+  entity: your-wandb-entity   # optional; omit for your default entity
+  project: your-project-name
+
+# Matched against each W&B run name; must capture env, variant, seed groups.
+# Runs that don't match are skipped. e.g. matches: cartpole_baseline_v1_seed3
+run_schema:
+  pattern: '^(?P<env>.+?)_(?P<variant>[a-z_]+_v\d+)_seed(?P<seed>\d+)$'
+
+# Paths resolve relative to this file.
+cache_dir: ./wandb_cache   # per-run CSV download cache
+output_dir: ./plots
+
+palette: colorblind
+seed_for_logged_quantiles: 1
+metrics: null      # null = every non-internal history column
+envs: null         # null = every env in the data; or list a subset
+max_step: null     # clip curves at this step; null = keep all
+
+# 'name' must match run_schema's variant group.
+variants:
+  - {name: baseline,  label: 'Baseline',  colour: '#0072B2', order: 0}
+  - {name: my_method, label: 'My Method', colour: '#D55E00', order: 1}
