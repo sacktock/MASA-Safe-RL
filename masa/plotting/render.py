@@ -100,8 +100,6 @@ def draw_panel_into(ax, panel: Panel, ctx: RenderContext, drawn: set[str]) -> No
     _finalise_panel(ax, panel)
 
 
-# -------- panel dispatch ---------------------------------------------------
-
 def _draw_panel(ax, panel: Panel, ctx: RenderContext, drawn: set[str]) -> None:
     if panel.custom is not None:
         panel.custom(ax, ctx)
@@ -194,8 +192,6 @@ def _draw_logged_quantile(ax, panel: Panel, ctx: RenderContext, drawn: set[str])
             ax.fill_between(s, lo, hi, color=v.colour, alpha=band.alpha, linewidth=0)
         drawn.add(v.name)
 
-
-# -------- finishing touches ------------------------------------------------
 
 def _finalise_panel(ax, panel: Panel) -> None:
     ax.set_title(panel.title, fontsize=11, pad=5)
