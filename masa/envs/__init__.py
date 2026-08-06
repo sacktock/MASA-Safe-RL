@@ -85,6 +85,16 @@ registry.MARL_ENV_REGISTRY.register(
     "masa.envs.multiagent.matrix.inspection:InspectionMatrix",
 )
 
+registry.MARL_ENV_REGISTRY.register(
+    "CaptureTheFlag",
+    "masa.envs.multiagent.tabular._capture_the_flag:CaptureTheFlag",
+)
+
+registry.MARL_ENV_REGISTRY.register(
+    "CleanUp",
+    "masa.envs.multiagent.tabular._clean_up:CleanUp",
+)
+
 registry.ENV_REGISTRY.register(
     "BridgeCrossing",
     "masa.envs.tabular.bridge_crossing:BridgeCrossing",
