@@ -87,12 +87,17 @@ registry.MARL_ENV_REGISTRY.register(
 
 registry.MARL_ENV_REGISTRY.register(
     "CaptureTheFlag",
-    "masa.envs.multiagent.tabular._capture_the_flag:CaptureTheFlag",
+    "masa.envs.multiagent.tabular.capture_the_flag:CaptureTheFlag",
 )
 
 registry.MARL_ENV_REGISTRY.register(
     "CleanUp",
-    "masa.envs.multiagent.tabular._clean_up:CleanUp",
+    "masa.envs.multiagent.tabular.clean_up:CleanUp",
+)
+
+registry.MARL_ENV_REGISTRY.register(
+    "MarkovStagHunt",
+    "masa.envs.multiagent.tabular.markov_stag_hunt:MarkovStagHunt",
 )
 
 registry.ENV_REGISTRY.register(
