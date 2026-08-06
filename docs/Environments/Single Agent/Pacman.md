@@ -158,5 +158,5 @@ The constructors accept the same rendering options:
 
 Playable notebooks are available at:
 
-- `notebooks/envs/play_pacman_tabular.ipynb`
-- `notebooks/envs/play_pacman_coins.ipynb`
+- `notebooks/envs/tabular/play_pacman_tabular.ipynb`
+- `notebooks/envs/discrete/play_pacman_coins.ipynb`

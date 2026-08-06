@@ -137,15 +137,15 @@ def test_start_play_thread_stops_previous_session():
 
 def test_selector_notebooks_sync_selected_envs_during_play():
     notebook_paths = (
-        "notebooks/envs/play_bridge_crossing.ipynb",
-        "notebooks/envs/play_cartpole.ipynb",
-        "notebooks/envs/play_colour_bomb_gridworlds.ipynb",
-        "notebooks/envs/play_mountain_car.ipynb",
-        "notebooks/envs/play_obstacles.ipynb",
-        "notebooks/envs/play_pacman_coins.ipynb",
-        "notebooks/envs/play_pacman_tabular.ipynb",
-        "notebooks/envs/play_roads.ipynb",
-        "notebooks/envs/play_safety_gridworlds.ipynb",
+        "notebooks/envs/tabular/play_bridge_crossing.ipynb",
+        "notebooks/envs/mixed/play_cartpole.ipynb",
+        "notebooks/envs/tabular/play_colour_bomb_gridworlds.ipynb",
+        "notebooks/envs/mixed/play_mountain_car.ipynb",
+        "notebooks/envs/continuous/play_obstacles.ipynb",
+        "notebooks/envs/discrete/play_pacman_coins.ipynb",
+        "notebooks/envs/tabular/play_pacman_tabular.ipynb",
+        "notebooks/envs/continuous/play_roads.ipynb",
+        "notebooks/envs/discrete/play_safety_gridworlds.ipynb",
     )
 
     for notebook_path in notebook_paths:
@@ -160,7 +160,7 @@ def test_selector_notebooks_sync_selected_envs_during_play():
 
 
 def test_roads_notebook_runs_play_loop_in_background_thread():
-    with Path("notebooks/envs/play_roads.ipynb").open("r", encoding="utf-8") as fh:
+    with Path("notebooks/envs/continuous/play_roads.ipynb").open("r", encoding="utf-8") as fh:
         notebook = json.load(fh)
     source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
 
