@@ -5,7 +5,7 @@ This module provides a **Gymnasium-compatible implementation of Probabilistic Sh
 for Safe Reinforcement Learning, based on the state-augmentation framework introduced in:
 
 **Probabilistic Shielding for Safe Reinforcement Learning**  
-Edwin Hamel-De le Court, Francesco Belardinelli, Alexander W. Goodall  
+Edwin Hamel-De le Court, Francesco Belardinelli, Alexander W. Goodall
 arXiv: https://arxiv.org/abs/2503.07671
 
 The approach guarantees **probabilistic safety during both training and evaluation**, while
