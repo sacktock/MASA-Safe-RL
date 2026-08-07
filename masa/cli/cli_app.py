@@ -77,7 +77,7 @@ def deep_update(config: Config, overrides: dict[str, Any]) -> Config:
     
 
 def parse_config(env_id, env_cfgs, algo, algo_cfgs) -> Config:
-    configs = load_yaml("masa.configs", "Defaults.yaml")
+    configs = load_yaml("masa.configs", "defaults.yaml")
     config = Config(configs["defaults"])
 
     env_configs = load_yaml("masa.configs.envs", f"{env_id}.yaml")
@@ -98,7 +98,7 @@ def parse_config(env_id, env_cfgs, algo, algo_cfgs) -> Config:
     return config
 
 def parse_benchmark(env_id, env_variant, algo) -> Config:
-    configs = load_yaml("masa.configs", "Defaults.yaml")
+    configs = load_yaml("masa.configs", "defaults.yaml")
     config = Config(configs["defaults"])
 
     env_configs = load_yaml("masa.configs.envs", f"{env_id}.yaml")
@@ -387,7 +387,7 @@ def example(
 
     Example:
 
-        masa examples prob_shield_example
+        masa example prob_shield_example
     """
     module = f"masa.examples.{example_script}"
     sys.argv = [module, *ctx.args]

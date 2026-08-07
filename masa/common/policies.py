@@ -63,7 +63,7 @@ class Actor(nn.Module):
         if self.num_discrete_choices is None:
             # Continuous actions
             log_std = self.param("log_std", constant(self.log_std_init), (self.action_dim,))
-            dist = tfd.MultivariateNormalDiag(loc=action_logits, scale_diag=jnp.exp(log_std))
+            dist = tfd.MultivariateNormalDiag(loc=action_logits, scale_diag=jnp.exp(log_std).astype(action_logits.dtype))
         elif isinstance(self.num_discrete_choices, int):
             dist = tfd.Categorical(logits=action_logits)
         else:
