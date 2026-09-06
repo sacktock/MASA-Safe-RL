@@ -5,6 +5,8 @@ from typing import Any, Literal, Protocol
 
 import numpy as np
 
+from masa.common.rendering.agent import draw_agent
+
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
 Position = tuple[int, int]
@@ -26,9 +28,6 @@ BOMB_SPARK_COLOR = (255, 191, 54)
 BOMB_SPARK_CORE_COLOR = (255, 246, 167)
 MEDIC_COLOR = (78, 166, 129)
 MEDIC_CROSS_COLOR = (238, 248, 236)
-AGENT_COLOR = (55, 115, 206)
-AGENT_RING_COLOR = (236, 246, 252)
-AGENT_SHADOW_COLOR = (38, 75, 136)
 ACTIVE_OUTLINE_COLOR = (33, 30, 38)
 ZONE_COLORS: dict[str, RGBColor] = {
     "green": (109, 178, 103),
@@ -325,175 +324,15 @@ class ColourBombGridWorldRenderer:
         cell_size: int,
         step_count: int,
     ) -> None:
-        import pygame
-
         row, col = position
-        cx, cy = _cell_center(row, col, cell_size)
-
-        # Very subtle animation
-        bob = -max(1, cell_size // 40) if step_count % 2 else 0
-        cy += bob
-
-        # Colours
-        outline = (45, 48, 55)
-        skin = (242, 188, 143)
-        hair = (88, 54, 32)
-        shirt = AGENT_COLOR
-        white = (255, 255, 255)
-
-        # ---------------------------------------------------------
-        # Overall shadow
-        # ---------------------------------------------------------
-        shadow = pygame.Rect(
-            cx - int(cell_size * 0.30),
-            cy + int(cell_size * 0.27),
-            int(cell_size * 0.60),
-            max(3, int(cell_size * 0.08)),
-        )
-
-        pygame.draw.ellipse(
+        draw_agent(
             surface,
-            (130, 126, 118),
-            shadow,
+            _cell_center(row, col, cell_size),
+            cell_size,
+            agent_id=1,
+            step_count=step_count,
         )
 
-        # ---------------------------------------------------------
-        # Torso: deliberately large so P1 is readable
-        # ---------------------------------------------------------
-        torso_w = int(cell_size * 0.58)
-        torso_h = int(cell_size * 0.40)
-
-        torso = pygame.Rect(
-            cx - torso_w // 2,
-            cy - int(cell_size * 0.01),
-            torso_w,
-            torso_h,
-        )
-
-        corner = max(3, cell_size // 15)
-        stroke = max(2, cell_size // 35)
-
-        # Dark outline
-        pygame.draw.rect(
-            surface,
-            outline,
-            torso,
-            border_radius=corner,
-        )
-
-        inner = torso.inflate(-stroke * 2, -stroke * 2)
-
-        pygame.draw.rect(
-            surface,
-            shirt,
-            inner,
-            border_radius=max(2, corner - stroke),
-        )
-
-        # ---------------------------------------------------------
-        # Head
-        # ---------------------------------------------------------
-        head_r = int(cell_size * 0.22)
-        head_center = (
-            cx,
-            cy - int(cell_size * 0.22),
-        )
-
-        # Outer outline
-        pygame.draw.circle(
-            surface,
-            outline,
-            head_center,
-            head_r + stroke,
-        )
-
-        pygame.draw.circle(
-            surface,
-            skin,
-            head_center,
-            head_r,
-        )
-
-        # ---------------------------------------------------------
-        # Simple hair cap
-        # ---------------------------------------------------------
-        hair_rect = pygame.Rect(
-            head_center[0] - head_r,
-            head_center[1] - head_r,
-            head_r * 2,
-            int(head_r * 1.15),
-        )
-
-        pygame.draw.arc(
-            surface,
-            hair,
-            hair_rect,
-            0,
-            3.14159,
-            width=max(4, int(head_r * 0.55)),
-        )
-
-        # Three chunky fringe pieces
-        fringe_y = head_center[1] - int(head_r * 0.55)
-
-        for dx in (-0.45, 0.0, 0.45):
-            pygame.draw.circle(
-                surface,
-                hair,
-                (
-                    head_center[0] + int(head_r * dx),
-                    fringe_y,
-                ),
-                max(3, int(head_r * 0.30)),
-            )
-
-        # ---------------------------------------------------------
-        # Eyes only — no tiny mouth/nose details
-        # ---------------------------------------------------------
-        eye_r = max(2, int(cell_size * 0.025))
-        eye_dx = int(head_r * 0.38)
-        eye_y = head_center[1] + int(head_r * 0.08)
-
-        pygame.draw.circle(
-            surface,
-            outline,
-            (cx - eye_dx, eye_y),
-            eye_r,
-        )
-
-        pygame.draw.circle(
-            surface,
-            outline,
-            (cx + eye_dx, eye_y),
-            eye_r,
-        )
-
-        # ---------------------------------------------------------
-        # Large P1
-        # ---------------------------------------------------------
-        if not pygame.font.get_init():
-            pygame.font.init()
-
-        # Much larger than before.
-        font_size = max(18, int(cell_size * 0.34))
-
-        font = pygame.font.Font(None, font_size)
-        font.set_bold(True)
-
-        text = font.render(
-            "P1",
-            True,
-            white,
-        )
-
-        text_rect = text.get_rect(
-            center=(
-                cx,
-                torso.centery + int(cell_size * 0.015),
-            )
-        )
-
-        surface.blit(text, text_rect)
 
 class _ColourBombSnapshot:
     def __init__(

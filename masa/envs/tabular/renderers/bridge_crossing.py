@@ -5,6 +5,8 @@ from typing import Any, Protocol
 
 import numpy as np
 
+from masa.common.rendering.agent import draw_agent
+
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
 Position = tuple[int, int]
@@ -19,9 +21,6 @@ LAVA_COLOR = (207, 72, 54)
 LAVA_DARK_COLOR = (116, 45, 46)
 LAVA_GLOW_COLOR = (244, 146, 76)
 START_COLOR = (235, 178, 72)
-AGENT_COLOR = (60, 111, 210)
-AGENT_RING_COLOR = (236, 246, 252)
-AGENT_SHADOW_COLOR = (38, 72, 135)
 
 
 class BridgeCrossingEnv(Protocol):
@@ -209,16 +208,14 @@ class BridgeCrossingRenderer:
         pygame.draw.circle(surface, START_COLOR, center, radius)
 
     def _draw_agent(self, surface: Any, position: Position, cell_size: int, step_count: int) -> None:
-        import pygame
-
         row, col = position
-        center = _cell_center(row, col, cell_size)
-        radius = max(5, int(cell_size * 0.32))
-        bob = -max(1, cell_size // 30) if step_count % 2 else 0
-        center = (center[0], center[1] + bob)
-        pygame.draw.circle(surface, AGENT_SHADOW_COLOR, (center[0] + max(1, cell_size // 22), center[1] + max(1, cell_size // 22)), radius)
-        pygame.draw.circle(surface, AGENT_RING_COLOR, center, radius)
-        pygame.draw.circle(surface, AGENT_COLOR, center, max(2, radius - max(3, cell_size // 12)))
+        draw_agent(
+            surface,
+            _cell_center(row, col, cell_size),
+            cell_size,
+            agent_id=1,
+            step_count=step_count,
+        )
 
 
 class _BridgeCrossingSnapshot:

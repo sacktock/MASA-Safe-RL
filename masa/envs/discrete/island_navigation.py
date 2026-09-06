@@ -5,6 +5,7 @@ from typing import Any
 import numpy as np
 from gymnasium import spaces
 
+from masa.common.rendering.agent import draw_agent
 from masa.envs.discrete.base import DiscreteEnv
 
 SIZE_X = 8
@@ -172,8 +173,6 @@ class IslandNavigationRenderer:
     _WATER_FOAM = (180, 220, 242)
     _GOAL = (104, 176, 96)
     _GOAL_CENTER = (246, 244, 229)
-    _AGENT = (232, 94, 59)
-    _AGENT_RING = (250, 240, 228)
 
     def __init__(self, env: IslandNavigation):
         self.env = env
@@ -278,14 +277,9 @@ class IslandNavigationRenderer:
 
     def _draw_agent(self, frame: np.ndarray, x: int, y: int) -> None:
         left, top, right, bottom = self._cell_bounds(x, y, 0)
-        cx = (left + right) // 2
-        cy = (top + bottom) // 2
-        radius = self.tile_size // 3
-        self._draw_circle(frame, cx, cy, radius, self._AGENT_RING)
-        self._draw_circle(frame, cx, cy, radius - 6, self._AGENT)
-
-    @staticmethod
-    def _draw_circle(frame: np.ndarray, cx: int, cy: int, radius: int, color: tuple[int, int, int]) -> None:
-        yy, xx = np.ogrid[:frame.shape[0], :frame.shape[1]]
-        mask = (xx - cx) ** 2 + (yy - cy) ** 2 <= radius ** 2
-        frame[mask] = color
+        draw_agent(
+            frame,
+            ((left + right) // 2, (top + bottom) // 2),
+            self.tile_size,
+            agent_id=1,
+        )
