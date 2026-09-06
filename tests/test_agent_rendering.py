@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 
 from masa.common.rendering.agent import SHIRT_COLOURS, draw_agent, shirt_colour
@@ -25,3 +26,14 @@ def test_agent_ids_are_one_indexed() -> None:
 def test_cell_size_must_be_positive() -> None:
     with pytest.raises(ValueError, match="cell_size must be positive"):
         draw_agent(None, (0, 0), 0)
+
+
+def test_draw_agent_supports_numpy_rgb_frames() -> None:
+    pytest.importorskip("pygame")
+
+    frame = np.zeros((96, 96, 3), dtype=np.uint8)
+    draw_agent(frame, (48, 48), 64, agent_id=2)
+
+    red_shirt = np.asarray(shirt_colour(2), dtype=np.uint8)
+    assert np.any(frame)
+    assert np.any(np.all(frame == red_shirt, axis=2))
