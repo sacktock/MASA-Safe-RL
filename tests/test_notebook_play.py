@@ -4,7 +4,7 @@ import json
 import threading
 from pathlib import Path
 
-from masa.common.notebook_play import start_play_thread, stop_play_thread, sync_selected_env
+from masa.common.rendering.notebook_play import start_play_thread, stop_play_thread, sync_selected_env
 
 
 class _Selector:
@@ -153,7 +153,7 @@ def test_selector_notebooks_sync_selected_envs_during_play():
             notebook = json.load(fh)
         source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
 
-        assert "from masa.common.notebook_play import make_reset_env, sync_selected_env" in source
+        assert "from masa.common.rendering.notebook_play import make_reset_env, sync_selected_env" in source
         assert "follow_selector = env_name is None" in source
         assert "sync_selected_env(" in source
         assert 'print("switched:", env_name)' in source or 'print("switched:", selected_env_name)' in source
@@ -164,7 +164,7 @@ def test_roads_notebook_runs_play_loop_in_background_thread():
         notebook = json.load(fh)
     source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
 
-    assert "from masa.common.notebook_play import start_play_thread" in source
+    assert "from masa.common.rendering.notebook_play import start_play_thread" in source
     assert "def _run(stop_event):" in source
     assert "while running and not stop_event.is_set() and not env.human_window_closed:" in source
     assert "return start_play_thread(\"roads\", _run)" in source
