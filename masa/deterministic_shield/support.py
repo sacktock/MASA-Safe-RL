@@ -2,11 +2,6 @@ from __future__ import annotations
 
 import gymnasium as gym
 import numpy as np
-from gymnasium import spaces
-
-from masa.common.constraints.ltl_safety import LTLSafetyEnv
-from masa.common.wrappers import ConstraintPersistentWrapper
-from masa.deterministic_shield import support, winning_region
 
 
 def read_support(
