@@ -6,7 +6,7 @@ from operator import index
 
 import numpy as np
 
-from masa.algorithms.multi_agent.iql_lambda import IQLLambda
+from masa.algorithms.tabular.multi_agent.iql_lambda import IQLLambda
 
 
 class IQLLagrangian(IQLLambda):
@@ -31,7 +31,7 @@ class IQLLagrangian(IQLLambda):
             A partial batch is retained across calls to :meth:`train`.
         lambda_max: Optional nonnegative projection ceiling.
         **kwargs: Forwarded to
-            :class:`~masa.algorithms.multi_agent.iql_lambda.IQLLambda`.
+            :class:`~masa.algorithms.tabular.multi_agent.iql_lambda.IQLLambda`.
 
     Notes:
         CMG budgets are undiscounted episode sums.  This implementation requires

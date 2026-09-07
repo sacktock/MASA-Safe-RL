@@ -5,7 +5,7 @@ from collections.abc import Mapping
 
 import numpy as np
 
-from masa.algorithms.multi_agent.iql import IQL
+from masa.algorithms.tabular.multi_agent.iql import IQL
 
 
 class IQLLambda(IQL):
@@ -30,7 +30,7 @@ class IQLLambda(IQL):
             mapping from selected budget names to multipliers.  A mapping is
             recommended when budgets overlap, because only listed budgets enter
             the learning signal.  Unselected budgets remain monitored.
-        **kwargs: Forwarded to :class:`~masa.algorithms.multi_agent.iql.IQL`.
+        **kwargs: Forwarded to :class:`~masa.algorithms.tabular.multi_agent.iql.IQL`.
     """
 
     def __init__(

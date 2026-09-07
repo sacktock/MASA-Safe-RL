@@ -73,6 +73,7 @@ Environments/Single Agent
 
 Algorithms/Overview
 Algorithms/Tabular
+Algorithms/Tabular/Multi Agent
 Algorithms/On Policy
 Algorithms/Shielded
 ```
