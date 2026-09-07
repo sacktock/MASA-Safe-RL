@@ -27,7 +27,7 @@ If you use MASA-Safe-RL in your research please cite it in your publications.
 
 #### Prequisites
 
-Python 3.10+ is required (3.10 recommonded), later versions may be supported.
+Python 3.10+ is required (3.10 recommended), later versions may be supported.
 
 #### Installation with conda 
 - Install conda, e.g., via [anaconda](https://anaconda.org/channels/anaconda/packages/conda/overview).
