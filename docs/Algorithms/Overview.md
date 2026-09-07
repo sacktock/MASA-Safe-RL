@@ -24,9 +24,18 @@ The algorithms currently registered in the main plugin registry are:
 
 These are registered in `masa/plugins/supported.py`.
 
+The multi-agent coordinators are available through the Python API rather than the current single-agent CLI registry:
+
+| Algorithm | Family | Core idea | Safety mechanism |
+| --- | --- | --- | --- |
+| `IQL` | Multi-agent tabular | One existing `QL` learner per PettingZoo agent | None built into the update |
+| `IQLLambda` | Multi-agent tabular | Independent Q-learning with selected CMG budget penalties | Fixed budget multipliers |
+| `IQLLagrangian` | Multi-agent tabular | Independent penalized Q-learning with episode-level dual ascent | Adaptive multiplier per selected budget |
+
 ## Sections
 
 - [Tabular](Tabular)
+    - [Multi-Agent Tabular](Tabular/Multi%20Agent/)
 - [On Policy](On%20Policy)
 - [Shielded](Shielded)
 
