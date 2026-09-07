@@ -22,12 +22,13 @@ def test_constrained_markov_game_rejects_unknown_budget_agents():
 
 
 def test_constrained_markov_game_env_tracks_overlapping_budgets():
+    configured_budgets = [
+        Budget(amount=1.0, agents=("player_0",), name="solo"),
+        Budget(amount=1.5, agents=("player_0", "player_1"), name="shared"),
+    ]
     env = ConstrainedMarkovGameEnv(
         LabelledParallelEnv(ChickenMatrix(max_moves=1), label_fn),
-        budgets=[
-            Budget(amount=1.0, agents=("player_0",), name="solo"),
-            Budget(amount=1.5, agents=("player_0", "player_1"), name="shared"),
-        ],
+        budgets=configured_budgets,
         cost_fn=cost_fn,
     )
 
@@ -37,6 +38,7 @@ def test_constrained_markov_game_env_tracks_overlapping_budgets():
     assert infos["player_0"]["labels"] == set()
     assert infos["player_1"]["labels"] == set()
     assert env.constraint_type == "CMG"
+    assert env.budgets == tuple(configured_budgets)
     assert env.constraint_step_metrics()["shared_cum_cost"] == 0.0
 
     _, _, _, truncations, infos = env.step(
@@ -82,17 +84,19 @@ def test_marl_envs_are_registered():
 def test_make_marl_env_uses_central_wrapper_path():
     from masa.common.utils import make_marl_env
 
+    budget = Budget(amount=1.5, agents=("player_0", "player_1"), name="shared")
     env = make_marl_env(
         "ChickenMatrix",
         "CMG",
         env_kwargs={"max_moves": 1},
-        constraint_kwargs={"budgets": [Budget(amount=1.5, agents=("player_0", "player_1"), name="shared")]}
+        constraint_kwargs={"budgets": [budget]}
     )
 
     assert isinstance(env, ConstrainedMarkovGameEnv)
     assert isinstance(env.env, LabelledParallelEnv)
     assert env.env.label_fn is label_fn
     assert env.cost_fn is cost_fn
+    assert env.budgets == (budget,)
 
     obs, infos = env.reset(seed=0)
 
