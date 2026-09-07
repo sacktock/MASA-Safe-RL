@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from masa.algorithms.multi_agent import IQLLagrangian
+from masa.algorithms.tabular.multi_agent import IQLLagrangian
 
 
 def test_dual_uses_episode_sum_and_updates_once_per_budget(model_factory, toy_env_factory):

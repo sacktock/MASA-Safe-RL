@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from masa.algorithms.multi_agent import IQL, IQLLambda
+from masa.algorithms.tabular.multi_agent import IQL, IQLLambda
 
 
 def test_zero_fixed_penalty_matches_plain_iql(model_factory):

@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from gymnasium import spaces
 
-from masa.algorithms.multi_agent.iql import IQL, _AgentSpaces, _ExternalQL
+from masa.algorithms.tabular.multi_agent.iql import IQL, _AgentSpaces, _ExternalQL
 
 
 def test_external_adapter_reuses_native_q_update_and_schedule():
