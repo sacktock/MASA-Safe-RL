@@ -229,6 +229,11 @@ class ConstrainedMarkovGameEnv(ParallelEnv):
         return self._constraint.episode_metric()
 
     @property
+    def budgets(self) -> tuple[Budget, ...]:
+        """Return the immutable CMG budget definitions used by this wrapper."""
+        return self._constraint.budgets
+
+    @property
     def constraint_type(self) -> str:
         return self._constraint.constraint_type
 
