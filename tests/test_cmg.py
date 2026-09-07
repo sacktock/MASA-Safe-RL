@@ -1,7 +1,7 @@
 import pytest
 
 from masa.common.constraints.multi_agent.cmg import Budget, ConstrainedMarkovGame, ConstrainedMarkovGameEnv
-from masa.common.labelled_pz_env import LabelledParallelEnv
+from masa.common.multi_agent.labelled_pz_env import LabelledParallelEnv
 from masa.envs.multiagent.matrix.chicken import Actions, ChickenMatrix, cost_fn, label_fn
 
 

@@ -9,7 +9,7 @@ import masa
 from masa.common import registry
 from masa.common.wrappers import TimeLimit, ConstraintMonitor, RewardMonitor, ConstraintPersistentGymnasiumWrapper
 from masa.common.labelled_env import LabelledEnv
-from masa.common.labelled_pz_env import LabelledParallelEnv
+from masa.common.multi_agent.labelled_pz_env import LabelledParallelEnv
 from masa.common.label_fn import LabelFn
 from masa.common.pettingzoo_record_video import RecordVideoParallel
 import warnings
@@ -213,7 +213,7 @@ def make_marl_env(
     This helper creates a PettingZoo parallel environment and applies the
     standard MARL wrapper order:
 
-    :class:`~masa.common.labelled_pz_env.LabelledParallelEnv` :math:`\rightarrow`
+    :class:`~masa.common.multi_agent.labelled_pz_env.LabelledParallelEnv` :math:`\rightarrow`
     :class:`~masa.common.constraints.multi_agent.cmg.ConstrainedMarkovGameEnv`
 
     Args:

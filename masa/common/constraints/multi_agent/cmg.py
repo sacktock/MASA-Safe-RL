@@ -32,7 +32,7 @@ from pettingzoo import ParallelEnv
 
 from masa.common.constraints.base import CostFn
 from masa.common.dummy import cost_fn as dummy_cost_fn
-from masa.common.labelled_pz_env import LabelledParallelEnv
+from masa.common.multi_agent.labelled_pz_env import LabelledParallelEnv
 
 
 @dataclass(frozen=True, slots=True)
