@@ -27,7 +27,7 @@ reward, learn a dynamics model, or guarantee eventual task completion.
 > does not imply that every shielded trajectory is deterministic.
 
 For risk budgets and projection onto safe action distributions, see
-[Probabilistic Shielding](Probabilistic%20Shielding.md). Sampling uniformly among
+[Probabilistic Shielding](../Probabilistic/Probabilistic%20Shielding.md). Sampling uniformly among
 winning actions is not the probabilistic-shielding algorithm: no probability of
 violation is budgeted.
 
