@@ -1,5 +1,4 @@
-Probabilistic Shielding
-=========================
+# Probabilistic Shielding
 
 This module provides a **Gymnasium-compatible implementation of Probabilistic Shielding**
 for Safe Reinforcement Learning, based on the state-augmentation framework introduced in:
@@ -11,8 +10,7 @@ arXiv: https://arxiv.org/abs/2503.07671
 The approach guarantees **probabilistic safety during both training and evaluation**, while
 remaining **optimality-preserving** among all safe policies.
 
-Overview
---------
+# Overview
 
 Probabilistic Shielding addresses reinforcement learning problems of the form:
 
@@ -29,8 +27,7 @@ Rather than constraining the policy directly, the method constructs a
 
 Any standard RL algorithm (e.g. PPO) can then be trained on the shielded environment.
 
-Generic Procedure
------------------
+# Generic Procedure
 
 Given an environment with known **safety dynamics**:
 
@@ -52,19 +49,17 @@ Given an environment with known **safety dynamics**:
    Safety is guaranteed **by construction**, not by penalties or Lagrangians.
 
 
-The ``ProbShieldWrapperDisc``
-----------------------------
+# The ``ProbShieldWrapperDisc``
 
 The main entry point is the Gymnasium wrapper:
 
-.. code-block:: python
-
+```python
     ProbShieldWrapperDisc(env, ...)
+```
 
 Expected inputs and types:
 
-.. code-block:: python
-
+```python
     env: TabularEnv | DiscreteEnv
         Must expose safety dynamics either as a full transition kernel or compact kernel:
           successor_states_matrix: np.ndarray[int]  # (K, n_states)
@@ -79,6 +74,7 @@ Expected inputs and types:
     safety_abstraction: Optional[Callable[[Any], int]]
         Maps raw env observations/states -> discrete abstract state id.
         Required if observation_space is not Discrete.
+```
 
 The wrapper:
 
@@ -89,16 +85,13 @@ The wrapper:
 
 Implementation details can be found in ``prob_shield_wrapper_disc.py``.
 
-Usage Examples
---------------
+# Usage Examples
 
-Basic Probabilistic Shielding (Discrete MDP, PCTL)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Basic Probabilistic Shielding (Discrete MDP, PCTL)
 
 For environments with discrete state spaces and PCTL safety constraints:
 
-.. code-block:: python
-
+```python
     env = make_env(
         "pacman",
         "pctl",
@@ -115,17 +108,16 @@ For environments with discrete state spaces and PCTL safety constraints:
         max_vi_steps=10_000,
         granularity=20,
     )
+```
 
 See the full example in ``prob_shield_example.py``.
 
-Probabilistic Shielding with a Safety Abstraction
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Probabilistic Shielding with a Safety Abstraction
 
 For large or combinatorial environments, you can provide a **discrete safety abstraction**
 that preserves only safety-relevant dynamics.
 
-.. code-block:: python
-
+```python
     env = ProbShieldWrapperDisc(
         env,
         label_fn=abstr_label_fn,
@@ -133,19 +125,18 @@ that preserves only safety-relevant dynamics.
         safety_abstraction=safety_abstraction,
         init_safety_bound=0.01,
     )
+```
 
 This enables scalable safety verification even when the full state space is very large.
 
 See ``prob_shield_safety_abstraction_example.py``.
 
-Probabilistic Shielding for Safety-LTL (DFA–MDP Product)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+### Probabilistic Shielding for Safety-LTL (DFA–MDP Product)
 
 Safety properties expressed in **Safety-LTL** are handled by constructing the
 **DFA–MDP product** internally.
 
-.. code-block:: python
-
+```python
     env = make_env(
         "colour_bomb_grid_world_v2",
         "ltl_dfa",
@@ -155,14 +146,14 @@ Safety properties expressed in **Safety-LTL** are handled by constructing the
     )
 
     env = ProbShieldWrapperDisc(env, init_safety_bound=0.01)
+```
 
 The shield is built over the **DFA–MDP product**, ensuring probabilistic satisfaction
 of the LTL safety property.
 
 See ``prob_shield_ltl_example.py``.
 
-When to Use
------------
+# When to Use
 
 Use Probabilistic Shielding when:
 
@@ -171,16 +162,15 @@ Use Probabilistic Shielding when:
 - You want **formal guarantees**, not penalties or Lagrangians
 - The safety dynamics (or a conservative abstraction) are known
 
-Citation
---------
+# Citation
 
 If you use this implementation, please cite:
 
-.. code-block:: bibtex
-
+```bibtex
     @article{hamel2025probabilistic,
       title={Probabilistic Shielding for Safe Reinforcement Learning},
       author={Hamel-De le Court, Edwin and Belardinelli, Francesco and Goodall, Alexander W.},
       journal={arXiv preprint arXiv:2503.07671},
       year={2025}
     }
+```
