@@ -1,39 +1,35 @@
-Cost Function
-=============
+# Cost Function
 
 This page describes how **safety costs** are defined and computed in MASA-Safe-RL, and the
 conventions used to map **sets of atomic predicates** to **scalar costs**.
 Costs provide the basic quantitative signal used by constraints, probabilistic safety
 objectives, and logic-based monitors.
 
-Cost Functions
---------------
+## Cost Functions
 
-Cost Function API
-~~~~~~~~~~~~~~~~~
+### Cost Function API
 
 A **cost function** is defined as:
 
-.. code-block:: python
-
-   CostFn = Callable[Iterable[str], float]
+```python
+CostFn = Callable[Iterable[str], float]
+```
 
 Formally, a cost function is a mapping
 
-.. math::
-
-   c : 2^{\mathcal{AP}} \rightarrow \mathbb{R},
+$$
+c : 2^{\mathcal{AP}} \rightarrow \mathbb{R},
+$$
 
 where:
 
-- :math:`\mathcal{AP}` is the set of atomic predicates,
+- $\mathcal{AP}$ is the set of atomic predicates,
 - the input is the **set of labels** satisfied at the current step,
 - the output is a **scalar cost**.
 
-Semantics
-~~~~~~~~~
+### Semantics
 
-Given a label set :math:`L(s) \subseteq \mathcal{AP}`, the cost function returns the
+Given a label set $L(s) \subseteq \mathcal{AP}$, the cost function returns the
 **instantaneous safety cost** incurred at that step.
 
 Typical interpretations include:
@@ -47,36 +43,34 @@ Typical interpretations include:
 The meaning of a cost is entirely user-defined, but must be **consistent across episodes**
 and evaluation.
 
-Examples
-~~~~~~~~
+### Examples
 
 Minimal binary cost:
 
-.. code-block:: python
-
-   def cost_fn(labels):
-       return 1.0 if "unsafe" in labels else 0.0
+```python
+def cost_fn(labels):
+    return 1.0 if "unsafe" in labels else 0.0
+```
 
 Graded cost:
 
-.. code-block:: python
+```python
+def cost_fn(labels):
+    cost = 0.0
+    if "collision" in labels:
+        cost += 10.0
+    if "near_obstacle" in labels:
+        cost += 0.1
+    return cost
+```
 
-   def cost_fn(labels):
-       cost = 0.0
-       if "collision" in labels:
-           cost += 10.0
-       if "near_obstacle" in labels:
-           cost += 0.1
-       return cost
-
-Labels-to-Cost Convention
--------------------------
+## Labels-to-Cost Convention
 
 MASA follows a strict convention:
 
-.. important::
-
-   **Costs are computed solely from the current set of atomic predicates.**
+```{important}
+**Costs are computed solely from the current set of atomic predicates.**
+```
 
 This ensures:
 
@@ -84,23 +78,23 @@ This ensures:
 - compatibility with abstractions, automata, and shielding,
 - independence from hidden environment state.
 
-.. list-table:: Labels to cost summary
-   :header-rows: 1
-   :widths: 30 70
+```{list-table} Labels to cost summary
+:header-rows: 1
+:widths: 30 70
 
-   * - Input
-     - Output
-   * - ``Iterable[str]`` (labels)
-     - ``float`` (cost)
-   * - Empty label set
-     - Valid input
-   * - Stateless cost function
-     - Recommended
-   * - Stateful costs
-     - Supported via constraints (e.g., DFA)
+* - Input
+  - Output
+* - ``Iterable[str]`` (labels)
+  - ``float`` (cost)
+* - Empty label set
+  - Valid input
+* - Stateless cost function
+  - Recommended
+* - Stateful costs
+  - Supported via constraints (e.g., DFA)
+```
 
-Constraints (Conceptual Overview)
----------------------------------
+## Constraints (Conceptual Overview)
 
 A cost function defines a **per-step signal**. A **constraint** builds on top of this to
 reason over **trajectories** rather than individual steps.
@@ -113,20 +107,19 @@ Conceptually, constraints may:
 - expose step-level and episode-level metrics for logging and evaluation.
 
 In MASA, constraints are implemented as **Gymnasium wrappers** around a
-:class:`masa.common.labelled_env.LabelledEnv`, and are responsible for calling cost
+{class}`masa.common.labelled_env.LabelledEnv`, and are responsible for calling cost
 functions, tracking state, and reporting metrics.
 
 For full details on the constraint interface, lifecycle, and provided implementations,
 see the API reference:
 
-.. seealso::
+```{seealso}
+{doc}`Constraints API Reference <../../Common/Constraints>`
+```
 
-  :doc:`Constraints API Reference <../../Common/Constraints>`
+## Summary
 
-Summary
--------
-
-- Cost functions map **label sets** :math:`L(s) \subseteq \mathcal{AP}` to **scalar costs**.
+- Cost functions map **label sets** $L(s) \subseteq \mathcal{AP}$ to **scalar costs**.
 - They are pure functions of labels, with no dependence on hidden state.
 - Constraints build on cost functions to express trajectory-level safety objectives.
 - Detailed constraint APIs and implementations are documented separately.
