@@ -75,7 +75,14 @@ Algorithms/Overview
 Algorithms/Tabular
 Algorithms/Tabular/Multi Agent
 Algorithms/On Policy
-Algorithms/Shielded
+```
+
+```{toctree}
+:caption: Shielding
+:hidden:
+
+Shielding/Deterministic
+Shielding/Probabilistic
 ```
 
 ```{toctree}
@@ -89,11 +96,4 @@ Tutorials/Environments
 Tutorials/Baselines
 Tutorials/Shielding
 Tutorials/Multi-Agent
-```
-
-```{toctree}
-:caption: Misc
-:hidden:
-
-Misc/Probabilistic Shielding
 ```
