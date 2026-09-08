@@ -1,0 +1,4 @@
+/* Explicit link colors keep the modern theme readable in both MASA palettes. */
+[data-md-color-scheme="default"] { --md-typeset-a-color: #126d71; }
+[data-md-color-scheme="slate"] { --md-typeset-a-color: #69d7c5; }
+.md-typeset a:not(.md-button) { color: var(--md-typeset-a-color); }
