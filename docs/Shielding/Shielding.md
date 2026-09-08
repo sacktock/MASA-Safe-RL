@@ -15,7 +15,7 @@ Probabilistic/Parameterized PPO V2
 
 ## Winning-region safety-game shielding
 
-[Winning-region safety-game shielding](Shielded/Winning-Region%20Shielding)
+[Winning-region safety-game shielding](Deterministic/Winning-Region%20Shielding)
 computes the product of a finite transition model and a bad-prefix safety DFA.
 It permits only actions whose entire modeled successor support remains inside the
 winning region.
@@ -36,7 +36,7 @@ Postposed replacement can use the default lowest-index safe action,
 does **not** introduce a safety-risk budget: it samples only from the already
 computed safe set.
 
-[Multi-agent coalition shielding](Shielded/Multi-Agent%20Coalition%20Shielding)
+[Multi-agent coalition shielding](Deterministic/Multi-Agent%20Coalition%20Shielding)
 extends the same support-based construction to PettingZoo Parallel environments.
 It supports centralised coalition joint actions and decentralised, independently
 executable local masks while universally quantifying the actions of agents outside
@@ -44,7 +44,7 @@ the coalition.
 
 ## Probabilistic shielding
 
-[Probabilistic Shielding](Shielded/Probabilistic%20Shielding) uses safety budgets
+[Probabilistic Shielding](Probabilistic/Probabilistic%20Shielding) uses safety budgets
 and projection onto safe action distributions.
 
 It is based on **Probabilistic Shielding for Safe Reinforcement Learning** by

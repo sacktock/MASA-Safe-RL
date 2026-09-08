@@ -1,7 +1,11 @@
 # Constraints
 
 ```{eval-rst}
-.. automodule:: masa.common.constraints.base
+.. autoclass:: masa.common.constraints.base.Constraint
+    :members:
+    :show-inheritance:
+
+.. autoclass:: masa.common.constraints.base.BaseConstraintEnv
     :members:
     :show-inheritance:
 ```
@@ -13,7 +17,7 @@
 - [PCTL](Constraints/PCTL) - A simple Probabilistic Computation Tree Logic constraint.
 - [Step-wise Probabilistic](Constraints/Stepwise%20Probabilistic) - Undiscounted probabilistic step-wise safety constraint.
 - [Reach Avoid](Constraints/Reach%20Avoid) - A simple reach-avoid constraint.
-- [ATL (Multi Agent)](Constraints/Multi%Agent) - Alternating Time Logic for Multi Agent Systems.
+- [ATL (Multi Agent)](Constraints/Multi-Agent/ATL) - Alternating Time Logic for Multi Agent Systems.
 
 ```{toctree}
 :caption: Constraints

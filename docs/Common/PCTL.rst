@@ -172,6 +172,6 @@ Next Steps
    :caption: Probabilistic Computation Tree Logic (PCTL)
    :hidden:
 
-   PCTL/Propsotional Operators
-   PCTL/Temporal Opetrators
-   PCTl/Model Checking
+   PCTL/Propositional Operators
+   PCTL/Temporal Operators
+   PCTL/Model Checking

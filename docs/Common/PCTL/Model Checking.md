@@ -8,7 +8,7 @@
 .. autoclass:: masa.common.pctl.BoundedPCTLModelChecker
    :members:
    :show-inheritance:
-   :special-members:_build_vec_label_fn
+   :special-members: _build_vec_label_fn
    :private-members:
 ```
 
@@ -31,5 +31,5 @@
 ## Helpers
 
 ```{eval-rst}
-.. automethod:: masa.common.pctl.kernel_n_states
+.. autofunction:: masa.common.pctl.kernel_n_states
 ```

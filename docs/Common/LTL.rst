@@ -1,8 +1,8 @@
 Linear Temporal Logic (LTL)
-==========================
+===========================
 
 Overview: Safety LTL in MASA (DFA + Costs)
------------------------------------------
+------------------------------------------
 
 MASA focuses on **safety specifications** expressed in the *safety fragment* of
 Linear Temporal Logic (LTL). A safety specification is monitored online by
@@ -35,7 +35,7 @@ Mathematical Details
 --------------------
 
 LTL Traces and Satisfaction
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. math::
 
