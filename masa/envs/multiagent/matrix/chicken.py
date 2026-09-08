@@ -5,19 +5,22 @@ from enum import IntEnum
 
 import numpy as np
 from gymnasium.spaces import Box, Discrete
-from pettingzoo import ParallelEnv
 
+from masa.envs.multiagent.tabular_env import TabularParallelEnv
 from masa.envs.multiagent.matrix._label_utils import binary_cost, flatten_binary_obs
 
+
 class Actions(IntEnum):
-    Swerve   = 0
+    Swerve = 0
     Straight = 1
 
 
 def label_fn(obs):
     obs_vec = flatten_binary_obs(obs)
     if obs_vec.size != 5:
-        raise ValueError(f"ChickenMatrix label_fn expected 5 channels, got {obs_vec.size}.")
+        raise ValueError(
+            f"ChickenMatrix label_fn expected 5 channels, got {obs_vec.size}."
+        )
 
     labels = set()
     if obs_vec[0]:
@@ -47,29 +50,27 @@ def label_fn(obs):
 def cost_fn(labels):
     return binary_cost(labels)
 
-class ChickenMatrix(ParallelEnv):
-    """
-    Repeated 2-player Chicken (Parallel PettingZoo)
 
-    Stage game (Row vs Column) with payoffs:
-        - Straight vs Swerve: (T, S)
-        - Swerve  vs Straight: (S, T)
-        - Swerve  vs Swerve:   (R, R)
-        - Straight vs Straight:(P, P)  # crash
+class ChickenMatrix(TabularParallelEnv):
+    """Repeated two-player Chicken with an exact five-state tabular model.
 
-    Defaults: T=3, R=2, S=1, P=0 (all floats).
+    Stage game (row versus column):
 
-    Observations (global, binary channels), shape is either (C,) if flattened or (1,1,C):
-      For each agent i in {0,1}:
-        - ch 2*i + 0 = 1 if agent_i's last action was Swerve, else 0
-        - ch 2*i + 1 = 1 if agent_i's last action was Straight, else 0
-      Plus:
-        - ch 2*num_agents = 1 if last outcome was a crash (both Straight), else 0
+    * Straight/Swerve: ``(T, S)``
+    * Swerve/Straight: ``(S, T)``
+    * Swerve/Swerve: ``(R, R)``
+    * Straight/Straight: ``(P, P)`` and a crash
 
-      On the first round (after reset), all channels are 0.
+    Tabular state ``0`` is the reset state. States ``1`` through ``4`` encode
+    the previous joint action in canonical order ``(0,0), (0,1), (1,0),
+    (1,1)``. The transition model is therefore deterministic and independent
+    of the previous state.
     """
 
-    metadata = {"name": "chicken_matrix_v0", "render_modes": ["human", "rgb_array"]}
+    metadata = {
+        "name": "chicken_matrix_v0",
+        "render_modes": ["human", "rgb_array"],
+    }
 
     def __init__(
         self,
@@ -84,83 +85,92 @@ class ChickenMatrix(ParallelEnv):
         render_mode=None,
         seed: int | None = None,
     ):
+        super().__init__()
         assert num_agents == 2, "ChickenMatrix currently supports exactly 2 agents."
         self.n_agents = int(num_agents)
         self.possible_agents = [f"player_{i}" for i in range(self.n_agents)]
 
-        # Payoffs
         self.T, self.R, self.S, self.P = float(T), float(R), float(S), float(P)
-
-        # Repetition horizon
         self.max_moves = int(max_moves)
 
-        # Observation config (1x1xC binary channels, optionally flattened)
-        # C = 2*num_agents + 1 (two action-bits per agent + 1 crash bit)
         self.n_obs_types = 2 * self.n_agents + 1
         self.flatten_observations = bool(flatten_observations)
-
-        # RNG (not strictly needed; kept for parity)
         self.rng = np.random.RandomState(0 if seed is None else seed)
 
-        # Runtime state
         self.agents: list[str] = []
         self._round = 0
-        self._last_actions: dict[str, int | None] = {}  # Actions.{Swerve,Straight} or None
-        self._last_crash: bool = False
+        self._last_actions: dict[str, int | None] = {}
+        self._last_crash = False
+        self._state = 0
 
-        # rendering-relevant runtime state
         self.render_mode = render_mode
         self._renderer = None
-        # self._renderer: ChickenRenderer | None = None
-        # if self.render_mode is not None:
-        #     self._renderer = ChickenRenderer(self.render_mode)
         self._cum_rewards: dict[str, float] = {}
         self.label_fn = label_fn
         self.cost_fn = cost_fn
 
-        # Spaces
-        self.observation_spaces = {a: self.observation_space(a) for a in self.possible_agents}
-        self.action_spaces = {a: self.action_space(a) for a in self.possible_agents}
+        self.observation_spaces = {
+            agent: self.observation_space(agent) for agent in self.possible_agents
+        }
+        self.action_spaces = {
+            agent: self.action_space(agent) for agent in self.possible_agents
+        }
 
-    # ─────────────────────────── PettingZoo API ───────────────────────────
+        self._n_states = 5
+        self._transition_matrix = self._make_transition_matrix()
+
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent):
-        C = self.n_obs_types
+        del agent
         if self.flatten_observations:
-            return Box(low=0, high=1, shape=(C,), dtype=np.uint8)
-        return Box(low=0, high=1, shape=(1, 1, C), dtype=np.uint8)
+            return Box(low=0, high=1, shape=(self.n_obs_types,), dtype=np.uint8)
+        return Box(
+            low=0,
+            high=1,
+            shape=(1, 1, self.n_obs_types),
+            dtype=np.uint8,
+        )
 
     @functools.lru_cache(maxsize=None)
     def action_space(self, agent):
-        # 0 = Swerve, 1 = Straight
+        del agent
         return Discrete(2)
 
     def reset(self, seed: int | None = None, options: dict | None = None):
+        del options
         if seed is not None:
             self.rng = np.random.RandomState(seed)
 
         self.agents = self.possible_agents[:]
         self._round = 0
-        self._last_actions = {a: None for a in self.agents}
+        self._last_actions = {agent: None for agent in self.agents}
         self._last_crash = False
-        self._cum_rewards = {a: 0.0 for a in self.agents}
+        self._state = 0
+        self._cum_rewards = {agent: 0.0 for agent in self.agents}
 
-        obs = {a: self._obs() for a in self.agents}
-        infos = {a: {"round": self._round, "last_actions": None, "crash": False} for a in self.agents}
-        return obs, infos
+        observations = self.observations_from_state(self._state)
+        infos = {
+            agent: {
+                "round": self._round,
+                "last_actions": None,
+                "crash": False,
+            }
+            for agent in self.agents
+        }
+        return observations, infos
 
     def step(self, actions: dict[str, int]):
         if not actions:
             self.agents = []
             return {}, {}, {}, {}, {}
 
-        # Only two agents supported
         a0, a1 = self.possible_agents
         act0 = int(actions.get(a0, Actions.Swerve))
         act1 = int(actions.get(a1, Actions.Swerve))
 
-        # Stage payoffs
-        self._last_crash = act0 == Actions.Straight and act1 == Actions.Straight
+        self._last_crash = (
+            act0 == Actions.Straight and act1 == Actions.Straight
+        )
         if act0 == Actions.Straight and act1 == Actions.Swerve:
             r0, r1 = self.T, self.S
             outcome = "Straight-Swerve"
@@ -170,195 +180,170 @@ class ChickenMatrix(ParallelEnv):
         elif act0 == Actions.Swerve and act1 == Actions.Swerve:
             r0, r1 = self.R, self.R
             outcome = "Swerve-Swerve"
-        else:  # both Straight
+        else:
             r0, r1 = self.P, self.P
             outcome = "Straight-Straight"
 
         rewards = {a0: float(r0), a1: float(r1)}
-
-        # Update last actions for observation
         self._last_actions[a0] = act0
         self._last_actions[a1] = act1
-        self._cum_rewards["player_0"] += r0
-        self._cum_rewards["player_1"] += r1
+        self._state = 1 + self.encode_joint_action((act0, act1))
+        self._cum_rewards[a0] += r0
+        self._cum_rewards[a1] += r1
 
-        # Time & termination
         self._round += 1
         env_trunc = self._round >= self.max_moves
-
         terminations = {a0: False, a1: False}
         truncations = {a0: env_trunc, a1: env_trunc}
         infos = {
-            a0: {"round": self._round, "last_actions": (act0, act1), "outcome": outcome, "crash": self._last_crash},
-            a1: {"round": self._round, "last_actions": (act1, act0), "outcome": outcome, "crash": self._last_crash},
+            a0: {
+                "round": self._round,
+                "last_actions": (act0, act1),
+                "outcome": outcome,
+                "crash": self._last_crash,
+            },
+            a1: {
+                "round": self._round,
+                "last_actions": (act1, act0),
+                "outcome": outcome,
+                "crash": self._last_crash,
+            },
         }
 
-        obs = {a: self._obs() for a in self.agents}
+        observations = self.observations_from_state(self._state)
         if env_trunc:
-            for a in self.agents:
-                truncations[a] = True
             self.agents = []
 
         if self.render_mode in ("human", "rgb_array"):
             self.render()
 
-        return obs, rewards, terminations, truncations, infos
+        return observations, rewards, terminations, truncations, infos
 
     def render(self):
         if self.render_mode is None:
-            return
+            return None
         if not self._renderer:
-            raise ValueError("Renderer missing; create env with render_mode='human' or 'rgb_array'.")
+            raise ValueError(
+                "Renderer missing; create env with render_mode='human' or "
+                "'rgb_array'."
+            )
 
         pay = {"T": self.T, "R": self.R, "S": self.S, "P": self.P}
-        last = (self._last_actions.get("player_0"), self._last_actions.get("player_1"))
-
-        frame = self._renderer.render(
+        last = (
+            self._last_actions.get("player_0"),
+            self._last_actions.get("player_1"),
+        )
+        return self._renderer.render(
             round_no=self._round,
             last_actions=last,
             last_crash=self._last_crash,
             cum_rewards=self._cum_rewards,
             payoffs=pay,
         )
-        return frame
 
     def close(self):
         if self._renderer:
             self._renderer.close()
 
-    # ───────────────────────────── Internals ─────────────────────────────
-    def _obs(self):
-        """
-        Binary channels, either (C,) or (1,1,C):
-          ch0 = p0 Swerve, ch1 = p0 Straight,
-          ch2 = p1 Swerve, ch3 = p1 Straight,
-          ch4 = crash flag
-        """
-        C = self.n_obs_types
-        v = np.zeros((C,), dtype=np.uint8)
+    def _make_transition_matrix(self) -> np.ndarray:
+        matrix = np.zeros(
+            (self.n_states, self.n_states, self.n_joint_actions),
+            dtype=np.float32,
+        )
+        for state in range(self.n_states):
+            for action_index in range(self.n_joint_actions):
+                matrix[1 + action_index, state, action_index] = 1.0
+        return matrix
 
-        def set_bits(pid: str, base: int):
-            a = self._last_actions.get(pid, None)
-            if a is None:
-                return
-            if a == Actions.Swerve:
-                v[base + 0] = 1
-            elif a == Actions.Straight:
-                v[base + 1] = 1
-
-        set_bits("player_0", 0)
-        set_bits("player_1", 2)
-        v[2 * self.n_agents] = 1 if self._last_crash else 0
-
+    def _observation_from_state(self, state: int) -> np.ndarray:
+        state = self._check_state(state)
+        values = np.zeros(self.n_obs_types, dtype=np.uint8)
+        if state:
+            action = self.decode_joint_action(state - 1)
+            action_0 = action["player_0"]
+            action_1 = action["player_1"]
+            values[action_0] = 1
+            values[2 + action_1] = 1
+            values[4] = int(
+                action_0 == Actions.Straight and action_1 == Actions.Straight
+            )
         if self.flatten_observations:
-            return v
-        return v.reshape(1, 1, -1)
+            return values
+        return values.reshape(1, 1, -1)
 
-    # ────────────────────────────────────────────────────────────────────
-    #                          State helpers
-    # ────────────────────────────────────────────────────────────────────
+    def observations_from_state(self, state: int) -> dict[str, np.ndarray]:
+        observation = self._observation_from_state(state)
+        return {
+            agent: observation.copy() for agent in self.possible_agents
+        }
+
+    def _obs(self):
+        return self._observation_from_state(self.get_state_id())
+
     @property
     def state_space(self):
-        C = self.n_obs_types
         if self.flatten_observations:
-            return Box(low=0, high=1, shape=(C,), dtype=np.uint8)
-        return Box(low=0, high=1, shape=(1, 1, C), dtype=np.uint8)
+            return Box(
+                low=0,
+                high=1,
+                shape=(self.n_obs_types,),
+                dtype=np.uint8,
+            )
+        return Box(
+            low=0,
+            high=1,
+            shape=(1, 1, self.n_obs_types),
+            dtype=np.uint8,
+        )
 
     def state(self):
         return self._obs()
 
     def num_cells(self) -> int:
-        """Number of spatial cells in the layered observation grid.
-
-        ChickenMatrix is non-spatial: the entire game state is a single global cell.
-        This returns 1 regardless of whether observations are flattened or shaped (1, 1, C).
-        """
+        """Chicken is non-spatial, so the global observation has one cell."""
         return 1
 
     def channel_names(self) -> list[str]:
-        """
-        Human-friendly names for each observation channel index.
-
-        Channels (by construction in _obs):
-          ch0 = player_0 Swerve
-          ch1 = player_0 Straight
-          ch2 = player_1 Swerve
-          ch3 = player_1 Straight
-          ch4 = crash flag
-        """
-        names: list[str] = ["" for _ in range(self.n_obs_types)]
-
-        # Per-agent action bits: (Swerve, Straight)
-        for i in range(self.n_agents):
-            sw_idx = 2 * i
-            st_idx = 2 * i + 1
-            if sw_idx < self.n_obs_types:
-                names[sw_idx] = f"player_{i}_swerve"
-            if st_idx < self.n_obs_types:
-                names[st_idx] = f"player_{i}_straight"
-
-        # Crash flag
-        crash_idx = 2 * self.n_agents
-        if crash_idx < self.n_obs_types:
-            names[crash_idx] = "crash"
-
-        # Fallback for any unnamed channels (future-proofing)
-        for i, name in enumerate(names):
-            if not name:
-                names[i] = f"channel_{i}"
-
-        return names
+        return [
+            "player_0_swerve",
+            "player_0_straight",
+            "player_1_swerve",
+            "player_1_straight",
+            "crash",
+        ]
 
     def action_names(self, action: int) -> str:
-        """
-        Human-friendly name for an action integer ID.
-        """
         try:
             name = Actions(int(action)).name
         except ValueError:
             return f"action_{action}"
         return "".join(
-            f"_{ch.lower()}" if ch.isupper() and i > 0 else ch.lower()
-            for i, ch in enumerate(name)
+            f"_{char.lower()}" if char.isupper() and index > 0 else char.lower()
+            for index, char in enumerate(name)
         )
 
-    # ────────────────────────────────────────────────────────────────────
-    #               Lightweight state serialization
-    # ────────────────────────────────────────────────────────────────────
     def get_state(self):
-        """
-        Fully restorable snapshot (no deep clone).
-
-        Tuple layout:
-          (
-            agents: tuple[str, ...],
-            round_no: int,
-            last_actions: tuple[int|None, int|None],  # (player_0, player_1)
-            last_crash: bool,
-            cum_rewards: tuple[float, float],         # (player_0, player_1)
-            rng_state: object                         # np.random.RandomState.get_state()
-          )
-        """
-        agents = tuple(self.agents) if getattr(self, "agents", None) is not None else tuple()
-
+        """Return a fully restorable runtime snapshot."""
+        agents = tuple(self.agents)
         p0, p1 = self.possible_agents
-        last_actions = (self._last_actions.get(p0, None), self._last_actions.get(p1, None))
-        cum_rewards = (float(self._cum_rewards.get(p0, 0.0)), float(self._cum_rewards.get(p1, 0.0)))
-
-        rng_state = self.rng.get_state()
+        last_actions = (
+            self._last_actions.get(p0),
+            self._last_actions.get(p1),
+        )
+        cum_rewards = (
+            float(self._cum_rewards.get(p0, 0.0)),
+            float(self._cum_rewards.get(p1, 0.0)),
+        )
         return (
             agents,
             int(self._round),
             last_actions,
             bool(self._last_crash),
             cum_rewards,
-            rng_state,
+            self.rng.get_state(),
         )
 
     def set_state(self, state):
-        """
-        Restore a snapshot produced by get_state().
-        """
         (
             agents,
             round_no,
@@ -368,27 +353,41 @@ class ChickenMatrix(ParallelEnv):
             rng_state,
         ) = state
 
+        if len(last_actions) != 2:
+            raise ValueError(
+                "ChickenMatrix.set_state: last_actions must have length 2."
+            )
+        if len(cum_rewards) != 2:
+            raise ValueError(
+                "ChickenMatrix.set_state: cum_rewards must have length 2."
+            )
+
         self.agents = list(agents)
         self._round = int(round_no)
-
         p0, p1 = self.possible_agents
-
-        if len(last_actions) != 2:
-            raise ValueError(f"ChickenMatrix.set_state: last_actions must be len 2, got {len(last_actions)}")
-        if len(cum_rewards) != 2:
-            raise ValueError(f"ChickenMatrix.set_state: cum_rewards must be len 2, got {len(cum_rewards)}")
-
         self._last_actions = {
-            p0: (None if last_actions[0] is None else int(last_actions[0])),
-            p1: (None if last_actions[1] is None else int(last_actions[1])),
+            p0: None if last_actions[0] is None else int(last_actions[0]),
+            p1: None if last_actions[1] is None else int(last_actions[1]),
         }
         self._last_crash = bool(last_crash)
-
-        # Keep keys consistent with step() update style ("player_0"/"player_1")
         self._cum_rewards = {
             p0: float(cum_rewards[0]),
             p1: float(cum_rewards[1]),
         }
+
+        values = tuple(self._last_actions.values())
+        if values == (None, None):
+            if self._last_crash:
+                raise ValueError("Reset Chicken state cannot contain a crash.")
+            self._state = 0
+        elif any(value is None for value in values):
+            raise ValueError("Chicken last actions must both be set or both be None.")
+        else:
+            action = tuple(int(value) for value in values)
+            expected_crash = action == (Actions.Straight, Actions.Straight)
+            if self._last_crash != expected_crash:
+                raise ValueError("Chicken crash flag disagrees with last actions.")
+            self._state = 1 + self.encode_joint_action(action)
 
         if rng_state is not None:
             self.rng.set_state(rng_state)
