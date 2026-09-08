@@ -6,7 +6,7 @@ winning-region safety-game shielding.
 ## Winning-region Mini PacMan example
 
 The
-[winning-region safety-game shielding guide](../Algorithms/Shielded/Winning-Region%20Shielding.md)
+[winning-region safety-game shielding guide](../Shielding/Deterministic/Winning-Region%20Shielding.md)
 explains support-based synthesis and the preemptive and postposed interfaces.
 
 The companion Mini PacMan notebook uses the safety property

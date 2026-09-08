@@ -3,18 +3,21 @@
 ## Monitor API
 
 ```{eval-rst}
-.. automodule:: masa.common.constraints.ltl_safety
-    :members: LTLSafety, LTLSafetyEnv
+.. autoclass:: masa.common.constraints.ltl_safety.LTLSafety
+    :members:
+    :show-inheritance:
+
+.. autoclass:: masa.common.constraints.ltl_safety.LTLSafetyEnv
+    :members:
     :show-inheritance:
 ```
 
 ## Helpers
 
 ```{eval-rst}
-.. automethod:: masa.common.constraints.ltl_safety.create_product_transition_matrix
-.. automethod:: masa.common.constraints.ltl_safety.create_product_successor_states_and_probabilities
-.. automethod:: masa.common.constraints.ltl_safety.create_product_safe_end_component
-.. automethod:: masa.common.constraints.ltl_safety.create_product_label_fn
+.. autofunction:: masa.common.constraints.ltl_safety.create_product_transition_matrix
+.. autofunction:: masa.common.constraints.ltl_safety.create_product_successor_states_and_probabilities
+.. autofunction:: masa.common.constraints.ltl_safety.create_product_label_fn
 ```
 
 
@@ -54,7 +57,7 @@ Both wrappers use the same winning region.
   proposal is unsafe.
 
 See
-[Winning-region safety-game shielding](../../Algorithms/Shielded/Winning-Region%20Shielding.md)
+[Winning-region safety-game shielding](../../Shielding/Deterministic/Winning-Region%20Shielding.md)
 for the safety-game construction, guarantee assumptions, examples, replacement
 strategies, and API reference.
 

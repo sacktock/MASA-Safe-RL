@@ -74,7 +74,7 @@ Environments/Single Agent
 
 Algorithms/Overview
 Algorithms/Tabular
-Algorithms/Tabular/Multi Agent
+Algorithms/Tabular/Multi Agent/Multi Agent
 Algorithms/On Policy
 ```
 

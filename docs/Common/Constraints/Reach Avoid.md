@@ -1,7 +1,11 @@
 # Reach-avoid Constraint
 
 ```{eval-rst}
-.. automodule:: masa.common.constraints.reach_avoid
+.. autoclass:: masa.common.constraints.reach_avoid.ReachAvoid
+    :members:
+    :show-inheritance:
+
+.. autoclass:: masa.common.constraints.reach_avoid.ReachAvoidEnv
     :members:
     :show-inheritance:
 ```

@@ -5,7 +5,7 @@ environments.
 
 ```{toctree}
 Multi-Agent/Constrained Markov Game (CMG)
-# Multi-Agent/ATL
+Multi-Agent/ATL
 ```
 
 ## Labelled parallel environments
@@ -27,6 +27,7 @@ canonical joint-action order from the wrapped environment's `possible_agents`.
 ```{eval-rst}
 .. autoclass:: masa.common.multi_agent.Coalition
    :members:
+   :no-index:
 ```
 
 ## Finite parallel environments
@@ -40,6 +41,7 @@ contract to PettingZoo's Parallel API. Labels remain the responsibility of
 .. autoclass:: masa.envs.multiagent.TabularParallelEnv
    :members:
    :show-inheritance:
+   :no-index:
 ```
 
 The coalition shielding wrapper expects this stack:
@@ -48,5 +50,5 @@ The coalition shielding wrapper expects this stack:
 TabularParallelEnv -> LabelledParallelEnv -> CoalitionLTLShield
 ```
 
-See [Multi-agent coalition safety-game shielding](../../Algorithms/Shielded/Multi-Agent%20Coalition%20Shielding.md)
+See [Multi-agent coalition safety-game shielding](../../Shielding/Deterministic/Multi-Agent%20Coalition%20Shielding.md)
 for synthesis and execution semantics.

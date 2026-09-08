@@ -3,9 +3,19 @@
 ## API Reference
 
 ```{eval-rst}
-.. automodule:: masa.common.pctl
-   :members:  Next, Until, Always, Eventually
-   :special-members: _bound, _prob_seq
-   :private-members:
+.. autoclass:: masa.common.pctl.Next
+   :members:
+   :show-inheritance:
+
+.. autoclass:: masa.common.pctl.Until
+   :members:
+   :show-inheritance:
+
+.. autoclass:: masa.common.pctl.Always
+   :members:
+   :show-inheritance:
+
+.. autoclass:: masa.common.pctl.Eventually
+   :members:
    :show-inheritance:
 ```
