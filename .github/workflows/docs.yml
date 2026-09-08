@@ -1,9 +1,13 @@
 name: Build & Deploy Sphinx docs to Pages
 
-on:
+on: 
   push:
-    branches: [ main ]
-  workflow_dispatch:
+    branches: 
+      - "**"
+  pull_request:
+    branches:
+      - "**"
+    types: [opened, synchronize, edited, reopened, labeled, ready_for_review]
 
 permissions:
   contents: read
