@@ -2,23 +2,26 @@
 
 ## API Reference
 
-```{eval-rst}
-.. autoclass:: masa.common.wrappers.RewardShapingWrapper
-    :members:
-    :show-inheritance:
-.. autoclass:: masa.common.wrappers.NormWrapper
-    :members:
-    :show-inheritance:
-.. autoclass:: masa.common.wrappers.OneHotObsWrapper
-    :members:
-    :show-inheritance:
-.. autoclass:: masa.common.wrappers.FlattenDictObsWrapper
-    :members:
-    :show-inheritance:
-.. autoclass:: masa.common.pettingzoo_record_video.RecordVideoParallel
-    :members:
-    :show-inheritance:
-.. autoclass:: masa.common.pettingzoo_record_video.RecordVideoAEC
-    :members:
-    :show-inheritance:
-```
+::: masa.common.wrappers.RewardShapingWrapper
+    options:
+      members: true
+
+::: masa.common.wrappers.NormWrapper
+    options:
+      members: true
+
+::: masa.common.wrappers.OneHotObsWrapper
+    options:
+      members: true
+
+::: masa.common.wrappers.FlattenDictObsWrapper
+    options:
+      members: true
+
+::: masa.common.pettingzoo_record_video.RecordVideoParallel
+    options:
+      members: true
+
+::: masa.common.pettingzoo_record_video.RecordVideoAEC
+    options:
+      members: true

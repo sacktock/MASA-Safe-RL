@@ -4,32 +4,25 @@
 
 ### Base Class
 
-```{eval-rst}
-.. autoclass:: masa.common.pctl.BoundedPCTLModelChecker
-   :members:
-   :show-inheritance:
-   :special-members: _build_vec_label_fn
-   :private-members:
-```
+::: masa.common.pctl.BoundedPCTLModelChecker
+    options:
+      members: true
+      filters: ["!^__"]
 
 ### Exact Model Checking
 
-```{eval-rst}
-.. autoclass:: masa.common.pctl.ExactModelChecker
-   :members:
-   :show-inheritance:
-```
+::: masa.common.pctl.ExactModelChecker
+    options:
+      members: true
 
 ### Statistical Model Checking
 
-```{eval-rst}
-.. autoclass:: masa.common.pctl.StatisticalModelChecker
-   :members:
-   :show-inheritance:
-```
+::: masa.common.pctl.StatisticalModelChecker
+    options:
+      members: true
 
 ## Helpers
 
-```{eval-rst}
-.. autofunction:: masa.common.pctl.kernel_n_states
-```
+::: masa.common.pctl.kernel_n_states
+    options:
+      members: false

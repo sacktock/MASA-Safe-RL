@@ -3,32 +3,25 @@
 Here, we consider constraints and model interfaces applicable to multi-agent
 environments.
 
-```{toctree}
-Multi-Agent/Constrained Markov Game (CMG)
-Multi-Agent/ATL
-```
 
 ## Labelled parallel environments
 
 `LabelledParallelEnv` attaches proposition labels to each agent's `info` mapping
 without changing observations, rewards, or actions.
 
-```{eval-rst}
-.. autoclass:: masa.common.multi_agent.LabelledParallelEnv
-   :members:
-   :show-inheritance:
-```
+::: masa.common.multi_agent.LabelledParallelEnv
+    options:
+      members: true
 
 ## Coalitions
 
 A `Coalition` is an order-independent set of focal agents. Algorithms obtain the
 canonical joint-action order from the wrapped environment's `possible_agents`.
 
-```{eval-rst}
-.. autoclass:: masa.common.multi_agent.Coalition
-   :members:
-   :no-index:
-```
+::: masa.common.multi_agent.Coalition
+    options:
+      members: true
+      skip_local_inventory: true
 
 ## Finite parallel environments
 
@@ -37,12 +30,10 @@ canonical joint-action order from the wrapped environment's `possible_agents`.
 contract to PettingZoo's Parallel API. Labels remain the responsibility of
 `LabelledParallelEnv`.
 
-```{eval-rst}
-.. autoclass:: masa.envs.multiagent.TabularParallelEnv
-   :members:
-   :show-inheritance:
-   :no-index:
-```
+::: masa.envs.multiagent.TabularParallelEnv
+    options:
+      members: true
+      skip_local_inventory: true
 
 The coalition shielding wrapper expects this stack:
 

@@ -2,7 +2,7 @@
 
 This tutorial compares MASA's registered single-agent constraints on the same environment and action scripts. The point is not to train an agent; it is to see how the same labels can produce different safety metrics.
 
-Runnable notebook: [notebooks/tutorials/04_constraints_tour.ipynb](../../../notebooks/tutorials/04_constraints_tour.ipynb)
+Runnable notebook: [notebooks/tutorials/04_constraints_tour.ipynb](https://github.com/nightly/MASA-Safe-RL/blob/main/notebooks/tutorials/04_constraints_tour.ipynb)
 
 ## Setup
 
@@ -52,43 +52,51 @@ The notebook draws these diagrams with small helper functions. The static docs u
 
 Unsafe script:
 
-```{figure} ../../_static/tutorials/constraints_tour/unsafe_trace.svg
-:alt: Unsafe script reaches blue in colour_grid_world.
-:width: 446px
+<figure markdown="1">
 
+![Unsafe script reaches blue in colour_grid_world.](../../_static/tutorials/constraints_tour/unsafe_trace.svg){ loading=lazy width="446" }
+
+<figcaption markdown="1">
 Seed `1` with actions `[2, 2, 2, 2]` reaches `blue`.
-```
+</figcaption>
+</figure>
 
 Goal script:
 
-```{figure} ../../_static/tutorials/constraints_tour/goal_trace.svg
-:alt: Goal script reaches goal without visiting blue in colour_grid_world.
-:width: 446px
+<figure markdown="1">
 
+![Goal script reaches goal without visiting blue in colour_grid_world.](../../_static/tutorials/constraints_tour/goal_trace.svg){ loading=lazy width="446" }
+
+<figcaption markdown="1">
 Seed `4` with actions `[2] * 8 + [1] * 8` reaches `goal` without visiting `blue`.
-```
+</figcaption>
+</figure>
 
 ### CMDP and Probabilistic Safety
 
 `cmdp` and `prob` both start from the same label-derived unsafe signal. They differ in how they aggregate it over an episode.
 
-```{figure} ../../_static/tutorials/constraints_tour/cmdp_prob.svg
-:alt: CMDP and probabilistic safety both derive metrics from a label-based unsafe signal.
-:width: 900px
+<figure markdown="1">
 
+![CMDP and probabilistic safety both derive metrics from a label-based unsafe signal.](../../_static/tutorials/constraints_tour/cmdp_prob.svg){ loading=lazy width="900" }
+
+<figcaption markdown="1">
 `cmdp` checks accumulated cost against a budget, while `prob` checks the fraction of unsafe steps against `alpha`.
-```
+</figcaption>
+</figure>
 
 ### Constraint Semantics
 
 The same labels are fed to every constraint. The difference is the safety state each constraint derives from those labels.
 
-```{figure} ../../_static/tutorials/constraints_tour/constraint_semantics.svg
-:alt: Same labels feeding different constraint semantics.
-:width: 760px
+<figure markdown="1">
 
+![Same labels feeding different constraint semantics.](../../_static/tutorials/constraints_tour/constraint_semantics.svg){ loading=lazy width="760" }
+
+<figcaption markdown="1">
 `cmdp`, `prob`, `pctl`, `reach_avoid`, and `ltl_safety` interpret the shared labels differently.
-```
+</figcaption>
+</figure>
 
 ## Build Each Constraint
 

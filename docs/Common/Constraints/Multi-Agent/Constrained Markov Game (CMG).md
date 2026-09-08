@@ -1,15 +1,13 @@
 # Constrained Markov Game (CMG)
 
-```{eval-rst}
-.. autoclass:: masa.common.constraints.multi_agent.cmg.Budget
-    :members:
-    :show-inheritance:
+::: masa.common.constraints.multi_agent.cmg.Budget
+    options:
+      members: true
 
-.. autoclass:: masa.common.constraints.multi_agent.cmg.ConstrainedMarkovGame
-    :members:
-    :show-inheritance:
+::: masa.common.constraints.multi_agent.cmg.ConstrainedMarkovGame
+    options:
+      members: true
 
-.. autoclass:: masa.common.constraints.multi_agent.cmg.ConstrainedMarkovGameEnv
-    :members:
-    :show-inheritance:
-```
+::: masa.common.constraints.multi_agent.cmg.ConstrainedMarkovGameEnv
+    options:
+      members: true

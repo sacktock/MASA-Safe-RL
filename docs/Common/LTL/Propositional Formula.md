@@ -1,31 +1,29 @@
 # Propositional Formula
 
-```{eval-rst}
-.. autoclass:: masa.common.ltl.Formula
-   :members:
-   :show-inheritance:
+::: masa.common.ltl.Formula
+    options:
+      members: true
 
-.. autoclass:: masa.common.ltl.Atom
-   :members:
-   :show-inheritance:
+::: masa.common.ltl.Atom
+    options:
+      members: true
 
-.. autoclass:: masa.common.ltl.Truth
-   :members:
-   :show-inheritance:
+::: masa.common.ltl.Truth
+    options:
+      members: true
 
-.. autoclass:: masa.common.ltl.And
-   :members:
-   :show-inheritance:
+::: masa.common.ltl.And
+    options:
+      members: true
 
-.. autoclass:: masa.common.ltl.Or
-   :members:
-   :show-inheritance:
+::: masa.common.ltl.Or
+    options:
+      members: true
 
-.. autoclass:: masa.common.ltl.Neg
-   :members:
-   :show-inheritance:
+::: masa.common.ltl.Neg
+    options:
+      members: true
 
-.. autoclass:: masa.common.ltl.Implies
-   :members:
-   :show-inheritance:
-```
+::: masa.common.ltl.Implies
+    options:
+      members: true

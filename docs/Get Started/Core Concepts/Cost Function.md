@@ -68,9 +68,9 @@ def cost_fn(labels):
 
 MASA follows a strict convention:
 
-```{important}
-**Costs are computed solely from the current set of atomic predicates.**
-```
+!!! warning "Important"
+
+    **Costs are computed solely from the current set of atomic predicates.**
 
 This ensures:
 
@@ -78,21 +78,14 @@ This ensures:
 - compatibility with abstractions, automata, and shielding,
 - independence from hidden environment state.
 
-```{list-table} Labels to cost summary
-:header-rows: 1
-:widths: 30 70
+**Labels to cost summary**
 
-* - Input
-  - Output
-* - ``Iterable[str]`` (labels)
-  - ``float`` (cost)
-* - Empty label set
-  - Valid input
-* - Stateless cost function
-  - Recommended
-* - Stateful costs
-  - Supported via constraints (e.g., DFA)
-```
+| Input | Output |
+| --- | --- |
+| `Iterable[str]` (labels) | `float` (cost) |
+| Empty label set | Valid input |
+| Stateless cost function | Recommended |
+| Stateful costs | Supported via constraints (e.g., DFA) |
 
 ## Constraints (Conceptual Overview)
 
@@ -107,15 +100,15 @@ Conceptually, constraints may:
 - expose step-level and episode-level metrics for logging and evaluation.
 
 In MASA, constraints are implemented as **Gymnasium wrappers** around a
-{class}`masa.common.labelled_env.LabelledEnv`, and are responsible for calling cost
+[`masa.common.labelled_env.LabelledEnv`][masa.common.labelled_env.LabelledEnv], and are responsible for calling cost
 functions, tracking state, and reporting metrics.
 
 For full details on the constraint interface, lifecycle, and provided implementations,
 see the API reference:
 
-```{seealso}
-{doc}`Constraints API Reference <../../Common/Constraints>`
-```
+!!! info "See also"
+
+    [Constraints API Reference](../../Common/Constraints.md)
 
 ## Summary
 

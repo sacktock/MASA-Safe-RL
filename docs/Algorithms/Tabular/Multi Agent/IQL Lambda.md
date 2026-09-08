@@ -2,7 +2,7 @@
 
 Source: `masa/algorithms/multi_agent/iql_lambda.py`
 
-`IQLLambda` extends [IQL](IQL) with fixed, nonnegative penalties derived from CMG budget metrics. It still uses one ordinary MASA `QL` learner per agent.
+`IQLLambda` extends [IQL](IQL.md) with fixed, nonnegative penalties derived from CMG budget metrics. It still uses one ordinary MASA `QL` learner per agent.
 
 For budget `b` over agents `G_b`, the CMG monitor reports the aggregate step cost
 

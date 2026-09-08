@@ -1,11 +1,9 @@
 # Step-wise Probabilistic Constraint
 
-```{eval-rst}
-.. autoclass:: masa.common.constraints.prob.ProbabilisticSafety
-    :members:
-    :show-inheritance:
+::: masa.common.constraints.prob.ProbabilisticSafety
+    options:
+      members: true
 
-.. autoclass:: masa.common.constraints.prob.ProbabilisticSafetyEnv
-    :members:
-    :show-inheritance:
-```
+::: masa.common.constraints.prob.ProbabilisticSafetyEnv
+    options:
+      members: true

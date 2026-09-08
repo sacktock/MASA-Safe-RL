@@ -1,7 +1,7 @@
 # Single Agent
 
 Single-agent environments in MASA use the **Gymnasium** API. They can be used directly as Gymnasium environments, or through
-[`masa.common.utils.make_env`](../Get%20Started/Basic%20Usage) when you want the standard MASA wrapper stack for labels,
+[`masa.common.utils.make_env`](../Get%20Started/Basic%20Usage.md) when you want the standard MASA wrapper stack for labels,
 constraints, and monitoring.
 
 The current collection spans three broad settings:
@@ -36,14 +36,3 @@ For the environments that expose model structure in addition to the Gymnasium st
 - Full transition matrix: all gridworlds, `media_streaming`, `mini_pacman`, and `mini_pacman_with_coins`.
 - Successor-state dictionary: `pacman` and `pacman_with_coins`.
 - Step API only: `cont_cartpole`, `disc_cartpole`, `island_navigation`, `conveyor_belt`, and `sokoban`.
-
-
-```{toctree}
-:hidden:
-
-Single Agent/Cartpole
-Single Agent/Safety Gridworlds
-Single Agent/Pacman
-Single Agent/Gridworlds
-Single Agent/Media Streaming
-```

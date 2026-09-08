@@ -4,14 +4,6 @@ MASA includes native multi-agent tabular gridworlds using the PettingZoo `Parall
 
 ## Available Environments
 
-- [Capture the Flag](Gridworlds/Capture%20the%20Flag)
-- [Clean Up](Gridworlds/Clean%20Up)
-- [Markov Stag Hunt](Gridworlds/Markov%20Stag%20Hunt)
-
-```{toctree}
-:hidden:
-
-Gridworlds/Capture the Flag
-Gridworlds/Clean Up
-Gridworlds/Markov Stag Hunt
-```
+- [Capture the Flag](Gridworlds/Capture%20the%20Flag.md)
+- [Clean Up](Gridworlds/Clean%20Up.md)
+- [Markov Stag Hunt](Gridworlds/Markov%20Stag%20Hunt.md)

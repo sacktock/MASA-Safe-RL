@@ -2,7 +2,7 @@
 
 This page is a stub for the future continuous-action safe RL baselines tutorial. The current runnable baseline in this part of the codebase is `PPO`; `CPO` and `PPO Lagrangian` are important comparison points, but their docs pages are placeholders rather than tutorial-ready implementations.
 
-Runnable notebook: [notebooks/tutorials/07_continuous_safe_rl_baselines.ipynb](../../../notebooks/tutorials/07_continuous_safe_rl_baselines.ipynb)
+Runnable notebook: [notebooks/tutorials/07_continuous_safe_rl_baselines.ipynb](https://github.com/nightly/MASA-Safe-RL/blob/main/notebooks/tutorials/07_continuous_safe_rl_baselines.ipynb)
 
 ## Current Scope
 

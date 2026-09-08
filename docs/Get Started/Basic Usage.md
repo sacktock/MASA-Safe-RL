@@ -1,21 +1,21 @@
 # Basic Usage
 
-This page shows the **minimal** way to use MASA *without* {func}`masa.common.utils.make_env`, by manually
+This page shows the **minimal** way to use MASA *without* [`masa.common.utils.make_env`][masa.common.utils.make_env], by manually
 constructing a Gymnasium environment and wrapping it in the recommended order:
 
-> {class}`~gymnasium.wrappers.TimeLimit` $\rightarrow$
-> {class}`~masa.common.labelled_env.LabelledEnv` $\rightarrow$
-> {class}`~masa.common.constraints.base.BaseConstraintEnv` $\rightarrow$
-> {class}`~masa.common.wrappers.ConstraintMonitor` $\rightarrow$
-> {class}`~masa.common.wrappers.RewardMonitor`
+> `TimeLimit` $\rightarrow$
+> [`LabelledEnv`][masa.common.labelled_env.LabelledEnv] $\rightarrow$
+> [`BaseConstraintEnv`][masa.common.constraints.base.BaseConstraintEnv] $\rightarrow$
+> [`ConstraintMonitor`][masa.common.wrappers.ConstraintMonitor] $\rightarrow$
+> [`RewardMonitor`][masa.common.wrappers.RewardMonitor]
 
-This is the same order enforced by {func}`~masa.common.utils.make_env` (notably, ``TimeLimit`` must come first).
+This is the same order enforced by [`make_env`][masa.common.utils.make_env] (notably, ``TimeLimit`` must come first).
 
 ## Overview
 
 MASA components reason over **labels** (atomic predicates) derived from observations. The wrapper
-{class}`masa.common.labelled_env.LabelledEnv` computes these labels on every {meth}`gymnasium.Env.reset`
-and {meth}`gymnasium.Env.step` and stores them in ``info["labels"]``.
+[`masa.common.labelled_env.LabelledEnv`][masa.common.labelled_env.LabelledEnv] computes these labels on every `gymnasium.Env.reset`
+and `gymnasium.Env.step` and stores them in ``info["labels"]``.
 
 Constraints then consume these labels and expose consistent metrics, while the monitor wrappers
 attach step/episode summaries to the ``info`` dictionary for logging and debugging.
@@ -226,12 +226,14 @@ the central wrapper path, but do not yet include concrete image renderers.
 
 ## API Reference for environment factories
 
-```{eval-rst}
-.. autofunction:: masa.common.utils.make_env
+::: masa.common.utils.make_env
+    options:
+      members: false
 
-.. autofunction:: masa.common.utils.make_marl_env
-```
+::: masa.common.utils.make_marl_env
+    options:
+      members: false
 
 ## Next Steps
 
-- {doc}`Constraints API Reference <../Common/Constraints>` - View the common constraints supported by MASA.
+- [Constraints API Reference](../Common/Constraints.md) - View the common constraints supported by MASA.

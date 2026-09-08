@@ -30,7 +30,7 @@ pip install -e .
 Alternatively, `uv sync --all-groups --no-group cuda12` if your system only supports CUDA 12.
 
 More minimal ways of installing dependency groups:
-* For building docs, use `uv sync --group docs` from the repository root.
+* For building docs, use `uv sync --locked --only-group docs` from the repository root.
 * Adding GPU support for Jax: `uv sync --group cuda13` (or `cuda12` if CUDA 13 is not supported by your device)
 
 ### Installation with PyPI
@@ -82,7 +82,5 @@ masa run --env-id mini_pacman --algo q_learning --seed 0
 
 ## Next Steps
 
-- [Core Concepts](Core%20Concepts/) - Familiarize yourself with the core concepts in MASA.
-- [Basic Usage](Basic%20Usage) - Learn how to use MASA.
-
-
+- [Core Concepts](Core%20Concepts.md) - Familiarize yourself with the core concepts in MASA.
+- [Basic Usage](Basic%20Usage.md) - Learn how to use MASA.

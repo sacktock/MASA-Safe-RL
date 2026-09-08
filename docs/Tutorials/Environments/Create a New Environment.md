@@ -2,7 +2,7 @@
 
 This tutorial shows the smallest useful path from a raw Gymnasium environment to a MASA-ready constrained environment.
 
-Runnable notebook: [notebooks/tutorials/08_create_a_new_environment.ipynb](../../../notebooks/tutorials/08_create_a_new_environment.ipynb)
+Runnable notebook: [notebooks/tutorials/08_create_a_new_environment.ipynb](https://github.com/nightly/MASA-Safe-RL/blob/main/notebooks/tutorials/08_create_a_new_environment.ipynb)
 
 ## Learning Path
 

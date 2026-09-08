@@ -280,15 +280,14 @@ report proposed and executed primitive and coalition actions.
 
 ## API reference
 
-```{eval-rst}
-.. autoclass:: masa.deterministic_shield.CoalitionLTLShield
-   :members:
-   :show-inheritance:
+::: masa.deterministic_shield.CoalitionLTLShield
+    options:
+      members: true
 
-.. autoclass:: masa.common.multi_agent.Coalition
-   :members:
+::: masa.common.multi_agent.Coalition
+    options:
+      members: true
 
-.. autoclass:: masa.envs.multiagent.TabularParallelEnv
-   :members:
-   :show-inheritance:
-```
+::: masa.envs.multiagent.TabularParallelEnv
+    options:
+      members: true

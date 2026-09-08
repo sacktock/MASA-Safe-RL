@@ -2,7 +2,7 @@
 
 This tutorial adapts `masa/examples/prob_shield_example.py` into a guided inspection of probabilistic shielding. Instead of running a long PPO training job, it builds the shielded MiniPacman environment and inspects what the wrapper adds.
 
-Runnable notebook: [notebooks/tutorials/09_probabilistic_shielding_minipacman.ipynb](../../../notebooks/tutorials/09_probabilistic_shielding_minipacman.ipynb)
+Runnable notebook: [notebooks/tutorials/09_probabilistic_shielding_minipacman.ipynb](https://github.com/nightly/MASA-Safe-RL/blob/main/notebooks/tutorials/09_probabilistic_shielding_minipacman.ipynb)
 
 ## Build MiniPacman with PCTL
 
@@ -71,12 +71,14 @@ The first two entries select candidate MiniPacman actions. The remaining entries
 
 The projection step follows the geometry described in the probabilistic shielding paper: action choices live in a probability simplex, and the safety budget cuts out the unsafe part of that simplex. The tiny MDP below uses exact reach-unsafe values so the clipping operation is visible before we inspect the larger MiniPacman state.
 
-```{figure} ../../_static/tutorials/probabilistic_shielding_minipacman/simplex_projection.svg
-:alt: Toy MDP and simplex projection for probabilistic shielding.
-:width: 1040px
+<figure markdown="1">
 
+![Toy MDP and simplex projection for probabilistic shielding.](../../_static/tutorials/probabilistic_shielding_minipacman/simplex_projection.svg){ loading=lazy width="1040" }
+
+<figcaption markdown="1">
 For budget `q=0.10`, `_project_act` keeps action distributions inside the green safe half-space `0.02*pi0 + 0.08*pi1 + 0.20*pi2 <= 0.10`. The red part of the simplex is the clipped-away region above that budget.
-```
+</figcaption>
+</figure>
 
 ## Inspect Projected Safe Actions
 

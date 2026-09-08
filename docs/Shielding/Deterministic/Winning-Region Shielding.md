@@ -543,26 +543,34 @@ It compares:
 It is deliberately a small shielding-interface example rather than a training
 benchmark.
 
-[Open the Mini PacMan deterministic-shielding notebook](../../../tutorial/05_minipacman_deterministic_shielding.ipynb)
+[Open the Mini PacMan deterministic-shielding notebook](https://github.com/nightly/MASA-Safe-RL/blob/main/tutorial/05_minipacman_deterministic_shielding.ipynb)
 
 ## API reference
 
-```{eval-rst}
-.. autoclass:: masa.deterministic_shield.preemptive.PreemptiveLTLShield
-   :members: reset, step, action_masks, close
-   :inherited-members:
-   :undoc-members:
+::: masa.deterministic_shield.preemptive.PreemptiveLTLShield
+    options:
+      members: ["reset", "step", "action_masks", "close"]
+      inherited_members: true
+      show_if_no_docstring: true
 
-.. autoclass:: masa.deterministic_shield.postposed.PostposedLTLShield
-   :members: reset, step, action_masks, close
-   :inherited-members:
-   :undoc-members:
+::: masa.deterministic_shield.postposed.PostposedLTLShield
+    options:
+      members: ["reset", "step", "action_masks", "close"]
+      inherited_members: true
+      show_if_no_docstring: true
 
-.. autofunction:: masa.deterministic_shield.replacement_strategies.random_safe
+::: masa.deterministic_shield.replacement_strategies.random_safe
+    options:
+      members: false
 
-.. autofunction:: masa.deterministic_shield.replacement_strategies.highest_score
+::: masa.deterministic_shield.replacement_strategies.highest_score
+    options:
+      members: false
 
-.. autofunction:: masa.deterministic_shield.support.read_support
+::: masa.deterministic_shield.support.read_support
+    options:
+      members: false
 
-.. autofunction:: masa.deterministic_shield.winning_region.winning_region
-```
+::: masa.deterministic_shield.winning_region.winning_region
+    options:
+      members: false

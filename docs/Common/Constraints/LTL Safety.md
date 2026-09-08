@@ -2,23 +2,27 @@
 
 ## Monitor API
 
-```{eval-rst}
-.. autoclass:: masa.common.constraints.ltl_safety.LTLSafety
-    :members:
-    :show-inheritance:
+::: masa.common.constraints.ltl_safety.LTLSafety
+    options:
+      members: true
 
-.. autoclass:: masa.common.constraints.ltl_safety.LTLSafetyEnv
-    :members:
-    :show-inheritance:
-```
+::: masa.common.constraints.ltl_safety.LTLSafetyEnv
+    options:
+      members: true
 
 ## Helpers
 
-```{eval-rst}
-.. autofunction:: masa.common.constraints.ltl_safety.create_product_transition_matrix
-.. autofunction:: masa.common.constraints.ltl_safety.create_product_successor_states_and_probabilities
-.. autofunction:: masa.common.constraints.ltl_safety.create_product_label_fn
-```
+::: masa.common.constraints.ltl_safety.create_product_transition_matrix
+    options:
+      members: false
+
+::: masa.common.constraints.ltl_safety.create_product_successor_states_and_probabilities
+    options:
+      members: false
+
+::: masa.common.constraints.ltl_safety.create_product_label_fn
+    options:
+      members: false
 
 
 ## Monitoring versus enforcement

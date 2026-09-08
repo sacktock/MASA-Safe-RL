@@ -2,7 +2,7 @@
 
 Source: `masa/algorithms/multi_agent/iql_lagrangian.py`
 
-`IQLLagrangian` uses the same penalized reward as [IQL Lambda](IQL%20Lambda), but adapts one multiplier for each selected CMG budget. Multipliers remain fixed during an episode. After a batch of complete training episodes, each dual variable is updated by
+`IQLLagrangian` uses the same penalized reward as [IQL Lambda](IQL%20Lambda.md), but adapts one multiplier for each selected CMG budget. Multipliers remain fixed during an episode. After a batch of complete training episodes, each dual variable is updated by
 
 $$
 \lambda_b
