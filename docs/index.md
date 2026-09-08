@@ -81,9 +81,11 @@ Algorithms/On Policy
 ```{toctree}
 :caption: Shielding
 :hidden:
+:titlesonly:
 :maxdepth: 1
 
-Shielding/Deterministic/Multi-Agent Coalition Shielding
+Shielding/Probabilistic/Probabilistic Shielding
+Shielding/Deterministic/Winning-Region Shielding
 Shielding/Overview
 ```
 

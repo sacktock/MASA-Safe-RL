@@ -10,7 +10,7 @@ arXiv: https://arxiv.org/abs/2503.07671
 The approach guarantees **probabilistic safety during both training and evaluation**, while
 remaining **optimality-preserving** among all safe policies.
 
-# Overview
+## Overview
 
 Probabilistic Shielding addresses reinforcement learning problems of the form:
 
@@ -27,7 +27,7 @@ Rather than constraining the policy directly, the method constructs a
 
 Any standard RL algorithm (e.g. PPO) can then be trained on the shielded environment.
 
-# Generic Procedure
+## Generic Procedure
 
 Given an environment with known **safety dynamics**:
 
@@ -49,7 +49,7 @@ Given an environment with known **safety dynamics**:
    Safety is guaranteed **by construction**, not by penalties or Lagrangians.
 
 
-# The ``ProbShieldWrapperDisc``
+## The ``ProbShieldWrapperDisc``
 
 The main entry point is the Gymnasium wrapper:
 
@@ -85,7 +85,7 @@ The wrapper:
 
 Implementation details can be found in ``prob_shield_wrapper_disc.py``.
 
-# Usage Examples
+## Usage Examples
 
 ## Basic Probabilistic Shielding (Discrete MDP, PCTL)
 
@@ -153,16 +153,16 @@ of the LTL safety property.
 
 See ``prob_shield_ltl_example.py``.
 
-# When to Use
+## When to Use
 
 Use Probabilistic Shielding when:
 
 - Safety is **non-negotiable**
-- Constraints are **probabilistic**, not expected-cost based
+- Constraints are **probabilistic**, not expected-cost based or deterministic
 - You want **formal guarantees**, not penalties or Lagrangians
 - The safety dynamics (or a conservative abstraction) are known
 
-# Citation
+## Citation
 
 If you use this implementation, please cite:
 
