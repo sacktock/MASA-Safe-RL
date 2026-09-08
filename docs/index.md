@@ -83,8 +83,6 @@ Algorithms/On Policy
 :hidden:
 :maxdepth: 1
 
-Shielding/Probabilistic
-Shielding/Deterministic
 Shielding/Deterministic/Multi-Agent Coalition Shielding
 Shielding/Overview
 ```
