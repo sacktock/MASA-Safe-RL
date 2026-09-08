@@ -4,7 +4,7 @@ MASA provides two shielding approaches with different safety semantics and polic
 interfaces.
 
 ```{toctree}
-:maxdepth: 2
+:maxdepth: 1
 
 Deterministic/Winning-Region Shielding
 Deterministic/Multi-Agent Coalition Shielding

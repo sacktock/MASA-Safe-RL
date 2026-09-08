@@ -18,9 +18,9 @@ Probabilistic Shielding addresses reinforcement learning problems of the form:
 
 Safety is expressed as an **avoidance property**:
 
-.. math::
-
+$$
     \mathbb{P}(\text{reach unsafe}) \le p
+$$
 
 Rather than constraining the policy directly, the method constructs a
 **safety-aware augmented MDP** (the *shield*) in which **every policy is provably safe**.
