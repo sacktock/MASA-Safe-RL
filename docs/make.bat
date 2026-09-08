@@ -1,35 +1,24 @@
-@ECHO OFF
-
-pushd %~dp0
-
-REM Command file for Sphinx documentation
-
-if "%SPHINXBUILD%" == "" (
-	set SPHINXBUILD=sphinx-build
-)
-set SOURCEDIR=.
-set BUILDDIR=_build
-
-%SPHINXBUILD% >NUL 2>NUL
-if errorlevel 9009 (
-	echo.
-	echo.The 'sphinx-build' command was not found. Make sure you have Sphinx
-	echo.installed, then set the SPHINXBUILD environment variable to point
-	echo.to the full path of the 'sphinx-build' executable. Alternatively you
-	echo.may add the Sphinx directory to PATH.
-	echo.
-	echo.If you don't have Sphinx installed, grab it from
-	echo.https://www.sphinx-doc.org/
-	exit /b 1
-)
-
-if "%1" == "" goto help
-
-%SPHINXBUILD% -M %1 %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
+@echo off
+setlocal
+pushd "%~dp0.."
+if "%UV%"=="" set "UV=uv"
+if "%1"=="html" goto build
+if "%1"=="build" goto build
+if "%1"=="serve" goto serve
+if "%1"=="clean" goto clean
+echo Usage: docs\make.bat [html^|build^|serve^|clean]
+set "RESULT=1"
 goto end
-
-:help
-%SPHINXBUILD% -M help %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
-
+:build
+%UV% run --locked --only-group docs zensical build --strict --clean
+goto result
+:serve
+%UV% run --locked --only-group docs zensical serve
+goto result
+:clean
+%UV% run --locked --only-group docs python -c "import shutil; [shutil.rmtree(p, ignore_errors=True) for p in ('site', '.cache', 'docs/_build')]"
+:result
+set "RESULT=%ERRORLEVEL%"
 :end
 popd
+exit /b %RESULT%

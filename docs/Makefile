@@ -1,20 +1,23 @@
-# Minimal makefile for Sphinx documentation
-#
+# Run from any working directory with make -C docs <target>.
+UV ?= uv
+ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/..)
+RUN = cd "$(ROOT)" && $(UV) run --locked --only-group docs
 
-# You can set these variables from the command line, and also
-# from the environment for the first two.
-SPHINXOPTS    ?=
-SPHINXBUILD   ?= sphinx-build
-SOURCEDIR     = .
-BUILDDIR      = _build
-
-# Put it first so that "make" without argument is like "make help".
+.PHONY: help html build serve check clean
 help:
-	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+	@echo "Targets: html (strict build), serve (preview), check (tests and links), clean"
 
-.PHONY: help Makefile
+html build:
+	$(RUN) zensical build --strict --clean
 
-# Catch-all target: route all unknown targets to Sphinx using the new
-# "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
-%: Makefile
-	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+serve:
+	$(RUN) zensical serve
+
+check:
+	$(RUN) python -m unittest discover -s tests/docs -v
+	$(RUN) python scripts/check_docs.py
+	$(RUN) zensical build --strict --clean
+	$(RUN) python scripts/check_docs.py --site site
+
+clean:
+	$(RUN) python -c "import shutil; [shutil.rmtree(p, ignore_errors=True) for p in ('site', '.cache', 'docs/_build')]"

@@ -1,24 +1,63 @@
-name: Docs migration workspace
+name: Apply and verify docs migration
 
 on:
   push:
     branches: [docs/migrate-to-zensical]
-    paths: [.github/workflows/docs-migration-check.yml]
+    paths: [.migration/**, .github/workflows/docs-migration-check.yml]
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: docs-migration-apply
+  cancel-in-progress: false
 
 jobs:
-  workspace:
+  migrate:
+    if: github.ref == 'refs/heads/docs/migrate-to-zensical'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
         with:
-          persist-credentials: false
-      - name: Export tracked sources for migration validation
+          ref: docs/migrate-to-zensical
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - uses: astral-sh/setup-uv@v7
+      - name: Convert native documentation and lock dependencies
+        run: |
+          if grep -q '# MIGRATION_NAV' zensical.toml; then
+            python .migration/migrate.py
+            python .migration/home.py
+          fi
+          uv lock
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs pyproject.toml uv.lock README.md .gitignore zensical.toml
+          if ! git diff --cached --quiet; then
+            git commit -m 'docs: convert Sphinx pages to native Zensical and lock docs dependencies'
+            git push origin HEAD:docs/migrate-to-zensical
+          fi
+      - name: Install documentation dependencies only
+        run: uv sync --locked --only-group docs
+      - name: Test docstring adapter and navigation
+        run: |
+          uv run --locked --only-group docs python -m unittest discover -s tests/docs -v
+          uv run --locked --only-group docs python scripts/check_docs.py
+      - name: Build strict Zensical site
+        run: uv run --locked --only-group docs zensical build --strict --clean 2>&1 | tee build.log
+      - name: Check built local URLs
+        run: uv run --locked --only-group docs python scripts/check_docs.py --site site 2>&1 | tee links.log
+      - name: Export validation workspace
+        if: always()
         run: git archive HEAD -o source.zip
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: docs-migration-source
-          path: source.zip
-          retention-days: 1
+          name: zensical-migration-validation
+          path: |
+            source.zip
+            site/
+            build.log
+            links.log
+          retention-days: 2
