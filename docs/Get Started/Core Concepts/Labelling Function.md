@@ -126,9 +126,10 @@ labels = info["labels"]
 
 ### API Reference
 
-```{autoclass} masa.common.labelled_env.LabelledEnv
-:members:
-:show-inheritance:
+```{eval-rst}
+.. autoclass:: masa.common.labelled_env.LabelledEnv
+   :members:
+   :show-inheritance:
 ```
 
 ## Common Pitfalls

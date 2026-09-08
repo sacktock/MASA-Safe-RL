@@ -226,10 +226,10 @@ the central wrapper path, but do not yet include concrete image renderers.
 
 ## API Reference for environment factories
 
-```{autofunction} masa.common.utils.make_env
-```
+```{eval-rst}
+.. autofunction:: masa.common.utils.make_env
 
-```{autofunction} masa.common.utils.make_marl_env
+.. autofunction:: masa.common.utils.make_marl_env
 ```
 
 ## Next Steps
