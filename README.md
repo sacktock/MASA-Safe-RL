@@ -102,7 +102,7 @@ Documentation uses the root `pyproject.toml` and `uv.lock`, so you can build and
 
 ```bash
 uv sync --group docs
-uv run --locked --group docs sphinx-build -b html docs docs/_build/html
+uv run --locked --group docs sphinx-build -W -b html docs docs/_build/html
 ```
 
 The built site will be available at `docs/_build/html/index.html`.

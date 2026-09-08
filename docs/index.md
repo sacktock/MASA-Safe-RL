@@ -81,7 +81,7 @@ Algorithms/On Policy
 ```{toctree}
 :caption: Shielding
 :hidden:
-:maxdepth: 2
+:maxdepth: 1
 
 Shielding/Shielding
 ```
