@@ -8,6 +8,7 @@ import numpy as np
 from gymnasium.spaces import Box, Discrete
 from pettingzoo import ParallelEnv
 
+from masa.envs.multiagent.tabular_env import TabularParallelEnv
 from masa.envs.multiagent.matrix._label_utils import (
     binary_cost,
     flatten_binary_obs,

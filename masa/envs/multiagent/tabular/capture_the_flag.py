@@ -8,6 +8,7 @@ import numpy as np
 from gymnasium import spaces
 from pettingzoo import ParallelEnv
 
+from masa.envs.multiagent.tabular_env import TabularParallelEnv
 from masa.envs.multiagent.tabular.renderers.capture_the_flag import (
     CaptureTheFlagRenderer,
     validate_renderer_options,
