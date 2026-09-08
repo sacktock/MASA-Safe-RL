@@ -3,10 +3,10 @@
 This page shows the **minimal** way to use MASA *without* {func}`masa.common.utils.make_env`, by manually
 constructing a Gymnasium environment and wrapping it in the recommended order:
 
-> {class}`~gymnasium.wrappers.TimeLimit` $\rightarrow$  
-> {class}`~masa.common.labelled_env.LabelledEnv` $\rightarrow$  
-> {class}`~masa.common.constraints.base.BaseConstraintEnv` $\rightarrow$  
-> {class}`~masa.common.wrappers.ConstraintMonitor` $\rightarrow$  
+> {class}`~gymnasium.wrappers.TimeLimit` $\rightarrow$
+> {class}`~masa.common.labelled_env.LabelledEnv` $\rightarrow$
+> {class}`~masa.common.constraints.base.BaseConstraintEnv` $\rightarrow$
+> {class}`~masa.common.wrappers.ConstraintMonitor` $\rightarrow$
 > {class}`~masa.common.wrappers.RewardMonitor`
 
 This is the same order enforced by {func}`~masa.common.utils.make_env` (notably, ``TimeLimit`` must come first).
