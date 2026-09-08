@@ -83,7 +83,8 @@ Algorithms/On Policy
 :hidden:
 :maxdepth: 1
 
-Shielding/Shielding
+Shielding/Deterministic/Multi-Agent Coalition Shielding
+Shielding/Overview
 ```
 
 ```{toctree}
