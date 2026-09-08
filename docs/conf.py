@@ -31,6 +31,7 @@ extensions = [
 
 myst_enable_extensions = [
     "eval-rst",
+    "dollarmath",
 ]
 
 templates_path = ['_templates']

@@ -17,6 +17,7 @@ The docs are currently organised as follows:
 - **Common API**: API references for common constraints, wrappers, metrics logging and temporal logics used in MASA.
 - **Environments**: list of benchmark environments currently provided in MASA.
 - **Algorithms**: list of algorithms currently provided in MASA.
+- **Shielding**: deterministic and probabilistic shielding approaches are covered.
 - **Misc**: auxilliary wrappers, e.g., probabilistic shielding.
 
 We recommend you follow the docs in the provided order starting from **Get Started** to learn about the core concepts in MASA and basic usage.
@@ -80,9 +81,9 @@ Algorithms/On Policy
 ```{toctree}
 :caption: Shielding
 :hidden:
+:maxdepth: 2
 
-Shielding/Deterministic
-Shielding/Probabilistic
+Shielding/Shielding
 ```
 
 ```{toctree}
