@@ -72,3 +72,11 @@ docs = [
 tutorial = [
     "matplotlib>=3.10.9"
 ]
+
+[tool.uv]
+conflicts = [
+    [
+        { group = "cuda12" },
+        { group = "cuda13" },
+    ],
+]

@@ -50,8 +50,8 @@ pip install -e .
 `uv sync` installs the base package from the repository root.
 
 * For building docs, use `uv sync --group docs` from the repository root.
-* Adding GPU support for Jax: `uv sync --group cuda12` (or `cuda13` if supported by your device)
-* All groups (docs and GPU support): `uv sync --all-groups`.
+* Adding GPU support for Jax: `uv sync --group cuda13` (or `cuda12` if CUDA 13 is not supported by your device)
+* **Easiest:** All groups (docs and GPU support): `uv sync --all-groups --no-group cuda13` or `uv sync --all-groups --no-group cuda12` if your system only supports CUDA 12.
 
 #### Installation with PyPI
 
