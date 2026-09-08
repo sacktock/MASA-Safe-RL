@@ -7,7 +7,7 @@ from itertools import product
 
 import numpy as np
 
-from masa.envs.multiagent.base import TabularParallelEnv
+from masa.envs.multiagent.tabular_env import TabularParallelEnv
 
 
 @dataclass(frozen=True, slots=True)
