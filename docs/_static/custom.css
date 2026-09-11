@@ -36,6 +36,31 @@
 .md-header, .md-tabs { color: #f2faf8; background: #0b283b; }
 .md-header { box-shadow: 0 1px 0 #ffffff18; }
 .md-header__button.md-logo img { height: 1.7rem; width: auto; }
+/* The header is navy in both palettes, so the search trigger cannot inherit the
+   theme's page-background colours -- they are unreadable on navy in light mode. */
+.md-search__button {
+  width: 14rem; height: 2rem; font-size: .78rem;
+  color: #bdd3dc; background-color: #ffffff1c;
+  border: 1px solid #ffffff26; border-radius: .5rem;
+}
+.md-search__button:hover, .md-search__button:focus {
+  color: #f2faf8; background-color: #ffffff2e; border-color: #ffffff45;
+}
+[dir="ltr"] .md-search__button { padding-left: 2.2rem; padding-right: 2.9rem; }
+[dir="rtl"] .md-search__button { padding-right: 2.2rem; padding-left: 2.9rem; }
+.md-search__button::before {
+  top: .5rem; width: 1rem; height: 1rem; background-color: currentcolor;
+}
+[dir="ltr"] .md-search__button::before { left: .6rem; }
+[dir="rtl"] .md-search__button::before { right: .6rem; }
+.md-search__button::after {
+  top: .5rem; color: #cfe0e6; background: #ffffff1f; border: 1px solid #ffffff26;
+}
+[dir="ltr"] .md-search__button::after { right: .5rem; }
+[dir="rtl"] .md-search__button::after { left: .5rem; }
+@media screen and (max-width: 76.234375em) {
+  .md-search__button { width: 10rem; }
+}
 .md-grid { max-width: 86rem; }
 .md-typeset { line-height: 1.7; }
 .md-typeset h1, .md-typeset h2, .md-typeset h3 {
@@ -53,7 +78,8 @@
   box-shadow: var(--masa-shadow);
 }
 .masa-hero .masa-wordmark {
-  display: block; width: 100%; margin: 0 auto 1.2rem;
+  /* The wordmark is 1024x415 art; cap it so it stays a header, not a banner. */
+  display: block; width: 100%; max-width: 26rem; height: auto; margin: 0 auto 1.2rem;
   border-radius: .65rem; background: #ffffff;
 }
 .masa-hero .masa-eyebrow {
