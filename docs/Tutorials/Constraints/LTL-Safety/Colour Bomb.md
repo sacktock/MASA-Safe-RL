@@ -2,7 +2,7 @@
 
 This tutorial focuses on MASA's `ltl_safety` constraint. Colour Bomb Grid World gives us labelled traces such as `bomb` and `medic`; the LTL-safety wrapper advances a DFA over those labels and reports violations when the DFA reaches an accepting unsafe state.
 
-Runnable notebook: [notebooks/tutorials/05_ltl_safety_colour_bomb.ipynb](https://github.com/nightly/MASA-Safe-RL/blob/main/notebooks/tutorials/05_ltl_safety_colour_bomb.ipynb)
+Runnable notebook: [notebooks/tutorials/05_ltl_safety_colour_bomb.ipynb](https://github.com/sacktockMASA-Safe-RL/blob/main/notebooks/tutorials/05_ltl_safety_colour_bomb.ipynb)
 
 ## Setup
 

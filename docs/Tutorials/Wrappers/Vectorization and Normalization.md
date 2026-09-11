@@ -2,7 +2,7 @@
 
 This tutorial demonstrates MASA's observation, vectorization, and normalization wrappers without training a policy.
 
-Runnable notebook: [notebooks/tutorials/11_vectorization_and_normalization.ipynb](https://github.com/nightly/MASA-Safe-RL/blob/main/notebooks/tutorials/11_vectorization_and_normalization.ipynb)
+Runnable notebook: [notebooks/tutorials/11_vectorization_and_normalization.ipynb](https://github.com/sacktockMASA-Safe-RL/blob/main/notebooks/tutorials/11_vectorization_and_normalization.ipynb)
 
 ## Wrapper Map
 

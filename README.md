@@ -118,7 +118,7 @@ uv run zensical serve
 
 ## Getting in Touch
 
-MASA-Safe-RL is primarliy managed by [Alex Goodall](https://github.com/sacktock) and [Omar Adalat](https://github.com/nightly). For correspondence in the early stages of the library we prefer you contact us directly via email (a.goodall22@imperial.ac.uk), rather than raising issues on GitHub directly.
+MASA-Safe-RL is primarliy managed by [Alex Goodall](https://github.com/sacktock) and [Omar Adalat](https://github.com/nightly). For correspondence in the early stages of the library we prefer you contact us directly via email (a.goodall22@imperial.ac.uk & o.adalat24@imperial.ac.uk), rather than raising issues on GitHub directly.
 
 ## License
 

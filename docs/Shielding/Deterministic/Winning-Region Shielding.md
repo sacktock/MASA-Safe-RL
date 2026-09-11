@@ -543,7 +543,7 @@ It compares:
 It is deliberately a small shielding-interface example rather than a training
 benchmark.
 
-[Open the Mini PacMan deterministic-shielding notebook](https://github.com/nightly/MASA-Safe-RL/blob/main/tutorial/05_minipacman_deterministic_shielding.ipynb)
+[Open the Mini PacMan deterministic-shielding notebook](https://github.com/sacktockMASA-Safe-RL/blob/main/tutorial/05_minipacman_deterministic_shielding.ipynb)
 
 ## API reference
 

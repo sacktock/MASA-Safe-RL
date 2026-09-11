@@ -2,7 +2,7 @@
 
 This tutorial adapts `masa/examples/prob_shield_example.py` into a guided inspection of probabilistic shielding. Instead of running a long PPO training job, it builds the shielded MiniPacman environment and inspects what the wrapper adds.
 
-Runnable notebook: [notebooks/tutorials/09_probabilistic_shielding_minipacman.ipynb](https://github.com/nightly/MASA-Safe-RL/blob/main/notebooks/tutorials/09_probabilistic_shielding_minipacman.ipynb)
+Runnable notebook: [notebooks/tutorials/09_probabilistic_shielding_minipacman.ipynb](https://github.com/sacktockMASA-Safe-RL/blob/main/notebooks/tutorials/09_probabilistic_shielding_minipacman.ipynb)
 
 ## Build MiniPacman with PCTL
 

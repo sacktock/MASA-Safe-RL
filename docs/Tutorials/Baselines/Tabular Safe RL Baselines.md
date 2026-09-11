@@ -2,7 +2,7 @@
 
 This tutorial compares MASA's tabular safe RL baselines on one constrained tabular environment. The point is to read the reward/safety tradeoff each method encodes, not to rank algorithms from a tiny run.
 
-Runnable notebook: [notebooks/tutorials/06_tabular_safe_rl_baselines.ipynb](https://github.com/nightly/MASA-Safe-RL/blob/main/notebooks/tutorials/06_tabular_safe_rl_baselines.ipynb)
+Runnable notebook: [notebooks/tutorials/06_tabular_safe_rl_baselines.ipynb](https://github.com/sacktockMASA-Safe-RL/blob/main/notebooks/tutorials/06_tabular_safe_rl_baselines.ipynb)
 
 ## Shared Setup
 

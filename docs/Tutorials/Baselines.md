@@ -9,5 +9,5 @@ For a verified list of the algorithms currently present in the codebase, start w
 
 Runnable notebooks:
 
-- [notebooks/tutorials/06_tabular_safe_rl_baselines.ipynb](https://github.com/nightly/MASA-Safe-RL/blob/main/notebooks/tutorials/06_tabular_safe_rl_baselines.ipynb)
-- [notebooks/tutorials/07_continuous_safe_rl_baselines.ipynb](https://github.com/nightly/MASA-Safe-RL/blob/main/notebooks/tutorials/07_continuous_safe_rl_baselines.ipynb)
+- [notebooks/tutorials/06_tabular_safe_rl_baselines.ipynb](https://github.com/sacktockMASA-Safe-RL/blob/main/notebooks/tutorials/06_tabular_safe_rl_baselines.ipynb)
+- [notebooks/tutorials/07_continuous_safe_rl_baselines.ipynb](https://github.com/sacktockMASA-Safe-RL/blob/main/notebooks/tutorials/07_continuous_safe_rl_baselines.ipynb)

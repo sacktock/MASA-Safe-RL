@@ -8,7 +8,7 @@ This tutorial gets MASA running end to end with a tiny safe RL experiment. You w
 - run a tiny `q_learning` smoke experiment,
 - read the training and evaluation logs.
 
-Runnable notebook: [notebooks/tutorials/01_first_masa_experiment.ipynb](https://github.com/nightly/MASA-Safe-RL/blob/main/notebooks/tutorials/01_first_masa_experiment.ipynb)
+Runnable notebook: [notebooks/tutorials/01_first_masa_experiment.ipynb](https://github.com/sacktockMASA-Safe-RL/blob/main/notebooks/tutorials/01_first_masa_experiment.ipynb)
 
 ## CPU-First Setup
 

@@ -6,4 +6,4 @@ These tutorials show how MASA uses PettingZoo parallel environments for multi-ag
 
 Runnable notebooks:
 
-- [notebooks/tutorials/12_multi_agent_cmg.ipynb](https://github.com/nightly/MASA-Safe-RL/blob/main/notebooks/tutorials/12_multi_agent_cmg.ipynb)
+- [notebooks/tutorials/12_multi_agent_cmg.ipynb](https://github.com/sacktockMASA-Safe-RL/blob/main/notebooks/tutorials/12_multi_agent_cmg.ipynb)

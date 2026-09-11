@@ -7,5 +7,5 @@ These tutorials focus on MASA constraint setup and LTL-safety monitoring.
 
 Runnable notebooks:
 
-- [notebooks/tutorials/04_constraints_tour.ipynb](https://github.com/nightly/MASA-Safe-RL/blob/main/notebooks/tutorials/04_constraints_tour.ipynb)
-- [notebooks/tutorials/05_ltl_safety_colour_bomb.ipynb](https://github.com/nightly/MASA-Safe-RL/blob/main/notebooks/tutorials/05_ltl_safety_colour_bomb.ipynb)
+- [notebooks/tutorials/04_constraints_tour.ipynb](https://github.com/sacktockMASA-Safe-RL/blob/main/notebooks/tutorials/04_constraints_tour.ipynb)
+- [notebooks/tutorials/05_ltl_safety_colour_bomb.ipynb](https://github.com/sacktockMASA-Safe-RL/blob/main/notebooks/tutorials/05_ltl_safety_colour_bomb.ipynb)

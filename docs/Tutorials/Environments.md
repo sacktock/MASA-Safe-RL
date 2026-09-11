@@ -6,4 +6,4 @@ These tutorials show how to create and adapt environments for MASA's labelling, 
 
 Runnable notebooks:
 
-- [notebooks/tutorials/08_create_a_new_environment.ipynb](https://github.com/nightly/MASA-Safe-RL/blob/main/notebooks/tutorials/08_create_a_new_environment.ipynb)
+- [notebooks/tutorials/08_create_a_new_environment.ipynb](https://github.com/sacktockMASA-Safe-RL/blob/main/notebooks/tutorials/08_create_a_new_environment.ipynb)

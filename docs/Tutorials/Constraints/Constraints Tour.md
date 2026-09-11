@@ -2,7 +2,7 @@
 
 This tutorial compares MASA's registered single-agent constraints on the same environment and action scripts. The point is not to train an agent; it is to see how the same labels can produce different safety metrics.
 
-Runnable notebook: [notebooks/tutorials/04_constraints_tour.ipynb](https://github.com/nightly/MASA-Safe-RL/blob/main/notebooks/tutorials/04_constraints_tour.ipynb)
+Runnable notebook: [notebooks/tutorials/04_constraints_tour.ipynb](https://github.com/sacktockMASA-Safe-RL/blob/main/notebooks/tutorials/04_constraints_tour.ipynb)
 
 ## Setup
 

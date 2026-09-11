@@ -8,6 +8,6 @@ These tutorials are the shortest path from a fresh checkout to a working MASA ex
 
 Runnable notebooks:
 
-- [notebooks/tutorials/01_first_masa_experiment.ipynb](https://github.com/nightly/MASA-Safe-RL/blob/main/notebooks/tutorials/01_first_masa_experiment.ipynb)
-- [notebooks/tutorials/02_labels_costs_and_infos.ipynb](https://github.com/nightly/MASA-Safe-RL/blob/main/notebooks/tutorials/02_labels_costs_and_infos.ipynb)
-- [notebooks/tutorials/03_wrapper_stack.ipynb](https://github.com/nightly/MASA-Safe-RL/blob/main/notebooks/tutorials/03_wrapper_stack.ipynb)
+- [notebooks/tutorials/01_first_masa_experiment.ipynb](https://github.com/sacktockMASA-Safe-RL/blob/main/notebooks/tutorials/01_first_masa_experiment.ipynb)
+- [notebooks/tutorials/02_labels_costs_and_infos.ipynb](https://github.com/sacktockMASA-Safe-RL/blob/main/notebooks/tutorials/02_labels_costs_and_infos.ipynb)
+- [notebooks/tutorials/03_wrapper_stack.ipynb](https://github.com/sacktockMASA-Safe-RL/blob/main/notebooks/tutorials/03_wrapper_stack.ipynb)

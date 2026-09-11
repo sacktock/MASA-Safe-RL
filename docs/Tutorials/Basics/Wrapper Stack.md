@@ -5,7 +5,7 @@ This tutorial shows that `make_env(...)` is a convenience around a concrete wrap
 - with `make_env(...)`,
 - manually with each wrapper in order.
 
-Runnable notebook: [notebooks/tutorials/03_wrapper_stack.ipynb](https://github.com/nightly/MASA-Safe-RL/blob/main/notebooks/tutorials/03_wrapper_stack.ipynb)
+Runnable notebook: [notebooks/tutorials/03_wrapper_stack.ipynb](https://github.com/sacktockMASA-Safe-RL/blob/main/notebooks/tutorials/03_wrapper_stack.ipynb)
 
 ## CPU-First Setup
 

@@ -6,4 +6,4 @@ These tutorials show how to configure and inspect LTL-safety constraints in MASA
 
 Runnable notebooks:
 
-- [notebooks/tutorials/05_ltl_safety_colour_bomb.ipynb](https://github.com/nightly/MASA-Safe-RL/blob/main/notebooks/tutorials/05_ltl_safety_colour_bomb.ipynb)
+- [notebooks/tutorials/05_ltl_safety_colour_bomb.ipynb](https://github.com/sacktockMASA-Safe-RL/blob/main/notebooks/tutorials/05_ltl_safety_colour_bomb.ipynb)

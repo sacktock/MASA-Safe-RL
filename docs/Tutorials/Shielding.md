@@ -23,7 +23,7 @@ and compares:
 The notebook is a small shielding-interface demonstration rather than a training
 benchmark or a guarantee of task completion.
 
-[Open `tutorial/05_minipacman_deterministic_shielding.ipynb`](https://github.com/nightly/MASA-Safe-RL/blob/main/tutorial/05_minipacman_deterministic_shielding.ipynb)
+[Open `tutorial/05_minipacman_deterministic_shielding.ipynb`](https://github.com/sacktockMASA-Safe-RL/blob/main/tutorial/05_minipacman_deterministic_shielding.ipynb)
 
 
 It uses `replacement_strategies.random_safe`. The replacement random generator is
@@ -55,5 +55,5 @@ consume.
 
 Runnable notebooks:
 
-- [`notebooks/tutorials/09_probabilistic_shielding_minipacman.ipynb`](https://github.com/nightly/MASA-Safe-RL/blob/main/notebooks/tutorials/09_probabilistic_shielding_minipacman.ipynb)
-- [`notebooks/tutorials/10_safety_abstractions_pacman_coins.ipynb`](https://github.com/nightly/MASA-Safe-RL/blob/main/notebooks/tutorials/10_safety_abstractions_pacman_coins.ipynb)
+- [`notebooks/tutorials/09_probabilistic_shielding_minipacman.ipynb`](https://github.com/sacktockMASA-Safe-RL/blob/main/notebooks/tutorials/09_probabilistic_shielding_minipacman.ipynb)
+- [`notebooks/tutorials/10_safety_abstractions_pacman_coins.ipynb`](https://github.com/sacktockMASA-Safe-RL/blob/main/notebooks/tutorials/10_safety_abstractions_pacman_coins.ipynb)
