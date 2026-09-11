@@ -1,4 +1,4 @@
-/* MASA: navy, teal and safety-green accents drawn from the existing logo.
+/* MASA: navy and blue accents drawn from the existing logo.
    Use public theme variables and semantic content classes, not copied templates. */
 :root {
   --md-text-font: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -6,35 +6,57 @@
   --masa-radius: .85rem;
 }
 [data-md-color-scheme="default"] {
-  --md-primary-fg-color: #126d71;
-  --md-primary-fg-color--light: #2b8888;
+  --md-primary-fg-color: #15599c;
+  --md-primary-fg-color--light: #2f7cc4;
   --md-primary-fg-color--dark: #0b283b;
-  --md-accent-fg-color: #087c63;
-  --md-accent-fg-color--transparent: #087c6318;
-  --md-default-bg-color: #fcfefd;
-  --masa-surface: #f1f8f6;
-  --masa-border: #cfe1dd;
+  --md-accent-fg-color: #0f62c9;
+  --md-accent-fg-color--transparent: #0f62c918;
+  --md-default-bg-color: #fdfdfe;
+  --masa-surface: #f2f6fb;
+  --masa-border: #d3dfea;
   --masa-ink: #0b283b;
   --masa-shadow: 0 .5rem 1.8rem #0b283b0b;
 }
+/* Material's slate palette derives every grey from --md-hue at 15% saturation,
+   which reads as blue. Override the derived values with the neutral dark greys
+   the Furo build used, and keep teal/green only as accents. */
 [data-md-color-scheme="slate"] {
-  --md-hue: 205;
-  --md-primary-fg-color: #69d7c5;
-  --md-primary-fg-color--light: #94e5d7;
-  --md-primary-fg-color--dark: #0b283b;
-  --md-accent-fg-color: #8be1ad;
-  --md-accent-fg-color--transparent: #8be1ad18;
-  --md-default-bg-color: #101d29;
-  --md-default-fg-color: #e0ebef;
-  --md-default-fg-color--light: #b6c8d0;
-  --md-code-bg-color: #152735;
-  --masa-surface: #172b36;
-  --masa-border: #2c4954;
-  --masa-ink: #e0ebef;
-  --masa-shadow: 0 .5rem 1.8rem #00000022;
+  --md-primary-fg-color: #7ab6f0;
+  --md-primary-fg-color--light: #a3cdf7;
+  --md-primary-fg-color--dark: #0d0e10;
+  --md-accent-fg-color: #8fc6ff;
+  --md-accent-fg-color--transparent: #8fc6ff18;
+  --md-default-fg-color: #ffffffd6;
+  --md-default-fg-color--light: #ffffff8f;
+  --md-default-fg-color--lighter: #ffffff52;
+  --md-default-fg-color--lightest: #ffffff1f;
+  --md-default-bg-color: #131416;
+  --md-default-bg-color--light: #1314168a;
+  --md-default-bg-color--lighter: #13141642;
+  --md-default-bg-color--lightest: #13141612;
+  --md-code-fg-color: #d6d8db;
+  --md-code-bg-color: #1a1c1e;
+  --md-code-bg-color--light: #1a1c1ee6;
+  --md-code-bg-color--lighter: #1a1c1e8a;
+  --md-typeset-kbd-color: #ffffff1f;
+  --md-typeset-kbd-accent-color: #ffffff33;
+  --md-typeset-kbd-border-color: #26282b;
+  --md-typeset-table-color: #ffffff1f;
+  --md-typeset-table-color--light: #ffffff09;
+  --md-typeset-mark-color: #7ab6f04d;
+  --md-code-hl-color: #7ab6f0;
+  --md-code-hl-color--light: #7ab6f01a;
+  --md-footer-bg-color: #0d0e10;
+  --md-footer-bg-color--dark: #08090a;
+  --masa-surface: #1a1c1e;
+  --masa-border: #303335;
+  --masa-ink: #e7e9ea;
+  --masa-shadow: 0 .5rem 1.8rem #00000059;
 }
 .md-header, .md-tabs { color: #f2faf8; background: #0b283b; }
+[data-md-color-scheme="slate"] :is(.md-header, .md-tabs) { color: #e7e9ea; background: #0d0e10; }
 .md-header { box-shadow: 0 1px 0 #ffffff18; }
+[data-md-color-scheme="slate"] .md-header { box-shadow: 0 1px 0 #ffffff14; }
 .md-header__button.md-logo img { height: 1.7rem; width: auto; }
 /* The header is navy in both palettes, so the search trigger cannot inherit the
    theme's page-background colours -- they are unreadable on navy in light mode. */
@@ -83,12 +105,12 @@
   border-radius: .65rem; background: #ffffff;
 }
 .masa-hero .masa-eyebrow {
-  margin: 1rem 0 .65rem; color: var(--md-primary-fg-color);
+  margin: 1rem 0 .65rem; text-align: center; color: var(--md-primary-fg-color);
   font-size: .65rem; font-weight: 750; letter-spacing: .14em; text-transform: uppercase;
 }
 .md-typeset .md-button { padding: .55em 1.05em; border-radius: .45rem; font-size: .8rem; }
 .masa-hero .md-button { margin: .3rem .5rem .3rem 0; }
-[data-md-color-scheme="slate"] .md-typeset .md-button--primary { color: #102a32; }
+[data-md-color-scheme="slate"] .md-typeset .md-button--primary { color: #0d1a26; }
 .masa-cards {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
   gap: .85rem; margin: 1.3rem 0 2rem;
