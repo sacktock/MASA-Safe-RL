@@ -41,14 +41,14 @@ jobs:
 
       - name: Test docstring rendering and navigation
         run: |
-          uv run --locked --only-group docs python -m unittest discover -s tests/docs -v
-          uv run --locked --only-group docs python scripts/check_docs.py
+          uv run --no-sync python -m unittest discover -s tests/docs -v
+          uv run --no-sync python scripts/check_docs.py
 
       - name: Build Zensical
-        run: uv run --locked --only-group docs zensical build --strict --clean
+        run: uv run --no-sync zensical build --strict --clean
 
       - name: Check built local links and anchors
-        run: uv run --locked --only-group docs python scripts/check_docs.py --site site
+        run: uv run --no-sync python scripts/check_docs.py --site site
 
       - name: Upload preview
         uses: actions/upload-artifact@v4

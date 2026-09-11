@@ -49,11 +49,12 @@ pip install -e .
 #### Installation with uv
 `uv sync` installs only base dependency package from the repository root.
 
-**Easiest way to install all dependencies:** All dependency groups (docs and GPU support): `uv sync --all-groups --no-group cuda13`.
-Alternatively, `uv sync --all-groups --no-group cuda12` if your system only supports CUDA 12.
+**Easiest way to install all dependencies:** All dependency groups (docs and GPU support for CUDA13): `uv sync --all-groups --no-group cuda12`.
+
+Alternatively, `uv sync --all-groups --no-group cuda13` if your system only supports CUDA 12.
 
 More minimal ways of installing dependency groups:
-* For building docs, use `uv sync --locked --only-group docs` from the repository root.
+* For building docs, use `uv sync --group docs` from the repository root.
 * Adding GPU support for Jax: `uv sync --group cuda13` (or `cuda12` if CUDA 13 is not supported by your device)
 
 #### Installation with PyPI
@@ -104,8 +105,7 @@ masa example prob_shield_example
 Documentation uses the root `pyproject.toml` and `uv.lock`, so you can build and serve it directly from the repository root.
 
 ```bash
-uv sync --locked --only-group docs
-uv run --locked --only-group docs zensical build --strict
+uv run zensical build --strict
 ```
 
 The built site will be available at `site/index.html`.
@@ -113,7 +113,7 @@ The built site will be available at `site/index.html`.
 For live reload while editing, run:
 
 ```bash
-uv run --locked --only-group docs zensical serve
+uv run zensical serve
 ```
 
 ## Getting in Touch

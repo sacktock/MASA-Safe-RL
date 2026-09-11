@@ -1,7 +1,7 @@
 # Run from any working directory with make -C docs <target>.
 UV ?= uv
 ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/..)
-RUN = cd "$(ROOT)" && $(UV) run --locked --only-group docs
+RUN = cd "$(ROOT)" && $(UV) run
 
 .PHONY: help html build serve check clean
 help:

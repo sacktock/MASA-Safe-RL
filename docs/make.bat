@@ -10,13 +10,13 @@ echo Usage: docs\make.bat [html^|build^|serve^|clean]
 set "RESULT=1"
 goto end
 :build
-%UV% run --locked --only-group docs zensical build --strict --clean
+%UV% run zensical build --strict --clean
 goto result
 :serve
-%UV% run --locked --only-group docs zensical serve
+%UV% run zensical serve
 goto result
 :clean
-%UV% run --locked --only-group docs python -c "import shutil; [shutil.rmtree(p, ignore_errors=True) for p in ('site', '.cache', 'docs/_build')]"
+%UV% run python -c "import shutil; [shutil.rmtree(p, ignore_errors=True) for p in ('site', '.cache', 'docs/_build')]"
 :result
 set "RESULT=%ERRORLEVEL%"
 :end

@@ -9,17 +9,17 @@ The site is built with **Zensical**, configured in the repository-root
 Run these commands from the repository root:
 
 ```sh
-uv sync --locked --only-group docs
-uv run --locked --only-group docs zensical serve
+uv sync --group docs
+uv run zensical serve
 ```
 
 The preview is served at `http://127.0.0.1:8000`. For a production build and checks:
 
 ```sh
-uv run --locked --only-group docs python -m unittest discover -s tests/docs -v
-uv run --locked --only-group docs python scripts/check_docs.py
-uv run --locked --only-group docs zensical build --strict --clean
-uv run --locked --only-group docs python scripts/check_docs.py --site site
+uv run python -m unittest discover -s tests/docs -v
+uv run python scripts/check_docs.py
+uv run zensical build --strict --clean
+uv run python scripts/check_docs.py --site site
 ```
 
 The output is `site/`. `make -C docs html`, `make -C docs serve`, and
