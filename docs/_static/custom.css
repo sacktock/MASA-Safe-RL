@@ -58,10 +58,25 @@
 .md-header { box-shadow: 0 1px 0 #ffffff18; }
 [data-md-color-scheme="slate"] .md-header { box-shadow: 0 1px 0 #ffffff14; }
 .md-header__button.md-logo img { height: 1.7rem; width: auto; }
+/* The search trigger is centred on the header. It is taken out of the flex flow
+   so the palette toggle and repo link keep their place in the right-hand group;
+   the title is capped short of the box so a long page topic ellipsises instead
+   of running underneath it. */
+@media screen and (min-width: 60em) {
+  .md-header__inner { position: relative; }
+  .md-header__inner > .md-header__title {
+    flex-grow: 0; min-width: 0; max-width: calc(50% - 17rem);
+  }
+  .md-header__inner > .md-search {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  }
+  .md-header__inner > .md-header__option { order: 2; margin-left: auto; }
+  .md-header__inner > .md-header__source { order: 3; }
+}
 /* The header is navy in both palettes, so the search trigger cannot inherit the
    theme's page-background colours -- they are unreadable on navy in light mode. */
 .md-search__button {
-  width: 14rem; height: 2rem; font-size: .78rem;
+  width: 28rem; height: 2rem; font-size: .78rem;
   color: #bdd3dc; background-color: #ffffff1c;
   border: 1px solid #ffffff26; border-radius: .5rem;
 }
@@ -81,7 +96,7 @@
 [dir="ltr"] .md-search__button::after { right: .5rem; }
 [dir="rtl"] .md-search__button::after { left: .5rem; }
 @media screen and (max-width: 76.234375em) {
-  .md-search__button { width: 10rem; }
+  .md-search__button { width: 20rem; }
 }
 .md-grid { max-width: 86rem; }
 .md-typeset { line-height: 1.7; }
