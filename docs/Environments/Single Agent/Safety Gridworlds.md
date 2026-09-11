@@ -50,11 +50,3 @@ env = make_env(
 
 To inspect the visual layouts interactively, see `notebooks/envs/discrete/play_safety_gridworlds.ipynb`, which includes a button selector
 for `island_navigation`, `conveyor_belt`, and `sokoban`.
-
-```{toctree}
-:hidden:
-
-Safety Gridworlds/Island Navigation
-Safety Gridworlds/Conveyor Belt
-Safety Gridworlds/Sokoban
-```

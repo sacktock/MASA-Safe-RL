@@ -2,7 +2,7 @@
 
 This tutorial focuses on MASA's `ltl_safety` constraint. Colour Bomb Grid World gives us labelled traces such as `bomb` and `medic`; the LTL-safety wrapper advances a DFA over those labels and reports violations when the DFA reaches an accepting unsafe state.
 
-Runnable notebook: [notebooks/tutorials/05_ltl_safety_colour_bomb.ipynb](../../../../notebooks/tutorials/05_ltl_safety_colour_bomb.ipynb)
+Runnable notebook: [notebooks/tutorials/05_ltl_safety_colour_bomb.ipynb](https://github.com/nightly/MASA-Safe-RL/blob/main/notebooks/tutorials/05_ltl_safety_colour_bomb.ipynb)
 
 ## Setup
 
@@ -36,21 +36,25 @@ def make_never_bomb_dfa():
     return dfa
 ```
 
-```{figure} ../../../_static/tutorials/ltl_safety_colour_bomb/never_bomb_dfa.svg
-:alt: Inline never-bomb DFA.
-:width: 440px
+<figure markdown="1">
 
+![Inline never-bomb DFA.](../../../_static/tutorials/ltl_safety_colour_bomb/never_bomb_dfa.svg){ loading=lazy width="440" }
+
+<figcaption markdown="1">
 Observing `bomb` moves from safe state `q0` to accepting unsafe state `q1`.
-```
+</figcaption>
+</figure>
 
 The loaded `property_2` DFA is more nuanced: after entering a bomb cell, the agent must stay on bomb for one extra step before leaving.
 
-```{figure} ../../../_static/tutorials/ltl_safety_colour_bomb/diffusion_dfa.svg
-:alt: Loaded property_2 bomb diffusion DFA.
-:width: 485px
+<figure markdown="1">
 
+![Loaded property_2 bomb diffusion DFA.](../../../_static/tutorials/ltl_safety_colour_bomb/diffusion_dfa.svg){ loading=lazy width="485" }
+
+<figcaption markdown="1">
 Leaving bomb immediately reaches accepting unsafe state `q3`; staying on bomb once reaches `q2` and can return to safe state `q0`.
-```
+</figcaption>
+</figure>
 
 ## Build an LTL-Safety Environment
 
@@ -73,39 +77,47 @@ The returned observation has `obs["orig"]` for the base grid state and `obs["aut
 
 With seed `1`, actions `[1, 1, 1, 1]` move right from the start and reach bomb state `78`.
 
-```{figure} ../../../_static/tutorials/ltl_safety_colour_bomb/never_bomb_trace.svg
-:alt: Colour Bomb trace reaching a bomb in four right moves.
-:width: 580px
+<figure markdown="1">
 
+![Colour Bomb trace reaching a bomb in four right moves.](../../../_static/tutorials/ltl_safety_colour_bomb/never_bomb_trace.svg){ loading=lazy width="580" }
+
+<figcaption markdown="1">
 The final visited state is labelled `bomb`.
-```
+</figcaption>
+</figure>
 
-```{figure} ../../../_static/tutorials/ltl_safety_colour_bomb/never_bomb_timeline.svg
-:alt: Never-bomb LTL-safety rollout timeline.
-:width: 760px
+<figure markdown="1">
 
+![Never-bomb LTL-safety rollout timeline.](../../../_static/tutorials/ltl_safety_colour_bomb/never_bomb_timeline.svg){ loading=lazy width="760" }
+
+<figcaption markdown="1">
 On the bomb label, `automaton_state` becomes `1`, `violation` becomes `1.0`, `cum_unsafe` becomes `1.0`, and `satisfied` becomes `0.0`.
-```
+</figcaption>
+</figure>
 
 ## Loaded DFA: Bomb Diffusion
 
 The same environment trace can mean something different under a different DFA. Under `property_2`, touching bomb is allowed, but leaving immediately is unsafe.
 
-```{figure} ../../../_static/tutorials/ltl_safety_colour_bomb/diffusion_violation_timeline.svg
-:alt: property_2 rollout timeline showing immediate leave violation.
-:width: 760px
+<figure markdown="1">
 
+![property_2 rollout timeline showing immediate leave violation.](../../../_static/tutorials/ltl_safety_colour_bomb/diffusion_violation_timeline.svg){ loading=lazy width="760" }
+
+<figcaption markdown="1">
 Actions `[1, 1, 1, 1, 0]` hit bomb and then leave, so the DFA reaches accepting unsafe state `q3`.
-```
+</figcaption>
+</figure>
 
 If the agent stays on bomb for one extra step, the same property remains satisfied:
 
-```{figure} ../../../_static/tutorials/ltl_safety_colour_bomb/diffusion_safe_timeline.svg
-:alt: property_2 rollout timeline showing safe bomb diffusion.
-:width: 760px
+<figure markdown="1">
 
+![property_2 rollout timeline showing safe bomb diffusion.](../../../_static/tutorials/ltl_safety_colour_bomb/diffusion_safe_timeline.svg){ loading=lazy width="760" }
+
+<figcaption markdown="1">
 Actions `[1, 1, 1, 1, 4, 0]` hit bomb, stay once, then leave with `cum_unsafe=0.0` and `satisfied=1.0`.
-```
+</figcaption>
+</figure>
 
 ## V2 Extension: Medic Recovery
 
@@ -113,19 +125,23 @@ Actions `[1, 1, 1, 1, 4, 0]` hit bomb, stay once, then leave with `cum_unsafe=0.
 
 With seed `14`, actions `[2, 2, 2, 2] + [4] * 11` start at state `16`, reach a bomb, and wait without reaching a medic.
 
-```{figure} ../../../_static/tutorials/ltl_safety_colour_bomb/medic_recovery_trace.svg
-:alt: Colour Bomb Grid World V2 trace reaching a bomb and waiting.
-:width: 634px
+<figure markdown="1">
 
+![Colour Bomb Grid World V2 trace reaching a bomb and waiting.](../../../_static/tutorials/ltl_safety_colour_bomb/medic_recovery_trace.svg){ loading=lazy width="634" }
+
+<figcaption markdown="1">
 The V2 trace reaches a bomb and then repeatedly stays there.
-```
+</figcaption>
+</figure>
 
-```{figure} ../../../_static/tutorials/ltl_safety_colour_bomb/medic_recovery_timeline.svg
-:alt: property_3 medic recovery timeline reaching accepting state 21.
-:width: 1200px
+<figure markdown="1">
 
+![property_3 medic recovery timeline reaching accepting state 21.](../../../_static/tutorials/ltl_safety_colour_bomb/medic_recovery_timeline.svg){ loading=lazy width="1200" }
+
+<figcaption markdown="1">
 The automaton counts through the recovery obligation and reaches accepting state `21`, so later steps report violation.
-```
+</figcaption>
+</figure>
 
 ## What to Look For
 

@@ -1,13 +1,51 @@
-# Introduction
+---
+hide:
+  - toc
+---
+
+# MASA-Safe-RL
+
+<div class="masa-hero" markdown="1">
+
+![MASA-Safe-RL — safe learning across agents, constraints and worlds](assets/images/logo_large.svg){ .masa-wordmark }
+
+<p class="masa-eyebrow">Single agent · Multi-agent · Constrained RL</p>
+
+[Get started](Get%20Started/Quick%20Start.md){ .md-button .md-button--primary }
+[Explore tutorials](Tutorials/Basics.md){ .md-button }
+
+</div>
 
 ## Welcome
-
-![title card](../images/logo_large.png)
 
 Welcome to MASA-Safe-RL, the Multi and Single Agent (MASA) Safe Reinforcement Learning library. The primary goal of this library is to develop a set of common constraints and environments for safe reinforcement learning research, built on top of the popular **[Gymnasium API](https://gymnasium.farama.org/)**. We span, CMPDs, probabilistic constraints, Reach-Avoid and LTL-Safety (DFA) properties.  
 
 The library is in very early stage development and we greatly appreciate and encourage feedback from the community about what they would like to see implemented. Currently we provide a set of basic tabular algroithms for safe RL, but we provide a modular and resuable framework for developing more complex algorithms and constraints.
 
+
+<div class="masa-cards" markdown="1">
+<div markdown="1">
+
+**[Build your first experiment](Get%20Started/Basic%20Usage.md)**
+
+Install MASA, understand its core concepts, and run a safe-learning experiment.
+
+</div>
+<div markdown="1">
+
+**[Explore the API](Common/Constraints.md)**
+
+Work with constraints, wrappers, temporal logic, and metrics.
+
+</div>
+<div markdown="1">
+
+**[Understand shielding](Shielding/Overview.md)**
+
+Explore deterministic and probabilistic approaches to safer action selection.
+
+</div>
+</div>
 
 ## Organization
 
@@ -37,67 +75,4 @@ If you use MASA in your research please cite it in your publications.
 ```
 
 ## Next Steps
-- [Quick Start](Get%20Started/Quick%20Start) - Installation instructions for MASA.
-
-```{toctree}
-:caption: Get Started
-:hidden:
-
-Get Started/Quick Start
-Get Started/Core Concepts
-Get Started/Basic Usage
-```
-
-```{toctree}
-:caption: Common API
-:hidden:
-
-Common/Constraints
-Common/Wrappers
-Common/Metrics
-Common/LTL
-Common/PCTL
-```
-
-```{toctree}
-:caption: Environments
-:hidden:
-
-Environments/Multi Agent
-Environments/Single Agent
-```
-
-```{toctree}
-:caption: Algorithms
-:hidden:
-:maxdepth: 2
-
-Algorithms/Overview
-Algorithms/Tabular
-Algorithms/Tabular/Multi Agent/Multi Agent
-Algorithms/On Policy
-```
-
-```{toctree}
-:caption: Shielding
-:hidden:
-:titlesonly:
-:maxdepth: 1
-
-Shielding/Probabilistic/Probabilistic Shielding
-Shielding/Deterministic/Winning-Region Shielding
-Shielding/Overview
-```
-
-```{toctree}
-:caption: Tutorials
-:hidden:
-
-Tutorials/Basics
-Tutorials/Constraints
-Tutorials/Wrappers
-Tutorials/Environments
-Tutorials/Baselines
-Tutorials/Shielding
-Tutorials/Multi-Agent
-```
+- [Quick Start](Get%20Started/Quick%20Start.md) - Installation instructions for MASA.

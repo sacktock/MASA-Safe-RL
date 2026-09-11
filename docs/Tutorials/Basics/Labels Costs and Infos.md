@@ -11,7 +11,7 @@ This tutorial slows down the MASA environment loop. Instead of training an agent
 - `terminated`,
 - `truncated`.
 
-Runnable notebook: [notebooks/tutorials/02_labels_costs_and_infos.ipynb](../../../notebooks/tutorials/02_labels_costs_and_infos.ipynb)
+Runnable notebook: [notebooks/tutorials/02_labels_costs_and_infos.ipynb](https://github.com/nightly/MASA-Safe-RL/blob/main/notebooks/tutorials/02_labels_costs_and_infos.ipynb)
 
 ## CPU-First Setup
 

@@ -2,7 +2,7 @@
 
 This tutorial introduces MASA's multi-agent constrained Markov game path with a small repeated Chicken matrix game.
 
-Runnable notebook: [notebooks/tutorials/12_multi_agent_cmg.ipynb](../../../notebooks/tutorials/12_multi_agent_cmg.ipynb)
+Runnable notebook: [notebooks/tutorials/12_multi_agent_cmg.ipynb](https://github.com/nightly/MASA-Safe-RL/blob/main/notebooks/tutorials/12_multi_agent_cmg.ipynb)
 
 ## PettingZoo Parallel Shape
 

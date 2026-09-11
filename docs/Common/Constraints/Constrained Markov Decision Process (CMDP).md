@@ -1,11 +1,9 @@
 # Constrained Markov Decision Process (CMDP)
 
-```{eval-rst}
-.. autoclass:: masa.common.constraints.cmdp.CumulativeCost
-    :members:
-    :show-inheritance:
+::: masa.common.constraints.cmdp.CumulativeCost
+    options:
+      members: true
 
-.. autoclass:: masa.common.constraints.cmdp.CumulativeCostEnv
-    :members:
-    :show-inheritance:
-```
+::: masa.common.constraints.cmdp.CumulativeCostEnv
+    options:
+      members: true

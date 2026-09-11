@@ -228,3 +228,6 @@ wandb_cache
 /masa/plotting/examples/
 benchmarks/
 benchmark*.py
+/site/
+
+/.cache/

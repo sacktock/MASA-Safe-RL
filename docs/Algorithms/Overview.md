@@ -34,6 +34,6 @@ The multi-agent coordinators are available through the Python API rather than th
 
 ## Sections
 
-- [Tabular](Tabular)
-    - [Multi-Agent Tabular](Tabular/Multi%20Agent/Multi%20Agent)
-- [On Policy](On%20Policy)
+- [Tabular](Tabular.md)
+    - [Multi-Agent Tabular](Tabular/Multi%20Agent/Multi%20Agent.md)
+- [On Policy](On%20Policy.md)

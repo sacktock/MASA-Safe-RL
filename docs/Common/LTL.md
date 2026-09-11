@@ -151,17 +151,7 @@ built from propositional connectives, and transitions are added explicitly using
 
 ## Next Steps
 
-- {doc}`Propositional Formula <LTL/Propositional Formula>` - API reference for LTL propositional formula.
-- {doc}`Deterministic Finite Automata (DFA) <LTL/DFA>` - API reference for DFA.
-- {doc}`Cost Function as DFA <LTL/Cost Function as DFA>` - API reference for DFA interpreted as cost functions.
-- {doc}`Shaped Cost Function <LTL/Shaped Cost Function>` - API reference for cost function shaping over the DFA.
-
-```{toctree}
-:caption: Linear Temporal Logic (LTL)
-:hidden:
-
-LTL/Propositional Formula
-LTL/DFA
-LTL/Cost Function as DFA
-LTL/Shaped Cost Function
-```
+- [Propositional Formula](LTL/Propositional%20Formula.md) - API reference for LTL propositional formula.
+- [Deterministic Finite Automata (DFA)](LTL/DFA.md) - API reference for DFA.
+- [Cost Function as DFA](LTL/Cost%20Function%20as%20DFA.md) - API reference for DFA interpreted as cost functions.
+- [Shaped Cost Function](LTL/Shaped%20Cost%20Function.md) - API reference for cost function shaping over the DFA.

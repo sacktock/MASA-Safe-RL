@@ -2,7 +2,7 @@
 
 This tutorial explains why safety abstractions are a major efficiency tool for structured Pacman coin observations.
 
-Runnable notebook: [notebooks/tutorials/10_safety_abstractions_pacman_coins.ipynb](../../../notebooks/tutorials/10_safety_abstractions_pacman_coins.ipynb)
+Runnable notebook: [notebooks/tutorials/10_safety_abstractions_pacman_coins.ipynb](https://github.com/nightly/MASA-Safe-RL/blob/main/notebooks/tutorials/10_safety_abstractions_pacman_coins.ipynb)
 
 ## Why This Matters
 

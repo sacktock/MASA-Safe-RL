@@ -1,62 +1,72 @@
-name: Build & Deploy Sphinx docs to Pages
+name: Build & Deploy Zensical docs to Pages
 
-on: 
+on:
   push:
-    branches: 
-      - "**"
+    branches: ['**']
   pull_request:
-    branches:
-      - "**"
-    types: [opened, synchronize, edited, reopened, labeled, ready_for_review]
+    branches: ['**']
+  workflow_dispatch:
 
+# Branch and PR builds are read-only. Only the main-branch deploy job can publish.
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: "pages"
+  group: docs-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: '3.10'
 
       - name: Setup uv
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
+          cache-dependency-glob: uv.lock
 
-      - name: Install dependencies
+      - name: Install documentation dependencies only
+        run: uv sync --locked --only-group docs
+
+      - name: Test docstring rendering and navigation
         run: |
-          uv sync --locked --group docs
+          uv run --no-sync python -m unittest discover -s tests/docs -v
+          uv run --no-sync python scripts/check_docs.py
 
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
+      - name: Build Zensical
+        run: uv run --no-sync zensical build --strict --clean
 
-      - name: Build Sphinx
-        id: sphinx
-        run: |
-          uv run --locked --group docs sphinx-build -W -b html docs docs/_build/html
-          echo "out=docs/_build/html" >> "$GITHUB_OUTPUT"
+      - name: Check built local links and anchors
+        run: uv run --no-sync python scripts/check_docs.py --site site
 
-      - name: Upload artifact
+      - name: Upload preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-preview
+          path: site/
+          retention-days: 7
+
+      - name: Upload Pages artifact
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v4
         with:
-          path: ${{ steps.sphinx.outputs.out }}
+          path: site/
 
   deploy:
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     needs: build
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
@@ -64,6 +74,8 @@ jobs:
       pages: write
       id-token: write
     steps:
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
       - name: Deploy to GitHub Pages
         id: deploy
         uses: actions/deploy-pages@v4

@@ -26,8 +26,9 @@ pip install -e .
 ### Installation with uv
 `uv sync` installs only base dependency package from the repository root.
 
-**Easiest way to install all dependencies:** All dependency groups (docs and GPU support): `uv sync --all-groups --no-group cuda13`.
-Alternatively, `uv sync --all-groups --no-group cuda12` if your system only supports CUDA 12.
+**Easiest way to install all dependencies:** All dependency groups (docs and GPU support for CUDA13): `uv sync --all-groups --no-group cuda12`.
+
+Alternatively, `uv sync --all-groups --no-group cuda13` if your system only supports CUDA 12.
 
 More minimal ways of installing dependency groups:
 * For building docs, use `uv sync --group docs` from the repository root.
@@ -82,7 +83,5 @@ masa run --env-id mini_pacman --algo q_learning --seed 0
 
 ## Next Steps
 
-- [Core Concepts](Core%20Concepts/) - Familiarize yourself with the core concepts in MASA.
-- [Basic Usage](Basic%20Usage) - Learn how to use MASA.
-
-
+- [Core Concepts](Core%20Concepts.md) - Familiarize yourself with the core concepts in MASA.
+- [Basic Usage](Basic%20Usage.md) - Learn how to use MASA.

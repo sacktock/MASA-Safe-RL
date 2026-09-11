@@ -64,14 +64,18 @@ dev = [
     "pytest>=9.0.3",
 ]
 docs = [
-    "furo>=2025.12.19",
-    "myst-parser>=4.0.1",
-    "sphinx>=8.1.3",
-    "sphinx-autobuild>=2024.10.3",
+    "zensical==0.0.60",
+    "mkdocstrings-python>=1.18,<3",
+    "tomli>=2; python_version < '3.11'",
 ]
 tutorial = [
     "matplotlib>=3.10.9"
 ]
+
+[tool.pytest.ini_options]
+# tests/docs imports scripts.docs_docstrings; the repo root is not on sys.path
+# under `uv run pytest` because the console script does not prepend the CWD.
+pythonpath = ["."]
 
 [tool.uv]
 conflicts = [

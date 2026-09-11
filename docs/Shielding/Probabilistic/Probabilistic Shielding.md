@@ -33,14 +33,14 @@ Given an environment with known **safety dynamics**:
 
 1. **Compute safety bounds**  
    Use sound value iteration (interval iteration) to compute an *inductive upper bound*
-   :math:`\beta(s)` on the minimal probability of reaching an unsafe state from each state.
+   $\beta(s)$ on the minimal probability of reaching an unsafe state from each state.
 
 2. **Augment the MDP**  
    Each state is augmented with a *remaining safety budget*
-   :math:`q \in [\beta(s), 1]`.
+   $q \in [\beta(s), 1]$.
 
 3. **Restrict actions via a shield**  
-   At each augmented state :math:`(s, q)`, only actions that **provably preserve the safety
+   At each augmented state $(s, q)$, only actions that **provably preserve the safety
    bound** are allowed. This is enforced by projecting agent-selected actions onto a safe
    probability simplex.
 
