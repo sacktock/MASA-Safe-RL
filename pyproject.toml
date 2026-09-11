@@ -72,6 +72,11 @@ tutorial = [
     "matplotlib>=3.10.9"
 ]
 
+[tool.pytest.ini_options]
+# tests/docs imports scripts.docs_docstrings; the repo root is not on sys.path
+# under `uv run pytest` because the console script does not prepend the CWD.
+pythonpath = ["."]
+
 [tool.uv]
 conflicts = [
     [
