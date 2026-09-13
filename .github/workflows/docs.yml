@@ -47,6 +47,11 @@ jobs:
       - name: Build Zensical
         run: uv run --no-sync zensical build --strict --clean
 
+      # Zensical 0.0.60 does not support exclude_docs, so files under the
+      # theme custom_dir are also copied from docs_dir into the built site.
+      - name: Remove copied theme overrides
+        run: rm -rf site/overrides
+
       - name: Check built local links and anchors
         run: uv run --no-sync python scripts/check_docs.py --site site
 

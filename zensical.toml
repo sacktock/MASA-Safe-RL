@@ -16,7 +16,6 @@ README.md
 Makefile
 make.bat
 _build/
-overrides/
 """
 extra_css = ["_static/custom.css", "_static/palette.css"]
 extra_javascript = [
