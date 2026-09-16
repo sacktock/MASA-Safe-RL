@@ -56,9 +56,13 @@ class _FakePygame:
         self.event = _FakeEvent()
 
 
-def _notebook_source(notebook_path: str) -> str:
+def _load_notebook(notebook_path: str) -> dict:
     with Path(notebook_path).open("r", encoding="utf-8") as fh:
-        notebook = json.load(fh)
+        return json.load(fh)
+
+
+def _notebook_source(notebook_path: str) -> str:
+    notebook = _load_notebook(notebook_path)
     return "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
 
 
@@ -175,7 +179,7 @@ def test_selector_notebooks_sync_selected_envs_during_play():
         assert 'print("switched:", env_name)' in source or 'print("switched:", selected_env_name)' in source
 
 
-def test_all_play_notebooks_offer_opt_in_1080p_recording():
+def test_all_play_notebooks_offer_opt_in_1080p_recording_in_first_cell():
     notebook_paths = (
         "notebooks/envs/continuous/play_obstacles.ipynb",
         "notebooks/envs/continuous/play_roads.ipynb",
@@ -195,9 +199,18 @@ def test_all_play_notebooks_offer_opt_in_1080p_recording():
 
     assert len(notebook_paths) == 14
     for notebook_path in notebook_paths:
+        notebook = _load_notebook(notebook_path)
+        first_cell = notebook["cells"][0]
+        first_source = "".join(first_cell.get("source", []))
         source = _notebook_source(notebook_path)
-        assert "RECORD_VIDEO = False" in source
-        assert 'VIDEO_PATH = "videos/notebooks/' in source
+
+        assert first_cell["cell_type"] == "code"
+        assert first_source.splitlines() == [
+            "RECORD_VIDEO = False",
+            f'VIDEO_PATH = "videos/notebooks/{Path(notebook_path).stem}.mp4"',
+        ]
+        assert source.count("RECORD_VIDEO = False") == 1
+        assert source.count("VIDEO_PATH = ") == 1
         assert "1920x1080" in source
         assert "notebook_video_recording" in source or "start_recorded_play_thread" in source
 
