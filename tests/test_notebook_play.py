@@ -4,7 +4,12 @@ import json
 import threading
 from pathlib import Path
 
-from masa.common.rendering.notebook_play import start_play_thread, stop_play_thread, sync_selected_env
+from masa.common.rendering.notebook_play import (
+    notebook_video_recording,
+    start_play_thread,
+    stop_play_thread,
+    sync_selected_env,
+)
 
 
 class _Selector:
@@ -49,6 +54,12 @@ class _FakePygame:
     def __init__(self) -> None:
         self.display = _FakeDisplay()
         self.event = _FakeEvent()
+
+
+def _notebook_source(notebook_path: str) -> str:
+    with Path(notebook_path).open("r", encoding="utf-8") as fh:
+        notebook = json.load(fh)
+    return "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
 
 
 def test_sync_selected_env_reuses_env_when_selection_is_unchanged():
@@ -135,6 +146,13 @@ def test_start_play_thread_stops_previous_session():
         stop_play_thread(session_key)
 
 
+def test_disabled_notebook_video_recording_is_a_noop(tmp_path):
+    video_path = tmp_path / "disabled.mp4"
+    with notebook_video_recording(False, video_path) as recorder:
+        assert recorder.enabled is False
+    assert not video_path.exists()
+
+
 def test_selector_notebooks_sync_selected_envs_during_play():
     notebook_paths = (
         "notebooks/envs/tabular/play_bridge_crossing.ipynb",
@@ -149,9 +167,7 @@ def test_selector_notebooks_sync_selected_envs_during_play():
     )
 
     for notebook_path in notebook_paths:
-        with Path(notebook_path).open("r", encoding="utf-8") as fh:
-            notebook = json.load(fh)
-        source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
+        source = _notebook_source(notebook_path)
 
         assert "from masa.common.rendering.notebook_play import make_reset_env, sync_selected_env" in source
         assert "follow_selector = env_name is None" in source
@@ -159,12 +175,37 @@ def test_selector_notebooks_sync_selected_envs_during_play():
         assert 'print("switched:", env_name)' in source or 'print("switched:", selected_env_name)' in source
 
 
-def test_roads_notebook_runs_play_loop_in_background_thread():
-    with Path("notebooks/envs/continuous/play_roads.ipynb").open("r", encoding="utf-8") as fh:
-        notebook = json.load(fh)
-    source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
+def test_all_play_notebooks_offer_opt_in_1080p_recording():
+    notebook_paths = (
+        "notebooks/envs/continuous/play_obstacles.ipynb",
+        "notebooks/envs/continuous/play_roads.ipynb",
+        "notebooks/envs/discrete/play_pacman_coins.ipynb",
+        "notebooks/envs/discrete/play_safety_gridworlds.ipynb",
+        "notebooks/envs/mixed/play_cartpole.ipynb",
+        "notebooks/envs/mixed/play_mountain_car.ipynb",
+        "notebooks/envs/multiagent/play_capture_the_flag.ipynb",
+        "notebooks/envs/multiagent/play_clean_up.ipynb",
+        "notebooks/envs/multiagent/play_markov_stag_hunt.ipynb",
+        "notebooks/envs/tabular/play_bridge_crossing.ipynb",
+        "notebooks/envs/tabular/play_colour_bomb_gridworlds.ipynb",
+        "notebooks/envs/tabular/play_colour_grid_world.ipynb",
+        "notebooks/envs/tabular/play_media_streaming.ipynb",
+        "notebooks/envs/tabular/play_pacman_tabular.ipynb",
+    )
 
-    assert "from masa.common.rendering.notebook_play import start_play_thread" in source
+    assert len(notebook_paths) == 14
+    for notebook_path in notebook_paths:
+        source = _notebook_source(notebook_path)
+        assert "RECORD_VIDEO = False" in source
+        assert 'VIDEO_PATH = "videos/notebooks/' in source
+        assert "1920x1080" in source
+        assert "notebook_video_recording" in source or "start_recorded_play_thread" in source
+
+
+def test_roads_notebook_runs_recorded_play_loop_in_background_thread():
+    source = _notebook_source("notebooks/envs/continuous/play_roads.ipynb")
+
+    assert "from masa.common.rendering.notebook_play import start_recorded_play_thread" in source
     assert "def _run(stop_event):" in source
     assert "while running and not stop_event.is_set() and not env.human_window_closed:" in source
-    assert "return start_play_thread(\"roads\", _run)" in source
+    assert 'return start_recorded_play_thread("roads", _run, record_video=RECORD_VIDEO, video_path=VIDEO_PATH)' in source
