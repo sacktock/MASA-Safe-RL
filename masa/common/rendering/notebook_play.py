@@ -39,7 +39,17 @@ class NotebookVideoRecorder:
 
     The recorder hooks pygame's display presentation calls, so it captures only
     the environment canvas (never notebook/desktop chrome). The source aspect
-    ratio is preserved and letterboxed onto ``output_size``.
+    ratio is preserved, and the leftover margins on ``output_size`` are filled
+    according to ``fit``:
+
+    ``fit="contain"``
+        Fit the whole canvas inside the frame. The margins are painted with
+        ``background``; the default ``"auto"`` samples the canvas border so the
+        padding matches the environment's own backdrop instead of showing black
+        bars.
+    ``fit="cover"``
+        Scale until the frame is filled edge to edge and crop the overflow. No
+        padding at all, at the cost of losing the cropped strips.
 
     Recording is deliberately disabled unless ``enabled=True``.
     """
@@ -51,7 +61,8 @@ class NotebookVideoRecorder:
         enabled: bool = False,
         output_size: tuple[int, int] = (1920, 1080),
         fps: int = 30,
-        background: tuple[int, int, int] = (12, 12, 12),
+        background: tuple[int, int, int] | str = "auto",
+        fit: str = "contain",
         max_idle_gap: float = 1.0,
     ) -> None:
         width, height = (int(output_size[0]), int(output_size[1]))
@@ -61,12 +72,17 @@ class NotebookVideoRecorder:
             raise ValueError("fps must be at least 1")
         if max_idle_gap <= 0:
             raise ValueError("max_idle_gap must be positive")
+        if fit not in ("contain", "cover"):
+            raise ValueError('fit must be "contain" or "cover"')
+        if isinstance(background, str) and background != "auto":
+            raise ValueError('background must be an RGB triple or "auto"')
 
         self.output_path = Path(output_path)
         self.enabled = bool(enabled)
         self.output_size = (width, height)
         self.fps = int(fps)
-        self.background = tuple(int(channel) for channel in background)
+        self.background = background if isinstance(background, str) else tuple(int(channel) for channel in background)
+        self.fit = fit
         self.max_idle_gap = float(max_idle_gap)
 
         self._pygame: Any | None = None
@@ -133,6 +149,26 @@ class NotebookVideoRecorder:
         )
         return self._writer
 
+    def _padding_colour(self, surface) -> tuple[int, int, int]:
+        """Pick the fill colour for the margins around a fitted canvas.
+
+        ``background="auto"`` uses the most common colour along the canvas
+        border, so a canvas whose backdrop is a flat colour extends seamlessly
+        to the frame edges rather than sitting between black bars.
+        """
+        if self.background != "auto":
+            return self.background
+
+        import numpy as np
+
+        pygame = self._pygame
+        pixels = pygame.surfarray.array3d(surface)
+        border = np.concatenate(
+            [pixels[0], pixels[-1], pixels[:, 0], pixels[:, -1]]
+        ).reshape(-1, 3)
+        colours, counts = np.unique(border, axis=0, return_counts=True)
+        return tuple(int(channel) for channel in colours[int(counts.argmax())])
+
     def _current_frame(self):
         import numpy as np
 
@@ -148,17 +184,20 @@ class NotebookVideoRecorder:
             return None
 
         output_width, output_height = self.output_size
-        scale = min(output_width / source_width, output_height / source_height)
+        scales = (output_width / source_width, output_height / source_height)
+        scale = max(scales) if self.fit == "cover" else min(scales)
         target_width = max(1, int(round(source_width * scale)))
         target_height = max(1, int(round(source_height * scale)))
 
         canvas = pygame.Surface(self.output_size)
-        canvas.fill(self.background)
+        if self.fit == "contain":
+            canvas.fill(self._padding_colour(surface))
         if (target_width, target_height) == (source_width, source_height):
             scaled = surface
         else:
             scaled = pygame.transform.smoothscale(surface, (target_width, target_height))
 
+        # Negative offsets are how "cover" crops: pygame clips the overflow.
         left = (output_width - target_width) // 2
         top = (output_height - target_height) // 2
         canvas.blit(scaled, (left, top))
@@ -218,6 +257,8 @@ def notebook_video_recording(
     *,
     output_size: tuple[int, int] = (1920, 1080),
     fps: int = 30,
+    background: tuple[int, int, int] | str = "auto",
+    fit: str = "contain",
 ) -> Iterator[NotebookVideoRecorder]:
     """Context manager for opt-in 1080p recording of notebook play sessions."""
     recorder = NotebookVideoRecorder(
@@ -225,6 +266,8 @@ def notebook_video_recording(
         enabled=enabled,
         output_size=output_size,
         fps=fps,
+        background=background,
+        fit=fit,
     )
     with recorder:
         yield recorder
@@ -263,6 +306,8 @@ def start_recorded_play_thread(
     video_path: str | Path,
     video_size: tuple[int, int] = (1920, 1080),
     video_fps: int = 30,
+    video_background: tuple[int, int, int] | str = "auto",
+    video_fit: str = "contain",
 ) -> NotebookPlaySession:
     """Start a managed play thread with optional notebook video recording."""
 
@@ -272,6 +317,8 @@ def start_recorded_play_thread(
             video_path,
             output_size=video_size,
             fps=video_fps,
+            background=video_background,
+            fit=video_fit,
         ):
             target(stop_event)
 
