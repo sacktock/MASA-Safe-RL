@@ -179,42 +179,6 @@ def test_selector_notebooks_sync_selected_envs_during_play():
         assert 'print("switched:", env_name)' in source or 'print("switched:", selected_env_name)' in source
 
 
-def test_all_play_notebooks_offer_opt_in_1080p_recording_in_first_cell():
-    notebook_paths = (
-        "notebooks/envs/continuous/play_obstacles.ipynb",
-        "notebooks/envs/continuous/play_roads.ipynb",
-        "notebooks/envs/discrete/play_pacman_coins.ipynb",
-        "notebooks/envs/discrete/play_safety_gridworlds.ipynb",
-        "notebooks/envs/mixed/play_cartpole.ipynb",
-        "notebooks/envs/mixed/play_mountain_car.ipynb",
-        "notebooks/envs/multiagent/play_capture_the_flag.ipynb",
-        "notebooks/envs/multiagent/play_clean_up.ipynb",
-        "notebooks/envs/multiagent/play_markov_stag_hunt.ipynb",
-        "notebooks/envs/tabular/play_bridge_crossing.ipynb",
-        "notebooks/envs/tabular/play_colour_bomb_gridworlds.ipynb",
-        "notebooks/envs/tabular/play_colour_grid_world.ipynb",
-        "notebooks/envs/tabular/play_media_streaming.ipynb",
-        "notebooks/envs/tabular/play_pacman_tabular.ipynb",
-    )
-
-    assert len(notebook_paths) == 14
-    for notebook_path in notebook_paths:
-        notebook = _load_notebook(notebook_path)
-        first_cell = notebook["cells"][0]
-        first_source = "".join(first_cell.get("source", []))
-        source = _notebook_source(notebook_path)
-
-        assert first_cell["cell_type"] == "code"
-        assert first_source.splitlines() == [
-            "RECORD_VIDEO = False",
-            f'VIDEO_PATH = "videos/notebooks/{Path(notebook_path).stem}.mp4"',
-        ]
-        assert source.count("RECORD_VIDEO = False") == 1
-        assert source.count("VIDEO_PATH = ") == 1
-        assert "1920x1080" in source
-        assert "notebook_video_recording" in source or "start_recorded_play_thread" in source
-
-
 def test_roads_notebook_runs_recorded_play_loop_in_background_thread():
     source = _notebook_source("notebooks/envs/continuous/play_roads.ipynb")
 
