@@ -1,6 +1,15 @@
 # MASA-Safe-RL
 
-![title card](images/logo_large.png)
+<p align="center">
+  <a href="https://sacktock.github.io/MASA-Safe-RL/">
+    <img src="images/logo_large.png" alt="MASA-Safe-RL" />
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://sacktock.github.io/MASA-Safe-RL">View Documentation</a>
+  <!-- · <a href="https://paper-url">Paper</a> -->
+</p>
 
 --------------------------------------------------------------------------------
 
@@ -115,6 +124,12 @@ For live reload while editing, run:
 ```bash
 uv run zensical serve
 ```
+
+## Local storage
+The project currently uses the following directories for local storage:
+* `.cache/` - for persisting transition matrices to avoid recomputation
+* `videos/` - stores recorded videos from training runs at configured intervals or played runs using notebooks/
+* `runs/` - persisted data and metrics of training runs
 
 ## Getting in Touch
 
