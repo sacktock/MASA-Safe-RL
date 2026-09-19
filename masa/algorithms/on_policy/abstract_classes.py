@@ -25,7 +25,7 @@ class OnPolicyCostAlgorithm(OnPolicyAlgorithm, ABC):
         self.constraint_type = str(getattr(self.constraint, "constraint_type", ""))
 
         if self.constraint_type == "CMDP":
-            budget = getattr(self.constraint, "cost_budget", None)
+            budget = getattr(self.constraint, "budget", None)
             if budget is not None and self.cost_limit != budget:
                 warnings.warn(
                     f"cost_limit={self.cost_limit} does not match CMDP "
