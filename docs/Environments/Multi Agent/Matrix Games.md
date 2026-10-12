@@ -44,18 +44,8 @@ PettingZoo environments and plugins until matrix-game renderers are added.
 
 ## Available Games
 
-- [Bertrand](Matrix%20Games/Bertrand)
-- [Chicken](Matrix%20Games/Chicken)
-- [Congestion](Matrix%20Games/Congestion)
-- [Dynamic Public Goods Game](Matrix%20Games/DPGG)
-- [Inspection](Matrix%20Games/Inspection)
-
-```{toctree}
-:hidden:
-
-Matrix Games/Bertrand
-Matrix Games/Chicken
-Matrix Games/Congestion
-Matrix Games/DPGG
-Matrix Games/Inspection
-```
+- [Bertrand](Matrix%20Games/Bertrand.md)
+- [Chicken](Matrix%20Games/Chicken.md)
+- [Congestion](Matrix%20Games/Congestion.md)
+- [Dynamic Public Goods Game](Matrix%20Games/DPGG.md)
+- [Inspection](Matrix%20Games/Inspection.md)

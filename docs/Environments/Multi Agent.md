@@ -4,10 +4,3 @@ For Multi Agent environments, we use the **PettingZoo** API for environment inte
 - `AEC`, for turn-based environments using the *Agent Environment Cycle* model. Parallel environments can be converted to AEC environments.
 
 `Parallel` environments subsume AEC environments, since AEC environments can be seen as a wrapper over Parallel environments (hence the ease in convertibility). At the current moment, we only support `Parallel` environments.
-
-```{toctree}
-:hidden:
-
-Multi Agent/Gridworlds
-Multi Agent/Matrix Games
-```

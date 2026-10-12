@@ -1,16 +1,8 @@
 """Data sources for MASA plotting.
 
-Three classes live here:
-
-* :class:`TensorBoardSource` and :class:`WandBSource` are tidy long form
-  loaders used by the generic single run plotter (``api.plot_run``,
-  ``run.py``). Both return a DataFrame with columns
-  ``[step, metric, value, run]``.
-* :class:`CachedWandbSource` is the benchmark pipeline downloader: it
-  writes each W&B run's history to its own CSV inside ``Config.cache_dir``
-  with bounded retries, and reads from that cache on subsequent calls.
-  The downstream long form and quantile frames are built in
-  :mod:`masa.plotting.processing`.
+TensorBoardSource and WandBSource are long-form loaders for the single-run
+plotter (returning ``[step, metric, value, run]``). CachedWandbSource is the
+benchmark-pipeline downloader, caching each W&B run's history to a per-run CSV.
 """
 
 from __future__ import annotations
@@ -19,7 +11,6 @@ import os
 from pathlib import Path
 from typing import Iterable, List, Optional
 
-import numpy as np
 import pandas as pd
 
 
@@ -27,17 +18,16 @@ class TensorBoardSource:
     """Read scalar metrics from TensorBoard event files.
 
     Args:
-        logdir: Root directory containing per-run subdirectories.
-            Expected layout: ``{logdir}/{run_name}/events.out.tfevents.*``
-            If *logdir* itself contains event files it is treated as a single run.
+        logdir: Root directory containing per-run subdirectories
+            (``{logdir}/{run_name}/events.out.tfevents.*``). If *logdir* itself
+            contains event files it is treated as a single run.
     """
 
     def __init__(self, logdir: str):
         self.logdir = logdir
 
-    # ------------------------------------------------------------------
     def list_metrics(self) -> List[str]:
-        """Return all tensor tag names found across runs."""
+        """Return all tensor/scalar tag names found across runs."""
         from tensorboard.backend.event_processing import event_accumulator
 
         tags: set[str] = set()
@@ -52,25 +42,21 @@ class TensorBoardSource:
             tags.update(ea.Tags().get("scalars", []))
         return sorted(tags)
 
-    # ------------------------------------------------------------------
     def load(
         self,
         metrics: Optional[List[str]] = None,
-        run_filter: Optional[str] = None,
+        run_filter: Optional[str | List[str]] = None,
     ) -> pd.DataFrame:
-        """Load metrics into a normalised DataFrame.
-
-        Returns:
-            DataFrame with columns ``[step, metric, value, run]``.
-        """
-        import tensorflow as tf
+        """Load metrics into a ``[step, metric, value, run]`` DataFrame."""
         from tensorboard.backend.event_processing import event_accumulator
+        from tensorboard.util import tensor_util
 
+        filters = [run_filter] if isinstance(run_filter, str) else (run_filter or [])
         frames: list[pd.DataFrame] = []
 
         for run_dir in self._find_run_dirs():
             run_name = os.path.basename(run_dir)
-            if run_filter and run_filter not in run_name:
+            if filters and not any(f in run_name for f in filters):
                 continue
 
             ea = event_accumulator.EventAccumulator(
@@ -86,22 +72,20 @@ class TensorBoardSource:
 
             for tag in targets:
                 if tag in available_tensors:
-                    events = ea.Tensors(tag)
-                    rows = [
-                        {"step": e.step,
-                         "value": tf.make_ndarray(e.tensor_proto).item(),
-                         "metric": tag,
-                         "run": run_name}
-                        for e in events
-                    ]
+                    rows = []
+                    for e in ea.Tensors(tag):
+                        arr = tensor_util.make_ndarray(e.tensor_proto)
+                        if arr.size != 1:
+                            # Skip non-scalar tensors (e.g. tf.summary.histogram
+                            # margins) -- the scalar plotter can't use them.
+                            continue
+                        rows.append({"step": e.step, "value": arr.item(),
+                                     "metric": tag, "run": run_name})
                 elif tag in available_scalars:
-                    events = ea.Scalars(tag)
                     rows = [
-                        {"step": e.step,
-                         "value": e.value,
-                         "metric": tag,
-                         "run": run_name}
-                        for e in events
+                        {"step": e.step, "value": e.value,
+                         "metric": tag, "run": run_name}
+                        for e in ea.Scalars(tag)
                     ]
                 else:
                     continue
@@ -113,7 +97,6 @@ class TensorBoardSource:
             return pd.DataFrame(columns=["step", "metric", "value", "run"])
         return pd.concat(frames, ignore_index=True)
 
-    # ------------------------------------------------------------------
     def _find_run_dirs(self) -> List[str]:
         """Discover directories that contain TensorBoard event files."""
         run_dirs: list[str] = []
@@ -121,9 +104,7 @@ class TensorBoardSource:
             if any(f.startswith("events.out.tfevents") for f in files):
                 run_dirs.append(root)
         if not run_dirs:
-            raise FileNotFoundError(
-                f"No TensorBoard event files found under {self.logdir}"
-            )
+            raise FileNotFoundError(f"No TensorBoard event files found under {self.logdir}")
         return sorted(run_dirs)
 
 
@@ -131,60 +112,49 @@ class WandBSource:
     """Read scalar metrics from Weights & Biases.
 
     Args:
-        project: W&B project name (e.g. ``"ProbShield-Benchmarks"``).
-        entity: W&B entity / team.  ``None`` uses the default entity.
+        project: W&B project name.
+        entity: W&B entity / team. ``None`` uses the default entity.
     """
 
     def __init__(self, project: str, entity: Optional[str] = None):
         self.project = project
         self.entity = entity
 
-    # ------------------------------------------------------------------
     def list_metrics(self, filters: Optional[dict] = None) -> List[str]:
         """Return the union of history column names across matching runs."""
         import wandb
 
         api = wandb.Api()
-        runs = api.runs(
-            self._path(),
-            filters=filters or {},
-        )
+        runs = api.runs(self._path(), filters=filters or {})
         cols: set[str] = set()
         for run in runs:
             hist = run.history(samples=1)
             cols.update(c for c in hist.columns if not c.startswith("_"))
         return sorted(cols)
 
-    # ------------------------------------------------------------------
     def load(
         self,
         metrics: Optional[List[str]] = None,
         filters: Optional[dict] = None,
-        run_filter: Optional[str] = None,
+        run_filter: Optional[str | List[str]] = None,
     ) -> pd.DataFrame:
-        """Load metrics into a normalised DataFrame.
+        """Load metrics into a ``[step, metric, value, run]`` DataFrame.
 
         Args:
-            metrics: Metric keys to load.  If ``None``, loads all non-internal
-                columns from run history.
+            metrics: Metric keys to load; ``None`` loads all non-internal columns.
             filters: W&B MongoDB-style run filters (passed to ``api.runs``).
-            run_filter: Simple substring filter on ``run.name``.
-
-        Returns:
-            DataFrame with columns ``[step, metric, value, run]``.
+            run_filter: Substring(s) matched against ``run.name``.
         """
         import wandb
 
         api = wandb.Api()
-        runs = api.runs(
-            self._path(),
-            filters=filters or {},
-        )
+        runs = api.runs(self._path(), filters=filters or {})
 
+        run_filters = [run_filter] if isinstance(run_filter, str) else (run_filter or [])
         frames: list[pd.DataFrame] = []
 
         for run in runs:
-            if run_filter and run_filter not in run.name:
+            if run_filters and not any(f in run.name for f in run_filters):
                 continue
 
             hist = run.history(samples=10_000)
@@ -209,16 +179,9 @@ class WandBSource:
             return pd.DataFrame(columns=["step", "metric", "value", "run"])
         return pd.concat(frames, ignore_index=True)
 
-    # ------------------------------------------------------------------
     def _path(self) -> str:
-        if self.entity:
-            return f"{self.entity}/{self.project}"
-        return self.project
+        return f"{self.entity}/{self.project}" if self.entity else self.project
 
-
-# ----------------------------------------------------------------------
-# Benchmark pipeline downloader
-# ----------------------------------------------------------------------
 
 from tenacity import (
     retry,
@@ -240,13 +203,11 @@ _RETRY = dict(
 
 
 class CachedWandbSource:
-    """Per run CSV downloader with bounded retries.
+    """Per-run CSV downloader with bounded retries.
 
-    Lists every run in ``Config.wandb_entity/wandb_project`` and writes each
-    run's history to ``Config.cache_dir/{run.name}.csv``. Re runs skip the API
-    call when a CSV already exists, unless ``Config.force_download`` is set.
-    The downstream long form and quantile frames are built by
-    :func:`masa.plotting.processing.build_frames`.
+    Writes each run's history to ``Config.cache_dir/{run.name}.csv``, skipping
+    runs already cached unless ``Config.force_download`` is set. Per-run failures
+    are logged and skipped, never raised.
     """
 
     def __init__(self, config: Config):
@@ -254,11 +215,7 @@ class CachedWandbSource:
         self.log = get_logger()
 
     def download(self) -> list[Path]:
-        """Download (or read from cache) every run in the project.
-
-        Returns paths to the per run CSVs in ``config.cache_dir``.
-        Failures on a single run are logged and skipped, never raised.
-        """
+        """Download (or read from cache) every run; return the per-run CSV paths."""
         ensure_dir(self.config.cache_dir)
         try:
             runs = list(self._list_runs())

@@ -55,7 +55,7 @@ def test_new_envs_render_rgb_array_and_notebook():
         assert frame.mean() > 0
         env.close()
 
-    with open("notebooks/envs/play_safety_gridworlds.ipynb", "r", encoding="utf-8") as fh:
+    with open("notebooks/envs/discrete/play_safety_gridworlds.ipynb", "r", encoding="utf-8") as fh:
         notebook = json.load(fh)
 
     assert notebook["nbformat"] == 4
@@ -147,8 +147,8 @@ def test_pacman_envs_render_rgb_array_ansi_and_notebooks(monkeypatch):
         env.close()
 
     for path, env_name in (
-        ("notebooks/envs/play_pacman_tabular.ipynb", "mini_pacman"),
-        ("notebooks/envs/play_pacman_coins.ipynb", "mini_pacman_with_coins"),
+        ("notebooks/envs/tabular/play_pacman_tabular.ipynb", "mini_pacman"),
+        ("notebooks/envs/discrete/play_pacman_coins.ipynb", "mini_pacman_with_coins"),
     ):
         with open(path, "r", encoding="utf-8") as fh:
             notebook = json.load(fh)
@@ -212,7 +212,7 @@ def test_cartpole_envs_render_rgb_array_ansi_and_notebook():
         with pytest.raises(ValueError):
             env_cls(render_window_size=0)
 
-    with open("notebooks/envs/play_cartpole.ipynb", "r", encoding="utf-8") as fh:
+    with open("notebooks/envs/mixed/play_cartpole.ipynb", "r", encoding="utf-8") as fh:
         notebook = json.load(fh)
 
     assert notebook["nbformat"] == 4
@@ -297,7 +297,7 @@ def test_mountain_car_envs_render_rgb_array_ansi():
     assert hill_points[-1][0] == env.render_window_size
     env.close()
 
-    with open("notebooks/envs/play_mountain_car.ipynb", "r", encoding="utf-8") as fh:
+    with open("notebooks/envs/mixed/play_mountain_car.ipynb", "r", encoding="utf-8") as fh:
         notebook = json.load(fh)
 
     assert notebook["nbformat"] == 4
@@ -400,7 +400,7 @@ def test_road_1d_render_rgb_array_ansi():
     with pytest.raises(ValueError):
         Road1D(render_window_size=0)
 
-    with open("notebooks/envs/play_roads.ipynb", "r", encoding="utf-8") as fh:
+    with open("notebooks/envs/continuous/play_roads.ipynb", "r", encoding="utf-8") as fh:
         notebook = json.load(fh)
 
     assert notebook["nbformat"] == 4
@@ -464,7 +464,7 @@ def test_obstacle_envs_render_rgb_array_ansi():
         with pytest.raises(ValueError):
             env_cls(render_window_size=0)
 
-    with open("notebooks/envs/play_obstacles.ipynb", "r", encoding="utf-8") as fh:
+    with open("notebooks/envs/continuous/play_obstacles.ipynb", "r", encoding="utf-8") as fh:
         notebook = json.load(fh)
 
     assert notebook["nbformat"] == 4
@@ -515,7 +515,7 @@ def test_colour_grid_world_render_rgb_array_ansi_and_notebook():
     with pytest.raises(ValueError):
         ColourGridWorld(render_window_size=0)
 
-    with open("notebooks/envs/play_colour_grid_world.ipynb", "r", encoding="utf-8") as fh:
+    with open("notebooks/envs/tabular/play_colour_grid_world.ipynb", "r", encoding="utf-8") as fh:
         notebook = json.load(fh)
 
     assert notebook["nbformat"] == 4
@@ -580,7 +580,7 @@ def test_colour_bomb_envs_render_rgb_array_ansi_and_notebook():
         with pytest.raises(ValueError):
             env_cls(render_window_size=0)
 
-    with open("notebooks/envs/play_colour_bomb_gridworlds.ipynb", "r", encoding="utf-8") as fh:
+    with open("notebooks/envs/tabular/play_colour_bomb_gridworlds.ipynb", "r", encoding="utf-8") as fh:
         notebook = json.load(fh)
 
     assert notebook["nbformat"] == 4
@@ -658,7 +658,7 @@ def test_media_streaming_render_rgb_array_ansi_and_notebook():
     with pytest.raises(ValueError):
         MediaStreaming(render_window_size=0)
 
-    with open("notebooks/envs/play_media_streaming.ipynb", "r", encoding="utf-8") as fh:
+    with open("notebooks/envs/tabular/play_media_streaming.ipynb", "r", encoding="utf-8") as fh:
         notebook = json.load(fh)
 
     assert notebook["nbformat"] == 4
@@ -715,7 +715,7 @@ def test_bridge_crossing_envs_render_rgb_array_ansi_and_notebook():
         with pytest.raises(ValueError):
             env_cls(render_window_size=0)
 
-    with open("notebooks/envs/play_bridge_crossing.ipynb", "r", encoding="utf-8") as fh:
+    with open("notebooks/envs/tabular/play_bridge_crossing.ipynb", "r", encoding="utf-8") as fh:
         notebook = json.load(fh)
 
     assert notebook["nbformat"] == 4

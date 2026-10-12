@@ -1,8 +1,29 @@
 # Propositional Formula
 
-```{eval-rst}
-.. automodule:: masa.common.ltl
-   :members:
-   :exclude-members: DFA, DFACostFn, dfa_to_costfn, ShapedCostFn
-   :show-inheritance:
-```
+::: masa.common.ltl.Formula
+    options:
+      members: true
+
+::: masa.common.ltl.Atom
+    options:
+      members: true
+
+::: masa.common.ltl.Truth
+    options:
+      members: true
+
+::: masa.common.ltl.And
+    options:
+      members: true
+
+::: masa.common.ltl.Or
+    options:
+      members: true
+
+::: masa.common.ltl.Neg
+    options:
+      members: true
+
+::: masa.common.ltl.Implies
+    options:
+      members: true

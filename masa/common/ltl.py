@@ -504,7 +504,7 @@ class ShapedCostFn(DFACostFn):
     """
 
     def __init__(self, dfa: DFA, potential_fn: Callable[[int], float], gamma: float = 0.99):
-        """Creates a shaped DFA cost function.
+        r"""Creates a shaped DFA cost function.
 
         Args:
           dfa: DFA whose accepting states define the base cost.

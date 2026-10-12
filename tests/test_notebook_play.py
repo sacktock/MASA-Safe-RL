@@ -4,7 +4,15 @@ import json
 import threading
 from pathlib import Path
 
-from masa.common.notebook_play import start_play_thread, stop_play_thread, sync_selected_env
+import pytest
+
+from masa.common.rendering.notebook_play import (
+    NotebookVideoRecorder,
+    notebook_video_recording,
+    start_play_thread,
+    stop_play_thread,
+    sync_selected_env,
+)
 
 
 class _Selector:
@@ -49,6 +57,16 @@ class _FakePygame:
     def __init__(self) -> None:
         self.display = _FakeDisplay()
         self.event = _FakeEvent()
+
+
+def _load_notebook(notebook_path: str) -> dict:
+    with Path(notebook_path).open("r", encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def _notebook_source(notebook_path: str) -> str:
+    notebook = _load_notebook(notebook_path)
+    return "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
 
 
 def test_sync_selected_env_reuses_env_when_selection_is_unchanged():
@@ -135,36 +153,120 @@ def test_start_play_thread_stops_previous_session():
         stop_play_thread(session_key)
 
 
+def test_disabled_notebook_video_recording_is_a_noop(tmp_path):
+    video_path = tmp_path / "disabled.mp4"
+    with notebook_video_recording(False, video_path) as recorder:
+        assert recorder.enabled is False
+    assert not video_path.exists()
+
+
+_SELECTOR_NOTEBOOK_PATHS = (
+    "notebooks/envs/tabular/play_bridge_crossing.ipynb",
+    "notebooks/envs/mixed/play_cartpole.ipynb",
+    "notebooks/envs/tabular/play_colour_bomb_gridworlds.ipynb",
+    "notebooks/envs/mixed/play_mountain_car.ipynb",
+    "notebooks/envs/continuous/play_obstacles.ipynb",
+    "notebooks/envs/discrete/play_pacman_coins.ipynb",
+    "notebooks/envs/tabular/play_pacman_tabular.ipynb",
+    "notebooks/envs/continuous/play_roads.ipynb",
+    "notebooks/envs/discrete/play_safety_gridworlds.ipynb",
+)
+
+
 def test_selector_notebooks_sync_selected_envs_during_play():
-    notebook_paths = (
-        "notebooks/envs/play_bridge_crossing.ipynb",
-        "notebooks/envs/play_cartpole.ipynb",
-        "notebooks/envs/play_colour_bomb_gridworlds.ipynb",
-        "notebooks/envs/play_mountain_car.ipynb",
-        "notebooks/envs/play_obstacles.ipynb",
-        "notebooks/envs/play_pacman_coins.ipynb",
-        "notebooks/envs/play_pacman_tabular.ipynb",
-        "notebooks/envs/play_roads.ipynb",
-        "notebooks/envs/play_safety_gridworlds.ipynb",
-    )
+    for notebook_path in _SELECTOR_NOTEBOOK_PATHS:
+        source = _notebook_source(notebook_path)
 
-    for notebook_path in notebook_paths:
-        with Path(notebook_path).open("r", encoding="utf-8") as fh:
-            notebook = json.load(fh)
-        source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
-
-        assert "from masa.common.notebook_play import make_reset_env, sync_selected_env" in source
+        assert "from masa.common.rendering.notebook_play import make_reset_env, sync_selected_env" in source
         assert "follow_selector = env_name is None" in source
         assert "sync_selected_env(" in source
         assert 'print("switched:", env_name)' in source or 'print("switched:", selected_env_name)' in source
 
 
-def test_roads_notebook_runs_play_loop_in_background_thread():
-    with Path("notebooks/envs/play_roads.ipynb").open("r", encoding="utf-8") as fh:
-        notebook = json.load(fh)
-    source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
+def test_roads_notebook_runs_recorded_play_loop_in_background_thread():
+    source = _notebook_source("notebooks/envs/continuous/play_roads.ipynb")
 
-    assert "from masa.common.notebook_play import start_play_thread" in source
+    assert "from masa.common.rendering.notebook_play import start_recorded_play_thread" in source
     assert "def _run(stop_event):" in source
     assert "while running and not stop_event.is_set() and not env.human_window_closed:" in source
-    assert "return start_play_thread(\"roads\", _run)" in source
+    assert 'return start_recorded_play_thread("roads", _run, record_video=RECORD_VIDEO, video_path=VIDEO_PATH)' in source
+
+
+def test_selector_notebooks_play_off_the_kernel_main_thread():
+    """A blocking play loop starves the kernel, so ``ENV_SELECTOR.value`` never updates."""
+    for notebook_path in _SELECTOR_NOTEBOOK_PATHS:
+        source = _notebook_source(notebook_path)
+
+        assert "from masa.common.rendering.notebook_play import start_recorded_play_thread" in source
+        assert "def _run(stop_event):" in source
+        assert "start_recorded_play_thread(" in source
+        assert "stop_event.is_set()" in source
+        assert "with notebook_video_recording(" not in source
+
+
+def _recorder_frame(rgb, **recorder_kwargs):
+    import os
+
+    os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
+    import numpy as np
+    import pygame
+
+    pygame.display.init()
+    height, width = rgb.shape[:2]
+    screen = pygame.display.set_mode((width, height))
+    pygame.surfarray.blit_array(screen, np.transpose(rgb, (1, 0, 2)))
+    recorder = NotebookVideoRecorder("unused.mp4", enabled=True, **recorder_kwargs)
+    recorder._pygame = pygame
+    try:
+        return recorder._current_frame()
+    finally:
+        pygame.display.quit()
+
+
+def test_recorder_pads_letterbox_with_the_canvas_border_colour():
+    np = pytest.importorskip("numpy")
+    pytest.importorskip("pygame")
+
+    border = (194, 187, 175)
+    rgb = np.full((256, 256, 3), border, dtype=np.uint8)
+    rgb[64:192, 64:192] = (10, 20, 30)
+
+    frame = _recorder_frame(rgb, output_size=(320, 180))
+
+    assert frame.shape == (180, 320, 3)
+    for corner in (frame[0, 0], frame[0, -1], frame[-1, 0], frame[-1, -1]):
+        assert tuple(int(channel) for channel in corner) == border
+
+
+def test_recorder_honours_an_explicit_background_colour():
+    np = pytest.importorskip("numpy")
+    pytest.importorskip("pygame")
+
+    rgb = np.full((256, 256, 3), (194, 187, 175), dtype=np.uint8)
+
+    frame = _recorder_frame(rgb, output_size=(320, 180), background=(12, 12, 12))
+
+    assert tuple(int(channel) for channel in frame[0, 0]) == (12, 12, 12)
+
+
+def test_recorder_cover_fit_crops_instead_of_padding():
+    np = pytest.importorskip("numpy")
+    pytest.importorskip("pygame")
+
+    border = (194, 187, 175)
+    rgb = np.full((256, 256, 3), border, dtype=np.uint8)
+    rgb[8:248, 8:248] = (10, 20, 30)
+
+    frame = _recorder_frame(rgb, output_size=(320, 180), fit="cover")
+
+    assert frame.shape == (180, 320, 3)
+    # "cover" scales past the frame and crops, so the border strip is gone.
+    assert tuple(int(channel) for channel in frame[90, 160]) == (10, 20, 30)
+    assert not np.all(frame[0] == np.array(border, dtype=np.uint8))
+
+
+def test_recorder_rejects_unknown_fit_and_background():
+    with pytest.raises(ValueError):
+        NotebookVideoRecorder("unused.mp4", fit="stretch")
+    with pytest.raises(ValueError):
+        NotebookVideoRecorder("unused.mp4", background="transparent")

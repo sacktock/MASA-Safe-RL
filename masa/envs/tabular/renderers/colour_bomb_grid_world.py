@@ -5,6 +5,8 @@ from typing import Any, Literal, Protocol
 
 import numpy as np
 
+from masa.common.rendering.agent import draw_agent
+
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
 Position = tuple[int, int]
@@ -26,9 +28,6 @@ BOMB_SPARK_COLOR = (255, 191, 54)
 BOMB_SPARK_CORE_COLOR = (255, 246, 167)
 MEDIC_COLOR = (78, 166, 129)
 MEDIC_CROSS_COLOR = (238, 248, 236)
-AGENT_COLOR = (55, 115, 206)
-AGENT_RING_COLOR = (236, 246, 252)
-AGENT_SHADOW_COLOR = (38, 75, 136)
 ACTIVE_OUTLINE_COLOR = (33, 30, 38)
 ZONE_COLORS: dict[str, RGBColor] = {
     "green": (109, 178, 103),
@@ -318,17 +317,21 @@ class ColourBombGridWorldRenderer:
         pygame.draw.rect(surface, MEDIC_CROSS_COLOR, pygame.Rect(cx - bar // 2, cy - length // 2, bar, length))
         pygame.draw.rect(surface, MEDIC_CROSS_COLOR, pygame.Rect(cx - length // 2, cy - bar // 2, length, bar))
 
-    def _draw_agent(self, surface: Any, position: Position, cell_size: int, step_count: int) -> None:
-        import pygame
-
+    def _draw_agent(
+        self,
+        surface: Any,
+        position: Position,
+        cell_size: int,
+        step_count: int,
+    ) -> None:
         row, col = position
-        center = _cell_center(row, col, cell_size)
-        radius = max(6, int(cell_size * 0.32))
-        bob = -max(1, cell_size // 30) if step_count % 2 else 0
-        center = (center[0], center[1] + bob)
-        pygame.draw.circle(surface, AGENT_SHADOW_COLOR, (center[0] + max(1, cell_size // 22), center[1] + max(1, cell_size // 22)), radius)
-        pygame.draw.circle(surface, AGENT_RING_COLOR, center, radius)
-        pygame.draw.circle(surface, AGENT_COLOR, center, max(2, radius - max(3, cell_size // 12)))
+        draw_agent(
+            surface,
+            _cell_center(row, col, cell_size),
+            cell_size,
+            agent_id=1,
+            step_count=step_count,
+        )
 
 
 class _ColourBombSnapshot:

@@ -4,9 +4,9 @@ Quick Start
 Installation
 ------------
 
-Python 3.10+ is required (3.10 recommonded), later versions may be supported.
+Python 3.10+ is required (3.10 recommended), later versions may be supported.
 
-#### Installation with conda
+### Installation with conda
 - Install conda, e.g., via [anaconda](https://anaconda.org/channels/anaconda/packages/conda/overview).
 - Clone the repo:
 ```bash
@@ -23,15 +23,18 @@ conda activate masa
 pip install -e .
 ```
 
-#### Installation with uv
+### Installation with uv
+`uv sync` installs only base dependency package from the repository root.
 
-`uv sync` installs the base package from the repository root.
+**Easiest way to install all dependencies:** All dependency groups (docs and GPU support for CUDA13): `uv sync --all-groups --no-group cuda12`.
 
+Alternatively, `uv sync --all-groups --no-group cuda13` if your system only supports CUDA 12.
+
+More minimal ways of installing dependency groups:
 * For building docs, use `uv sync --group docs` from the repository root.
-* Adding GPU support for Jax: `uv sync --group cuda12` (or `cuda13` if supported by your device)
-* All groups (docs and GPU support): `uv sync --all-groups`.
+* Adding GPU support for Jax: `uv sync --group cuda13` (or `cuda12` if CUDA 13 is not supported by your device)
 
-#### Installation with PyPI
+### Installation with PyPI
 
 MASA-Safe-RL is now available on PyPI: [MASA-Safe-RL](https://pypi.org/project/MASA-Safe-RL/). 
 
@@ -80,7 +83,5 @@ masa run --env-id mini_pacman --algo q_learning --seed 0
 
 ## Next Steps
 
-- [Core Concepts](Core%20Concepts/) - Familiarize yourself with the core concepts in MASA.
-- [Basic Usage](Basic%20Usage) - Learn how to use MASA.
-
-
+- [Core Concepts](Core%20Concepts.md) - Familiarize yourself with the core concepts in MASA.
+- [Basic Usage](Basic%20Usage.md) - Learn how to use MASA.

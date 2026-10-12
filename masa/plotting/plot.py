@@ -58,7 +58,6 @@ def _thousands_formatter() -> ticker.FuncFormatter:
     )
 
 
-# Core plotting
 def plot_metrics(
     df: pd.DataFrame,
     metrics: Optional[List[str]] = None,
@@ -99,6 +98,45 @@ def plot_metrics(
             title=title, output_path=output_path, figsize=figsize,
             show_legend=show_legend, show_axes=show_axes, dpi=dpi,
             hue=hue, palette=palette, errorbar=errorbar,
+        )
+
+
+def plot_quantile_metrics(
+    q_df: pd.DataFrame,
+    metrics: Optional[List[str]] = None,
+    smooth_weight: float = 0.6,
+    title: Optional[str] = None,
+    output_path: Optional[str] = None,
+    figsize: Tuple[int, int] = (7, 5),
+    show_legend: bool = True,
+    show_axes: bool = True,
+    dpi: int = 300,
+    palette: Optional[Dict[str, str]] = None,
+) -> plt.Figure:
+    """Plot q50 ± q25/q75 bands from a quantile DataFrame.
+
+    Args:
+        q_df: DataFrame with columns ``[variant, step, metric, q25, q50, q75]``
+            as produced by :func:`~masa.plotting.processing.build_quantile_frame`.
+        metrics: Metric keys to plot.  ``None`` plots all found in *q_df*.
+        smooth_weight: EMA weight applied per ``(variant, metric)`` group.
+        title: Per-panel title override.  ``None`` uses the metric name.
+        output_path: Save path.  ``None`` skips saving.
+        figsize: ``(width, height)`` per subplot panel.
+        show_legend: Render a shared legend below the panels.
+        show_axes: Label axes.
+        dpi: Resolution for saved figures.
+        palette: Colour mapping ``{variant: colour}``.  ``None`` uses colorblind.
+
+    Returns:
+        The matplotlib :class:`~matplotlib.figure.Figure`.
+    """
+    with plt.rc_context(_RC_PARAMS):
+        return _plot_quantile_inner(
+            q_df, metrics=metrics, smooth_weight=smooth_weight,
+            title=title, output_path=output_path, figsize=figsize,
+            show_legend=show_legend, show_axes=show_axes, dpi=dpi,
+            palette=palette,
         )
 
 
@@ -185,7 +223,84 @@ def _plot_metrics_inner(
     return fig
 
 
-# Pretty-printing helpers
+def _plot_quantile_inner(
+    q_df: pd.DataFrame,
+    *,
+    metrics: Optional[List[str]],
+    smooth_weight: float,
+    title: Optional[str],
+    output_path: Optional[str],
+    figsize: Tuple[int, int],
+    show_legend: bool,
+    show_axes: bool,
+    dpi: int,
+    palette: Optional[Dict[str, str]],
+) -> plt.Figure:
+    if metrics is None:
+        metrics = sorted(q_df["metric"].unique().tolist())
+    if not metrics:
+        raise ValueError("No metrics to plot.")
+    if q_df.empty:
+        raise ValueError("The provided DataFrame is empty.")
+
+    variants = sorted(q_df["variant"].unique().tolist())
+    if palette is None:
+        colours: Dict[str, str] = dict(zip(variants, sns.color_palette("colorblind", len(variants))))
+    else:
+        colours = {v: palette.get(v, "#888888") for v in variants}
+
+    n = len(metrics)
+    fig, axes = plt.subplots(1, n, figsize=(figsize[0] * n, figsize[1]))
+    if n == 1:
+        axes = [axes]
+
+    for k, metric in enumerate(metrics):
+        ax = axes[k]
+        sub = q_df[q_df["metric"] == metric]
+        if sub.empty:
+            ax.set_title(metric)
+            continue
+        for variant in variants:
+            vsub = sub[sub["variant"] == variant].sort_values("step")
+            if vsub.empty:
+                continue
+            colour = colours.get(variant)
+            steps = vsub["step"].values
+            q50 = smooth(vsub["q50"].values, smooth_weight)
+            q25 = smooth(vsub["q25"].values, smooth_weight)
+            q75 = smooth(vsub["q75"].values, smooth_weight)
+            ax.plot(steps, q50, color=colour, linewidth=2.0, label=variant)
+            ax.fill_between(steps, q25, q75, color=colour, alpha=0.25, linewidth=0)
+
+        ax.set_title(_pretty_name(metric) if title is None else title)
+        if show_axes:
+            ax.set_ylabel(_pretty_name(metric))
+            ax.set_xlabel("Training steps (in thousands)")
+            ax.xaxis.set_major_formatter(_thousands_formatter())
+        else:
+            ax.set_ylabel("")
+            ax.set_xlabel("")
+        ax.tick_params(axis="both", which="both", top=True, right=True)
+
+    if show_legend:
+        handles, labels = axes[0].get_legend_handles_labels()
+        if handles:
+            fig.legend(
+                handles, labels, loc="upper center",
+                bbox_to_anchor=(0.5, 0.02), ncol=min(len(handles), 6),
+                frameon=True, edgecolor="white", fancybox=False,
+                columnspacing=1.5, handlelength=2.0,
+            )
+
+    fig.tight_layout(rect=[0, 0.08, 1, 1] if show_legend else [0, 0, 1, 1])
+
+    if output_path is not None:
+        os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+        fig.savefig(output_path, bbox_inches="tight", pad_inches=0.15, dpi=dpi)
+
+    return fig
+
+
 _PRETTY: Dict[str, str] = {
     "ep_reward": "Reward",
     "ep_length": "Episode Length",

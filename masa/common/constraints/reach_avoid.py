@@ -38,9 +38,9 @@ class ReachAvoid(Constraint):
     At each step, given a label set ``labels``:
 
     - reaching condition:
-    ``reach = (reach_label in labels)``
+      ``reach = (reach_label in labels)``
     - avoiding condition:
-    ``avoid_ok = (avoid_label not in labels)``
+      ``avoid_ok = (avoid_label not in labels)``
 
     State updates:
 

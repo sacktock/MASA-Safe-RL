@@ -2,10 +2,18 @@
 
 ## API Reference
 
-```{eval-rst}
-.. automodule:: masa.common.pctl
-   :members:  Next, Until, Always, Eventually
-   :special-members: _bound, _prob_seq
-   :private-members:
-   :show-inheritance:
-```
+::: masa.common.pctl.Next
+    options:
+      members: true
+
+::: masa.common.pctl.Until
+    options:
+      members: true
+
+::: masa.common.pctl.Always
+    options:
+      members: true
+
+::: masa.common.pctl.Eventually
+    options:
+      members: true

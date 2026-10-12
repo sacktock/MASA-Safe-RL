@@ -5,6 +5,7 @@ from typing import Any
 import numpy as np
 from gymnasium import spaces
 
+from masa.common.rendering.agent import draw_agent
 from masa.envs.discrete.base import DiscreteEnv
 
 GRID_SIZE = 7
@@ -177,8 +178,6 @@ class ConveyorBeltRenderer:
     _BELT = (110, 120, 134)
     _BELT_STRIPE = (214, 190, 103)
     _BELT_END = (160, 82, 70)
-    _AGENT = (71, 129, 214)
-    _AGENT_RING = (235, 246, 252)
     _VASE = (199, 122, 175)
     _VASE_HIGHLIGHT = (240, 214, 235)
     _BROKEN = (185, 75, 82)
@@ -291,11 +290,12 @@ class ConveyorBeltRenderer:
 
     def _draw_agent(self, frame: np.ndarray, x: int, y: int) -> None:
         left, top, right, bottom = self._cell_bounds(x, y, 0)
-        cx = (left + right) // 2
-        cy = (top + bottom) // 2
-        radius = self.tile_size // 3
-        self._draw_circle(frame, cx, cy, radius, self._AGENT_RING)
-        self._draw_circle(frame, cx, cy, radius - 6, self._AGENT)
+        draw_agent(
+            frame,
+            ((left + right) // 2, (top + bottom) // 2),
+            self.tile_size,
+            agent_id=1,
+        )
 
     def _draw_vase(self, frame: np.ndarray, x: int, y: int, broken: bool) -> None:
         left, top, right, bottom = self._cell_bounds(x, y, self.tile_size // 5)
@@ -309,12 +309,6 @@ class ConveyorBeltRenderer:
         frame[top:bottom, left:right] = self._VASE
         inner_pad = max(4, self.tile_size // 10)
         frame[top + inner_pad:bottom - inner_pad, left + inner_pad:right - inner_pad] = self._VASE_HIGHLIGHT
-
-    @staticmethod
-    def _draw_circle(frame: np.ndarray, cx: int, cy: int, radius: int, color: tuple[int, int, int]) -> None:
-        yy, xx = np.ogrid[:frame.shape[0], :frame.shape[1]]
-        mask = (xx - cx) ** 2 + (yy - cy) ** 2 <= radius ** 2
-        frame[mask] = color
 
     @staticmethod
     def _draw_diagonal(

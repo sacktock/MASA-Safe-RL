@@ -9,16 +9,14 @@ At its core, **reinforcement learning** studies how an *agent* learns to make de
 ### The Agent-Environment Loop
 
 The interaction proceeds in discrete time steps:
-```{eval-rst}
-1. The environment provides an **observation** :math:`o_t` describing the current situation.
-2. The agent chooses an **action** :math:`a_t` based on that observation.
+1. The environment provides an **observation** $o_t$ describing the current situation.
+2. The agent chooses an **action** $a_t$ based on that observation.
 3. The environment transitions to a new state and returns:
 
-   * a **reward** :math:`r_t`, and
-   * the next observation :math:`o_{t+1}`.
+   * a **reward** $r_t$, and
+   * the next observation $o_{t+1}$.
 
-The agent's goal is to learn a *policy* :math:`\pi(a \mid o)` that maximises expected cumulative reward over time.
-```
+The agent's goal is to learn a *policy* $\pi(a \mid o)$ that maximises expected cumulative reward over time.
 
 Informally:
 
@@ -81,11 +79,9 @@ Examples:
 
 In a **CMDP**, the agent optimises reward while keeping expected *cost* below a budget:
 
-```{eval-rst}
-.. math::
-
-    \mathbb{E}_\pi \left[ \sum^{T-1}_{t=0} c_t \right] \leq B
-```
+$$
+\mathbb{E}_\pi \left[ \sum^{T-1}_{t=0} c_t \right] \leq B
+$$
 
 Example:
 
@@ -190,9 +186,14 @@ MASA constraints can be:
 
 ### 4. Overview 
 
-```{figure} ../_static/img/path355.svg
+<figure markdown="1">
+
+![Overview of the abstraction stack used in MASA](../_static/img/path355.svg){ loading=lazy }
+
+<figcaption markdown="1">
 Overview of the abstraction stack used in MASA
-```
+</figcaption>
+</figure>
 
 ## Temporal Logic in MASA
 
@@ -214,15 +215,7 @@ These specifications are compiled into **monitors** that:
 
 ## Next Steps
 
-- [Labelling Function](Core%20Concepts/Labelling%20Function) - Learn how observation labelling is handled in MASA.
-- [Cost Function](Core%20Concepts/Cost%20Function) - Understand the conventions used for cost functions in MASA.
-- [Constraints](../Common/Constraints) - How are different constraints handled in MASA?
-- [Wrappers](../Common/Wrappers) - How do environment Wrappers provide a convenient interface for managing constraints?
-
-```{toctree}
-:caption: Core Concepts
-:hidden:
-
-Core Concepts/Labelling Function
-Core Concepts/Cost Function
-```
+- [Labelling Function](Core%20Concepts/Labelling%20Function.md) - Learn how observation labelling is handled in MASA.
+- [Cost Function](Core%20Concepts/Cost%20Function.md) - Understand the conventions used for cost functions in MASA.
+- [Constraints](../Common/Constraints.md) - How are different constraints handled in MASA?
+- [Wrappers](../Common/Wrappers.md) - How do environment Wrappers provide a convenient interface for managing constraints?

@@ -1,6 +1,15 @@
 # MASA-Safe-RL
 
-![title card](images/logo_large.png)
+<p align="center">
+  <a href="https://sacktock.github.io/MASA-Safe-RL/">
+    <img src="images/logo_large.png" alt="MASA-Safe-RL" />
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://sacktock.github.io/MASA-Safe-RL">View Documentation</a>
+  <!-- · <a href="https://paper-url">Paper</a> -->
+</p>
 
 --------------------------------------------------------------------------------
 
@@ -27,7 +36,7 @@ If you use MASA-Safe-RL in your research please cite it in your publications.
 
 #### Prequisites
 
-Python 3.10+ is required (3.10 recommonded), later versions may be supported.
+Python 3.10+ is required (3.10 recommended), later versions may be supported.
 
 #### Installation with conda 
 - Install conda, e.g., via [anaconda](https://anaconda.org/channels/anaconda/packages/conda/overview).
@@ -47,11 +56,15 @@ pip install -e .
 ```
 
 #### Installation with uv
-`uv sync` installs the base package from the repository root.
+`uv sync` installs only base dependency package from the repository root.
 
+**Easiest way to install all dependencies:** All dependency groups (docs and GPU support for CUDA13): `uv sync --all-groups --no-group cuda12`.
+
+Alternatively, `uv sync --all-groups --no-group cuda13` if your system only supports CUDA 12.
+
+More minimal ways of installing dependency groups:
 * For building docs, use `uv sync --group docs` from the repository root.
-* Adding GPU support for Jax: `uv sync --group cuda12` (or `cuda13` if supported by your device)
-* All groups (docs and GPU support): `uv sync --all-groups`.
+* Adding GPU support for Jax: `uv sync --group cuda13` (or `cuda12` if CUDA 13 is not supported by your device)
 
 #### Installation with PyPI
 
@@ -101,21 +114,26 @@ masa example prob_shield_example
 Documentation uses the root `pyproject.toml` and `uv.lock`, so you can build and serve it directly from the repository root.
 
 ```bash
-uv sync --group docs
-uv run --locked --group docs sphinx-build -b html docs docs/_build/html
+uv run zensical build --strict
 ```
 
-The built site will be available at `docs/_build/html/index.html`.
+The built site will be available at `site/index.html`.
 
 For live reload while editing, run:
 
 ```bash
-uv run --locked --group docs sphinx-autobuild docs docs/_build/html
+uv run zensical serve
 ```
+
+## Local storage
+The project currently uses the following directories for local storage:
+* `.cache/` - for persisting transition matrices to avoid recomputation
+* `videos/` - stores recorded videos from training runs at configured intervals or played runs using notebooks/
+* `runs/` - persisted data and metrics of training runs
 
 ## Getting in Touch
 
-MASA-Safe-RL is primarliy managed by [Alex Goodall](https://github.com/sacktock) and [Omar Adalat](https://github.com/nightly). For correspondence in the early stages of the library we prefer you contact us directly via email (a.goodall22@imperial.ac.uk), rather than raising issues on GitHub directly.
+MASA-Safe-RL is primarliy managed by [Alex Goodall](https://github.com/sacktock) and [Omar Adalat](https://github.com/nightly). For correspondence in the early stages of the library we prefer you contact us directly via email (a.goodall22@imperial.ac.uk & o.adalat24@imperial.ac.uk), rather than raising issues on GitHub directly.
 
 ## License
 

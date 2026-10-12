@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import os
 from typing import Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 
-from masa.plotting.plot import plot_metrics
+from masa.plotting.plot import plot_metrics, plot_quantile_metrics
+from masa.plotting.processing import build_long_form_from_tb, build_quantile_frame
 from masa.plotting.sources import TensorBoardSource, WandBSource
 
 
@@ -17,7 +19,8 @@ def plot_run(
     wandb_project: Optional[str] = None,
     wandb_entity: Optional[str] = None,
     wandb_filters: Optional[dict] = None,
-    run_filter: Optional[str] = None,
+    run_filter: Optional[str | List[str]] = None,
+    group_seeds: bool = False,
     # What to plot
     metrics: Optional[List[str]] = None,
     # Plotting options
@@ -66,9 +69,29 @@ def plot_run(
     if not tensorboard_logdir and not wandb_project:
         raise ValueError("Provide either tensorboard_logdir or wandb_project.")
 
+    if group_seeds and not tensorboard_logdir:
+        raise ValueError("group_seeds is only supported for TensorBoard sources.")
+
     if tensorboard_logdir:
         source = TensorBoardSource(tensorboard_logdir)
-        df = source.load(metrics=metrics, run_filter=run_filter)
+        raw_df = source.load(metrics=metrics, run_filter=run_filter)
+        if group_seeds:
+            env = os.path.basename(tensorboard_logdir.rstrip("/\\"))
+            long_df = build_long_form_from_tb(raw_df, env=env)
+            q_df = build_quantile_frame(long_df)
+            return plot_quantile_metrics(
+                q_df,
+                metrics=metrics,
+                smooth_weight=smooth_weight,
+                title=title,
+                output_path=output_path,
+                figsize=figsize,
+                show_legend=show_legend,
+                show_axes=show_axes,
+                dpi=dpi,
+                palette=palette,
+            )
+        df = raw_df
     else:
         source = WandBSource(wandb_project, entity=wandb_entity)
         df = source.load(metrics=metrics, filters=wandb_filters, run_filter=run_filter)

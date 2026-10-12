@@ -8,6 +8,7 @@ from masa.envs.tabular.base import TabularEnv
 from masa.envs.tabular.utils import create_pacman_transition_dict, create_pacman_end_component
 from masa.envs.tabular.renderers.pacman import PacmanHat, PacmanRenderer, RGBColor, validate_renderer_options
 from functools import lru_cache
+from masa.common.dynamics_cache import cache_key, cached_dynamics
 
 STANDARD_MAP = np.array([
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -36,15 +37,35 @@ AGENT_DIRECTION = 1
 GHOST_START = (12, 7)
 GHOST_DIRECTION = 3
 
+# Part of the cache key: a different value means different cached dynamics.
+RETURN_MATRIX = False
+
+
 @lru_cache(maxsize=1)
 def get_pacman_dynamics():
+    # Enumerating this map's dynamics takes minutes, so the result is cached on
+    # disk as well as in-process: see masa.common.dynamics_cache.
+    key = cache_key(
+        "pacman-tabular",
+        STANDARD_MAP,
+        N_DIRECTIONS,
+        N_ACTIONS,
+        N_GHOSTS,
+        GHOST_RAND_PROB,
+        RETURN_MATRIX,
+        FOOD,
+    )
+    return cached_dynamics(key, _compute_pacman_dynamics)
+
+
+def _compute_pacman_dynamics():
     return create_pacman_transition_dict(
         STANDARD_MAP, 
-        return_matrix=False, 
+        return_matrix=RETURN_MATRIX, 
         n_directions=N_DIRECTIONS, 
         n_actions=N_ACTIONS, 
         n_ghosts=N_GHOSTS, 
-        ghost_rand_prob=GHOST_RAND_PROB, 
+        ghost_rand_prob=GHOST_RAND_PROB,
         food_x=FOOD[0], 
         food_y=FOOD[1]
     )

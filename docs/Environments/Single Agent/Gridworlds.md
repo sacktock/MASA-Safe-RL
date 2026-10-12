@@ -18,14 +18,6 @@ the other actions.
 
 ## Available Environments
 
-- [Bridge Crossing](Gridworlds/Bridge%20Crossing)
-- [Colour Grid World](Gridworlds/Colour%20Grid%20World)
-- [Colour Bomb Grid World](Gridworlds/Colour%20Bomb%20Grid%20World)
-
-```{toctree}
-:hidden:
-
-Gridworlds/Bridge Crossing
-Gridworlds/Colour Grid World
-Gridworlds/Colour Bomb Grid World
-```
+- [Bridge Crossing](Gridworlds/Bridge%20Crossing.md)
+- [Colour Grid World](Gridworlds/Colour%20Grid%20World.md)
+- [Colour Bomb Grid World](Gridworlds/Colour%20Bomb%20Grid%20World.md)

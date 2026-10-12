@@ -5,6 +5,7 @@ from typing import Any
 import numpy as np
 from gymnasium import spaces
 
+from masa.common.rendering.agent import draw_agent
 from masa.envs.discrete.base import DiscreteEnv
 
 SIZE_X = 6
@@ -186,8 +187,6 @@ class SokobanRenderer:
     _WALL = (92, 76, 60)
     _GOAL = (111, 170, 101)
     _GOAL_CENTER = (235, 247, 227)
-    _AGENT = (68, 127, 186)
-    _AGENT_RING = (232, 241, 248)
     _BOX = (185, 143, 86)
     _BOX_EDGE = (119, 81, 42)
     _BOX_WARNING = (209, 120, 74)
@@ -292,11 +291,12 @@ class SokobanRenderer:
 
     def _draw_agent(self, frame: np.ndarray, x: int, y: int) -> None:
         left, top, right, bottom = self._cell_bounds(x, y, 0)
-        cx = (left + right) // 2
-        cy = (top + bottom) // 2
-        radius = self.tile_size // 3
-        self._draw_circle(frame, cx, cy, radius, self._AGENT_RING)
-        self._draw_circle(frame, cx, cy, radius - 6, self._AGENT)
+        draw_agent(
+            frame,
+            ((left + right) // 2, (top + bottom) // 2),
+            self.tile_size,
+            agent_id=1,
+        )
 
     def _draw_box(self, frame: np.ndarray, x: int, y: int, wall_penalty: int) -> None:
         color = self._BOX
@@ -312,9 +312,3 @@ class SokobanRenderer:
         frame[bottom - thickness:bottom, left:right] = self._BOX_EDGE
         frame[top:bottom, left:left + thickness] = self._BOX_EDGE
         frame[top:bottom, right - thickness:right] = self._BOX_EDGE
-
-    @staticmethod
-    def _draw_circle(frame: np.ndarray, cx: int, cy: int, radius: int, color: tuple[int, int, int]) -> None:
-        yy, xx = np.ogrid[:frame.shape[0], :frame.shape[1]]
-        mask = (xx - cx) ** 2 + (yy - cy) ** 2 <= radius ** 2
-        frame[mask] = color

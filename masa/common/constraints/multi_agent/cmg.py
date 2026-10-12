@@ -1,4 +1,4 @@
-"""
+r"""
 Overview
 --------
 
@@ -32,7 +32,7 @@ from pettingzoo import ParallelEnv
 
 from masa.common.constraints.base import CostFn
 from masa.common.dummy import cost_fn as dummy_cost_fn
-from masa.common.labelled_pz_env import LabelledParallelEnv
+from masa.common.multi_agent.labelled_pz_env import LabelledParallelEnv
 
 
 @dataclass(frozen=True, slots=True)
@@ -227,6 +227,11 @@ class ConstrainedMarkovGameEnv(ParallelEnv):
 
     def constraint_episode_metrics(self) -> dict[str, float]:
         return self._constraint.episode_metric()
+
+    @property
+    def budgets(self) -> tuple[Budget, ...]:
+        """Return the immutable CMG budget definitions used by this wrapper."""
+        return self._constraint.budgets
 
     @property
     def constraint_type(self) -> str:

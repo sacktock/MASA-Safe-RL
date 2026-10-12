@@ -9,8 +9,7 @@ import pandas as pd
 
 from .config import Config
 from .io_utils import get_logger
-from .processing import build_frames
-from .sources import CachedWandbSource
+from .source_registry import get_source
 from .specs import PlotSpec, all_specs
 from .specs.base import RenderContext
 
@@ -21,19 +20,17 @@ class Pipeline:
     def __init__(self, config: Config):
         self.config = config
         self.log = get_logger()
-
-    # -- individual stages ------------------------------------------------
+        self.source = get_source(config)
 
     def download(self) -> list[Path]:
         try:
-            source = CachedWandbSource(self.config)
-            return source.download()
+            return self.source.download()
         except Exception as e:
             self.log.error(f"download stage crashed: {e}")
             return []
 
     def process(self) -> tuple[pd.DataFrame, pd.DataFrame]:
-        return build_frames(self.config)
+        return self.source.build_frames()
 
     def render(self,
                long_df: pd.DataFrame,
@@ -67,8 +64,6 @@ class Pipeline:
                 if path is not None:
                     outputs.append(path)
         return outputs
-
-    # -- orchestration ----------------------------------------------------
 
     def run(self,
             specs: Optional[Sequence[PlotSpec]] = None,
@@ -104,8 +99,6 @@ class Pipeline:
 
         return []
 
-    # -- helpers ----------------------------------------------------------
-
     def _select_envs(self, discovered: list[str]) -> list[str]:
         """Restrict to ``config.envs`` if set; otherwise return all discovered envs."""
         if not self.config.envs:
@@ -128,23 +121,14 @@ class Pipeline:
     def _dry_run(self, specs: Optional[Sequence[PlotSpec]]) -> None:
         cfg = self.config
         self.log.info("=== DRY RUN ===")
-        self.log.info(f"W&B          : {cfg.wandb_entity}/{cfg.wandb_project}")
-        self.log.info(f"cache_dir    : {cfg.cache_dir}")
+        self.log.info(f"source       : {self.source.describe()}")
         self.log.info(f"output_dir   : {cfg.output_dir}")
         self.log.info(f"variants     : {[v.name for v in cfg.variants]}")
         self.log.info(f"palette      : {cfg.palette}")
         chosen = specs if specs is not None else all_specs()
         self.log.info(f"specs        : {[s.id for s in chosen]}")
-        envs: list[str] = []
-        if cfg.cache_dir.exists():
-            pat = cfg.run_schema.compile()
-            for p in sorted(cfg.cache_dir.glob("*.csv")):
-                m = pat.match(p.stem)
-                if m:
-                    envs.append(m.group("env"))
-            envs = sorted(set(envs))
-        envs = self._select_envs(envs)
-        self.log.info(f"envs (cache) : {envs or '(none discovered yet)'}")
+        envs = self._select_envs(self.source.discover_envs())
+        self.log.info(f"envs         : {envs or '(none discovered yet)'}")
         for spec in chosen:
             for env in envs or ["<env>"]:
                 target = cfg.output_dir / spec.out_subdir / f"{spec.id}_{env}.png"
