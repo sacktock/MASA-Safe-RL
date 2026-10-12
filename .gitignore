@@ -226,5 +226,6 @@ wandb_cache
 *Prob_Shielding*
 /masa/plotting/configs/plots/
 /masa/plotting/examples/
-benchmarks/
+benchmarks*.zip
+benchmarks*/
 benchmark*.py
