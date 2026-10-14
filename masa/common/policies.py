@@ -12,13 +12,13 @@ from functools import partial
 import flax.linen as nn
 from flax.training.train_state import TrainState
 from flax.linen.initializers import constant
-import tensorflow_probability.substrates.jax as tfp
 from typing import Callable, Optional, Sequence, Union, Tuple, Any
 from masa.common.layers import Flatten, Identity, NatureCNN
 from gymnasium import spaces
 from masa.common.base_class import BaseJaxPolicy
+from masa.common import distributions as dists
 
-tfd = tfp.distributions
+tfd = dists
 
 class Critic(nn.Module):
     net_arch: Sequence[int]
@@ -69,7 +69,7 @@ class Actor(nn.Module):
         else:
             # Split action_logits = (batch_size, total_choices=sum(self.num_discrete_choices))
             action_logits = jnp.split(action_logits, self.split_indices, axis=1)
-            # Pad to the maximum number of choices (required by tfp.distributions.Categorical).
+            # Pad to the maximum number of choices (required by the Categorical distribution).
             # Pad by -inf, so that the probability of these invalid actions is 0.
             logits_padded = jnp.stack(
                 [
@@ -85,8 +85,8 @@ class Actor(nn.Module):
                 ],
                 axis=1,
             )
-            dist = tfp.distributions.Independent(
-                tfp.distributions.Categorical(logits=logits_padded), reinterpreted_batch_ndims=1
+            dist = tfd.Independent(
+                tfd.Categorical(logits=logits_padded), reinterpreted_batch_ndims=1
             )
         return dist
 

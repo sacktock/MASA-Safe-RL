@@ -11,7 +11,7 @@ import jax.random as jr
 from gymnasium import spaces
 from tqdm.auto import tqdm
 
-import tensorflow_probability.substrates.jax as tfp
+from masa.common import distributions as dists
 
 from masa.algorithms.on_policy.cpo import CPO
 from masa.common.buffers import VTraceCostRolloutBuffer
@@ -25,7 +25,7 @@ from masa.prob_shield.helpers import build_successor_states_matrix
 from masa.prob_shield.interval_bound_vi import interval_bound_value_iteration
 
 
-tfd = tfp.distributions
+tfd = dists
 
 class CPOShield(CPO):
     """
