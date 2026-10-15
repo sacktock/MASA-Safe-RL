@@ -103,7 +103,7 @@ ColourBombGridWorldV2_Property3:
   safe_gamma: 0.99
   mode: exact
   model_checking: exact
-  horizon: 9
+  horizon: 12
   safety_prob: 0.025
   cost_coef: 10.0
 
