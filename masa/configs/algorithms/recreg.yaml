@@ -11,6 +11,7 @@ defaults:
   safety_prob: 0.01
   r_min: 0.0
   cost_coef: 10.0
+  use_counter_factual_experiences: true
   exploration: boltzmann
   boltzmann_temp: 0.05
   initial_epsilon: 1.0
@@ -106,6 +107,40 @@ ColourBombGridWorldV2_Property3:
   horizon: 12
   safety_prob: 0.025
   cost_coef: 10.0
+
+ColourBombGridWorldV2_Property3Cycle:
+  task_alpha: 0.05
+  task_gamma: 0.95
+  safe_alpha: 0.05
+  safe_gamma: 0.99
+  model_free_alpha: 0.05
+  mode: model_free
+  horizon: 12
+  safety_prob: 0.025
+  cost_coef: 10.0
+
+ColourBombGridWorldV2_Property3Potential:
+  task_alpha: 0.05
+  task_gamma: 0.95
+  safe_alpha: 0.05
+  safe_gamma: 0.99
+  model_free_alpha: 0.05
+  mode: model_free
+  horizon: 12
+  safety_prob: 0.025
+  cost_coef: 10.0
+
+ColourBombGridWorldV2_Property3NoCfe:
+  task_alpha: 0.05
+  task_gamma: 0.95
+  safe_alpha: 0.05
+  safe_gamma: 0.99
+  model_free_alpha: 0.05
+  mode: model_free
+  horizon: 12
+  safety_prob: 0.025
+  cost_coef: 10.0
+  use_counter_factual_experiences: false
 
 MiniPacman:
   task_alpha: 0.1

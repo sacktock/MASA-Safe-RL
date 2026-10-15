@@ -26,3 +26,24 @@ Property3:
   constraint:
     type: LTL_SAFETY
     dfa: masa.examples.colour_bomb_grid_world.property_3:make_dfa
+
+Property3Cycle:
+  constraint:
+    type: LTL_SAFETY
+    dfa: masa.examples.colour_bomb_grid_world.property_3:make_dfa
+  reward_shaping:
+    impl: cycle
+    gamma: 0.95
+
+Property3Potential:
+  constraint:
+    type: LTL_SAFETY
+    dfa: masa.examples.colour_bomb_grid_world.property_3:make_dfa
+  reward_shaping:
+    impl: vi
+    gamma: 0.95
+
+Property3NoCfe:
+  constraint:
+    type: LTL_SAFETY
+    dfa: masa.examples.colour_bomb_grid_world.property_3:make_dfa

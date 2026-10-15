@@ -14,6 +14,7 @@ from masa.common.constraints import CONSTRAINTS
 from masa.common import registry
 from masa.common.configs import Config, Flags, Path
 from masa.common.utils import make_env, load_callable, format_algo_id, format_constraint_id, format_env_id
+from masa.common.wrappers import RewardShapingWrapper
 
 import runpy
 import typer
@@ -179,7 +180,19 @@ def run_with_config(config, algo):
 
     env_kwargs = {"render_mode": "rgb_array"} if config.run.record_video else {} 
 
-    train_env = make_env(
+    # Optional potential-based reward shaping, threaded through the config.
+    # The wrapper is applied as the outermost env wrapper (downstream of make_env),
+    # so algorithms read the shaped cost via env.cost_fn / info["constraint"]["step"]["cost"].
+    reward_shaping = config.reward_shaping if "reward_shaping" in config else None
+    reward_shaping_impl = getattr(reward_shaping, "impl", "none") if reward_shaping is not None else "none"
+    reward_shaping_gamma = getattr(reward_shaping, "gamma", 0.99) if reward_shaping is not None else 0.99
+
+    def _apply_reward_shaping(env):
+        if reward_shaping_impl and reward_shaping_impl != "none":
+            return RewardShapingWrapper(env, gamma=reward_shaping_gamma, impl=reward_shaping_impl)
+        return env
+
+    train_env = _apply_reward_shaping(make_env(
         config.env.id,
         config.constraint.type,
         config.env.max_episode_steps,
@@ -194,9 +207,9 @@ def run_with_config(config, algo):
             "video_length": config.env.max_episode_steps,
             "name_prefix": "training",
         },
-    )
+    ))
 
-    eval_env_fn = lambda: make_env(
+    eval_env_fn = lambda: _apply_reward_shaping(make_env(
         config.env.id,
         config.constraint.type,
         config.env.max_episode_steps,
@@ -209,7 +222,7 @@ def run_with_config(config, algo):
         video_kwargs={
             "name_prefix": "eval",
         },
-    )
+    ))
     
     algo_cls = registry.get_algorithm(algo)
     algo_kwargs = dict(config[algo])

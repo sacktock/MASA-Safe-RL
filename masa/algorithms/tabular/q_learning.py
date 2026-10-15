@@ -25,6 +25,7 @@ class QL(TabularAlgorithm):
         final_epsilon: float = 0.1,
         epsilon_decay: str = 'linear',
         epsilon_decay_frames: int = 10000, 
+        use_counter_factual_experiences: bool = True,
         **kwargs
     ):
 
@@ -46,6 +47,7 @@ class QL(TabularAlgorithm):
         self.final_epsilon = final_epsilon
         self.epsilon_decay = epsilon_decay
         self.epsilon_decay_frames = epsilon_decay_frames
+        self.use_counter_factual_experiences = use_counter_factual_experiences
 
         self._setup_q_table()
         self._setup_buffer()
@@ -94,7 +96,7 @@ class QL(TabularAlgorithm):
         action = self.act(subkey, self._last_obs)
         next_obs, reward, terminated, truncated, info = self.env.step(action)
 
-        if hasattr(self.env, "cost_fn") and isinstance(self.env.cost_fn, DFACostFn):
+        if hasattr(self.env, "cost_fn") and isinstance(self.env.cost_fn, DFACostFn) and self.use_counter_factual_experiences:
             # if the cost function associated with the constraint is a DFA, by default use counter factual experiences
             self.buffer += self.generate_counter_factuals(
                 self._last_obs, action, reward, next_obs, terminated, info, getattr(self.env, "cost_fn", None)

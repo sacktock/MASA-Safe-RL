@@ -2,6 +2,7 @@ defaults:
   alpha: 0.1
   cost_lambda: 1.0
   gamma: 0.9
+  use_counter_factual_experiences: true
   exploration: boltzmann
   boltzmann_temp: 0.05
   initial_epsilon: 1.0
@@ -48,6 +49,22 @@ ColourBombGridWorldV2_Property3:
   alpha: 0.1
   gamma: 0.95
   cost_lambda: 10.0
+
+ColourBombGridWorldV2_Property3Cycle:
+  alpha: 0.1
+  gamma: 0.95
+  cost_lambda: 10.0
+
+ColourBombGridWorldV2_Property3Potential:
+  alpha: 0.1
+  gamma: 0.95
+  cost_lambda: 10.0
+
+ColourBombGridWorldV2_Property3NoCfe:
+  alpha: 0.1
+  gamma: 0.95
+  cost_lambda: 10.0
+  use_counter_factual_experiences: false
 
 MiniPacman:
   alpha: 0.1

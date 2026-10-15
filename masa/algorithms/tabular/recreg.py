@@ -335,7 +335,7 @@ class RECREG(QL):
                 self.Q[state, action] = (1 - self.alpha) * self.Q[state, action] + self.alpha * targ
 
             # Generate (real + counterfactual) experiences
-            if hasattr(self.env, "cost_fn") and isinstance(self.env.cost_fn, DFACostFn):
+            if hasattr(self.env, "cost_fn") and isinstance(self.env.cost_fn, DFACostFn) and self.use_counter_factual_experiences:
                 cf_exp = self.generate_counter_factuals(
                     state, safe_action, reward, next_state, terminal, info, getattr(self.env, "cost_fn", None)
                 )

@@ -14,6 +14,10 @@ defaults:
     reach_label: target
     dfa: masa.common.dummy:make_dfa
 
+  reward_shaping:
+    impl: none      # none | vi | cycle
+    gamma: 0.95
+
   run:
     seed: 0
     total_timesteps: 100000
