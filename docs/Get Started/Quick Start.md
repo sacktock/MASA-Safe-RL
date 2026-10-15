@@ -4,7 +4,7 @@ Quick Start
 Installation
 ------------
 
-Python 3.10+ is required (3.10 recommended), later versions may be supported.
+Python 3.13+ is required (3.13 recommended).
 
 ### Installation with conda
 - Install conda, e.g., via [anaconda](https://anaconda.org/channels/anaconda/packages/conda/overview).

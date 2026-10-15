@@ -15,10 +15,10 @@ from masa.common.layers import Identity, NatureCNN, Flatten
 from masa.common.policies import Critic
 from typing import Callable, Optional, Sequence, Union, Tuple, Any
 
-import tensorflow_probability.substrates.jax as tfp
+from masa.common import distributions as dists
 
-tfd = tfp.distributions
-tfb = tfp.bijectors
+tfd = dists
+tfb = dists
 
 class ParameterizedActorV2(nn.Module):
     n_actions: int

@@ -1,0 +1,32 @@
+name: Dependencies sync
+
+on:
+  push:
+    paths:
+      - requirements.txt
+      - pyproject.toml
+  pull_request:
+    paths:
+      - requirements.txt
+      - pyproject.toml
+
+permissions:
+  contents: read
+
+jobs:
+  check-requirements-sync:
+    name: Check requirements.txt vs pyproject.toml
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Check dependency sync
+        run: python scripts/check_requirements_sync.py
