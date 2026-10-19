@@ -130,11 +130,10 @@ def q_to_boltzmann_policy(Q: np.ndarray, tau: float) -> np.ndarray:
     return exp_prefs / np.sum(exp_prefs, axis=1, keepdims=True) 
 
 def q_to_argmax_policy(Q):
-    n_states, n_actions = Q.shape
-    max_vals = np.max(Q, axis=1, keepdims=True)
-    greedy_mask = (Q == max_vals).astype(float)
-    greedy_policy = greedy_mask / greedy_mask.sum(axis=1, keepdims=True)
-    return greedy_policy
+    Q = np.asarray(Q)
+    policy = np.zeros(Q.shape, dtype=np.float64)
+    policy[np.arange(Q.shape[0]), np.argmax(Q, axis=1)] = 1.0
+    return policy
 
 class RECREG(QL):
 
@@ -192,12 +191,7 @@ class RECREG(QL):
                 successor_states_matrix, probabilities, label_fn, cost_fn, gamma=self.safe_gamma
             )
 
-            if self.exploration == "boltzmann":
-                self.backup_policy = q_to_boltzmann_policy(self.B, 0.01)
-            elif self.exploration == "epsilon_greedy":
-                self.backup_policy = q_to_argmax_policy(self.B)
-            else:
-                raise NotImplementedError(f"Unexpected exploration: {self.exploration}")
+            self.backup_policy = self._backup_policy_matrix(deterministic=False)
 
             formula, pctl_label_fn = build_pctl_formula(
                 self.env, self.horizon, self.safety_prob, label_fn=label_fn, cost_fn=cost_fn,
@@ -211,11 +205,15 @@ class RECREG(QL):
                 probabilities=probabilities,
             )
 
-            # Satisfaction relation: the probability of being unsafe in H timesteps
-            self.S = 1.0 - self.model_checker.check_state_action(
-                self.key,
-                self.backup_policy,
-            )[np.newaxis, :]
+            # Satisfaction relation: the probability of being unsafe in H timesteps,
+            # computed for each backup the shield may execute (keyed by _deterministic_backup).
+            self._S_exact = {}
+            for det in sorted({self._deterministic_backup(False), self._deterministic_backup(True)}):
+                self._S_exact[det] = 1.0 - self.model_checker.check_state_action(
+                    self.key,
+                    self._backup_policy_matrix(deterministic=det),
+                )[np.newaxis, :]
+            self.S = self._S_exact[self._deterministic_backup(False)]  # used by the training mask
 
             self.unsafe_mask = np.array(
                 [bool(cost_fn(label_fn(s))) for s in range(self.n_states)],
@@ -294,32 +292,78 @@ class RECREG(QL):
         else:
             raise NotImplementedError(f"Unexpected mode: {self.mode}")
 
-    def _backup_tail_risk_state(self, s: int) -> float:
+    def _deterministic_backup(self, deterministic: bool) -> bool:
+        # act_override executes argmax(B) when deterministic or under epsilon-greedy,
+        # and a Boltzmann(B, 0.01) sample otherwise.
+        return bool(deterministic or self.exploration == "epsilon_greedy")
+
+    def _backup_policy_matrix(self, deterministic: bool) -> np.ndarray:
+        if self.exploration not in ("boltzmann", "epsilon_greedy"):
+            raise NotImplementedError(f"Unexpected exploration: {self.exploration}")
+        if self._deterministic_backup(deterministic):
+            return q_to_argmax_policy(self.B)
+        return q_to_boltzmann_policy(self.B, 0.01)
+
+    def _backup_row(self, s: int, deterministic: bool) -> np.ndarray:
+        q = np.asarray(self.B[s], dtype=np.float64)
+        if self._deterministic_backup(deterministic):
+            p = np.zeros_like(q)
+            p[int(np.argmax(q))] = 1.0
+            return p
+        z = np.exp((q - q.max()) / 0.01)
+        return z / z.sum()
+
+    def _risk_table(self, deterministic: bool) -> np.ndarray:
+        # H-step risk q_H(s, a) of taking a and then following the executed backup.
         if self.mode == "exact":
-            policy = self.backup_policy
-            return float(np.sum(policy[s] * self.S[0, s]))
+            return self._S_exact[self._deterministic_backup(deterministic)]
+        return self.S  # model_based: recomputed in act_override; model_free: learned with argmax backup
 
-        policy = q_to_boltzmann_policy(self.B, 0.01)
+    def _backup_tail_risk_state(self, s: int, deterministic: bool = False) -> float:
+        # rho(s) = sum_a pi_backup(a|s) q_H(s, a): risk of handing control to the backup at s.
+        S = self._risk_table(deterministic)
+        return float(np.dot(self._backup_row(s, deterministic), S[0, s]))
 
+    def _immediate_risk(self, s: int, a: int) -> float:
+        """p(s, a) = P(next state is unsafe | s, a), for the executed action a."""
         if self.mode == "model_free":
-            return float(np.sum(policy[s] * self.S[0, s, :]))
+            return float(self.S[-1, s, a])  # base case of the recursion: one-step risk
+        succ = np.asarray(self.model_checker.successor_states)[:, s]   # (K,), -1 = empty slot
+        probs = np.asarray(self.model_checker.probabilities)[:, s, a]  # (K,)
+        valid = succ >= 0
+        return float(np.sum(probs[valid] * self.unsafe_mask[succ[valid]]))
 
-        return float(np.sum(policy[s] * self.S[0, s]))
-
-    def _update_next_budget(self, s: int, a: int, next_obs: int, delta: float) -> float:
+    def _update_next_budget(
+        self, s: int, a: int, next_obs: int, delta: float, override: bool = False, deterministic: bool = False
+    ) -> float:
+        """Recovery-aware residual budget (Theorem 1b, without the 1/(1-p) factor, i.e. conservatively)."""
         if self.unsafe_mask[next_obs]:
             return 0.0
 
-        tail = float(self.S[0, s, a])
-        rho_next = self._backup_tail_risk_state(next_obs)
+        if override:
+            tail = self._backup_tail_risk_state(s, deterministic)
+        else:
+            tail = float(self._risk_table(deterministic)[0, s, a])
+        rho_next = self._backup_tail_risk_state(next_obs, deterministic)
 
-        slack = max(delta - tail, 0.0)
+        slack = delta - tail
+        if slack < -1e-9 and not self.unsafe_mask[s]:
+            # Invariant b_t >= rho(s_t) broken (inaccurate estimates or backup unsafe from s_0).
+            self._budget_deficits += 1
 
-        return float(np.clip(rho_next + slack, 0.0, 1.0))
+        p = min(max(self._immediate_risk(s, a), 0.0), 1.0)
+        scale = 1.0 / (1.0 - p) if p < 1.0 - 1e-6 else 1.0
+        return float(np.clip(rho_next + max(slack, 0.0) * scale, 0.0, 1.0))
+
+    def _check_initial_budget(self, obs: int, deterministic: bool) -> None:
+        if self._backup_tail_risk_state(obs, deterministic) > self.safety_prob + 1e-9:
+            self._infeasible_starts += 1
 
     def train(self, *args, **kwargs):
         self._overrides = []
         self._step_wise_prob = self.safety_prob
+        self._budget_deficits = 0
+        self._infeasible_starts = 0
         super().train(*args, **kwargs)
 
     def optimize(self, step: int, logger: Optional[TrainLogger] = None):
@@ -383,7 +427,7 @@ class RECREG(QL):
                     if self.S[0, cf_state, cf_act] <= self.safety_prob:
                         target_q = cf_rew + (1 - cf_term) * self.gamma * np.max(next_q)
                     else:
-                        target_q = 0.0
+                        target_q = self.r_min / (1 - self.gamma)
                     self.Q[cf_state, cf_act] = (1 - self.alpha) * self.Q[cf_state, cf_act] \
                                                 + self.alpha * target_q
 
@@ -410,7 +454,7 @@ class RECREG(QL):
         violation = info["constraint"]["step"].get("violation", False)
 
         self._step_wise_prob = self._update_next_budget(
-                self._last_obs, safe_act, next_obs, self._step_wise_prob
+                self._last_obs, safe_act, next_obs, self._step_wise_prob, override=bool(override)
             )
 
         self.buffer.append(
@@ -420,7 +464,12 @@ class RECREG(QL):
         if terminated or truncated:
             self._last_obs, _ = self.env.reset()
             self._step_wise_prob = self.safety_prob
-            info["constraint"]["episode"].update({"override_rate": float(np.mean(self._overrides))})
+            self._check_initial_budget(self._last_obs, deterministic=False)
+            info["constraint"]["episode"].update({
+                "override_rate": float(np.mean(self._overrides)),
+                "budget_deficits": int(self._budget_deficits),
+                "infeasible_starts": int(self._infeasible_starts),
+            })
             self._overrides.clear()
         else:
             self._last_obs = next_obs
@@ -453,13 +502,17 @@ class RECREG(QL):
                 done = False
                 ret = 0.0
                 self._eval_step_wise_prob = self.safety_prob
+                saved = (self._budget_deficits, self._infeasible_starts) if hasattr(self, "_budget_deficits") else (0, 0)
+                self._budget_deficits, self._infeasible_starts = 0, 0
+                self._check_initial_budget(obs, deterministic=True)
                 while not done:
                     eval_key, subkey = jr.split(eval_key)
-                    action, _, override = self.act_override(subkey, obs, self._eval_step_wise_prob, deterministic=False)
+                    action, _, override = self.act_override(subkey, obs, self._eval_step_wise_prob, deterministic=True)
                     next_obs, rew, terminated, truncated, info = eval_env.step(action)
 
                     self._eval_step_wise_prob = self._update_next_budget(
-                            obs, action, next_obs, self._eval_step_wise_prob
+                            obs, action, next_obs, self._eval_step_wise_prob,
+                            override=bool(override), deterministic=True,
                         )
                     
                     obs = next_obs
@@ -468,7 +521,12 @@ class RECREG(QL):
                     ret += float(rew)
                     done = terminated or truncated
 
-                info["constraint"]["episode"].update({"override_rate": float(np.mean(overrides))})
+                info["constraint"]["episode"].update({
+                    "override_rate": float(np.mean(overrides)),
+                    "budget_deficits": int(self._budget_deficits),
+                    "infeasible_starts": int(self._infeasible_starts),
+                })
+                self._budget_deficits, self._infeasible_starts = saved
                 overrides.clear()
 
                 returns.append(ret)
@@ -489,12 +547,7 @@ class RECREG(QL):
                 successor_states=self.successors, probabilities=compact_probabilities(self.counts)
             )
 
-            if self.exploration == "boltzmann":
-                self.backup_policy = q_to_boltzmann_policy(self.B, 0.01)
-            elif self.exploration == "epsilon_greedy":
-                self.backup_policy = q_to_argmax_policy(self.B)
-            else:
-                raise NotImplementedError(f"Unexpected exploration: {self.exploration}")
+            self.backup_policy = self._backup_policy_matrix(deterministic)
 
             if self.model_checking == "exact":
                 self.S = 1.0 - self.model_checker.check_state_action(
@@ -506,7 +559,7 @@ class RECREG(QL):
             override = self.S[0, obs, act] > step_wise_prob
         
         elif self.mode in ["model_free", "exact"]:
-            override = self.S[0, obs, act] > step_wise_prob
+            override = self._risk_table(deterministic)[0, obs, act] > step_wise_prob
         else:
             raise NotImplementedError(f"Unexpected mode: {self.mode}")
 
@@ -522,7 +575,8 @@ class RECREG(QL):
         return self.prepare_act(safe_act), self.prepare_act(act), override
 
     def act(self, key, obs, deterministic=False):
-        action, _, _ = self.act_override(key, obs, deterministic=deterministic)
+        # No episode context here: use the full budget as a fixed per-step threshold.
+        action, _, _ = self.act_override(key, obs, self.safety_prob, deterministic=deterministic)
         return action
 
     def _act(self, key, obs, Q, deterministic, boltzmann_temp, epsilon):
