@@ -10,7 +10,7 @@ defaults:
     alpha: 0.05
 
   run:
-    total_timesteps: 500000
+    total_timesteps: 1000000
     eval_every: 10000
     eval_episodes: 10
     log_every: 10000
