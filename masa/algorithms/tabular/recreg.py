@@ -130,6 +130,7 @@ def q_to_boltzmann_policy(Q: np.ndarray, tau: float) -> np.ndarray:
     return exp_prefs / np.sum(exp_prefs, axis=1, keepdims=True) 
 
 def q_to_argmax_policy(Q):
+    # No tie breaking (deterministic) argmax policy 
     Q = np.asarray(Q)
     policy = np.zeros(Q.shape, dtype=np.float64)
     policy[np.arange(Q.shape[0]), np.argmax(Q, axis=1)] = 1.0
@@ -293,7 +294,7 @@ class RECREG(QL):
             raise NotImplementedError(f"Unexpected mode: {self.mode}")
 
     def _deterministic_backup(self, deterministic: bool) -> bool:
-        # act_override executes argmax(B) when deterministic or under epsilon-greedy,
+        # act_overrid executes argmax(B) when deterministic or under epsilon-greedy,
         # and a Boltzmann(B, 0.01) sample otherwise.
         return bool(deterministic or self.exploration == "epsilon_greedy")
 
@@ -336,7 +337,7 @@ class RECREG(QL):
     def _update_next_budget(
         self, s: int, a: int, next_obs: int, delta: float, override: bool = False, deterministic: bool = False
     ) -> float:
-        """Recovery-aware residual budget (Theorem 1b, without the 1/(1-p) factor, i.e. conservatively)."""
+        """Recovery-aware residual budget (Theorem 1b, with the 1/(1-p) factor so its a true Martingale)."""
         if self.unsafe_mask[next_obs]:
             return 0.0
 
