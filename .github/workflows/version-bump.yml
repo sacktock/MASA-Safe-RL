@@ -1,0 +1,89 @@
+name: Nightly version bump
+
+on:
+  schedule:
+    - cron: "0 0 * * *"      # 00:00 UTC daily (GitHub cron is always UTC)
+  workflow_dispatch: {}       # allow manual runs from the Actions tab
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-version-bump
+  cancel-in-progress: false
+
+jobs:
+  version-bump:
+    name: Patch version bump
+    if: ${{ ! github.event.repository.fork }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.VERSION_BUMP_APP_ID }}
+          private-key: ${{ secrets.VERSION_BUMP_APP_PRIVATE_KEY }}
+
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0                            # full history needed to diff masa/
+          ref: main
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: true
+
+      - name: Detect code changes to masa since last version bump
+        id: changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          last_bump="$(git log -G'^version = ' -1 --format=%H -- pyproject.toml || true)"
+          if [[ -z "$last_bump" ]]; then
+            echo "No prior version-bump commit found; treating as changed."
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "Last version-bump commit: $last_bump"
+          if git diff --quiet "$last_bump" HEAD -- masa/; then
+            echo "No changes under masa/ since last bump."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Changes under masa/ detected since last bump."
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install uv
+        if: steps.changes.outputs.changed == 'true'
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+
+      - name: Bump patch version and sync lock
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          uv version --bump patch
+          uv sync
+          echo "NEW_VERSION=$(uv version --short)" >> "$GITHUB_ENV"
+
+      - name: Open pull request
+        if: steps.changes.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          branch: automated/version-bump            # fixed branch → updates, never duplicates
+          base: main
+          commit-message: "chore: bump version to ${{ env.NEW_VERSION }}"
+          title: "chore: nightly patch version bump to ${{ env.NEW_VERSION }}"
+          body: |
+            Automated nightly patch version bump.
+
+            - Bumped `[project].version` to `${{ env.NEW_VERSION }}`
+            - Ran `uv sync` to refresh `uv.lock`
+
+            Changes under `masa/` were detected since the last version bump.
+            Merging to `main` will trigger the PyPI publish workflow.
+          labels: |
+            automated
+            release
+          delete-branch: true
