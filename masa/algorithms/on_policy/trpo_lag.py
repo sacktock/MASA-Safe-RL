@@ -30,6 +30,7 @@ class TRPOLag(OnPolicyNaiveLagrangeAlgorithm, TRPO):
         cost_limit: float = 25.0,
         cost_gamma: float = 0.99,
         cost_gae_lambda: float = 0.95,
+        cost_ewma_beta: float = 0.05,
         lagrangian_multiplier_init: float = 0.0,
         lambda_lr: float = 0.01,
         lagrangian_upper_bound: Optional[float] = None,
@@ -41,6 +42,7 @@ class TRPOLag(OnPolicyNaiveLagrangeAlgorithm, TRPO):
         self.cost_limit = cost_limit
         self.cost_gamma = cost_gamma
         self.cost_gae_lambda = cost_gae_lambda
+        self.cost_ewma_beta = cost_ewma_beta
         self.lambda_lr = lambda_lr
         self.lagrangian_upper_bound = lagrangian_upper_bound
 

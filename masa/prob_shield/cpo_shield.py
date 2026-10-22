@@ -446,6 +446,8 @@ class CPOShield(CPO):
                 costs = np.array([info["constraint"]["step"].get("cost", 0.0) for info in infos])
                 cost_dones = np.array([info["constraint"]["step"].get("cost_done", False) for info in infos])
 
+                self._cost_accumulator += costs
+
                 for info in infos:
                     if "episode" in info["constraint"]:
                         if self.constraint_type == "CMDP":
@@ -527,6 +529,7 @@ class CPOShield(CPO):
                 self._last_obs = new_obs
                 self._last_episode_start = dones
                 self._last_cost_episode_start = np.logical_or(dones, cost_dones)
+                self._cost_accumulator[dones] = 0.0
 
                 if logger:
                     for info in infos:
@@ -558,10 +561,7 @@ class CPOShield(CPO):
             last_value=last_value, last_cost_value=last_cost_value, done=self._last_episode_start, cost_done=self._last_cost_episode_start
         )
 
-        if len(ep_costs) > 0:
-            self.mean_ep_cost = float(np.mean(ep_costs))
-        else:
-            self.mean_ep_cost = 0.0
+        self._update_mean_ep_cost(ep_costs, last_cost_value=last_cost_value)
 
     @staticmethod
     @jit
