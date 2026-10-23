@@ -10,19 +10,23 @@ from pettingzoo import ParallelEnv
 from masa.envs.multiagent.tabular_env import TabularParallelEnv
 from masa.envs.multiagent.matrix._label_utils import binary_cost, flatten_binary_obs
 
+
 class InspectorActions(IntEnum):
     NotInspect = 0
-    Inspect    = 1
+    Inspect = 1
+
 
 class InspecteeActions(IntEnum):
-    Comply  = 0
+    Comply = 0
     Violate = 1
 
 
 def label_fn(obs):
     obs_vec = flatten_binary_obs(obs)
     if obs_vec.size != 5:
-        raise ValueError(f"InspectionMatrix label_fn expected 5 channels, got {obs_vec.size}.")
+        raise ValueError(
+            f"InspectionMatrix label_fn expected 5 channels, got {obs_vec.size}."
+        )
 
     labels = set()
     if obs_vec[0]:
@@ -51,6 +55,7 @@ def label_fn(obs):
 
 def cost_fn(labels):
     return binary_cost(labels)
+
 
 class InspectionMatrix(ParallelEnv):
     """
@@ -99,7 +104,13 @@ class InspectionMatrix(ParallelEnv):
         self.possible_agents = [f"player_{i}" for i in range(self.n_agents)]
 
         # Payoff parameters
-        self.b, self.f, self.c, self.h, self.v = float(b), float(f), float(c), float(h), float(v)
+        self.b, self.f, self.c, self.h, self.v = (
+            float(b),
+            float(f),
+            float(c),
+            float(h),
+            float(v),
+        )
 
         # Repetition horizon
         self.max_moves = int(max_moves)
@@ -129,7 +140,9 @@ class InspectionMatrix(ParallelEnv):
         self.cost_fn = cost_fn
 
         # Spaces
-        self.observation_spaces = {a: self.observation_space(a) for a in self.possible_agents}
+        self.observation_spaces = {
+            a: self.observation_space(a) for a in self.possible_agents
+        }
         self.action_spaces = {a: self.action_space(a) for a in self.possible_agents}
 
     # ─────────────────────────── PettingZoo API ───────────────────────────
@@ -156,7 +169,10 @@ class InspectionMatrix(ParallelEnv):
         self._cum_rewards = {a: 0.0 for a in self.agents}
 
         obs = {a: self._obs() for a in self.agents}
-        infos = {a: {"round": self._round, "last_actions": None, "undetected": False} for a in self.agents}
+        infos = {
+            a: {"round": self._round, "last_actions": None, "undetected": False}
+            for a in self.agents
+        }
         return obs, infos
 
     def step(self, actions: dict[str, int]):
@@ -171,15 +187,21 @@ class InspectionMatrix(ParallelEnv):
         act1 = int(actions.get(p1, InspecteeActions.Comply))
 
         # Stage payoffs & undetected flag
-        if act0 == InspectorActions.NotInspect and act1 == InspecteeActions.Comply:  # (N, C)
+        if (
+            act0 == InspectorActions.NotInspect and act1 == InspecteeActions.Comply
+        ):  # (N, C)
             r0, r1 = 0.0, 0.0
             undetected = False
             outcome = "NotInspect-Comply"
-        elif act0 == InspectorActions.NotInspect and act1 == InspecteeActions.Violate:  # (N, V)
+        elif (
+            act0 == InspectorActions.NotInspect and act1 == InspecteeActions.Violate
+        ):  # (N, V)
             r0, r1 = -self.h, self.b
             undetected = True
             outcome = "NotInspect-Violate"
-        elif act0 == InspectorActions.Inspect and act1 == InspecteeActions.Comply:  # (I, C)
+        elif (
+            act0 == InspectorActions.Inspect and act1 == InspecteeActions.Comply
+        ):  # (I, C)
             r0, r1 = -self.c, 0.0
             undetected = False
             outcome = "Inspect-Comply"
@@ -233,7 +255,9 @@ class InspectionMatrix(ParallelEnv):
         if self.render_mode is None:
             return
         if not self._renderer:
-            raise ValueError("Renderer missing; create env with render_mode='human' or 'rgb_array'.")
+            raise ValueError(
+                "Renderer missing; create env with render_mode='human' or 'rgb_array'."
+            )
 
         last = (self._last_actions.get("player_0"), self._last_actions.get("player_1"))
         params = {"b": self.b, "f": self.f, "c": self.c, "h": self.h, "v": self.v}
@@ -363,12 +387,24 @@ class InspectionMatrix(ParallelEnv):
             rng_state: object
           )
         """
-        agents = tuple(self.agents) if getattr(self, "agents", None) is not None else tuple()
+        agents = (
+            tuple(self.agents) if getattr(self, "agents", None) is not None else tuple()
+        )
         p0, p1 = self.possible_agents
         last = (self._last_actions.get(p0, None), self._last_actions.get(p1, None))
-        cum = (float(self._cum_rewards.get(p0, 0.0)), float(self._cum_rewards.get(p1, 0.0)))
+        cum = (
+            float(self._cum_rewards.get(p0, 0.0)),
+            float(self._cum_rewards.get(p1, 0.0)),
+        )
         rng_state = self.rng.get_state()
-        return (agents, int(self._round), last, bool(self._last_undetected), cum, rng_state)
+        return (
+            agents,
+            int(self._round),
+            last,
+            bool(self._last_undetected),
+            cum,
+            rng_state,
+        )
 
     def set_state(self, state):
         (agents, round_no, last, last_undetected, cum, rng_state) = state
@@ -378,9 +414,13 @@ class InspectionMatrix(ParallelEnv):
 
         p0, p1 = self.possible_agents
         if len(last) != 2:
-            raise ValueError(f"InspectionMatrix.set_state: last_actions must be len 2, got {len(last)}")
+            raise ValueError(
+                f"InspectionMatrix.set_state: last_actions must be len 2, got {len(last)}"
+            )
         if len(cum) != 2:
-            raise ValueError(f"InspectionMatrix.set_state: cum_rewards must be len 2, got {len(cum)}")
+            raise ValueError(
+                f"InspectionMatrix.set_state: cum_rewards must be len 2, got {len(cum)}"
+            )
 
         self._last_actions = {
             p0: (None if last[0] is None else int(last[0])),

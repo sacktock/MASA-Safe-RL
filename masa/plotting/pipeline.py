@@ -32,10 +32,12 @@ class Pipeline:
     def process(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         return self.source.build_frames()
 
-    def render(self,
-               long_df: pd.DataFrame,
-               quantile_df: pd.DataFrame,
-               specs: Sequence[PlotSpec]) -> list[Path]:
+    def render(
+        self,
+        long_df: pd.DataFrame,
+        quantile_df: pd.DataFrame,
+        specs: Sequence[PlotSpec],
+    ) -> list[Path]:
         from .render import apply_rc, render_spec
 
         apply_rc()
@@ -52,7 +54,9 @@ class Pipeline:
         self.log.info(f"Rendering {len(specs)} spec(s) across {len(envs)} env(s).")
         outputs: list[Path] = []
         for spec in specs:
-            self.log.info(f"Spec '{spec.id}' -> {self.config.output_dir / spec.out_subdir}")
+            self.log.info(
+                f"Spec '{spec.id}' -> {self.config.output_dir / spec.out_subdir}"
+            )
             targets = envs if spec.per_env else ["__all__"]
             for env in targets:
                 ctx = self._make_ctx(env, long_df, quantile_df)
@@ -65,10 +69,12 @@ class Pipeline:
                     outputs.append(path)
         return outputs
 
-    def run(self,
-            specs: Optional[Sequence[PlotSpec]] = None,
-            stages: Sequence[str] = VALID_STAGES,
-            dry_run: bool = False) -> list[Path]:
+    def run(
+        self,
+        specs: Optional[Sequence[PlotSpec]] = None,
+        stages: Sequence[str] = VALID_STAGES,
+        dry_run: bool = False,
+    ) -> list[Path]:
         if dry_run:
             self._dry_run(specs)
             return []
@@ -106,9 +112,14 @@ class Pipeline:
         keep = set(self.config.envs)
         return [e for e in discovered if e in keep]
 
-    def _make_ctx(self, env: str, long_df: pd.DataFrame, q_df: pd.DataFrame) -> RenderContext:
-        env_metrics = (long_df.loc[long_df["env"] == env, "metric"].unique()
-                       if not long_df.empty else [])
+    def _make_ctx(
+        self, env: str, long_df: pd.DataFrame, q_df: pd.DataFrame
+    ) -> RenderContext:
+        env_metrics = (
+            long_df.loc[long_df["env"] == env, "metric"].unique()
+            if not long_df.empty
+            else []
+        )
         return RenderContext(
             env=env,
             long_df=long_df,

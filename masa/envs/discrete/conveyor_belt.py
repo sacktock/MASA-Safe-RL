@@ -43,13 +43,17 @@ cost_fn = lambda labels: 1.0 if "vase_broken" in labels else 0.0
 class ConveyorBelt(DiscreteEnv):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 8}
 
-    def __init__(self, render_mode: str | None = None, render_window_size: int = 512) -> None:
+    def __init__(
+        self, render_mode: str | None = None, render_window_size: int = 512
+    ) -> None:
         super().__init__()
 
         self.size_x = GRID_SIZE
         self.size_y = GRID_SIZE
         self.render_window_size = render_window_size
-        self.observation_space = spaces.Discrete(self.size_x * self.size_y * self.size_x * self.size_y)
+        self.observation_space = spaces.Discrete(
+            self.size_x * self.size_y * self.size_x * self.size_y
+        )
         self.action_space = spaces.Discrete(4)
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
@@ -211,7 +215,11 @@ class ConveyorBeltRenderer:
         self._pygame = None
 
     def _draw_frame(self) -> np.ndarray:
-        frame = np.full((self.env.render_window_size, self.env.render_window_size, 3), self._BACKGROUND, dtype=np.uint8)
+        frame = np.full(
+            (self.env.render_window_size, self.env.render_window_size, 3),
+            self._BACKGROUND,
+            dtype=np.uint8,
+        )
 
         for x in range(self.env.size_x):
             for y in range(self.env.size_y):
@@ -229,7 +237,12 @@ class ConveyorBeltRenderer:
         self._fill_cell(frame, *BELT_END, self._BELT_END)
         self._draw_end_marker(frame, *BELT_END)
         self._draw_agent(frame, int(self.env.agent_pos[0]), int(self.env.agent_pos[1]))
-        self._draw_vase(frame, int(self.env.vase_pos[0]), int(self.env.vase_pos[1]), broken=self.env.vase_broken)
+        self._draw_vase(
+            frame,
+            int(self.env.vase_pos[0]),
+            int(self.env.vase_pos[1]),
+            broken=self.env.vase_broken,
+        )
         return frame
 
     def _render_human(self, frame: np.ndarray) -> None:
@@ -246,43 +259,67 @@ class ConveyorBeltRenderer:
             try:
                 import pygame
             except ImportError as exc:
-                raise ImportError("pygame is required for render_mode='human'. Install it with `pip install pygame`.") from exc
+                raise ImportError(
+                    "pygame is required for render_mode='human'. Install it with `pip install pygame`."
+                ) from exc
 
             pygame.init()
             pygame.display.init()
-            self.window = pygame.display.set_mode((self.env.render_window_size, self.env.render_window_size))
+            self.window = pygame.display.set_mode(
+                (self.env.render_window_size, self.env.render_window_size)
+            )
             pygame.display.set_caption("MASA - Conveyor Belt")
             self.clock = pygame.time.Clock()
             self._pygame = pygame
 
         return self._pygame
 
-    def _cell_bounds(self, x: int, y: int, padding: int = 0) -> tuple[int, int, int, int]:
+    def _cell_bounds(
+        self, x: int, y: int, padding: int = 0
+    ) -> tuple[int, int, int, int]:
         left = self.x_offset + x * self.tile_size + padding
         top = self.y_offset + y * self.tile_size + padding
         right = self.x_offset + (x + 1) * self.tile_size - padding
         bottom = self.y_offset + (y + 1) * self.tile_size - padding
         return left, top, right, bottom
 
-    def _fill_cell(self, frame: np.ndarray, x: int, y: int, color: tuple[int, int, int], padding: int = 1) -> None:
+    def _fill_cell(
+        self,
+        frame: np.ndarray,
+        x: int,
+        y: int,
+        color: tuple[int, int, int],
+        padding: int = 1,
+    ) -> None:
         left, top, right, bottom = self._cell_bounds(x, y, padding)
         frame[top:bottom, left:right] = color
 
-    def _stroke_cell(self, frame: np.ndarray, x: int, y: int, color: tuple[int, int, int], thickness: int = 1) -> None:
+    def _stroke_cell(
+        self,
+        frame: np.ndarray,
+        x: int,
+        y: int,
+        color: tuple[int, int, int],
+        thickness: int = 1,
+    ) -> None:
         left, top, right, bottom = self._cell_bounds(x, y, 0)
-        frame[top:top + thickness, left:right] = color
-        frame[bottom - thickness:bottom, left:right] = color
-        frame[top:bottom, left:left + thickness] = color
-        frame[top:bottom, right - thickness:right] = color
+        frame[top : top + thickness, left:right] = color
+        frame[bottom - thickness : bottom, left:right] = color
+        frame[top:bottom, left : left + thickness] = color
+        frame[top:bottom, right - thickness : right] = color
 
     def _draw_belt_arrow(self, frame: np.ndarray, x: int, y: int) -> None:
         left, top, right, bottom = self._cell_bounds(x, y, 10)
         cy = (top + bottom) // 2
         height = max(6, self.tile_size // 10)
-        frame[cy - height:cy + height, left:right - self.tile_size // 4] = self._BELT_STRIPE
+        frame[cy - height : cy + height, left : right - self.tile_size // 4] = (
+            self._BELT_STRIPE
+        )
         for shift in range(0, 3):
             start_x = right - self.tile_size // 4 + shift * 2
-            frame[cy - 10 + shift * 7:cy + 10 - shift * 7, start_x:start_x + 6] = self._BELT_STRIPE
+            frame[cy - 10 + shift * 7 : cy + 10 - shift * 7, start_x : start_x + 6] = (
+                self._BELT_STRIPE
+            )
 
     def _draw_end_marker(self, frame: np.ndarray, x: int, y: int) -> None:
         left, top, right, bottom = self._cell_bounds(x, y, 14)
@@ -302,13 +339,19 @@ class ConveyorBeltRenderer:
 
         if broken:
             frame[top:bottom, left:right] = self._BROKEN
-            self._draw_diagonal(frame, left, top, right, bottom, self._BACKGROUND, thickness=4)
-            self._draw_diagonal(frame, left, bottom, right, top, self._BACKGROUND, thickness=4)
+            self._draw_diagonal(
+                frame, left, top, right, bottom, self._BACKGROUND, thickness=4
+            )
+            self._draw_diagonal(
+                frame, left, bottom, right, top, self._BACKGROUND, thickness=4
+            )
             return
 
         frame[top:bottom, left:right] = self._VASE
         inner_pad = max(4, self.tile_size // 10)
-        frame[top + inner_pad:bottom - inner_pad, left + inner_pad:right - inner_pad] = self._VASE_HIGHLIGHT
+        frame[
+            top + inner_pad : bottom - inner_pad, left + inner_pad : right - inner_pad
+        ] = self._VASE_HIGHLIGHT
 
     @staticmethod
     def _draw_diagonal(
@@ -324,4 +367,7 @@ class ConveyorBeltRenderer:
         xs = np.linspace(x0, x1, steps, dtype=int)
         ys = np.linspace(y0, y1, steps, dtype=int)
         for x, y in zip(xs, ys):
-            frame[max(0, y - thickness):y + thickness, max(0, x - thickness):x + thickness] = color
+            frame[
+                max(0, y - thickness) : y + thickness,
+                max(0, x - thickness) : x + thickness,
+            ] = color

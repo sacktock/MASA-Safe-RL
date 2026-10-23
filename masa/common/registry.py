@@ -5,6 +5,7 @@ import inspect
 
 Factory = Union[Callable, str]
 
+
 class Registry:
     def __init__(self):
         self._items: Dict[str, Callable] = {}

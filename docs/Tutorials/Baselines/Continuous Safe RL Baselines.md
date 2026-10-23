@@ -6,11 +6,11 @@ Runnable notebook: [notebooks/tutorials/07_continuous_safe_rl_baselines.ipynb](h
 
 ## Current Scope
 
-| Baseline | Status | Tutorial state | Safety role |
-| --- | --- | --- | --- |
-| `PPO` | implemented | runnable scaffold only | uses MASA constraint wrappers for logging; no constrained objective in base PPO |
-| `CPO` | mentioned / placeholder docs | not runnable here yet | future constrained policy optimization baseline |
-| `PPO Lagrangian` | mentioned / placeholder docs | not runnable here yet | future Lagrangian penalty baseline for PPO-style training |
+| Baseline         | Status                       | Tutorial state         | Safety role                                                                     |
+| ---------------- | ---------------------------- | ---------------------- | ------------------------------------------------------------------------------- |
+| `PPO`            | implemented                  | runnable scaffold only | uses MASA constraint wrappers for logging; no constrained objective in base PPO |
+| `CPO`            | mentioned / placeholder docs | not runnable here yet  | future constrained policy optimization baseline                                 |
+| `PPO Lagrangian` | mentioned / placeholder docs | not runnable here yet  | future Lagrangian penalty baseline for PPO-style training                       |
 
 ## Continuous Cartpole Scaffold
 

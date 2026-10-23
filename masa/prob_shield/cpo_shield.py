@@ -27,6 +27,7 @@ from masa.prob_shield.interval_bound_vi import interval_bound_value_iteration
 
 tfd = dists
 
+
 class CPOShield(CPO):
     """
     CPO with probabilistic action shielding.
@@ -76,7 +77,10 @@ class CPOShield(CPO):
                 "ProbShieldWrapperBase expects `env` to be an instance of "
                 f"ConstraintPersistentWrapper, got {type(env).__name__}."
             )
-        if not isinstance(env.observation_space, spaces.Discrete) and safety_abstraction is None:
+        if (
+            not isinstance(env.observation_space, spaces.Discrete)
+            and safety_abstraction is None
+        ):
             raise TypeError(
                 "ProbShieldWrapperBase only supports environments with a "
                 f"Discrete observation space or a discrete safety abstraction, got: {type(env.observation_space).__name__}"
@@ -86,14 +90,32 @@ class CPOShield(CPO):
 
         super().__init__(env, *args, **kwargs)
 
-        self.successor_states_matrix, self.probabilities, self.max_successors, \
-        label_fn, cost_fn, safe_set = build_successor_states_matrix(
-            self.env, label_fn=label_fn, cost_fn=cost_fn,
+        (
+            self.successor_states_matrix,
+            self.probabilities,
+            self.max_successors,
+            label_fn,
+            cost_fn,
+            safe_set,
+        ) = build_successor_states_matrix(
+            self.env,
+            label_fn=label_fn,
+            cost_fn=cost_fn,
         )
 
-        v_inf, v_sup, _, _, = interval_bound_value_iteration(
-            self.successor_states_matrix, self.probabilities, label_fn, cost_fn, safe_set, \
-            theta=self.theta, max_steps=self.max_vi_steps
+        (
+            v_inf,
+            v_sup,
+            _,
+            _,
+        ) = interval_bound_value_iteration(
+            self.successor_states_matrix,
+            self.probabilities,
+            label_fn,
+            cost_fn,
+            safe_set,
+            theta=self.theta,
+            max_steps=self.max_vi_steps,
         )
 
         start_state = None
@@ -105,13 +127,17 @@ class CPOShield(CPO):
                 aut_states = list(dfa.states)
                 n_aut = len(aut_states)
                 aut_index = {q: i for i, q in enumerate(aut_states)}
-                start_state = aut_index[dfa.initial] * n_states + int(self.env.unwrapped._start_state)
+                start_state = aut_index[dfa.initial] * n_states + int(
+                    self.env.unwrapped._start_state
+                )
         else:
             if hasattr(self.env.unwrapped, "_start_state"):
                 start_state = int(self.env.unwrapped._start_state)
 
         if start_state is not None:
-            assert v_sup[start_state] <= self.init_safety_bound, f"Value iteration could not verify that the initial safety bound {self.init_safety_bound} is achievable from the initial state"
+            assert v_sup[start_state] <= self.init_safety_bound, (
+                f"Value iteration could not verify that the initial safety bound {self.init_safety_bound} is achievable from the initial state"
+            )
             print("Initial state lower bound:", v_sup[start_state])
 
         self.safety_lb = v_sup
@@ -235,10 +261,7 @@ class CPOShield(CPO):
         # until the actor distribution uses as much risk budget as possible.
         inflated = False
         if exp_actor < current_safety_bound - eps:
-            eta = (
-                (current_safety_bound - exp_actor)
-                / (1.0 - exp_actor + eps)
-            )
+            eta = (current_safety_bound - exp_actor) / (1.0 - exp_actor + eps)
             eta = float(np.clip(eta, 0.0, 1.0))
             beta = (1.0 - eta) * beta + eta * np.ones_like(beta)
             inflated = eta > 0.0
@@ -263,9 +286,8 @@ class CPOShield(CPO):
                 exp_star_by_action = np.sum(probs_curr * beta_star[:, None], axis=0)
                 exp_star_safe = float(exp_star_by_action[safest_action])
 
-                eta = (
-                    (exp_safe - current_safety_bound)
-                    / (exp_safe - exp_star_safe + eps)
+                eta = (exp_safe - current_safety_bound) / (
+                    exp_safe - exp_star_safe + eps
                 )
                 eta = float(np.clip(eta, 0.0, 1.0))
                 beta = (1.0 - eta) * beta + eta * beta_star
@@ -277,18 +299,21 @@ class CPOShield(CPO):
             safe_probs = np.zeros_like(actor_probs)
             safe_probs[safest_action] = 1.0
 
-            interp_alpha = (
-                (exp_actor - current_safety_bound)
-                / (exp_actor - exp_safe + eps)
+            interp_alpha = (exp_actor - current_safety_bound) / (
+                exp_actor - exp_safe + eps
             )
             interp_alpha = float(np.clip(interp_alpha, 0.0, 1.0))
 
-            shield_probs = (1.0 - interp_alpha) * actor_probs + interp_alpha * safe_probs
+            shield_probs = (
+                1.0 - interp_alpha
+            ) * actor_probs + interp_alpha * safe_probs
             shield_probs = np.clip(shield_probs, 0.0, 1.0)
             shield_probs = shield_probs / np.sum(shield_probs)
             interpolated = interp_alpha > 0.0
 
-        exp_shield = float(np.dot(shield_probs, np.sum(probs_curr * beta[:, None], axis=0)))
+        exp_shield = float(
+            np.dot(shield_probs, np.sum(probs_curr * beta[:, None], axis=0))
+        )
 
         metrics = {
             "shield/exp_actor_beta": exp_actor,
@@ -318,7 +343,9 @@ class CPOShield(CPO):
         successor_obs[:k] = np.eye(n, dtype=np.float32)[successor_states]
         successor_obs = np.eye(n, dtype=np.float32)[successor_states]
 
-        betas = self._predict_betas(self.policy.featurizer_state, self.policy.cost_critic_state, successor_obs)
+        betas = self._predict_betas(
+            self.policy.featurizer_state, self.policy.cost_critic_state, successor_obs
+        )
 
         valid_betas = betas[:k]
 
@@ -331,11 +358,11 @@ class CPOShield(CPO):
         return out
 
     def train(self, *args, **kwargs):
-        self._current_safety_bound = [self.init_safety_bound]*self.n_envs
+        self._current_safety_bound = [self.init_safety_bound] * self.n_envs
         super().train(*args, **kwargs)
 
     def rollout(
-        self, 
+        self,
         step: int,
         logger: Optional[TrainLogger] = None,
         tqdm_position: int = 1,
@@ -343,7 +370,9 @@ class CPOShield(CPO):
         steps = 0
         self.rollout_buffer.reset()
         self._last_obs = np.array(self._last_obs)
-        self._current_obs = np.array(self._abstraction(self._last_obs)).reshape((self.n_envs,))
+        self._current_obs = np.array(self._abstraction(self._last_obs)).reshape(
+            (self.n_envs,)
+        )
         self._last_episode_start = np.array(self._last_episode_start)
         self._last_cost_episode_start = np.array(self._last_cost_episode_start)
 
@@ -358,7 +387,8 @@ class CPOShield(CPO):
                 dynamic_ncols=True,
                 colour="green",
             )
-            if self.use_tqdm_rollout else nullcontext()
+            if self.use_tqdm_rollout
+            else nullcontext()
         )
 
         with pbar_context as pbar:
@@ -367,12 +397,14 @@ class CPOShield(CPO):
 
                 obs = self.prepare_obs(self._last_obs, n_envs=self.n_envs)
 
-                self._current_obs = np.array(self._abstraction(self._last_obs)).reshape((self.n_envs,))
+                self._current_obs = np.array(self._abstraction(self._last_obs)).reshape(
+                    (self.n_envs,)
+                )
 
                 actor_probs, values, cost_values = self._predict_all(
-                    self.policy.featurizer_state, 
-                    self.policy.actor_state, 
-                    self.policy.critic_state, 
+                    self.policy.featurizer_state,
+                    self.policy.actor_state,
+                    self.policy.critic_state,
                     self.policy.cost_critic_state,
                     obs,
                 )
@@ -387,8 +419,9 @@ class CPOShield(CPO):
                 proj_bounds_per_env = []
 
                 for env_idx in range(self.n_envs):
-
-                    beta_props = self._beta_proposals_from_cost_critic(self._current_obs[env_idx])
+                    beta_props = self._beta_proposals_from_cost_critic(
+                        self._current_obs[env_idx]
+                    )
 
                     shield_probs, proj_bounds, shield_metrics = self.action_projection(
                         actor_probs[env_idx],
@@ -397,10 +430,14 @@ class CPOShield(CPO):
                         self._current_safety_bound[env_idx],
                     )
 
-                    action = tfd.Categorical(probs=shield_probs).sample(seed=self.policy.noise_key)
+                    action = tfd.Categorical(probs=shield_probs).sample(
+                        seed=self.policy.noise_key
+                    )
 
                     actions[env_idx] = action
-                    actor_log_probs[env_idx] = np.log(actor_probs[env_idx, action] + 1e-8)
+                    actor_log_probs[env_idx] = np.log(
+                        actor_probs[env_idx, action] + 1e-8
+                    )
                     shield_log_probs[env_idx] = np.log(shield_probs[action] + 1e-8)
 
                     proj_bounds_per_env.append((proj_bounds, shield_metrics))
@@ -414,11 +451,15 @@ class CPOShield(CPO):
                 for env_idx, action in enumerate(actions):
                     proj_bounds, shield_metrics = proj_bounds_per_env[env_idx]
 
-                    new_obs, reward, terminated, truncated, info = self.env.envs[env_idx].step(int(action))
+                    new_obs, reward, terminated, truncated, info = self.env.envs[
+                        env_idx
+                    ].step(int(action))
 
                     abstr_obs = int(self._abstraction(new_obs))
 
-                    succ_list = self.successor_states_matrix[:, self._current_obs[env_idx]]
+                    succ_list = self.successor_states_matrix[
+                        :, self._current_obs[env_idx]
+                    ]
                     matches = np.where(succ_list == abstr_obs)[0]
                     if matches.size == 0:
                         raise RuntimeError(
@@ -428,7 +469,9 @@ class CPOShield(CPO):
 
                     next_obs_idx = int(matches[0])
 
-                    self._current_safety_bound[env_idx] = float(proj_bounds[next_obs_idx])
+                    self._current_safety_bound[env_idx] = float(
+                        proj_bounds[next_obs_idx]
+                    )
                     self._current_obs[env_idx] = abstr_obs
 
                     new_obs_list.append(new_obs)
@@ -443,28 +486,49 @@ class CPOShield(CPO):
                 truncated = np.array(truncated_list)
                 infos = info_list
 
-                costs = np.array([info["constraint"]["step"].get("cost", 0.0) for info in infos])
-                cost_dones = np.array([info["constraint"]["step"].get("cost_done", False) for info in infos])
+                costs = np.array(
+                    [info["constraint"]["step"].get("cost", 0.0) for info in infos]
+                )
+                cost_dones = np.array(
+                    [
+                        info["constraint"]["step"].get("cost_done", False)
+                        for info in infos
+                    ]
+                )
 
                 self._cost_accumulator += costs
 
                 for info in infos:
                     if "episode" in info["constraint"]:
                         if self.constraint_type == "CMDP":
-                            ep_costs.append(info["constraint"]["episode"].get("cum_cost", 0.0))
+                            ep_costs.append(
+                                info["constraint"]["episode"].get("cum_cost", 0.0)
+                            )
                         elif self.constraint_type == "PCTL":
-                            ep_costs.append(1.0 - info["constraint"]["episode"].get("satisfied", 0.0))
+                            ep_costs.append(
+                                1.0
+                                - info["constraint"]["episode"].get("satisfied", 0.0)
+                            )
                         elif self.constraint_type == "LTL_SAFETY":
-                            ep_costs.append(1.0 - info["constraint"]["episode"].get("satisfied", 0.0))
+                            ep_costs.append(
+                                1.0
+                                - info["constraint"]["episode"].get("satisfied", 0.0)
+                            )
                         elif self.constraint_type == "REACH_AVOID":
-                            ep_costs.append(info["constraint"]["episode"].get("violated", 0.0))
+                            ep_costs.append(
+                                info["constraint"]["episode"].get("violated", 0.0)
+                            )
                         elif self.constraint_type == "PROB":
-                            ep_costs.append(info["constraint"]["episode"].get("cum_unsafe", 0.0))
+                            ep_costs.append(
+                                info["constraint"]["episode"].get("cum_unsafe", 0.0)
+                            )
                         else:
-                            ep_costs.append(info["constraint"]["episode"].get("cum_cost", 0.0))
-            
+                            ep_costs.append(
+                                info["constraint"]["episode"].get("cum_cost", 0.0)
+                            )
+
                 steps += 1
-                
+
                 if self.use_tqdm_rollout:
                     pbar.update(1)
 
@@ -473,12 +537,14 @@ class CPOShield(CPO):
                     actions = np.array(actions)
                     actions = actions.reshape(-1, 1)
 
-                dones = np.array([False]*self.n_envs)
+                dones = np.array([False] * self.n_envs)
 
                 for idx, info in enumerate(infos):
                     if truncated[idx]:
                         truncated_obs = new_obs[idx].reshape(1, -1)
-                        feats = self.featurizer.apply(self.policy.featurizer_state.params, truncated_obs)
+                        feats = self.featurizer.apply(
+                            self.policy.featurizer_state.params, truncated_obs
+                        )
                         terminal_value = np.array(
                             self.critic.apply(
                                 self.policy.critic_state.params,
@@ -515,8 +581,10 @@ class CPOShield(CPO):
                 if np.any(cost_dones):
                     for i, cost_done in enumerate(cost_dones):
                         if self.constraint_type == "REACH_AVOID":
-                            dones[i] = cost_done # terminate the episode if we reach the avoid state
-                        #if self.constraint_type == "LTL_SAFETY":
+                            dones[i] = (
+                                cost_done  # terminate the episode if we reach the avoid state
+                            )
+                        # if self.constraint_type == "LTL_SAFETY":
                         #    self.env.envs[i]._constraint.cost_fn.reset() # reset the DFA const function and continue the episode
 
                 if np.any(dones):
@@ -536,7 +604,7 @@ class CPOShield(CPO):
                         logger.add("train/rollout", info)
                         logger.add("train/stats", shield_metrics)
 
-        assert isinstance(self._last_obs, np.ndarray) 
+        assert isinstance(self._last_obs, np.ndarray)
         final_obs = self.prepare_obs(self._last_obs, n_envs=self.n_envs)
         feats = self.featurizer.apply(self.policy.featurizer_state.params, final_obs)
         last_value = np.array(
@@ -558,7 +626,10 @@ class CPOShield(CPO):
         )
 
         self.rollout_buffer.compute_returns_and_advantages(
-            last_value=last_value, last_cost_value=last_cost_value, done=self._last_episode_start, cost_done=self._last_cost_episode_start
+            last_value=last_value,
+            last_cost_value=last_cost_value,
+            done=self._last_episode_start,
+            cost_done=self._last_cost_episode_start,
         )
 
         self._update_mean_ep_cost(ep_costs, last_cost_value=last_cost_value)
@@ -566,19 +637,27 @@ class CPOShield(CPO):
     @staticmethod
     @jit
     def _predict_all(
-        featurizer_state: TrainState, actor_state: TrainState, critic_state: TrainState, cost_critic_state: TrainState, observations: jnp.ndarray
+        featurizer_state: TrainState,
+        actor_state: TrainState,
+        critic_state: TrainState,
+        cost_critic_state: TrainState,
+        observations: jnp.ndarray,
     ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
         features = featurizer_state.apply_fn(featurizer_state.params, observations)
         dist = actor_state.apply_fn(actor_state.params, features)
         actor_probs = dist.probs_parameter()
         values = critic_state.apply_fn(critic_state.params, features).flatten()
-        cost_values = cost_critic_state.apply_fn(cost_critic_state.params, features).flatten()
+        cost_values = cost_critic_state.apply_fn(
+            cost_critic_state.params, features
+        ).flatten()
         return actor_probs, values, cost_values
 
     @staticmethod
     @jit
     def _predict_betas(
-        featurizer_state: TrainState, cost_critic_state: TrainState, observations: jnp.ndarray
+        featurizer_state: TrainState,
+        cost_critic_state: TrainState,
+        observations: jnp.ndarray,
     ) -> jnp.ndarray:
         features = featurizer_state.apply_fn(featurizer_state.params, observations)
         betas = cost_critic_state.apply_fn(cost_critic_state.params, features).flatten()
@@ -586,15 +665,25 @@ class CPOShield(CPO):
 
     @staticmethod
     @jit
-    def _predict_actor_probs(featurizer_state: TrainState, actor_state: TrainState, observations: jnp.ndarray) -> jnp.ndarray:
+    def _predict_actor_probs(
+        featurizer_state: TrainState, actor_state: TrainState, observations: jnp.ndarray
+    ) -> jnp.ndarray:
         features = featurizer_state.apply_fn(featurizer_state.params, observations)
         dist = actor_state.apply_fn(actor_state.params, features)
         actor_probs = dist.probs_parameter()
         return actor_probs
 
-    def act(self, key: jax.Array, obs: np.ndarray, safety_bound: float, deterministic: bool = False) -> Union[int, np.ndarray]:
+    def act(
+        self,
+        key: jax.Array,
+        obs: np.ndarray,
+        safety_bound: float,
+        deterministic: bool = False,
+    ) -> Union[int, np.ndarray]:
         obs = self.prepare_obs(obs, n_envs=1)
-        actor_probs = self._predict_actor_probs(self.policy.featurizer_state, self.policy.actor_state, obs)
+        actor_probs = self._predict_actor_probs(
+            self.policy.featurizer_state, self.policy.actor_state, obs
+        )
         actor_probs = np.array(actor_probs).flatten()
         current_obs = int(self._abstraction(obs))
         beta_props = self._beta_proposals_from_cost_critic(current_obs)
@@ -611,7 +700,12 @@ class CPOShield(CPO):
         action = self.prepare_act(action, n_envs=1)
         return action, proj_bounds
 
-    def eval(self, num_episodes: int, seed: Optional[int] = None, logger: Optional[TrainLogger] = None) -> List[float]:
+    def eval(
+        self,
+        num_episodes: int,
+        seed: Optional[int] = None,
+        logger: Optional[TrainLogger] = None,
+    ) -> List[float]:
         eval_env = self._get_eval_env()
         base = 0 if self.seed is None else int(self.seed)
         eval_seed = base + 10_000 if seed is None else int(seed) + 10_000
@@ -624,9 +718,8 @@ class CPOShield(CPO):
             position=1,
             leave=False,
             dynamic_ncols=True,
-            colour="yellow"
+            colour="yellow",
         ) as pbar:
-
             for ep in range(num_episodes):
                 obs, info = eval_env.reset(seed=eval_seed + ep)
                 current_obs = int(self._abstraction(obs))
@@ -635,8 +728,10 @@ class CPOShield(CPO):
                 ret = 0.0
                 while not done:
                     eval_key, subkey = jr.split(eval_key)
-                    action, proj_bounds = self.act(subkey, obs, current_eval_safety_bound, deterministic=False)
-                    
+                    action, proj_bounds = self.act(
+                        subkey, obs, current_eval_safety_bound, deterministic=False
+                    )
+
                     obs, rew, terminated, truncated, info = eval_env.step(action)
 
                     abstr_obs = int(self._abstraction(obs))

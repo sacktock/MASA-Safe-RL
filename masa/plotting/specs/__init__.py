@@ -24,8 +24,9 @@ def register(spec: PlotSpec) -> PlotSpec:
 
 def get(spec_id: str) -> PlotSpec:
     if spec_id not in _REGISTRY:
-        raise KeyError(f"Unknown PlotSpec id: {spec_id!r}. "
-                       f"Registered: {sorted(_REGISTRY)}")
+        raise KeyError(
+            f"Unknown PlotSpec id: {spec_id!r}. Registered: {sorted(_REGISTRY)}"
+        )
     return _REGISTRY[spec_id]
 
 
@@ -37,10 +38,17 @@ def all_specs(filter_ids: Optional[list[str]] = None) -> list[PlotSpec]:
 
 # Auto register the generic spec that ships with the library.
 from . import performance  # noqa: E402, F401
-from . import margin       # noqa: E402, F401
+from . import margin  # noqa: E402, F401
 
 
 __all__ = [
-    "Band", "HLine", "Panel", "PanelSource", "PlotSpec", "RenderContext",
-    "register", "get", "all_specs",
+    "Band",
+    "HLine",
+    "Panel",
+    "PanelSource",
+    "PlotSpec",
+    "RenderContext",
+    "register",
+    "get",
+    "all_specs",
 ]

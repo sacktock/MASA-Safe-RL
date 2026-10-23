@@ -1,8 +1,7 @@
-
 import numpy as np
 
-class RunningMeanStd:
 
+class RunningMeanStd:
     def __init__(self, eps=1e-8, shape=()):
         self.mean = np.zeros(shape, np.float64)
         self.var = np.zeros(shape, np.float64)
@@ -29,7 +28,11 @@ class RunningMeanStd:
         new_mean = self.mean + delta * batch_count / total
         m_a = self.var * self.count
         m_b = batch_var * batch_count
-        m_2 = m_a + m_b + np.square(delta) * self.count * batch_count / (self.count + batch_count)
+        m_2 = (
+            m_a
+            + m_b
+            + np.square(delta) * self.count * batch_count / (self.count + batch_count)
+        )
         new_var = m_2 / (self.count + batch_count)
 
         new_count = batch_count + self.count
@@ -37,4 +40,3 @@ class RunningMeanStd:
         self.mean = new_mean
         self.var = new_var
         self.count = new_count
-

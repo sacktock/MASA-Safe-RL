@@ -7,9 +7,21 @@ def test_answer():
 
 
 def test_safety_gridworld_ports_basic_behavior():
-    from masa.envs.discrete.conveyor_belt import ConveyorBelt, cost_fn as conveyor_cost_fn, label_fn as conveyor_label_fn
-    from masa.envs.discrete.island_navigation import IslandNavigation, cost_fn as island_cost_fn, label_fn as island_label_fn
-    from masa.envs.discrete.sokoban import Sokoban, cost_fn as sokoban_cost_fn, label_fn as sokoban_label_fn
+    from masa.envs.discrete.conveyor_belt import (
+        ConveyorBelt,
+        cost_fn as conveyor_cost_fn,
+        label_fn as conveyor_label_fn,
+    )
+    from masa.envs.discrete.island_navigation import (
+        IslandNavigation,
+        cost_fn as island_cost_fn,
+        label_fn as island_label_fn,
+    )
+    from masa.envs.discrete.sokoban import (
+        Sokoban,
+        cost_fn as sokoban_cost_fn,
+        label_fn as sokoban_label_fn,
+    )
 
     island = IslandNavigation()
     island_obs, island_info = island.reset(seed=0)
@@ -55,15 +67,17 @@ def test_new_envs_render_rgb_array_and_notebook():
         assert frame.mean() > 0
         env.close()
 
-    with open("notebooks/envs/discrete/play_safety_gridworlds.ipynb", "r", encoding="utf-8") as fh:
+    with open(
+        "notebooks/envs/discrete/play_safety_gridworlds.ipynb", "r", encoding="utf-8"
+    ) as fh:
         notebook = json.load(fh)
 
     assert notebook["nbformat"] == 4
     source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
     assert "ENV_NAME" in source
     assert "widgets.ToggleButtons" in source
-    assert "render_mode=\"human\"" in source
-    assert "render_mode=\"rgb_array\"" in source
+    assert 'render_mode="human"' in source
+    assert 'render_mode="rgb_array"' in source
     assert "render_window_size=512" in source
 
 
@@ -76,7 +90,13 @@ def test_pacman_envs_render_rgb_array_ansi_and_notebooks(monkeypatch):
     import numpy as np
 
     from masa.envs.tabular import utils as pacman_utils
-    from masa.envs.tabular.renderers.pacman import DOWN, LEFT, RIGHT, UP, _pacman_eye_angle
+    from masa.envs.tabular.renderers.pacman import (
+        DOWN,
+        LEFT,
+        RIGHT,
+        UP,
+        _pacman_eye_angle,
+    )
 
     def fake_pacman_transition_dict(
         standard_map,
@@ -90,9 +110,25 @@ def test_pacman_envs_render_rgb_array_ansi_and_notebooks(monkeypatch):
     ):
         del n_directions, n_ghosts, ghost_rand_prob
         if standard_map.shape == (7, 10):
-            state = (1, 4, 1, 5, 3, 1, 1 if food_x is not None and food_y is not None else 0)
+            state = (
+                1,
+                4,
+                1,
+                5,
+                3,
+                1,
+                1 if food_x is not None and food_y is not None else 0,
+            )
         else:
-            state = (7, 1, 1, 7, 12, 3, 1 if food_x is not None and food_y is not None else 0)
+            state = (
+                7,
+                1,
+                1,
+                7,
+                12,
+                3,
+                1 if food_x is not None and food_y is not None else 0,
+            )
         state_map = {state: 0}
         reverse_state_map = {0: state}
         successor_states = defaultdict(list, {0: [0]})
@@ -100,9 +136,18 @@ def test_pacman_envs_render_rgb_array_ansi_and_notebooks(monkeypatch):
         matrix = None
         if return_matrix:
             matrix = np.ones((1, 1, n_actions), dtype=np.float32)
-        return successor_states, transition_probs, matrix, 1, state_map, reverse_state_map
+        return (
+            successor_states,
+            transition_probs,
+            matrix,
+            1,
+            state_map,
+            reverse_state_map,
+        )
 
-    monkeypatch.setattr(pacman_utils, "create_pacman_transition_dict", fake_pacman_transition_dict)
+    monkeypatch.setattr(
+        pacman_utils, "create_pacman_transition_dict", fake_pacman_transition_dict
+    )
     for module in (
         "masa.envs.tabular.mini_pacman",
         "masa.envs.tabular.pacman",
@@ -119,7 +164,9 @@ def test_pacman_envs_render_rgb_array_ansi_and_notebooks(monkeypatch):
     for direction in (LEFT, RIGHT, DOWN, UP):
         assert math.sin(_pacman_eye_angle(direction)) < 0.0
     for direction, horizontal_sign in ((LEFT, -1), (RIGHT, 1), (DOWN, 1), (UP, -1)):
-        assert math.copysign(1, math.cos(_pacman_eye_angle(direction))) == horizontal_sign
+        assert (
+            math.copysign(1, math.cos(_pacman_eye_angle(direction))) == horizontal_sign
+        )
 
     for env_cls in (MiniPacman, Pacman, MiniPacmanWithCoins, PacmanWithCoins):
         env = env_cls(
@@ -153,11 +200,13 @@ def test_pacman_envs_render_rgb_array_ansi_and_notebooks(monkeypatch):
         with open(path, "r", encoding="utf-8") as fh:
             notebook = json.load(fh)
         assert notebook["nbformat"] == 4
-        source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"])
+        source = "\n".join(
+            "".join(cell.get("source", [])) for cell in notebook["cells"]
+        )
         assert env_name in source
         assert "widgets.ToggleButtons" in source
-        assert "render_mode=\"human\"" in source
-        assert "render_mode=\"rgb_array\"" in source
+        assert 'render_mode="human"' in source
+        assert 'render_mode="rgb_array"' in source
         assert "render_window_size=512" in source
         assert "def make_env" in source
         assert "play()" in source
@@ -220,8 +269,8 @@ def test_cartpole_envs_render_rgb_array_ansi_and_notebook():
     assert "DiscreteCartpole" in source
     assert "ContinuousCartpole" in source
     assert "widgets.ToggleButtons" in source
-    assert "render_mode=\"human\"" in source
-    assert "render_mode=\"rgb_array\"" in source
+    assert 'render_mode="human"' in source
+    assert 'render_mode="rgb_array"' in source
     assert "render_window_size=512" in source
     assert "pygame.K_LEFT" in source
     assert "pygame.K_SPACE" in source
@@ -256,8 +305,12 @@ def test_mountain_car_envs_render_rgb_array_ansi():
         assert frame.shape == (192, 192, 3)
         assert frame.dtype.name == "uint8"
         assert frame.mean() > 0
-        np.testing.assert_allclose(frame[0, 0], mountain_car_renderer.PANEL_COLOR, atol=4)
-        np.testing.assert_allclose(frame[0, -1], mountain_car_renderer.PANEL_COLOR, atol=4)
+        np.testing.assert_allclose(
+            frame[0, 0], mountain_car_renderer.PANEL_COLOR, atol=4
+        )
+        np.testing.assert_allclose(
+            frame[0, -1], mountain_car_renderer.PANEL_COLOR, atol=4
+        )
         env.step(action)
         next_frame = env.render()
         assert next_frame.shape == frame.shape
@@ -289,15 +342,25 @@ def test_mountain_car_envs_render_rgb_array_ansi():
     env.reset(seed=0)
     snapshot = env._renderer._snapshot()
     scale = mountain_car_renderer._gym_scale(snapshot, env.render_window_size)
-    body_points, _, wheel_centers, _ = mountain_car_renderer._car_geometry(snapshot, scale, env.render_window_size)
-    assert wheel_centers[0][1] > sum(point[1] for point in body_points) / len(body_points)
-    assert wheel_centers[1][1] > sum(point[1] for point in body_points) / len(body_points)
-    hill_points = mountain_car_renderer._hill_points(snapshot, scale, env.render_window_size)
+    body_points, _, wheel_centers, _ = mountain_car_renderer._car_geometry(
+        snapshot, scale, env.render_window_size
+    )
+    assert wheel_centers[0][1] > sum(point[1] for point in body_points) / len(
+        body_points
+    )
+    assert wheel_centers[1][1] > sum(point[1] for point in body_points) / len(
+        body_points
+    )
+    hill_points = mountain_car_renderer._hill_points(
+        snapshot, scale, env.render_window_size
+    )
     assert hill_points[0][0] == 0
     assert hill_points[-1][0] == env.render_window_size
     env.close()
 
-    with open("notebooks/envs/mixed/play_mountain_car.ipynb", "r", encoding="utf-8") as fh:
+    with open(
+        "notebooks/envs/mixed/play_mountain_car.ipynb", "r", encoding="utf-8"
+    ) as fh:
         notebook = json.load(fh)
 
     assert notebook["nbformat"] == 4
@@ -305,8 +368,8 @@ def test_mountain_car_envs_render_rgb_array_ansi():
     assert "DiscreteMountainCar" in source
     assert "ContinuousMountainCar" in source
     assert "widgets.ToggleButtons" in source
-    assert "render_mode=\"human\"" in source
-    assert "render_mode=\"rgb_array\"" in source
+    assert 'render_mode="human"' in source
+    assert 'render_mode="rgb_array"' in source
     assert "render_window_size=512" in source
     assert "pygame.K_LEFT" in source
     assert "pygame.K_RIGHT" in source
@@ -400,7 +463,9 @@ def test_road_1d_render_rgb_array_ansi():
     with pytest.raises(ValueError):
         Road1D(render_window_size=0)
 
-    with open("notebooks/envs/continuous/play_roads.ipynb", "r", encoding="utf-8") as fh:
+    with open(
+        "notebooks/envs/continuous/play_roads.ipynb", "r", encoding="utf-8"
+    ) as fh:
         notebook = json.load(fh)
 
     assert notebook["nbformat"] == 4
@@ -408,8 +473,8 @@ def test_road_1d_render_rgb_array_ansi():
     assert "Road1D" in source
     assert "Road2D" in source
     assert "widgets.ToggleButtons" in source
-    assert "render_mode=\"human\"" in source
-    assert "render_mode=\"rgb_array\"" in source
+    assert 'render_mode="human"' in source
+    assert 'render_mode="rgb_array"' in source
     assert "render_window_size=512" in source
     assert "pygame.K_LEFT" in source
     assert "pygame.K_SPACE" in source
@@ -464,7 +529,9 @@ def test_obstacle_envs_render_rgb_array_ansi():
         with pytest.raises(ValueError):
             env_cls(render_window_size=0)
 
-    with open("notebooks/envs/continuous/play_obstacles.ipynb", "r", encoding="utf-8") as fh:
+    with open(
+        "notebooks/envs/continuous/play_obstacles.ipynb", "r", encoding="utf-8"
+    ) as fh:
         notebook = json.load(fh)
 
     assert notebook["nbformat"] == 4
@@ -472,8 +539,8 @@ def test_obstacle_envs_render_rgb_array_ansi():
     for env_name in ("Obstacle", "ObstacleV2", "ObstacleV3", "ObstacleV4"):
         assert env_name in source
     assert "widgets.ToggleButtons" in source
-    assert "render_mode=\"human\"" in source
-    assert "render_mode=\"rgb_array\"" in source
+    assert 'render_mode="human"' in source
+    assert 'render_mode="rgb_array"' in source
     assert "render_window_size=512" in source
     assert "pygame.K_LEFT" in source
     assert "pygame.K_SPACE" in source
@@ -515,7 +582,9 @@ def test_colour_grid_world_render_rgb_array_ansi_and_notebook():
     with pytest.raises(ValueError):
         ColourGridWorld(render_window_size=0)
 
-    with open("notebooks/envs/tabular/play_colour_grid_world.ipynb", "r", encoding="utf-8") as fh:
+    with open(
+        "notebooks/envs/tabular/play_colour_grid_world.ipynb", "r", encoding="utf-8"
+    ) as fh:
         notebook = json.load(fh)
 
     assert notebook["nbformat"] == 4
@@ -523,8 +592,8 @@ def test_colour_grid_world_render_rgb_array_ansi_and_notebook():
     assert "ENV_NAME" in source
     assert "colour_grid_world" in source
     assert "ColourGridWorld" in source
-    assert "render_mode=\"human\"" in source
-    assert "render_mode=\"rgb_array\"" in source
+    assert 'render_mode="human"' in source
+    assert 'render_mode="rgb_array"' in source
     assert "render_window_size=512" in source
     assert "pygame.K_SPACE: 4" in source
     assert "play_env" in source
@@ -546,7 +615,11 @@ def test_colour_bomb_envs_render_rgb_array_ansi_and_notebook():
         env.reset(seed=0)
         frame = env.render()
         cell_size = max(12, env.render_window_size // env._grid_size)
-        assert frame.shape == (env._grid_size * cell_size, env._grid_size * cell_size, 3)
+        assert frame.shape == (
+            env._grid_size * cell_size,
+            env._grid_size * cell_size,
+            3,
+        )
         assert frame.dtype.name == "uint8"
         assert frame.mean() > 0
         env.close()
@@ -580,7 +653,11 @@ def test_colour_bomb_envs_render_rgb_array_ansi_and_notebook():
         with pytest.raises(ValueError):
             env_cls(render_window_size=0)
 
-    with open("notebooks/envs/tabular/play_colour_bomb_gridworlds.ipynb", "r", encoding="utf-8") as fh:
+    with open(
+        "notebooks/envs/tabular/play_colour_bomb_gridworlds.ipynb",
+        "r",
+        encoding="utf-8",
+    ) as fh:
         notebook = json.load(fh)
 
     assert notebook["nbformat"] == 4
@@ -589,8 +666,8 @@ def test_colour_bomb_envs_render_rgb_array_ansi_and_notebook():
     assert "colour_bomb_grid_world_v2" in source
     assert "colour_bomb_grid_world_v3" in source
     assert "widgets.ToggleButtons" in source
-    assert "render_mode=\"human\"" in source
-    assert "render_mode=\"rgb_array\"" in source
+    assert 'render_mode="human"' in source
+    assert 'render_mode="rgb_array"' in source
     assert "render_window_size=512" in source
     assert "pygame.K_SPACE: 4" in source
     assert "def make_env" in source
@@ -607,7 +684,9 @@ def test_colour_bomb_wall_states_are_impassable_under_slip():
     for env_cls in (ColourBombGridWorld, ColourBombGridWorldV2, ColourBombGridWorldV3):
         env = env_cls()
         wall_states = sorted(getattr(env, "_wall_states", []))
-        non_wall_states = [state for state in range(env._n_states) if state not in wall_states]
+        non_wall_states = [
+            state for state in range(env._n_states) if state not in wall_states
+        ]
 
         wall_entry_probs = env._transition_matrix[wall_states][:, non_wall_states, :]
         assert np.allclose(wall_entry_probs, 0.0)
@@ -658,7 +737,9 @@ def test_media_streaming_render_rgb_array_ansi_and_notebook():
     with pytest.raises(ValueError):
         MediaStreaming(render_window_size=0)
 
-    with open("notebooks/envs/tabular/play_media_streaming.ipynb", "r", encoding="utf-8") as fh:
+    with open(
+        "notebooks/envs/tabular/play_media_streaming.ipynb", "r", encoding="utf-8"
+    ) as fh:
         notebook = json.load(fh)
 
     assert notebook["nbformat"] == 4
@@ -666,8 +747,8 @@ def test_media_streaming_render_rgb_array_ansi_and_notebook():
     assert "ENV_NAME" in source
     assert "media_streaming" in source
     assert "MediaStreaming" in source
-    assert "render_mode=\"human\"" in source
-    assert "render_mode=\"rgb_array\"" in source
+    assert 'render_mode="human"' in source
+    assert 'render_mode="rgb_array"' in source
     assert "render_window_size=640" in source
     assert "pygame.K_LEFT: 0" in source
     assert "pygame.K_SPACE: 1" in source
@@ -689,7 +770,11 @@ def test_bridge_crossing_envs_render_rgb_array_ansi_and_notebook():
         env.reset(seed=0)
         frame = env.render()
         cell_size = max(12, env.render_window_size // env._grid_size)
-        assert frame.shape == (env._grid_size * cell_size, env._grid_size * cell_size, 3)
+        assert frame.shape == (
+            env._grid_size * cell_size,
+            env._grid_size * cell_size,
+            3,
+        )
         assert frame.dtype.name == "uint8"
         assert frame.mean() > 0
         env.close()
@@ -715,7 +800,9 @@ def test_bridge_crossing_envs_render_rgb_array_ansi_and_notebook():
         with pytest.raises(ValueError):
             env_cls(render_window_size=0)
 
-    with open("notebooks/envs/tabular/play_bridge_crossing.ipynb", "r", encoding="utf-8") as fh:
+    with open(
+        "notebooks/envs/tabular/play_bridge_crossing.ipynb", "r", encoding="utf-8"
+    ) as fh:
         notebook = json.load(fh)
 
     assert notebook["nbformat"] == 4
@@ -723,8 +810,8 @@ def test_bridge_crossing_envs_render_rgb_array_ansi_and_notebook():
     assert "bridge_crossing" in source
     assert "bridge_crossing_v2" in source
     assert "widgets.ToggleButtons" in source
-    assert "render_mode=\"human\"" in source
-    assert "render_mode=\"rgb_array\"" in source
+    assert 'render_mode="human"' in source
+    assert 'render_mode="rgb_array"' in source
     assert "render_window_size=512" in source
     assert "pygame.K_SPACE: 4" in source
     assert "def make_env" in source

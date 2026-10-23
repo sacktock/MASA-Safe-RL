@@ -1,4 +1,5 @@
 import os
+
 os.environ["TF_USE_LEGACY_KERAS"] = "1"
 
 from dataclasses import field
@@ -20,6 +21,7 @@ from masa.common import distributions as dists
 
 tfd = dists
 
+
 class Critic(nn.Module):
     net_arch: Sequence[int]
     activation_fn: Callable[[jnp.ndarray], jnp.ndarray] = nn.tanh
@@ -32,7 +34,8 @@ class Critic(nn.Module):
             x = self.activation_fn(x)
 
         x = nn.Dense(1)(x)
-        return x 
+        return x
+
 
 class Actor(nn.Module):
     action_dim: int
@@ -62,8 +65,13 @@ class Actor(nn.Module):
         action_logits = nn.Dense(self.action_dim)(x)
         if self.num_discrete_choices is None:
             # Continuous actions
-            log_std = self.param("log_std", constant(self.log_std_init), (self.action_dim,))
-            dist = tfd.MultivariateNormalDiag(loc=action_logits, scale_diag=jnp.exp(log_std).astype(action_logits.dtype))
+            log_std = self.param(
+                "log_std", constant(self.log_std_init), (self.action_dim,)
+            )
+            dist = tfd.MultivariateNormalDiag(
+                loc=action_logits,
+                scale_diag=jnp.exp(log_std).astype(action_logits.dtype),
+            )
         elif isinstance(self.num_discrete_choices, int):
             dist = tfd.Categorical(logits=action_logits)
         else:
@@ -90,8 +98,8 @@ class Actor(nn.Module):
             )
         return dist
 
-class PPOPolicy(BaseJaxPolicy):
 
+class PPOPolicy(BaseJaxPolicy):
     def __init__(
         self,
         observation_space: spaces.Space,
@@ -106,10 +114,7 @@ class PPOPolicy(BaseJaxPolicy):
         actor_class: type[nn.Module] = Actor,
         critic_class: type[nn.Module] = Critic,
     ):
-        super().__init__(
-            observation_space,
-            action_space
-        )
+        super().__init__(observation_space, action_space)
 
         if optimizer_kwargs is None:
             optimizer_kwargs = {}
@@ -173,7 +178,12 @@ class PPOPolicy(BaseJaxPolicy):
         else:
             raise NotImplementedError(f"{self.action_space}")
 
-    def build(self, key: jax.Array, lr_schedule: Union[optax.Schedule, float], max_grad_norm: float) -> jax.Array:
+    def build(
+        self,
+        key: jax.Array,
+        lr_schedule: Union[optax.Schedule, float],
+        max_grad_norm: float,
+    ) -> jax.Array:
         key, feat_key, actor_key, critic_key = jr.split(key, 4)
         key, self.key = jr.split(key, 2)
 
@@ -246,13 +256,21 @@ class PPOPolicy(BaseJaxPolicy):
     def reset_noise(self):
         self.key, self.noise_key = jr.split(self.key)
 
-    def forward(self, key: jax.Array, obs: np.ndarray, deterministic: bool = False) -> np.ndarray:
+    def forward(
+        self, key: jax.Array, obs: np.ndarray, deterministic: bool = False
+    ) -> np.ndarray:
         return self._predict(key, obs, deterministic=deterministic)
 
-    def predict_all(self, key: jax.Array, observation: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        return self._predict_all(key, self.featurizer_state, self.actor_state, self.critic_state, observation)
+    def predict_all(
+        self, key: jax.Array, observation: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        return self._predict_all(
+            key, self.featurizer_state, self.actor_state, self.critic_state, observation
+        )
 
-    def _predict(self, key: jax.Array, obs: np.ndarray, deterministic: bool = False) -> np.ndarray:
+    def _predict(
+        self, key: jax.Array, obs: np.ndarray, deterministic: bool = False
+    ) -> np.ndarray:
         if deterministic:
             return self.select_action(self.featurizer_state, self.actor_state, obs)
         else:
@@ -261,7 +279,11 @@ class PPOPolicy(BaseJaxPolicy):
     @staticmethod
     @jit
     def _predict_all(
-        key: jax.Array, featurizer_state: TrainState, actor_state: TrainState, critic_state: TrainState, observations: jnp.ndarray
+        key: jax.Array,
+        featurizer_state: TrainState,
+        actor_state: TrainState,
+        critic_state: TrainState,
+        observations: jnp.ndarray,
     ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
         features = featurizer_state.apply_fn(featurizer_state.params, observations)
         dist = actor_state.apply_fn(actor_state.params, features)
@@ -277,20 +299,28 @@ class PPOPolicy(BaseJaxPolicy):
     ) -> jnp.ndarray:
         feats = featurizer_state.apply_fn(featurizer_state.params, obs)
         return actor_state.apply_fn(actor_state.params, feats).mode()
-        
+
     @staticmethod
     @jit
     def sample_action(
-        key: jax.Array, featurizer_state: TrainState, actor_state: TrainState, obs: jnp.ndarray
+        key: jax.Array,
+        featurizer_state: TrainState,
+        actor_state: TrainState,
+        obs: jnp.ndarray,
     ) -> jnp.ndarray:
         feats = featurizer_state.apply_fn(featurizer_state.params, obs)
         dist = actor_state.apply_fn(actor_state.params, feats)
         action = dist.sample(seed=key)
         return action
 
-class PPOLagPolicy(PPOPolicy):
 
-    def build(self, key: jax.Array, lr_schedule: Union[optax.Schedule, float], max_grad_norm: float) -> jax.Array:
+class PPOLagPolicy(PPOPolicy):
+    def build(
+        self,
+        key: jax.Array,
+        lr_schedule: Union[optax.Schedule, float],
+        max_grad_norm: float,
+    ) -> jax.Array:
         key = super().build(key, lr_schedule, max_grad_norm)
         key, cost_critic_key = jr.split(key, 2)
 
@@ -298,7 +328,7 @@ class PPOLagPolicy(PPOPolicy):
             learning_rate=lr_schedule,
             **self.optimizer_kwargs,
         )
-        
+
         obs = jnp.array([self.observation_space.sample()])
         obs = self.featurizer.apply(self.featurizer_state.params, obs)
 
@@ -320,18 +350,34 @@ class PPOLagPolicy(PPOPolicy):
 
         return key
 
-    def predict_all(self, key: jax.Array, observation: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        return self._predict_all(key, self.featurizer_state, self.actor_state, self.critic_state, self.cost_critic_state, observation)
+    def predict_all(
+        self, key: jax.Array, observation: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        return self._predict_all(
+            key,
+            self.featurizer_state,
+            self.actor_state,
+            self.critic_state,
+            self.cost_critic_state,
+            observation,
+        )
 
     @staticmethod
     @jit
     def _predict_all(
-        key: jax.Array, featurizer_state: TrainState, actor_state: TrainState, critic_state: TrainState, cost_critic_state: TrainState, observations: jnp.ndarray
+        key: jax.Array,
+        featurizer_state: TrainState,
+        actor_state: TrainState,
+        critic_state: TrainState,
+        cost_critic_state: TrainState,
+        observations: jnp.ndarray,
     ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
         features = featurizer_state.apply_fn(featurizer_state.params, observations)
         dist = actor_state.apply_fn(actor_state.params, features)
         actions = dist.sample(seed=key)
         log_probs = dist.log_prob(actions)
         values = critic_state.apply_fn(critic_state.params, features).flatten()
-        cost_values = cost_critic_state.apply_fn(cost_critic_state.params, features).flatten()
+        cost_values = cost_critic_state.apply_fn(
+            cost_critic_state.params, features
+        ).flatten()
         return actions, log_probs, values, cost_values

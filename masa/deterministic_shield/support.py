@@ -57,6 +57,6 @@ def read_support(
     successors = np.zeros((n_states, width), dtype=np.intp)
     support = np.zeros((n_states, n_actions, width), dtype=bool)
     for s, (ids, positive) in enumerate(rows):
-        successors[s, :len(ids)] = ids
-        support[s, :, :len(ids)] = positive
+        successors[s, : len(ids)] = ids
+        support[s, :, : len(ids)] = positive
     return successors, support

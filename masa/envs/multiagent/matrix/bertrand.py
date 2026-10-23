@@ -10,15 +10,18 @@ from pettingzoo import ParallelEnv
 from masa.envs.multiagent.tabular_env import TabularParallelEnv
 from masa.envs.multiagent.matrix._label_utils import binary_cost, flatten_binary_obs
 
+
 class Actions(IntEnum):
-    High = 0    # Collusive/high price
-    Low  = 1    # Undercut/low price
+    High = 0  # Collusive/high price
+    Low = 1  # Undercut/low price
 
 
 def label_fn(obs):
     obs_vec = flatten_binary_obs(obs)
     if obs_vec.size != 5:
-        raise ValueError(f"BertrandMatrix label_fn expected 5 channels, got {obs_vec.size}.")
+        raise ValueError(
+            f"BertrandMatrix label_fn expected 5 channels, got {obs_vec.size}."
+        )
 
     labels = set()
     if obs_vec[0]:
@@ -47,6 +50,7 @@ def label_fn(obs):
 
 def cost_fn(labels):
     return binary_cost(labels)
+
 
 class BertrandMatrix(ParallelEnv):
     """
@@ -120,7 +124,9 @@ class BertrandMatrix(ParallelEnv):
         self.cost_fn = cost_fn
 
         # Spaces
-        self.observation_spaces = {a: self.observation_space(a) for a in self.possible_agents}
+        self.observation_spaces = {
+            a: self.observation_space(a) for a in self.possible_agents
+        }
         self.action_spaces = {a: self.action_space(a) for a in self.possible_agents}
 
     # ─────────────────────────── PettingZoo API ───────────────────────────
@@ -147,7 +153,10 @@ class BertrandMatrix(ParallelEnv):
         self._cum_rewards = {a: 0.0 for a in self.agents}
 
         obs = {a: self._obs() for a in self.agents}
-        infos = {a: {"round": self._round, "last_actions": None, "war": False} for a in self.agents}
+        infos = {
+            a: {"round": self._round, "last_actions": None, "war": False}
+            for a in self.agents
+        }
         return obs, infos
 
     def step(self, actions: dict[str, int]):
@@ -194,8 +203,18 @@ class BertrandMatrix(ParallelEnv):
         terminations = {a0: False, a1: False}
         truncations = {a0: env_trunc, a1: env_trunc}
         infos = {
-            a0: {"round": self._round, "last_actions": (act0, act1), "outcome": outcome, "war": self._last_war},
-            a1: {"round": self._round, "last_actions": (act1, act0), "outcome": outcome, "war": self._last_war},
+            a0: {
+                "round": self._round,
+                "last_actions": (act0, act1),
+                "outcome": outcome,
+                "war": self._last_war,
+            },
+            a1: {
+                "round": self._round,
+                "last_actions": (act1, act0),
+                "outcome": outcome,
+                "war": self._last_war,
+            },
         }
 
         obs = {a: self._obs() for a in self.agents}
@@ -213,7 +232,9 @@ class BertrandMatrix(ParallelEnv):
         if self.render_mode is None:
             return
         if not self._renderer:
-            raise ValueError("Renderer missing; create env with render_mode='human' or 'rgb_array'.")
+            raise ValueError(
+                "Renderer missing; create env with render_mode='human' or 'rgb_array'."
+            )
 
         pay = {"T": self.T, "R": self.R, "S": self.S, "P": self.P}
         last = (self._last_actions.get("player_0"), self._last_actions.get("player_1"))
@@ -340,11 +361,19 @@ class BertrandMatrix(ParallelEnv):
             rng_state: object                         # np.random.RandomState.get_state()
           )
         """
-        agents = tuple(self.agents) if getattr(self, "agents", None) is not None else tuple()
+        agents = (
+            tuple(self.agents) if getattr(self, "agents", None) is not None else tuple()
+        )
 
         p0, p1 = self.possible_agents
-        last_actions = (self._last_actions.get(p0, None), self._last_actions.get(p1, None))
-        cum_rewards = (float(self._cum_rewards.get(p0, 0.0)), float(self._cum_rewards.get(p1, 0.0)))
+        last_actions = (
+            self._last_actions.get(p0, None),
+            self._last_actions.get(p1, None),
+        )
+        cum_rewards = (
+            float(self._cum_rewards.get(p0, 0.0)),
+            float(self._cum_rewards.get(p1, 0.0)),
+        )
 
         rng_state = self.rng.get_state()
         return (
@@ -375,9 +404,13 @@ class BertrandMatrix(ParallelEnv):
         p0, p1 = self.possible_agents
 
         if len(last_actions) != 2:
-            raise ValueError(f"BertrandMatrix.set_state: last_actions must be len 2, got {len(last_actions)}")
+            raise ValueError(
+                f"BertrandMatrix.set_state: last_actions must be len 2, got {len(last_actions)}"
+            )
         if len(cum_rewards) != 2:
-            raise ValueError(f"BertrandMatrix.set_state: cum_rewards must be len 2, got {len(cum_rewards)}")
+            raise ValueError(
+                f"BertrandMatrix.set_state: cum_rewards must be len 2, got {len(cum_rewards)}"
+            )
 
         self._last_actions = {
             p0: (None if last_actions[0] is None else int(last_actions[0])),

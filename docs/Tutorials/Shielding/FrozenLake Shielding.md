@@ -39,7 +39,7 @@ After reset:
 ```python
 obs, info = shielded_env.reset(seed=0)
 
-obs["orig_obs"]       # original FrozenLake state id
+obs["orig_obs"]  # original FrozenLake state id
 obs["safety_bound"]  # remaining probability budget for reaching a hole
 ```
 

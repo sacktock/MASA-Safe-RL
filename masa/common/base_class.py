@@ -9,17 +9,18 @@ import tensorflow as tf
 import math
 from tqdm.auto import tqdm
 
+
 def _allowed_names(allowed: tuple[type[spaces.Space], ...]) -> str:
     return ", ".join(t.__name__ for t in allowed)
 
-class BaseAlgorithm(ABC):
 
+class BaseAlgorithm(ABC):
     def __init__(
         self,
         env: gym.Env,
         tensorboard_logdir: Optional[str] = None,
-        wandb_project: Optional[str] = None, # W&B project name (enables W&B if set)
-        wandb_name: Optional[str] = None, # Specific name for this W&B run
+        wandb_project: Optional[str] = None,  # W&B project name (enables W&B if set)
+        wandb_name: Optional[str] = None,  # Specific name for this W&B run
         seed: Optional[int] = None,
         monitor: bool = True,
         device: str = "auto",
@@ -27,7 +28,7 @@ class BaseAlgorithm(ABC):
         supported_action_spaces: Optional[tuple[type[spaces.Space], ...]] = None,
         supported_observation_spaces: Optional[tuple[type[spaces.Space], ...]] = None,
         env_fn: Optional[Callable[[], gym.Env]] = None,
-        eval_env: Optional[gym.Env] = None, 
+        eval_env: Optional[gym.Env] = None,
     ):
 
         self.env = env
@@ -48,16 +49,20 @@ class BaseAlgorithm(ABC):
                 f"{self.__class__.__name__}: env is missing action_space/observation_space."
             )
 
-        if self.supported_action_spaces is not None and not isinstance(act_sp, self.supported_action_spaces):
+        if self.supported_action_spaces is not None and not isinstance(
+            act_sp, self.supported_action_spaces
+        ):
             raise TypeError(
-                f"{self.__class__.__name__} does not support action space { type(act_sp).__name__ }.\n"
-                f"Allowed types: { _allowed_names(self.supported_action_spaces) }."
+                f"{self.__class__.__name__} does not support action space {type(act_sp).__name__}.\n"
+                f"Allowed types: {_allowed_names(self.supported_action_spaces)}."
             )
 
-        if self.supported_observation_spaces is not None and not isinstance(obs_sp, self.supported_observation_spaces):
+        if self.supported_observation_spaces is not None and not isinstance(
+            obs_sp, self.supported_observation_spaces
+        ):
             raise TypeError(
-                f"{self.__class__.__name__} does not support observation space { type(obs_sp).__name__ }.\n"
-                f"Allowed types: { _allowed_names(self.supported_observation_spaces) }."
+                f"{self.__class__.__name__} does not support observation space {type(obs_sp).__name__}.\n"
+                f"Allowed types: {_allowed_names(self.supported_observation_spaces)}."
             )
 
         self.observation_space = env.observation_space
@@ -70,7 +75,7 @@ class BaseAlgorithm(ABC):
         self.eval_key, self.key = jr.split(self.key)
 
     def train(
-        self, 
+        self,
         num_frames: int,
         num_eval_episodes: int = 0,
         eval_freq: int = 0,
@@ -78,7 +83,7 @@ class BaseAlgorithm(ABC):
         prefill: Optional[int] = None,
         save_freq: int = 0,
         stats_window_size: int = 100,
-        stats_window_overrides: Optional[Dict[str, int]] = None
+        stats_window_overrides: Optional[Dict[str, int]] = None,
     ):
 
         if self.tensorboard_logdir is not None:
@@ -93,6 +98,7 @@ class BaseAlgorithm(ABC):
 
         if use_wandb:
             import wandb
+
             wandb_ctx = wandb.init(
                 project=self.wandb_project,
                 name=self.wandb_name,
@@ -100,16 +106,21 @@ class BaseAlgorithm(ABC):
             )
         else:
             import contextlib
+
             wandb_ctx = contextlib.nullcontext()
 
         logger = TrainLogger(
-            [("train/rollout", RolloutLogger), ("train/stats", StatsLogger), ("eval/rollout", RolloutLogger)],
+            [
+                ("train/rollout", RolloutLogger),
+                ("train/stats", StatsLogger),
+                ("eval/rollout", RolloutLogger),
+            ],
             tensorboard=bool(summary_writer is not None),
             summary_writer=summary_writer,
             wandb=use_wandb,
             stats_window_size=[stats_window_size, stats_window_size, num_eval_episodes],
             stats_window_overrides=stats_window_overrides,
-            prefix='',
+            prefix="",
         )
 
         total_steps = 0
@@ -120,15 +131,17 @@ class BaseAlgorithm(ABC):
 
         self._last_obs, _ = self.env.reset(seed=self.seed)
 
-        with wandb_ctx, tqdm(
-            total=num_frames,
-            desc="frames",
-            position=0,
-            leave=True,
-            dynamic_ncols=True,
-        ) as iter_bar:
-
-            for iteration in range(math.ceil((num_frames)/self.train_ratio)):
+        with (
+            wandb_ctx,
+            tqdm(
+                total=num_frames,
+                desc="frames",
+                position=0,
+                leave=True,
+                dynamic_ncols=True,
+            ) as iter_bar,
+        ):
+            for iteration in range(math.ceil((num_frames) / self.train_ratio)):
                 self.rollout(total_steps, logger=logger)
                 self.optimize(total_steps, logger=logger)
 
@@ -155,8 +168,9 @@ class BaseAlgorithm(ABC):
         objects such as environments, policies, and JAX arrays are excluded.
         """
         return {
-            k: v for k, v in self.__dict__.items()
-            if not k.startswith('_')
+            k: v
+            for k, v in self.__dict__.items()
+            if not k.startswith("_")
             and isinstance(v, (int, float, str, bool, type(None)))
         }
 
@@ -166,9 +180,7 @@ class BaseAlgorithm(ABC):
         if self._env_fn is not None:
             self._eval_env = self._env_fn()
             return self._eval_env
-        raise RuntimeError(
-                "Cannot construct eval env; please pass env_fn or eval_env."
-            )
+        raise RuntimeError("Cannot construct eval env; please pass env_fn or eval_env.")
 
     def optimize(self, step: int, logger: Optional[TrainLogger] = None):
         """Optimizes the policy and other auxilliary models"""
@@ -178,7 +190,12 @@ class BaseAlgorithm(ABC):
         """Collects rollouts/experience for the policy to learn from"""
         raise NotImplementedError
 
-    def eval(self, num_episodes: int, seed: Optional[int] = None, logger: Optional[TrainLogger] = None) -> List[float]:
+    def eval(
+        self,
+        num_episodes: int,
+        seed: Optional[int] = None,
+        logger: Optional[TrainLogger] = None,
+    ) -> List[float]:
         eval_env = self._get_eval_env()
         base = 0 if self.seed is None else int(self.seed)
         eval_seed = base + 10_000 if seed is None else int(seed) + 10_000
@@ -191,9 +208,8 @@ class BaseAlgorithm(ABC):
             position=1,
             leave=False,
             dynamic_ncols=True,
-            colour="yellow"
+            colour="yellow",
         ) as pbar:
-
             for ep in range(num_episodes):
                 obs, info = eval_env.reset(seed=eval_seed + ep)
                 done = False
@@ -220,7 +236,7 @@ class BaseAlgorithm(ABC):
     def save(self, step: int):
         """Save the relevant algorithm/model parameters"""
         raise NotImplementedError
-    
+
     def load(self):
         """Load the relevant algorithm/model parameters"""
         raise NotImplementedError
@@ -230,8 +246,8 @@ class BaseAlgorithm(ABC):
         """How often to do an update step during training"""
         raise NotImplementedError
 
-class BaseJaxPolicy(ABC):
 
+class BaseJaxPolicy(ABC):
     def __init__(
         self,
         observation_space: spaces.Space,

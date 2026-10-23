@@ -18,7 +18,6 @@ defaults:
   final_epsilon: 0.1
   epsilon_decay: linear
   epsilon_decay_frames: 10000
-
 MediaStreaming:
   task_alpha: 0.1
   task_gamma: 0.95
@@ -30,7 +29,6 @@ MediaStreaming:
   safety_prob: 0.04
   cost_coef: 100.0
   r_min: -1.0
-
 BridgeCrossing:
   task_alpha: 0.05
   task_gamma: 0.99
@@ -41,7 +39,6 @@ BridgeCrossing:
   horizon: 4
   safety_prob: 0.05
   cost_coef: 10.0
-
 BridgeCrossingV2:
   task_alpha: 0.1
   task_gamma: 0.99
@@ -52,7 +49,6 @@ BridgeCrossingV2:
   horizon: 4
   safety_prob: 0.01
   cost_coef: 10.0
-
 ColourBombGridWorld:
   task_alpha: 0.05
   task_gamma: 0.95
@@ -63,7 +59,6 @@ ColourBombGridWorld:
   horizon: 2
   safety_prob: 0.05
   cost_coef: 10.0
-
 ColourBombGridWorld_Property2:
   task_alpha: 0.05
   task_gamma: 0.95
@@ -74,7 +69,6 @@ ColourBombGridWorld_Property2:
   horizon: 2
   safety_prob: 0.05
   cost_coef: 10.0
-
 ColourBombGridWorldV2:
   task_alpha: 0.05
   task_gamma: 0.95
@@ -85,7 +79,6 @@ ColourBombGridWorldV2:
   horizon: 9
   safety_prob: 0.025
   cost_coef: 10.0
-
 ColourBombGridWorldV2_Property2:
   task_alpha: 0.05
   task_gamma: 0.95
@@ -96,7 +89,6 @@ ColourBombGridWorldV2_Property2:
   horizon: 9
   safety_prob: 0.025
   cost_coef: 10.0
-
 ColourBombGridWorldV2_Property3:
   task_alpha: 0.05
   task_gamma: 0.95
@@ -107,7 +99,6 @@ ColourBombGridWorldV2_Property3:
   horizon: 12
   safety_prob: 0.025
   cost_coef: 10.0
-
 ColourBombGridWorldV2_Property3Cycle:
   task_alpha: 0.05
   task_gamma: 0.95
@@ -118,7 +109,6 @@ ColourBombGridWorldV2_Property3Cycle:
   horizon: 12
   safety_prob: 0.025
   cost_coef: 10.0
-
 ColourBombGridWorldV2_Property3Potential:
   task_alpha: 0.05
   task_gamma: 0.95
@@ -129,7 +119,6 @@ ColourBombGridWorldV2_Property3Potential:
   horizon: 12
   safety_prob: 0.025
   cost_coef: 10.0
-
 ColourBombGridWorldV2_Property3NoCfe:
   task_alpha: 0.05
   task_gamma: 0.95
@@ -141,7 +130,6 @@ ColourBombGridWorldV2_Property3NoCfe:
   safety_prob: 0.025
   cost_coef: 10.0
   use_counter_factual_experiences: false
-
 MiniPacman:
   task_alpha: 0.1
   task_gamma: 0.95
@@ -152,4 +140,3 @@ MiniPacman:
   horizon: 20
   safety_prob: 0.01
   cost_coef: 10.0
-  

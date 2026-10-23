@@ -1,6 +1,7 @@
 from __future__ import annotations
 from masa.common.ltl import *
 
+
 def make_dfa() -> DFA:
     """Builds a DFA for the safety property “never hit a bomb”.
 
@@ -18,6 +19,5 @@ def make_dfa() -> DFA:
         invariant.
     """
     dfa = DFA([0, 1], 0, [1])
-    dfa.add_edge(0, 1, Atom('bomb'))
+    dfa.add_edge(0, 1, Atom("bomb"))
     return dfa
-

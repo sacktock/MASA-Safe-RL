@@ -4,11 +4,9 @@ defaults:
     max_episode_steps: 100
     label_fn: masa.envs.tabular.frozen_lake:label_fn
     cost_fn: masa.envs.tabular.frozen_lake:cost_fn
-
   constraint:
     type: PCTL
     alpha: 0.01
-
   run:
     total_timesteps: 100000
     eval_every: 10000

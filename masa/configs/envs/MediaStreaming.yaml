@@ -4,11 +4,9 @@ defaults:
     max_episode_steps: 40
     label_fn: masa.envs.tabular.media_streaming:label_fn
     cost_fn: masa.envs.tabular.media_streaming:cost_fn
-
   constraint:
     type: PCTL
     alpha: 0.04
-
   run:
     total_timesteps: 25000
     eval_every: 1000

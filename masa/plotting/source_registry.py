@@ -51,7 +51,9 @@ class BenchmarkSource(ABC):
 _REGISTRY: dict[str, type[BenchmarkSource]] = {}
 
 
-def register_source(kind: str) -> Callable[[type[BenchmarkSource]], type[BenchmarkSource]]:
+def register_source(
+    kind: str,
+) -> Callable[[type[BenchmarkSource]], type[BenchmarkSource]]:
     """Class decorator registering a :class:`BenchmarkSource` under ``kind``."""
 
     def deco(cls: type[BenchmarkSource]) -> type[BenchmarkSource]:
@@ -113,7 +115,9 @@ class TensorBoardBenchmarkSource(BenchmarkSource):
     """TensorBoard backend: read local event files in place (no download)."""
 
     def download(self) -> list[Path]:
-        self.log.info("tensorboard source: reading local event files, no download step.")
+        self.log.info(
+            "tensorboard source: reading local event files, no download step."
+        )
         return []
 
     def build_frames(self) -> tuple[pd.DataFrame, pd.DataFrame]:

@@ -37,8 +37,7 @@ class TinyParallelEnv(TabularParallelEnv):
             for agent in self.possible_agents
         }
         self.observation_spaces = {
-            agent: spaces.Discrete(self.n_states)
-            for agent in self.possible_agents
+            agent: spaces.Discrete(self.n_states) for agent in self.possible_agents
         }
         self.transitions = {
             (int(state), tuple(action)): tuple(successors)
@@ -52,9 +51,7 @@ class TinyParallelEnv(TabularParallelEnv):
                 for (state, action), successors in runtime_transitions.items()
             }
         )
-        self.labels = labels or (
-            lambda state: {"bad"} if state == 1 else set()
-        )
+        self.labels = labels or (lambda state: {"bad"} if state == 1 else set())
         self._legal_actions_fn = legal_actions_fn
         self.finish = finish
         self._state = 0

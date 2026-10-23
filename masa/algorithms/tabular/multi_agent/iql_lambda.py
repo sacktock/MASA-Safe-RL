@@ -1,4 +1,5 @@
 """Independent Q-learning with fixed CMG budget penalties."""
+
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -54,8 +55,7 @@ class IQLLambda(IQL):
 
         self.lambdas = {name: float(value) for name, value in weights.items()}
         if any(
-            not np.isfinite(value) or value < 0.0
-            for value in self.lambdas.values()
+            not np.isfinite(value) or value < 0.0 for value in self.lambdas.values()
         ):
             raise ValueError("All multipliers must be finite and nonnegative.")
 

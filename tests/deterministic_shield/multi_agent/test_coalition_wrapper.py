@@ -186,9 +186,7 @@ def test_temporal_monitor_consumes_initial_then_successor_labels():
     transitions = {}
     for state in range(3):
         for action_a, action_out in product(range(2), repeat=2):
-            transitions[(state, (action_a, action_out))] = (
-                1 if action_a == 0 else 2,
-            )
+            transitions[(state, (action_a, action_out))] = (1 if action_a == 0 else 2,)
     labels = lambda state: (
         {"request"} if state == 0 else {"grant"} if state == 2 else set()
     )

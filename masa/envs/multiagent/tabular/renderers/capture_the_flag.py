@@ -97,8 +97,12 @@ class CaptureTheFlagRenderer:
         return "\n".join("".join(row) for row in chars)
 
     def _render_rgb_array(self) -> np.ndarray:
-        cell = max(4, self.env.render_window_size // max(self.env._rows, self.env._cols))
-        frame = np.empty((self.env._rows * cell, self.env._cols * cell, 3), dtype=np.uint8)
+        cell = max(
+            4, self.env.render_window_size // max(self.env._rows, self.env._cols)
+        )
+        frame = np.empty(
+            (self.env._rows * cell, self.env._cols * cell, 3), dtype=np.uint8
+        )
         frame[:] = BLACK
 
         for y in range(self.env._rows):
@@ -109,7 +113,13 @@ class CaptureTheFlagRenderer:
                     color = WALL
                 wall = self.env._destroyable_walls.get(position)
                 if wall is not None:
-                    color = WALL if wall.health > 2 else DAMAGED_WALL if wall.active else RUBBLE
+                    color = (
+                        WALL
+                        if wall.health > 2
+                        else DAMAGED_WALL
+                        if wall.active
+                        else RUBBLE
+                    )
                 terrain = self.env._terrain.get(position)
                 if terrain == "red":
                     color = RED_GROUND
@@ -173,7 +183,9 @@ class CaptureTheFlagRenderer:
         frame[y0 : y0 + cell, x0 : x0 + width] = color
         frame[y0 : y0 + cell, x0 + cell - width : x0 + cell] = color
 
-    def _draw_flag(self, frame: np.ndarray, position: Position, team: str, cell: int) -> None:
+    def _draw_flag(
+        self, frame: np.ndarray, position: Position, team: str, cell: int
+    ) -> None:
         x, y = position
         y0, x0 = y * cell, x * cell
         mid = cell // 2
@@ -193,16 +205,22 @@ class CaptureTheFlagRenderer:
         y0, x0 = y * cell, x * cell
         pad = max(2, cell // 6)
         color = np.asarray(RED if avatar.team == "red" else BLUE, dtype=np.int16)
-        color = tuple(np.clip(color + (avatar.health - 2) * 35, 0, 255).astype(np.uint8))
+        color = tuple(
+            np.clip(color + (avatar.health - 2) * 35, 0, 255).astype(np.uint8)
+        )
         frame[y0 + pad : y0 + cell - pad, x0 + pad : x0 + cell - pad] = color
         mid = cell // 2
         tip = max(2, cell // 4)
         if avatar.orientation == 0:
             frame[y0 + pad : y0 + pad + tip, x0 + mid : x0 + mid + 2] = WHITE
         elif avatar.orientation == 1:
-            frame[y0 + mid : y0 + mid + 2, x0 + cell - pad - tip : x0 + cell - pad] = WHITE
+            frame[y0 + mid : y0 + mid + 2, x0 + cell - pad - tip : x0 + cell - pad] = (
+                WHITE
+            )
         elif avatar.orientation == 2:
-            frame[y0 + cell - pad - tip : y0 + cell - pad, x0 + mid : x0 + mid + 2] = WHITE
+            frame[y0 + cell - pad - tip : y0 + cell - pad, x0 + mid : x0 + mid + 2] = (
+                WHITE
+            )
         else:
             frame[y0 + mid : y0 + mid + 2, x0 + pad : x0 + pad + tip] = WHITE
         if avatar.carrying_flag is not None:

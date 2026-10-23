@@ -80,6 +80,7 @@ from masa.common.utils import make_env
 
 load_plugins()
 
+
 def build_colour_env(max_episode_steps=20, budget=0.0):
     return make_env(
         "colour_grid_world",
@@ -89,6 +90,7 @@ def build_colour_env(max_episode_steps=20, budget=0.0):
         cost_fn=cost_fn,
         budget=budget,
     )
+
 
 env = build_colour_env()
 obs, info = env.reset(seed=0)
@@ -108,6 +110,7 @@ This helper records the fields you should inspect when debugging a MASA environm
 
 ```python
 ACTION_NAMES = {0: "left", 1: "right", 2: "down", 3: "up", 4: "stay"}
+
 
 def run_rollout(actions, *, seed, max_episode_steps=20, budget=0.0):
     env = build_colour_env(max_episode_steps=max_episode_steps, budget=budget)
@@ -166,7 +169,9 @@ On the final row, expect:
 
 ```python
 termination_actions = [2] * 8 + [1] * 8
-termination_rows = run_rollout(termination_actions, seed=4, max_episode_steps=40, budget=0.0)
+termination_rows = run_rollout(
+    termination_actions, seed=4, max_episode_steps=40, budget=0.0
+)
 pprint(termination_rows)
 ```
 

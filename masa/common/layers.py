@@ -4,6 +4,7 @@ from typing import Callable, Tuple
 
 Shape = Tuple[int, ...]
 
+
 class Flatten(nn.Module):
     """
     Equivalent to PyTorch nn.Flatten() layer.
@@ -13,11 +14,12 @@ class Flatten(nn.Module):
     def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
         return x.reshape((x.shape[0], -1))
 
-class Identity(nn.Module):
 
+class Identity(nn.Module):
     @nn.compact
     def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
         return x
+
 
 class NatureCNN(nn.Module):
     grayscale_obs: bool = True

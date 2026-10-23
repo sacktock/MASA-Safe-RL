@@ -8,9 +8,7 @@ registry.ENV_REGISTRY.register(
     "ContinuousMountainCar", "masa.envs.continuous.mountain_car:ContinuousMountainCar"
 )
 
-registry.ENV_REGISTRY.register(
-    "Obstacle", "masa.envs.continuous.obstacle:Obstacle"
-)
+registry.ENV_REGISTRY.register("Obstacle", "masa.envs.continuous.obstacle:Obstacle")
 
 registry.ENV_REGISTRY.register(
     "ObstacleV2", "masa.envs.continuous.obstacle_v2:ObstacleV2"
@@ -24,13 +22,9 @@ registry.ENV_REGISTRY.register(
     "ObstacleV4", "masa.envs.continuous.obstacle_v4:ObstacleV4"
 )
 
-registry.ENV_REGISTRY.register(
-    "Road1D", "masa.envs.continuous.road_1d:Road1D"
-)
+registry.ENV_REGISTRY.register("Road1D", "masa.envs.continuous.road_1d:Road1D")
 
-registry.ENV_REGISTRY.register(
-    "Road2D", "masa.envs.continuous.road_2d:Road2D"
-)
+registry.ENV_REGISTRY.register("Road2D", "masa.envs.continuous.road_2d:Road2D")
 
 registry.ENV_REGISTRY.register(
     "DiscreteCartpole", "masa.envs.discrete.cartpole:DiscreteCartpole"
@@ -49,16 +43,15 @@ registry.ENV_REGISTRY.register(
 )
 
 registry.ENV_REGISTRY.register(
-    "MiniPacmanWithCoins", "masa.envs.discrete.mini_pacman_with_coins:MiniPacmanWithCoins"
+    "MiniPacmanWithCoins",
+    "masa.envs.discrete.mini_pacman_with_coins:MiniPacmanWithCoins",
 )
 
 registry.ENV_REGISTRY.register(
     "PacmanWithCoins", "masa.envs.discrete.pacman_with_coins:PacmanWithCoins"
 )
 
-registry.ENV_REGISTRY.register(
-    "Sokoban", "masa.envs.discrete.sokoban:Sokoban"
-)
+registry.ENV_REGISTRY.register("Sokoban", "masa.envs.discrete.sokoban:Sokoban")
 
 registry.MARL_ENV_REGISTRY.register(
     "BertrandMatrix",

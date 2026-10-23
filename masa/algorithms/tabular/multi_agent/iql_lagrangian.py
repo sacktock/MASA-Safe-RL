@@ -1,4 +1,5 @@
 """Independent Q-learning with episode-level Lagrangian dual updates."""
+
 from __future__ import annotations
 
 from collections.abc import Mapping

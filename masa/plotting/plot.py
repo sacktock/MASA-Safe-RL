@@ -94,10 +94,18 @@ def plot_metrics(
     """
     with plt.rc_context(_RC_PARAMS):
         return _plot_metrics_inner(
-            df, metrics=metrics, smooth_weight=smooth_weight,
-            title=title, output_path=output_path, figsize=figsize,
-            show_legend=show_legend, show_axes=show_axes, dpi=dpi,
-            hue=hue, palette=palette, errorbar=errorbar,
+            df,
+            metrics=metrics,
+            smooth_weight=smooth_weight,
+            title=title,
+            output_path=output_path,
+            figsize=figsize,
+            show_legend=show_legend,
+            show_axes=show_axes,
+            dpi=dpi,
+            hue=hue,
+            palette=palette,
+            errorbar=errorbar,
         )
 
 
@@ -133,9 +141,15 @@ def plot_quantile_metrics(
     """
     with plt.rc_context(_RC_PARAMS):
         return _plot_quantile_inner(
-            q_df, metrics=metrics, smooth_weight=smooth_weight,
-            title=title, output_path=output_path, figsize=figsize,
-            show_legend=show_legend, show_axes=show_axes, dpi=dpi,
+            q_df,
+            metrics=metrics,
+            smooth_weight=smooth_weight,
+            title=title,
+            output_path=output_path,
+            figsize=figsize,
+            show_legend=show_legend,
+            show_axes=show_axes,
+            dpi=dpi,
             palette=palette,
         )
 
@@ -160,7 +174,9 @@ def _plot_metrics_inner(
     if not metrics:
         raise ValueError("No metrics to plot (empty DataFrame or metrics list).")
     if df.empty:
-        raise ValueError("The provided DataFrame is empty. Check if the specified metrics or runs exist.")
+        raise ValueError(
+            "The provided DataFrame is empty. Check if the specified metrics or runs exist."
+        )
 
     n = len(metrics)
     fig, axes = plt.subplots(1, n, figsize=(figsize[0] * n, figsize[1]))
@@ -183,9 +199,14 @@ def _plot_metrics_inner(
             continue
 
         plot_kwargs: dict = dict(
-            data=sub, x="step", y="value", hue=hue,
+            data=sub,
+            x="step",
+            y="value",
+            hue=hue,
             errorbar=errorbar,
-            ax=ax, linewidth=2.0, legend=False,
+            ax=ax,
+            linewidth=2.0,
+            legend=False,
         )
         if palette:
             plot_kwargs["palette"] = palette
@@ -208,10 +229,16 @@ def _plot_metrics_inner(
         handles, labels = axes[0].get_legend_handles_labels()
         if handles:
             fig.legend(
-                handles, labels, loc="upper center",
-                bbox_to_anchor=(0.5, 0.02), ncol=min(len(handles), 6),
-                frameon=True, edgecolor="white", fancybox=False,
-                columnspacing=1.5, handlelength=2.0,
+                handles,
+                labels,
+                loc="upper center",
+                bbox_to_anchor=(0.5, 0.02),
+                ncol=min(len(handles), 6),
+                frameon=True,
+                edgecolor="white",
+                fancybox=False,
+                columnspacing=1.5,
+                handlelength=2.0,
             )
 
     fig.tight_layout(rect=[0, 0.08, 1, 1] if show_legend else [0, 0, 1, 1])
@@ -245,7 +272,9 @@ def _plot_quantile_inner(
 
     variants = sorted(q_df["variant"].unique().tolist())
     if palette is None:
-        colours: Dict[str, str] = dict(zip(variants, sns.color_palette("colorblind", len(variants))))
+        colours: Dict[str, str] = dict(
+            zip(variants, sns.color_palette("colorblind", len(variants)))
+        )
     else:
         colours = {v: palette.get(v, "#888888") for v in variants}
 
@@ -286,10 +315,16 @@ def _plot_quantile_inner(
         handles, labels = axes[0].get_legend_handles_labels()
         if handles:
             fig.legend(
-                handles, labels, loc="upper center",
-                bbox_to_anchor=(0.5, 0.02), ncol=min(len(handles), 6),
-                frameon=True, edgecolor="white", fancybox=False,
-                columnspacing=1.5, handlelength=2.0,
+                handles,
+                labels,
+                loc="upper center",
+                bbox_to_anchor=(0.5, 0.02),
+                ncol=min(len(handles), 6),
+                frameon=True,
+                edgecolor="white",
+                fancybox=False,
+                columnspacing=1.5,
+                handlelength=2.0,
             )
 
     fig.tight_layout(rect=[0, 0.08, 1, 1] if show_legend else [0, 0, 1, 1])

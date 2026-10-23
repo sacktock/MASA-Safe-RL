@@ -2,8 +2,8 @@
 
 Plotting utilities for MASA training and evaluation runs. Two interfaces live in this package:
 
-* **Single run plotter** (`masa.plotting.api.plot_run`, `masa/plotting/run.py`): tidy seaborn line charts from one TensorBoard log directory or one W&B project. Use this when you have just trained an algorithm and want a quick visual of its metrics.
-* **Benchmark pipeline** (`python -m masa.plotting`): load many runs from **W&B or TensorBoard**, aggregate quantiles across seeds, and render a registry of declarative figure specs. Use this for paper grade plots that compare variants across environments.
+- **Single run plotter** (`masa.plotting.api.plot_run`, `masa/plotting/run.py`): tidy seaborn line charts from one TensorBoard log directory or one W&B project. Use this when you have just trained an algorithm and want a quick visual of its metrics.
+- **Benchmark pipeline** (`python -m masa.plotting`): load many runs from **W&B or TensorBoard**, aggregate quantiles across seeds, and render a registry of declarative figure specs. Use this for paper grade plots that compare variants across environments.
 
 Both interfaces share the data sources in [sources.py](sources.py). The W&B benchmark path adds a `CachedWandbSource` for per run CSV caching with bounded retries; the TensorBoard path reads local event files in place.
 
@@ -178,15 +178,15 @@ Both frames are rebuilt in memory on every run. Only the per-run W&B download is
 The renderer resolves the spec's panels (a static tuple, or a callable that consults `ctx.long_df` to discover horizons or variants), resolves the grid, creates the figure, and dispatches each `Panel` by its `source` field:
 
 | `Panel.source`    | What it draws                                                                | Data source     |
-|-------------------|------------------------------------------------------------------------------|-----------------|
+| ----------------- | ---------------------------------------------------------------------------- | --------------- |
 | `aggregated`      | Central line plus a shaded band between two quantile columns                 | quantile frame  |
 | `per_seed`        | One line per seed (solid for seed 1, dashed for later seeds)                 | long form frame |
 | `logged_quantile` | Central line plus bands from columns already logged by training, seed 1 only | long form frame |
 
 Two escape hatches handle the cases that resist a uniform declarative description:
 
-* `Panel.custom` lets a panel draw itself with full access to the axes and the render context. Use this when one panel needs to plot different metrics per variant.
-* `PlotSpec.figure_builder` bypasses the uniform grid entirely and lets a spec build its own figure via `matplotlib.gridspec`. Use this when the layout has spanning rows or columns.
+- `Panel.custom` lets a panel draw itself with full access to the axes and the render context. Use this when one panel needs to plot different metrics per variant.
+- `PlotSpec.figure_builder` bypasses the uniform grid entirely and lets a spec build its own figure via `matplotlib.gridspec`. Use this when the layout has spanning rows or columns.
 
 ### Stage 5: save
 
@@ -201,17 +201,25 @@ Create a Python file (anywhere on the import path), declare a `PlotSpec`, regist
 from masa.plotting.specs import register
 from masa.plotting.specs.base import Band, Panel, PlotSpec
 
-my_plot = register(PlotSpec(
-    id="my_plot",
-    grid=(1, 2),
-    panels=(
-        Panel(metric="eval/rollout/ep_reward", title="Reward",
-              bands=(Band("q25", "q75"),)),
-        Panel(metric="eval/rollout/satisfied", title="Satisfied",
-              bands=(Band("q25", "q75"),)),
-    ),
-    out_subdir="my_plot",
-))
+my_plot = register(
+    PlotSpec(
+        id="my_plot",
+        grid=(1, 2),
+        panels=(
+            Panel(
+                metric="eval/rollout/ep_reward",
+                title="Reward",
+                bands=(Band("q25", "q75"),),
+            ),
+            Panel(
+                metric="eval/rollout/satisfied",
+                title="Satisfied",
+                bands=(Band("q25", "q75"),),
+            ),
+        ),
+        out_subdir="my_plot",
+    )
+)
 ```
 
 Load it via the CLI:
@@ -230,13 +238,14 @@ Backends are looked up in a registry, so the pipeline never branches on the back
 # my_source.py
 from masa.plotting.source_registry import BenchmarkSource, register_source
 
+
 @register_source("mlflow")
 class MLflowBenchmarkSource(BenchmarkSource):
-    def download(self):        # fetch/cache raw data; return paths (may be a no-op)
+    def download(self):  # fetch/cache raw data; return paths (may be a no-op)
         ...
-    def build_frames(self):    # -> (long_form, quantile) in the canonical schema
+    def build_frames(self):  # -> (long_form, quantile) in the canonical schema
         ...
-    def discover_envs(self):   # -> [env names] for the dry-run preview
+    def discover_envs(self):  # -> [env names] for the dry-run preview
         ...
 ```
 
@@ -252,21 +261,21 @@ Because `build_frames` returns the canonical frames, every registered `PlotSpec`
 
 ## File map
 
-| File                       | Role                                                          |
-|----------------------------|---------------------------------------------------------------|
-| `__main__.py`              | Benchmark pipeline CLI                                        |
-| `api.py`                   | `plot_run` single run interface                               |
-| `run.py`                   | Single run CLI                                                |
-| `plot.py`                  | `plot_metrics` seaborn renderer                               |
-| `sources.py`               | Low-level loaders: `TensorBoardSource`, `WandBSource`, `CachedWandbSource` |
-| `source_registry.py`       | `BenchmarkSource` registry; `get_source`, `register_source`  |
-| `config.py`                | `Config`, `VariantStyle`, `RunSchema`, `load_config`          |
-| `processing.py`            | Long form and quantile frame builders                         |
-| `render.py`                | Generic spec renderer                                         |
-| `pipeline.py`              | Backend-agnostic `Pipeline` orchestrator                      |
-| `io_utils.py`              | Logging setup, atomic CSV writes                              |
-| `configs/example_wandb.yaml` | Annotated template config (W&B source)                      |
-| `configs/example_tensorboard.yaml` | Annotated template config (TensorBoard source)        |
-| `specs/__init__.py`        | Spec registry (auto registers `performance`)                  |
-| `specs/base.py`            | `PlotSpec`, `Panel`, `Band`, `HLine`, `RenderContext`         |
-| `specs/performance.py`     | Generic 2 by 2 reward and satisfaction figure                 |
+| File                               | Role                                                                       |
+| ---------------------------------- | -------------------------------------------------------------------------- |
+| `__main__.py`                      | Benchmark pipeline CLI                                                     |
+| `api.py`                           | `plot_run` single run interface                                            |
+| `run.py`                           | Single run CLI                                                             |
+| `plot.py`                          | `plot_metrics` seaborn renderer                                            |
+| `sources.py`                       | Low-level loaders: `TensorBoardSource`, `WandBSource`, `CachedWandbSource` |
+| `source_registry.py`               | `BenchmarkSource` registry; `get_source`, `register_source`                |
+| `config.py`                        | `Config`, `VariantStyle`, `RunSchema`, `load_config`                       |
+| `processing.py`                    | Long form and quantile frame builders                                      |
+| `render.py`                        | Generic spec renderer                                                      |
+| `pipeline.py`                      | Backend-agnostic `Pipeline` orchestrator                                   |
+| `io_utils.py`                      | Logging setup, atomic CSV writes                                           |
+| `configs/example_wandb.yaml`       | Annotated template config (W&B source)                                     |
+| `configs/example_tensorboard.yaml` | Annotated template config (TensorBoard source)                             |
+| `specs/__init__.py`                | Spec registry (auto registers `performance`)                               |
+| `specs/base.py`                    | `PlotSpec`, `Panel`, `Band`, `HLine`, `RenderContext`                      |
+| `specs/performance.py`             | Generic 2 by 2 reward and satisfaction figure                              |

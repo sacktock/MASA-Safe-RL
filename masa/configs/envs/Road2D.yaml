@@ -1,14 +1,12 @@
-defaults:  
+defaults:
   env:
     id: Road2D
     max_episode_steps: 200
     label_fn: masa.envs.continuous.road_2d:label_fn
     cost_fn: masa.envs.continuous.road_2d:cost_fn
-
   constraint:
     type: CMDP
     cost_budget: 0
-
   run:
     total_timesteps: 50000
     eval_every: 2500

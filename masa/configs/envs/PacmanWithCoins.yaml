@@ -4,11 +4,9 @@ defaults:
     max_episode_steps: 1000
     label_fn: masa.envs.tabular.pacman:label_fn
     cost_fn: masa.envs.tabular.pacman:cost_fn
-
   constraint:
     type: CMDP
     cost_budget: 0
-
   run:
     total_timesteps: 10000000
     eval_every: 100000

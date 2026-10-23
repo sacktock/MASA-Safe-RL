@@ -16,13 +16,16 @@ FAST_COUNT_STATES = FAST_COUNT_CAP + 1
 START_BUFFER = BUFFER_SIZE // 2
 EMPTY = 0
 
+
 def _encode_state(buffer_level: int, fast_count: int) -> int:
     return fast_count * BUFFER_SIZE + buffer_level
+
 
 def _decode_state(state: int) -> tuple[int, int]:
     fast_count = state // BUFFER_SIZE
     buffer_level = state % BUFFER_SIZE
     return buffer_level, fast_count
+
 
 def label_fn(obs: int) -> set[str]:
     buffer_level, fast_count = _decode_state(obs)
@@ -35,10 +38,11 @@ def label_fn(obs: int) -> set[str]:
         labels.add("unsafe")
     return labels
 
+
 cost_fn = lambda labels: 1.0 if "unsafe" in labels else 0.0
 
-class MediaStreamingV2(TabularEnv):
 
+class MediaStreamingV2(TabularEnv):
     def __init__(self):
         super().__init__()
 
@@ -57,7 +61,9 @@ class MediaStreamingV2(TabularEnv):
         self.observation_space = spaces.Discrete(self._n_states)
         self.action_space = spaces.Discrete(self._n_actions)
 
-        self._transition_matrix = np.zeros((self._n_states, self._n_states, self._n_actions))
+        self._transition_matrix = np.zeros(
+            (self._n_states, self._n_states, self._n_actions)
+        )
         for s in range(self._n_states):
             buffer_level, fast_count = _decode_state(s)
             for a in range(self._n_actions):
@@ -71,15 +77,29 @@ class MediaStreamingV2(TabularEnv):
                 p_down = (1 - in_rate) * self._out_rate
 
                 if buffer_level == 0:
-                    self._transition_matrix[_encode_state(buffer_level + 1, next_fast_count), s, a] += p_up
-                    self._transition_matrix[_encode_state(buffer_level, next_fast_count), s, a] += 1.0 - p_up
+                    self._transition_matrix[
+                        _encode_state(buffer_level + 1, next_fast_count), s, a
+                    ] += p_up
+                    self._transition_matrix[
+                        _encode_state(buffer_level, next_fast_count), s, a
+                    ] += 1.0 - p_up
                 elif buffer_level == (self._buffer_size - 1):
-                    self._transition_matrix[_encode_state(buffer_level - 1, next_fast_count), s, a] += p_down
-                    self._transition_matrix[_encode_state(buffer_level, next_fast_count), s, a] += 1.0 - p_down
+                    self._transition_matrix[
+                        _encode_state(buffer_level - 1, next_fast_count), s, a
+                    ] += p_down
+                    self._transition_matrix[
+                        _encode_state(buffer_level, next_fast_count), s, a
+                    ] += 1.0 - p_down
                 else:
-                    self._transition_matrix[_encode_state(buffer_level + 1, next_fast_count), s, a] += p_up
-                    self._transition_matrix[_encode_state(buffer_level - 1, next_fast_count), s, a] += p_down
-                    self._transition_matrix[_encode_state(buffer_level, next_fast_count), s, a] += 1.0 - (p_up + p_down)
+                    self._transition_matrix[
+                        _encode_state(buffer_level + 1, next_fast_count), s, a
+                    ] += p_up
+                    self._transition_matrix[
+                        _encode_state(buffer_level - 1, next_fast_count), s, a
+                    ] += p_down
+                    self._transition_matrix[
+                        _encode_state(buffer_level, next_fast_count), s, a
+                    ] += 1.0 - (p_up + p_down)
 
         self._start_state = _encode_state(START_BUFFER, 0)
 
@@ -101,11 +121,11 @@ class MediaStreamingV2(TabularEnv):
 
     def step(self, action):
         assert self.action_space.contains(action), f"Invalid action {action}!"
-        self._state = self.np_random.choice(self._n_states, p=self._transition_matrix[:, self._state, action])
+        self._state = self.np_random.choice(
+            self._n_states, p=self._transition_matrix[:, self._state, action]
+        )
 
         buffer_level, _ = _decode_state(self._state)
         reward = -1.0 if buffer_level == EMPTY else 0.0
 
         return self._state, reward, False, False, {}
-        
-

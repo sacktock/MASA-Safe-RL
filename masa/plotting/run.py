@@ -13,28 +13,59 @@ def main(argv: list[str] | None = None) -> None:
     )
 
     src = parser.add_mutually_exclusive_group(required=True)
-    src.add_argument("--tensorboard", dest="tb_logdir", type=str,
-                     help="Path to TensorBoard log directory")
-    src.add_argument("--wandb", dest="wandb_project", type=str,
-                     help="W&B project name")
+    src.add_argument(
+        "--tensorboard",
+        dest="tb_logdir",
+        type=str,
+        help="Path to TensorBoard log directory",
+    )
+    src.add_argument("--wandb", dest="wandb_project", type=str, help="W&B project name")
 
-    parser.add_argument("--entity", type=str, default=None,
-                        help="W&B entity (default: your default entity)")
-    parser.add_argument("--run-filter", type=str, nargs="+", default=None,
-                        help="Substring filter(s) on run / directory name (space-separated)")
+    parser.add_argument(
+        "--entity",
+        type=str,
+        default=None,
+        help="W&B entity (default: your default entity)",
+    )
+    parser.add_argument(
+        "--run-filter",
+        type=str,
+        nargs="+",
+        default=None,
+        help="Substring filter(s) on run / directory name (space-separated)",
+    )
 
-    parser.add_argument("-m", "--metrics", nargs="+", default=None,
-                        help="Metric keys to plot (default: all available)")
-    parser.add_argument("--list-metrics", action="store_true",
-                        help="List available metrics and exit")
+    parser.add_argument(
+        "-m",
+        "--metrics",
+        nargs="+",
+        default=None,
+        help="Metric keys to plot (default: all available)",
+    )
+    parser.add_argument(
+        "--list-metrics", action="store_true", help="List available metrics and exit"
+    )
 
-    parser.add_argument("-w", "--smooth-weight", type=float, default=0.6,
-                        help="EMA smoothing weight [0, 1) (default: 0.6)")
+    parser.add_argument(
+        "-w",
+        "--smooth-weight",
+        type=float,
+        default=0.6,
+        help="EMA smoothing weight [0, 1) (default: 0.6)",
+    )
     parser.add_argument("--title", type=str, default=None)
-    parser.add_argument("-o", "--output", type=str, default=None,
-                        help="Save path for the figure (e.g. results.pdf)")
-    parser.add_argument("--group-seeds", action="store_true",
-                        help="Aggregate seeds into q25/q50/q75 bands (TensorBoard only)")
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=str,
+        default=None,
+        help="Save path for the figure (e.g. results.pdf)",
+    )
+    parser.add_argument(
+        "--group-seeds",
+        action="store_true",
+        help="Aggregate seeds into q25/q50/q75 bands (TensorBoard only)",
+    )
     parser.add_argument("--no-legend", action="store_true")
     parser.add_argument("--no-axes", action="store_true")
     parser.add_argument("--dpi", type=int, default=300)
@@ -84,6 +115,7 @@ def main(argv: list[str] | None = None) -> None:
         print(f"Saved to {args.output}")
     else:
         import matplotlib.pyplot as plt
+
         plt.show()
 
 

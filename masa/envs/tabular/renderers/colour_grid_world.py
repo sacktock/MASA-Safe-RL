@@ -106,19 +106,51 @@ class ColourGridWorldRenderer:
 
         for row in range(snapshot.grid_size):
             for col in range(snapshot.grid_size):
-                rect = pygame.Rect(col * high_cell, row * high_cell, high_cell, high_cell)
+                rect = pygame.Rect(
+                    col * high_cell, row * high_cell, high_cell, high_cell
+                )
                 floor = FLOOR_COLOR if (row + col) % 2 == 0 else FLOOR_ALT_COLOR
                 self._draw_floor_tile(surface, rect, high_cell, floor)
 
-        self._draw_start_tile(surface, snapshot.start_state, snapshot.grid_size, high_cell)
-        self._draw_goal_tile(surface, snapshot.goal_state, snapshot.grid_size, high_cell)
-        self._draw_special_tile(surface, snapshot.blue_state, snapshot.grid_size, high_cell, BLUE_COLOR, "diamond")
-        self._draw_special_tile(surface, snapshot.green_state, snapshot.grid_size, high_cell, GREEN_COLOR, "circle")
-        self._draw_special_tile(surface, snapshot.purple_state, snapshot.grid_size, high_cell, PURPLE_COLOR, "square")
-        self._draw_agent(surface, snapshot.agent_position, high_cell, snapshot.step_count)
+        self._draw_start_tile(
+            surface, snapshot.start_state, snapshot.grid_size, high_cell
+        )
+        self._draw_goal_tile(
+            surface, snapshot.goal_state, snapshot.grid_size, high_cell
+        )
+        self._draw_special_tile(
+            surface,
+            snapshot.blue_state,
+            snapshot.grid_size,
+            high_cell,
+            BLUE_COLOR,
+            "diamond",
+        )
+        self._draw_special_tile(
+            surface,
+            snapshot.green_state,
+            snapshot.grid_size,
+            high_cell,
+            GREEN_COLOR,
+            "circle",
+        )
+        self._draw_special_tile(
+            surface,
+            snapshot.purple_state,
+            snapshot.grid_size,
+            high_cell,
+            PURPLE_COLOR,
+            "square",
+        )
+        self._draw_agent(
+            surface, snapshot.agent_position, high_cell, snapshot.step_count
+        )
 
         if scale > 1:
-            final_size = (snapshot.grid_size * cell_size, snapshot.grid_size * cell_size)
+            final_size = (
+                snapshot.grid_size * cell_size,
+                snapshot.grid_size * cell_size,
+            )
             surface = pygame.transform.smoothscale(surface, final_size)
 
         frame = np.transpose(pygame.surfarray.array3d(surface), (1, 0, 2))
@@ -138,7 +170,9 @@ class ColourGridWorldRenderer:
         if self._human_window is None:
             pygame.init()
             pygame.display.set_caption("MASA - Colour Grid World")
-            self._human_window = pygame.display.set_mode(self._human_window_size, pygame.RESIZABLE)
+            self._human_window = pygame.display.set_mode(
+                self._human_window_size, pygame.RESIZABLE
+            )
             self._human_clock = pygame.time.Clock()
 
         for event in pygame.event.get():
@@ -148,13 +182,17 @@ class ColourGridWorldRenderer:
             return
 
         window_width, window_height = self._human_window.get_size()
-        target_width, target_height = _fit_size((width, height), (window_width, window_height))
+        target_width, target_height = _fit_size(
+            (width, height), (window_width, window_height)
+        )
         left = (window_width - target_width) // 2
         top = (window_height - target_height) // 2
 
         frame_surface = pygame.surfarray.make_surface(np.transpose(frame, (1, 0, 2)))
         if (target_width, target_height) != (width, height):
-            frame_surface = pygame.transform.smoothscale(frame_surface, (target_width, target_height))
+            frame_surface = pygame.transform.smoothscale(
+                frame_surface, (target_width, target_height)
+            )
 
         self._human_window.fill(FLOOR_COLOR)
         self._human_window.blit(frame_surface, (left, top))
@@ -163,7 +201,9 @@ class ColourGridWorldRenderer:
             self._human_clock.tick(self.env.metadata["render_fps"])
 
     def _snapshot(self) -> "_ColourGridSnapshot":
-        state = int(self.env._start_state if self.env._state is None else self.env._state)
+        state = int(
+            self.env._start_state if self.env._state is None else self.env._state
+        )
         return _ColourGridSnapshot(
             grid_size=int(self.env._grid_size),
             agent_position=_state_position(state, int(self.env._grid_size)),
@@ -175,29 +215,51 @@ class ColourGridWorldRenderer:
             step_count=int(getattr(self.env, "_step_count", 0)),
         )
 
-    def _draw_floor_tile(self, surface: Any, rect: Any, cell_size: int, color: RGBColor) -> None:
+    def _draw_floor_tile(
+        self, surface: Any, rect: Any, cell_size: int, color: RGBColor
+    ) -> None:
         import pygame
 
         pygame.draw.rect(surface, color, rect)
         pygame.draw.rect(surface, GRID_COLOR, rect, width=max(1, cell_size // 36))
 
-    def _draw_start_tile(self, surface: Any, state: int, grid_size: int, cell_size: int) -> None:
+    def _draw_start_tile(
+        self, surface: Any, state: int, grid_size: int, cell_size: int
+    ) -> None:
         import pygame
 
         center = _state_center(state, grid_size, cell_size)
         radius = max(5, cell_size // 5)
-        pygame.draw.circle(surface, (105, 78, 31), center, radius + max(2, cell_size // 24))
+        pygame.draw.circle(
+            surface, (105, 78, 31), center, radius + max(2, cell_size // 24)
+        )
         pygame.draw.circle(surface, START_COLOR, center, radius)
 
-    def _draw_goal_tile(self, surface: Any, state: int, grid_size: int, cell_size: int) -> None:
+    def _draw_goal_tile(
+        self, surface: Any, state: int, grid_size: int, cell_size: int
+    ) -> None:
         import pygame
 
-        rect = _cell_rect(state, grid_size, cell_size).inflate(-cell_size // 6, -cell_size // 6)
-        pygame.draw.rect(surface, GOAL_COLOR, rect, border_radius=max(4, cell_size // 10))
+        rect = _cell_rect(state, grid_size, cell_size).inflate(
+            -cell_size // 6, -cell_size // 6
+        )
+        pygame.draw.rect(
+            surface, GOAL_COLOR, rect, border_radius=max(4, cell_size // 10)
+        )
         inner = rect.inflate(-cell_size // 4, -cell_size // 4)
-        pygame.draw.rect(surface, GOAL_CENTER_COLOR, inner, border_radius=max(2, cell_size // 16))
+        pygame.draw.rect(
+            surface, GOAL_CENTER_COLOR, inner, border_radius=max(2, cell_size // 16)
+        )
 
-    def _draw_special_tile(self, surface: Any, state: int, grid_size: int, cell_size: int, color: RGBColor, shape: str) -> None:
+    def _draw_special_tile(
+        self,
+        surface: Any,
+        state: int,
+        grid_size: int,
+        cell_size: int,
+        color: RGBColor,
+        shape: str,
+    ) -> None:
         import pygame
 
         rect = _cell_rect(state, grid_size, cell_size)
@@ -220,10 +282,14 @@ class ColourGridWorldRenderer:
             return
 
         body = rect.inflate(-cell_size // 4, -cell_size // 4)
-        pygame.draw.rect(surface, shadow, body.move(2, 2), border_radius=max(4, cell_size // 10))
+        pygame.draw.rect(
+            surface, shadow, body.move(2, 2), border_radius=max(4, cell_size // 10)
+        )
         pygame.draw.rect(surface, color, body, border_radius=max(4, cell_size // 10))
 
-    def _draw_agent(self, surface: Any, position: Position, cell_size: int, step_count: int) -> None:
+    def _draw_agent(
+        self, surface: Any, position: Position, cell_size: int, step_count: int
+    ) -> None:
         import pygame
 
         row, col = position
@@ -231,9 +297,16 @@ class ColourGridWorldRenderer:
         radius = max(6, int(cell_size * 0.32))
         bob = -max(1, cell_size // 30) if step_count % 2 else 0
         center = (center[0], center[1] + bob)
-        pygame.draw.circle(surface, AGENT_SHADOW_COLOR, (center[0] + max(1, cell_size // 22), center[1] + max(1, cell_size // 22)), radius)
+        pygame.draw.circle(
+            surface,
+            AGENT_SHADOW_COLOR,
+            (center[0] + max(1, cell_size // 22), center[1] + max(1, cell_size // 22)),
+            radius,
+        )
         pygame.draw.circle(surface, AGENT_RING_COLOR, center, radius)
-        pygame.draw.circle(surface, AGENT_COLOR, center, max(2, radius - max(3, cell_size // 12)))
+        pygame.draw.circle(
+            surface, AGENT_COLOR, center, max(2, radius - max(3, cell_size // 12))
+        )
 
 
 class _ColourGridSnapshot:
@@ -294,7 +367,10 @@ def _fit_size(source: Position, target: Position) -> Position:
 
 
 def _mix(color: RGBColor, other: RGBColor, ratio: float) -> RGBColor:
-    return tuple(int(channel * (1.0 - ratio) + other_channel * ratio) for channel, other_channel in zip(color, other))
+    return tuple(
+        int(channel * (1.0 - ratio) + other_channel * ratio)
+        for channel, other_channel in zip(color, other)
+    )
 
 
 __all__ = ["ColourGridWorldRenderer", "RGBColor", "validate_renderer_options"]

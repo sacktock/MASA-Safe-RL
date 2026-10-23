@@ -11,8 +11,8 @@ import jax.random as jr
 from jax import jit
 from functools import partial
 
-class SEM(QL):
 
+class SEM(QL):
     def __init__(
         self,
         *args,
@@ -40,7 +40,7 @@ class SEM(QL):
         self.cm_gamma = cm_gamma
         self.cost_coef = cost_coef
         self.r_min = r_min
-        
+
     def _setup_q_table(self):
         self.Q = np.zeros((self.n_states, self.n_actions), dtype=np.float32)
         self.D = np.zeros((self.n_states, self.n_actions), dtype=np.float32)
@@ -51,23 +51,31 @@ class SEM(QL):
         if len(self.buffer) == 0:
             return
 
-        for (state, action, reward, _, violation, next_state, terminal) in self.buffer:
-
+        for state, action, reward, _, violation, next_state, terminal in self.buffer:
             reward = reward - self.r_min
 
             penalty = self.cost_coef if violation else 0.0
 
             current = self.Q[next_state]
-            self.Q[state, action] = (1 - self.alpha) * self.Q[state, action] \
-            + self.alpha * (reward + (1 - terminal) * self.gamma * np.max(current))
+            self.Q[state, action] = (1 - self.alpha) * self.Q[
+                state, action
+            ] + self.alpha * (reward + (1 - terminal) * self.gamma * np.max(current))
 
             current = self.D[next_state]
-            self.D[state, action] = (1 - self.dm_alpha) * self.D[state, action] \
-            + self.dm_alpha * (penalty + (1 - terminal) * (1 - violation) * self.dm_gamma * np.max(current))
+            self.D[state, action] = (1 - self.dm_alpha) * self.D[
+                state, action
+            ] + self.dm_alpha * (
+                penalty
+                + (1 - terminal) * (1 - violation) * self.dm_gamma * np.max(current)
+            )
 
             current = self.C[next_state]
-            self.C[state, action] = (1 - self.cm_alpha) * self.C[state, action] \
-            + self.cm_alpha * (-penalty + (1 - terminal) * (1 - violation) * self.cm_gamma * np.max(current))
+            self.C[state, action] = (1 - self.cm_alpha) * self.C[
+                state, action
+            ] + self.cm_alpha * (
+                -penalty
+                + (1 - terminal) * (1 - violation) * self.cm_gamma * np.max(current)
+            )
 
         self.buffer.clear()
 
@@ -83,21 +91,21 @@ class SEM(QL):
     def act(self, key, obs, deterministic=False):
         if deterministic:
             action = self.select_action(
-                jnp.asarray(self.Q[obs], dtype=jnp.float32), 
+                jnp.asarray(self.Q[obs], dtype=jnp.float32),
                 jnp.asarray(self.D[obs], dtype=jnp.float32),
                 jnp.asarray(self.C[obs], dtype=jnp.float32),
                 self.cost_coef,
             )
         else:
             action = self.sample_action(
-                key, 
-                jnp.asarray(self.Q[obs], dtype=jnp.float32), 
+                key,
+                jnp.asarray(self.Q[obs], dtype=jnp.float32),
                 jnp.asarray(self.D[obs], dtype=jnp.float32),
                 jnp.asarray(self.C[obs], dtype=jnp.float32),
-                self.boltzmann_temp, 
-                self._epsilon, 
+                self.boltzmann_temp,
+                self._epsilon,
                 self.cost_coef,
-                exploration=self.exploration
+                exploration=self.exploration,
             )
         return self.prepare_act(action)
 
@@ -113,7 +121,9 @@ class SEM(QL):
 
     @staticmethod
     @partial(jit, static_argnames=["exploration"])
-    def sample_action(key, q_values, d_values, c_values, tmp, eps, cost_coef, exploration="boltzmann"):
+    def sample_action(
+        key, q_values, d_values, c_values, tmp, eps, cost_coef, exploration="boltzmann"
+    ):
         c_values = jnp.clip(c_values, -cost_coef, 0.0)
         d_values = jnp.clip(-d_values, -cost_coef, 0.0)
         X = jnp.exp(jnp.minimum(c_values, d_values))

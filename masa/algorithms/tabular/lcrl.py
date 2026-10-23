@@ -11,8 +11,8 @@ import jax.random as jr
 from jax import jit
 from functools import partial
 
-class LCRL(QL):
 
+class LCRL(QL):
     def __init__(
         self,
         *args,
@@ -32,12 +32,15 @@ class LCRL(QL):
         if len(self.buffer) == 0:
             return
 
-        for (state, action, reward, _, violation, next_state, terminal) in self.buffer:
-
+        for state, action, reward, _, violation, next_state, terminal in self.buffer:
             current = self.Q[next_state]
-            self.Q[state, action] = (1 - self.alpha) * self.Q[state, action] \
-            + self.alpha * (reward * (1 - violation) + float(violation) * (self.r_min / (1.0 - self.gamma)) \
-            + (1 - violation) * (1 - terminal) * self.gamma * np.max(current))
+            self.Q[state, action] = (1 - self.alpha) * self.Q[
+                state, action
+            ] + self.alpha * (
+                reward * (1 - violation)
+                + float(violation) * (self.r_min / (1.0 - self.gamma))
+                + (1 - violation) * (1 - terminal) * self.gamma * np.max(current)
+            )
 
         self.buffer.clear()
 

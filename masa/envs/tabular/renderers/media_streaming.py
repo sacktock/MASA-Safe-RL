@@ -91,7 +91,11 @@ class MediaStreamingRenderer:
         slots[0] = "E"
         slots[snapshot.start_state] = "S"
         slots[snapshot.state] = "A"
-        action = "none" if snapshot.last_action is None else ("slow" if snapshot.last_action == 0 else "fast")
+        action = (
+            "none"
+            if snapshot.last_action is None
+            else ("slow" if snapshot.last_action == 0 else "fast")
+        )
         return (
             f"buffer: {''.join(slots)}\n"
             f"level: {snapshot.state}/{snapshot.buffer_size - 1}\n"
@@ -132,7 +136,9 @@ class MediaStreamingRenderer:
         if self._human_window is None:
             pygame.init()
             pygame.display.set_caption("MASA - Media Streaming")
-            self._human_window = pygame.display.set_mode(self._human_window_size, pygame.RESIZABLE)
+            self._human_window = pygame.display.set_mode(
+                self._human_window_size, pygame.RESIZABLE
+            )
             self._human_clock = pygame.time.Clock()
 
         for event in pygame.event.get():
@@ -142,13 +148,17 @@ class MediaStreamingRenderer:
             return
 
         window_width, window_height = self._human_window.get_size()
-        target_width, target_height = _fit_size((width, height), (window_width, window_height))
+        target_width, target_height = _fit_size(
+            (width, height), (window_width, window_height)
+        )
         left = (window_width - target_width) // 2
         top = (window_height - target_height) // 2
 
         frame_surface = pygame.surfarray.make_surface(np.transpose(frame, (1, 0, 2)))
         if (target_width, target_height) != (width, height):
-            frame_surface = pygame.transform.smoothscale(frame_surface, (target_width, target_height))
+            frame_surface = pygame.transform.smoothscale(
+                frame_surface, (target_width, target_height)
+            )
 
         self._human_window.fill(BACKGROUND_COLOR)
         self._human_window.blit(frame_surface, (left, top))
@@ -157,7 +167,9 @@ class MediaStreamingRenderer:
             self._human_clock.tick(self.env.metadata["render_fps"])
 
     def _snapshot(self) -> "_MediaStreamingSnapshot":
-        state = int(self.env._start_state if self.env._state is None else self.env._state)
+        state = int(
+            self.env._start_state if self.env._state is None else self.env._state
+        )
         return _MediaStreamingSnapshot(
             state=state,
             start_state=int(self.env._start_state),
@@ -169,40 +181,82 @@ class MediaStreamingRenderer:
             step_count=int(getattr(self.env, "_step_count", 0)),
         )
 
-    def _draw_panel(self, surface: Any, snapshot: "_MediaStreamingSnapshot", width: int, height: int) -> None:
+    def _draw_panel(
+        self, surface: Any, snapshot: "_MediaStreamingSnapshot", width: int, height: int
+    ) -> None:
         import pygame
 
         margin = max(18, width // 18)
         panel = pygame.Rect(margin, margin, width - margin * 2, height - margin * 2)
-        pygame.draw.rect(surface, PANEL_COLOR, panel, border_radius=max(8, height // 18))
+        pygame.draw.rect(
+            surface, PANEL_COLOR, panel, border_radius=max(8, height // 18)
+        )
 
         title_y = panel.top + max(14, height // 14)
-        self._draw_text(surface, "Media Streaming Buffer", (panel.left + margin // 2, title_y), max(16, height // 13), TEXT_COLOR)
+        self._draw_text(
+            surface,
+            "Media Streaming Buffer",
+            (panel.left + margin // 2, title_y),
+            max(16, height // 13),
+            TEXT_COLOR,
+        )
 
         gauge_left = panel.left + margin // 2
         gauge_right = panel.right - margin // 2
         gauge_top = panel.top + int(height * 0.38)
         gauge_height = max(22, height // 8)
-        gauge = pygame.Rect(gauge_left, gauge_top, gauge_right - gauge_left, gauge_height)
-        pygame.draw.rect(surface, TRACK_COLOR, gauge, border_radius=max(4, gauge_height // 5))
+        gauge = pygame.Rect(
+            gauge_left, gauge_top, gauge_right - gauge_left, gauge_height
+        )
+        pygame.draw.rect(
+            surface, TRACK_COLOR, gauge, border_radius=max(4, gauge_height // 5)
+        )
 
         slot_gap = max(1, width // 220)
-        slot_width = max(2, (gauge.width - slot_gap * (snapshot.buffer_size - 1)) // snapshot.buffer_size)
+        slot_width = max(
+            2,
+            (gauge.width - slot_gap * (snapshot.buffer_size - 1))
+            // snapshot.buffer_size,
+        )
         for idx in range(snapshot.buffer_size):
             left = gauge.left + idx * (slot_width + slot_gap)
             slot = pygame.Rect(left, gauge.top, slot_width, gauge.height)
             color = EMPTY_COLOR if idx == 0 else SLOT_COLOR
             if idx <= snapshot.state:
                 color = FILLED_COLOR if idx != 0 else EMPTY_COLOR
-            pygame.draw.rect(surface, color, slot, border_radius=max(2, gauge_height // 8))
+            pygame.draw.rect(
+                surface, color, slot, border_radius=max(2, gauge_height // 8)
+            )
             if idx <= snapshot.state and idx != 0:
-                highlight = slot.inflate(-max(1, slot_width // 4), -max(2, gauge_height // 3))
-                pygame.draw.rect(surface, FILLED_HIGHLIGHT_COLOR, highlight, border_radius=max(1, gauge_height // 12))
+                highlight = slot.inflate(
+                    -max(1, slot_width // 4), -max(2, gauge_height // 3)
+                )
+                pygame.draw.rect(
+                    surface,
+                    FILLED_HIGHLIGHT_COLOR,
+                    highlight,
+                    border_radius=max(1, gauge_height // 12),
+                )
 
-        self._draw_vertical_marker(surface, gauge, snapshot.start_state, snapshot.buffer_size, START_COLOR, "start")
-        self._draw_vertical_marker(surface, gauge, snapshot.state, snapshot.buffer_size, MARKER_COLOR, "now")
+        self._draw_vertical_marker(
+            surface,
+            gauge,
+            snapshot.start_state,
+            snapshot.buffer_size,
+            START_COLOR,
+            "start",
+        )
+        self._draw_vertical_marker(
+            surface, gauge, snapshot.state, snapshot.buffer_size, MARKER_COLOR, "now"
+        )
 
-        action_color = SLOW_COLOR if snapshot.last_action == 0 else FAST_COLOR if snapshot.last_action == 1 else MUTED_TEXT_COLOR
+        action_color = (
+            SLOW_COLOR
+            if snapshot.last_action == 0
+            else FAST_COLOR
+            if snapshot.last_action == 1
+            else MUTED_TEXT_COLOR
+        )
         action_label = "last: none"
         if snapshot.last_action == 0:
             action_label = f"last: slow ({snapshot.slow_rate:.1f})"
@@ -210,12 +264,35 @@ class MediaStreamingRenderer:
             action_label = f"last: fast ({snapshot.fast_rate:.1f})"
 
         status_y = gauge.bottom + max(18, height // 10)
-        self._draw_text(surface, f"level {snapshot.state}/{snapshot.buffer_size - 1}", (gauge.left, status_y), max(14, height // 16), TEXT_COLOR)
-        self._draw_text(surface, action_label, (gauge.left + gauge.width // 3, status_y), max(14, height // 16), action_color)
-        self._draw_text(surface, f"out {snapshot.out_rate:.1f}", (gauge.left + (gauge.width * 2) // 3, status_y), max(14, height // 16), MUTED_TEXT_COLOR)
+        self._draw_text(
+            surface,
+            f"level {snapshot.state}/{snapshot.buffer_size - 1}",
+            (gauge.left, status_y),
+            max(14, height // 16),
+            TEXT_COLOR,
+        )
+        self._draw_text(
+            surface,
+            action_label,
+            (gauge.left + gauge.width // 3, status_y),
+            max(14, height // 16),
+            action_color,
+        )
+        self._draw_text(
+            surface,
+            f"out {snapshot.out_rate:.1f}",
+            (gauge.left + (gauge.width * 2) // 3, status_y),
+            max(14, height // 16),
+            MUTED_TEXT_COLOR,
+        )
 
-        pulse_radius = max(5, height // 26) + (snapshot.step_count % 2) * max(1, height // 90)
-        pulse_center = (gauge.right - max(18, width // 24), panel.top + max(26, height // 9))
+        pulse_radius = max(5, height // 26) + (snapshot.step_count % 2) * max(
+            1, height // 90
+        )
+        pulse_center = (
+            gauge.right - max(18, width // 24),
+            panel.top + max(26, height // 9),
+        )
         pygame.draw.circle(surface, action_color, pulse_center, pulse_radius)
 
     def _draw_vertical_marker(
@@ -230,10 +307,24 @@ class MediaStreamingRenderer:
         import pygame
 
         x = gauge.left + int((state + 0.5) * gauge.width / buffer_size)
-        pygame.draw.line(surface, color, (x, gauge.top - gauge.height // 2), (x, gauge.bottom + gauge.height // 2), width=max(2, gauge.height // 12))
-        self._draw_text(surface, label, (x - gauge.height, gauge.top - gauge.height), max(10, gauge.height // 3), color)
+        pygame.draw.line(
+            surface,
+            color,
+            (x, gauge.top - gauge.height // 2),
+            (x, gauge.bottom + gauge.height // 2),
+            width=max(2, gauge.height // 12),
+        )
+        self._draw_text(
+            surface,
+            label,
+            (x - gauge.height, gauge.top - gauge.height),
+            max(10, gauge.height // 3),
+            color,
+        )
 
-    def _draw_text(self, surface: Any, text: str, pos: Position, size: int, color: RGBColor) -> None:
+    def _draw_text(
+        self, surface: Any, text: str, pos: Position, size: int, color: RGBColor
+    ) -> None:
         import pygame
 
         pygame.font.init()

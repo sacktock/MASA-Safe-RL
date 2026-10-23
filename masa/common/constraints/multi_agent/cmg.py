@@ -108,7 +108,9 @@ class ConstrainedMarkovGame:
         """Update the monitor from a mapping of agent ids to active labels."""
         unknown_agents = set(labels_by_agent) - self._possible_agent_set
         if unknown_agents:
-            raise ValueError(f"Unknown agents in labels_by_agent: {sorted(unknown_agents)}")
+            raise ValueError(
+                f"Unknown agents in labels_by_agent: {sorted(unknown_agents)}"
+            )
 
         for agent in self.possible_agents:
             labels = labels_by_agent.get(agent, set())
@@ -122,7 +124,9 @@ class ConstrainedMarkovGame:
             self.agent_totals[agent] += step_cost
 
         for key, budget in zip(self._budget_keys, self.budgets):
-            step_cost = float(sum(self.agent_step_costs[agent] for agent in budget.agents))
+            step_cost = float(
+                sum(self.agent_step_costs[agent] for agent in budget.agents)
+            )
             self.budget_step_costs[key] = step_cost
             self.budget_totals[key] += step_cost
 
@@ -143,7 +147,9 @@ class ConstrainedMarkovGame:
         for key, budget in zip(self._budget_keys, self.budgets):
             metrics[f"{key}_cost"] = self.budget_step_costs[key]
             metrics[f"{key}_cum_cost"] = self.budget_totals[key]
-            metrics[f"{key}_satisfied"] = float(self.budget_totals[key] <= budget.amount)
+            metrics[f"{key}_satisfied"] = float(
+                self.budget_totals[key] <= budget.amount
+            )
         metrics["satisfied"] = float(self.satisfied())
         return metrics
 
@@ -154,7 +160,9 @@ class ConstrainedMarkovGame:
             metrics[f"{agent}_cum_cost"] = self.agent_totals[agent]
         for key, budget in zip(self._budget_keys, self.budgets):
             metrics[f"{key}_cum_cost"] = self.budget_totals[key]
-            metrics[f"{key}_satisfied"] = float(self.budget_totals[key] <= budget.amount)
+            metrics[f"{key}_satisfied"] = float(
+                self.budget_totals[key] <= budget.amount
+            )
         metrics["satisfied"] = float(self.satisfied())
         return metrics
 
@@ -237,7 +245,9 @@ class ConstrainedMarkovGameEnv(ParallelEnv):
     def constraint_type(self) -> str:
         return self._constraint.constraint_type
 
-    def _labels_by_agent(self, infos: Mapping[str, Mapping[str, Any] | None]) -> dict[str, set[str] | frozenset[str]]:
+    def _labels_by_agent(
+        self, infos: Mapping[str, Mapping[str, Any] | None]
+    ) -> dict[str, set[str] | frozenset[str]]:
         """Extract and validate ``infos[agent]['labels']`` for all possible agents."""
         unknown_agents = set(infos) - set(self.possible_agents)
         if unknown_agents:

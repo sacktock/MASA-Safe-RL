@@ -11,14 +11,9 @@ import jax.random as jr
 from jax import jit
 from functools import partial
 
-class QL_LAMBDA(QL):
 
-    def __init__(
-        self,
-        *args,
-        cost_lambda: float = 1.0,
-        **kwargs
-    ):
+class QL_LAMBDA(QL):
+    def __init__(self, *args, cost_lambda: float = 1.0, **kwargs):
 
         super().__init__(
             *args,
@@ -32,13 +27,16 @@ class QL_LAMBDA(QL):
         if len(self.buffer) == 0:
             return
 
-        for (state, action, reward, cost, violation, next_state, terminal) in self.buffer:
-
+        for state, action, reward, cost, violation, next_state, terminal in self.buffer:
             penalty = -self.cost_lambda * cost
 
             current = self.Q[next_state]
-            self.Q[state, action] = (1 - self.alpha) * self.Q[state, action] \
-            + self.alpha * ((reward + penalty) + (1 - violation) * (1 - terminal) * self.gamma * np.max(current))
+            self.Q[state, action] = (1 - self.alpha) * self.Q[
+                state, action
+            ] + self.alpha * (
+                (reward + penalty)
+                + (1 - violation) * (1 - terminal) * self.gamma * np.max(current)
+            )
 
         self.buffer.clear()
 
@@ -49,4 +47,3 @@ class QL_LAMBDA(QL):
                 logger.add("train/stats", {"temp": self.boltzmann_temp})
             if self.exploration == "epsilon_greedy":
                 logger.add("train/stats", {"epsilon": self._epsilon})
-

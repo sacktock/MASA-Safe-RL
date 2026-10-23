@@ -35,7 +35,9 @@ def _decode_safety_state(state: int) -> tuple[int, int]:
     return danger_level, time_step
 
 
-def _state_to_obs(buffer_level: int, danger_level: int, time_step: int) -> dict[str, int]:
+def _state_to_obs(
+    buffer_level: int, danger_level: int, time_step: int
+) -> dict[str, int]:
     return {
         "danger": danger_level,
         "buffer": buffer_level,
@@ -80,7 +82,6 @@ cost_fn = lambda labels: 1.0 if "unsafe" in labels else 0.0
 
 
 class MediaStreamingV3(TabularEnv):
-
     def __init__(self):
         super().__init__()
 
@@ -100,11 +101,13 @@ class MediaStreamingV3(TabularEnv):
         self._n_states = SAFETY_STATES
         self._n_actions = 2
 
-        self.observation_space = spaces.Dict({
-            "danger": spaces.Discrete(DANGER_STATES),
-            "buffer": spaces.Discrete(self._buffer_size),
-            "time": spaces.Discrete(TIME_STATES),
-        })
+        self.observation_space = spaces.Dict(
+            {
+                "danger": spaces.Discrete(DANGER_STATES),
+                "buffer": spaces.Discrete(self._buffer_size),
+                "time": spaces.Discrete(TIME_STATES),
+            }
+        )
         self.action_space = spaces.Discrete(self._n_actions)
 
         self._successor_states = {}
@@ -128,7 +131,9 @@ class MediaStreamingV3(TabularEnv):
                     )
                 probs_by_action.append(probs_by_successor)
 
-            successors = sorted(set().union(*[set(probs.keys()) for probs in probs_by_action]))
+            successors = sorted(
+                set().union(*[set(probs.keys()) for probs in probs_by_action])
+            )
             self._successor_states[s] = successors
             for a, probs_by_successor in enumerate(probs_by_action):
                 self._transition_probs[(s, a)] = [
@@ -142,7 +147,9 @@ class MediaStreamingV3(TabularEnv):
         self._danger_level = None
         self._time_step = None
 
-    def _buffer_transitions(self, buffer_level: int, action: int) -> list[tuple[int, float]]:
+    def _buffer_transitions(
+        self, buffer_level: int, action: int
+    ) -> list[tuple[int, float]]:
         in_rate = self._slow_rate if action == 0 else self._fast_rate
 
         p_up = in_rate * (1 - self._out_rate)
@@ -166,25 +173,46 @@ class MediaStreamingV3(TabularEnv):
             (buffer_level, 1.0 - (p_up + p_down)),
         ]
 
-    def _danger_transitions(self, danger_level: int, action: int) -> list[tuple[int, float]]:
+    def _danger_transitions(
+        self, danger_level: int, action: int
+    ) -> list[tuple[int, float]]:
         if action == 0:
-            return self._combine_duplicate_transitions([
-                (max(0, danger_level - 1), self._slow_danger_down_prob),
-                (danger_level, 1.0 - self._slow_danger_down_prob - self._slow_danger_up_prob),
-                (min(self._danger_cap, danger_level + 1), self._slow_danger_up_prob),
-            ])
+            return self._combine_duplicate_transitions(
+                [
+                    (max(0, danger_level - 1), self._slow_danger_down_prob),
+                    (
+                        danger_level,
+                        1.0 - self._slow_danger_down_prob - self._slow_danger_up_prob,
+                    ),
+                    (
+                        min(self._danger_cap, danger_level + 1),
+                        self._slow_danger_up_prob,
+                    ),
+                ]
+            )
 
-        return self._combine_duplicate_transitions([
-            (min(self._danger_cap, danger_level + 1), self._fast_danger_up_prob),
-            (danger_level, 1.0 - self._fast_danger_up_prob - self._fast_danger_down_prob),
-            (max(0, danger_level - 1), self._fast_danger_down_prob),
-        ])
+        return self._combine_duplicate_transitions(
+            [
+                (min(self._danger_cap, danger_level + 1), self._fast_danger_up_prob),
+                (
+                    danger_level,
+                    1.0 - self._fast_danger_up_prob - self._fast_danger_down_prob,
+                ),
+                (max(0, danger_level - 1), self._fast_danger_down_prob),
+            ]
+        )
 
-    def _combine_duplicate_transitions(self, transitions: list[tuple[int, float]]) -> list[tuple[int, float]]:
+    def _combine_duplicate_transitions(
+        self, transitions: list[tuple[int, float]]
+    ) -> list[tuple[int, float]]:
         combined = {}
         for state, probability in transitions:
             combined[state] = combined.get(state, 0.0) + probability
-        return [(state, probability) for state, probability in combined.items() if probability > 0.0]
+        return [
+            (state, probability)
+            for state, probability in combined.items()
+            if probability > 0.0
+        ]
 
     def reset(self, *, seed: int | None = None, options: Dict[str, Any] | None = None):
         super().reset(seed=seed)
@@ -199,20 +227,32 @@ class MediaStreamingV3(TabularEnv):
         self._buffer_level = START_BUFFER
         self._danger_level = START_DANGER
         self._time_step = START_TIME
-        return _state_to_obs(self._buffer_level, self._danger_level, self._time_step), {}
+        return _state_to_obs(
+            self._buffer_level, self._danger_level, self._time_step
+        ), {}
 
     def step(self, action):
         assert self.action_space.contains(action), f"Invalid action {action}!"
         if self._time_step < self._episode_length:
             buffer_transitions = self._buffer_transitions(self._buffer_level, action)
             next_buffers, buffer_probs = zip(*buffer_transitions)
-            self._buffer_level = int(self.np_random.choice(next_buffers, p=buffer_probs))
+            self._buffer_level = int(
+                self.np_random.choice(next_buffers, p=buffer_probs)
+            )
 
             danger_transitions = self._danger_transitions(self._danger_level, action)
             next_dangers, danger_probs = zip(*danger_transitions)
-            self._danger_level = int(self.np_random.choice(next_dangers, p=danger_probs))
+            self._danger_level = int(
+                self.np_random.choice(next_dangers, p=danger_probs)
+            )
             self._time_step += 1
 
         reward = -1.0 if self._buffer_level == EMPTY else 0.0
 
-        return _state_to_obs(self._buffer_level, self._danger_level, self._time_step), reward, False, False, {}
+        return (
+            _state_to_obs(self._buffer_level, self._danger_level, self._time_step),
+            reward,
+            False,
+            False,
+            {},
+        )

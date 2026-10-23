@@ -1,4 +1,5 @@
 """Coalition membership for multi-agent constraints and shields."""
+
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -27,9 +28,7 @@ class Coalition:
             raise TypeError("Coalition agents must be non-empty strings.")
         if len(set(agents)) != len(agents):
             raise ValueError("Coalition agents must be unique.")
-        if self.name is not None and (
-            not isinstance(self.name, str) or not self.name
-        ):
+        if self.name is not None and (not isinstance(self.name, str) or not self.name):
             raise TypeError("Coalition name must be a non-empty string or None.")
         # Store a canonical order so equality and hashing follow set membership;
         # the optional display name is not part of coalition identity.
@@ -43,9 +42,7 @@ class Coalition:
         members = set(self.agents)
         unknown = members - set(possible)
         if unknown:
-            raise ValueError(
-                f"Coalition contains unknown agents: {sorted(unknown)}."
-            )
+            raise ValueError(f"Coalition contains unknown agents: {sorted(unknown)}.")
         return tuple(agent for agent in possible if agent in members)
 
     def __contains__(self, agent: str) -> bool:

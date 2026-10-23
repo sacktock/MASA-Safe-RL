@@ -40,8 +40,12 @@ class PacmanWithCoinsRenderer(_BasePacmanRenderer):
         self.env = env
 
     def _snapshot(self) -> _PacmanSnapshot:
-        state = self.env._start_state if self.env._state is None else int(self.env._state)
-        agent_y, agent_x, agent_direction, ghost_y, ghost_x, ghost_direction, _ = self.env._reverse_state_map[state]
+        state = (
+            self.env._start_state if self.env._state is None else int(self.env._state)
+        )
+        agent_y, agent_x, agent_direction, ghost_y, ghost_x, ghost_direction, _ = (
+            self.env._reverse_state_map[state]
+        )
         if self.env._coin_array is None:
             collectibles = np.zeros_like(self.env._layout, dtype=np.float32)
         else:
@@ -62,15 +66,22 @@ class PacmanWithCoinsRenderer(_BasePacmanRenderer):
         import pygame
 
         snapshot = self._snapshot()
-        cell_size = max(12, int(self.env.render_window_size) // max(snapshot.layout.shape))
+        cell_size = max(
+            12, int(self.env.render_window_size) // max(snapshot.layout.shape)
+        )
         scale = 3
         high_cell = cell_size * scale
-        high_size = (snapshot.layout.shape[1] * high_cell, snapshot.layout.shape[0] * high_cell)
+        high_size = (
+            snapshot.layout.shape[1] * high_cell,
+            snapshot.layout.shape[0] * high_cell,
+        )
         surface = pygame.Surface(high_size)
 
         for row in range(snapshot.layout.shape[0]):
             for col in range(snapshot.layout.shape[1]):
-                rect = pygame.Rect(col * high_cell, row * high_cell, high_cell, high_cell)
+                rect = pygame.Rect(
+                    col * high_cell, row * high_cell, high_cell, high_cell
+                )
                 if snapshot.layout[row, col] == 1:
                     self._draw_wall_tile(surface, rect, high_cell)
                 else:
@@ -79,10 +90,19 @@ class PacmanWithCoinsRenderer(_BasePacmanRenderer):
         self._draw_terminal(surface, high_cell, snapshot.terminal)
         self._draw_collectibles(surface, high_cell, snapshot.collectibles, "coins")
         self._draw_ghosts(surface, high_cell, snapshot.ghosts, snapshot.agent_position)
-        self._draw_pacman(surface, high_cell, snapshot.agent_position, snapshot.agent_direction, snapshot.step_count)
+        self._draw_pacman(
+            surface,
+            high_cell,
+            snapshot.agent_position,
+            snapshot.agent_direction,
+            snapshot.step_count,
+        )
 
         if scale > 1:
-            final_size = (snapshot.layout.shape[1] * cell_size, snapshot.layout.shape[0] * cell_size)
+            final_size = (
+                snapshot.layout.shape[1] * cell_size,
+                snapshot.layout.shape[0] * cell_size,
+            )
             surface = pygame.transform.smoothscale(surface, final_size)
 
         frame = np.transpose(pygame.surfarray.array3d(surface), (1, 0, 2))

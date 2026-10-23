@@ -37,6 +37,7 @@ from typing import Any, Dict
 from masa.common.constraints.base import Constraint, BaseConstraintEnv, CostFn
 from masa.common.dummy import cost_fn as dummy_cost_fn
 
+
 class ProbabilisticSafety(Constraint):
     """Undiscounted probabilistic constraint based on unsafe-step frequency.
 
@@ -96,7 +97,11 @@ class ProbabilisticSafety(Constraint):
             - ``"p_unsafe"``: proportion of unsafe states in the current trace,
             - ``"satisfied"``: 1.0 if p_unsafe <= self.alpha else 0.0.
         """
-        return {"cum_unsafe": float(self.total_unsafe), "p_unsafe": self.prob_unsafe(), "satisfied": float(self.satisfied())}
+        return {
+            "cum_unsafe": float(self.total_unsafe),
+            "p_unsafe": self.prob_unsafe(),
+            "satisfied": float(self.satisfied()),
+        }
 
     def step_metric(self) -> Dict[str, float]:
         """Per-step metrics.
@@ -108,11 +113,12 @@ class ProbabilisticSafety(Constraint):
             - ``"violation"``: 1.0 if ``cost >= 0.5`` else 0.0.
         """
         return {"cost": self.step_cost, "violation": float(self.step_cost >= 0.5)}
-    
+
     @property
     def constraint_type(self) -> str:
         """Stable identifier string: ``"PROB"``."""
         return "PROB"
+
 
 class ProbabilisticSafetyEnv(BaseConstraintEnv):
     """Gymnasium wrapper for :class:`ProbabilisticSafety`.
@@ -125,6 +131,7 @@ class ProbabilisticSafetyEnv(BaseConstraintEnv):
 
     """
 
-    def __init__(self, env: gym.Env, cost_fn: CostFn = dummy_cost_fn, alpha: float = 0.01, **kw):
+    def __init__(
+        self, env: gym.Env, cost_fn: CostFn = dummy_cost_fn, alpha: float = 0.01, **kw
+    ):
         super().__init__(env, ProbabilisticSafety(cost_fn=cost_fn, alpha=alpha), **kw)
-

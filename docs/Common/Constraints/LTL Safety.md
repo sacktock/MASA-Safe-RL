@@ -24,7 +24,6 @@
     options:
       members: false
 
-
 ## Monitoring versus enforcement
 
 `LTLSafetyEnv` monitors a safety DFA and augments the observation with the DFA
@@ -58,7 +57,7 @@ Both wrappers use the same winning region.
 
 - **Preemptive shielding** exposes a safe-action mask before the policy chooses.
 - **Postposed shielding** checks a proposed action and replaces it only when the
-  proposal is unsafe.
+    proposal is unsafe.
 
 See
 [Winning-region safety-game shielding](../../Shielding/Deterministic/Winning-Region%20Shielding.md)

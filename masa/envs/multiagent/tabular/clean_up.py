@@ -115,7 +115,9 @@ class Avatar:
 def label_fn(obs: np.ndarray | list[float]) -> set[str]:
     values = np.asarray(obs).reshape(-1)
     if values.size != N_FEATURES:
-        raise ValueError(f"CleanUp label_fn expected {N_FEATURES} features, got {values.size}.")
+        raise ValueError(
+            f"CleanUp label_fn expected {N_FEATURES} features, got {values.size}."
+        )
 
     labels = {"active" if values[FEATURE_INDEX["active"]] else "inactive"}
     if not values[FEATURE_INDEX["active"]]:
@@ -185,7 +187,9 @@ class CleanUp(ParallelEnv):
         if not 0.0 <= stochastic_termination_probability <= 1.0:
             raise ValueError("stochastic_termination_probability must be in [0, 1].")
         if min(frames_till_respawn, stochastic_interval) <= 0:
-            raise ValueError("frames_till_respawn and stochastic_interval must be positive.")
+            raise ValueError(
+                "frames_till_respawn and stochastic_interval must be positive."
+            )
 
         self._num_agents = int(num_agents)
         self.max_episode_steps = int(max_episode_steps)
@@ -195,7 +199,9 @@ class CleanUp(ParallelEnv):
         self.frames_till_respawn = int(frames_till_respawn)
         self.stochastic_min_steps = int(stochastic_min_steps)
         self.stochastic_interval = int(stochastic_interval)
-        self.stochastic_termination_probability = float(stochastic_termination_probability)
+        self.stochastic_termination_probability = float(
+            stochastic_termination_probability
+        )
         self.render_mode = render_mode
         self.render_window_size = int(render_window_size)
         self.flatten_observations = bool(flatten_observations)
@@ -376,7 +382,9 @@ class CleanUp(ParallelEnv):
                 continue
             avatar.respawn_timer -= 1
             if avatar.respawn_timer <= 0:
-                occupied = {other.position for other in self._avatars.values() if other.active}
+                occupied = {
+                    other.position for other in self._avatars.values() if other.active
+                }
                 candidates = [p for p in self._spawn_points if p not in occupied]
                 if not candidates:
                     candidates = self._spawn_points
@@ -396,7 +404,9 @@ class CleanUp(ParallelEnv):
         decoded: dict[Agent, tuple[int, int, int, int]],
     ) -> None:
         occupied = {
-            avatar.position: avatar.agent for avatar in self._avatars.values() if avatar.active
+            avatar.position: avatar.agent
+            for avatar in self._avatars.values()
+            if avatar.active
         }
         desired: dict[Agent, Position] = {}
         for agent in agents:
@@ -415,7 +425,11 @@ class CleanUp(ParallelEnv):
         for agent, target in desired.items():
             avatar = self._avatars[agent]
             occupant = occupied.get(target)
-            if target != avatar.position and counts[target] == 1 and occupant in (None, agent):
+            if (
+                target != avatar.position
+                and counts[target] == 1
+                and occupant in (None, agent)
+            ):
                 avatar.position = target
 
     def _fire_zaps(
@@ -431,7 +445,9 @@ class CleanUp(ParallelEnv):
                 avatar.zap_cooldown -= 1
             elif decoded[agent][2]:
                 avatar.zap_cooldown = 10
-                self._last_events.append({"event": "fired", "player_index": avatar.index})
+                self._last_events.append(
+                    {"event": "fired", "player_index": avatar.index}
+                )
                 self._zap_from(avatar)
 
     def _fire_cleaners(
@@ -487,13 +503,17 @@ class CleanUp(ParallelEnv):
         if cleaned:
             self._cleaned_agents.add(cleaner.agent)
 
-    def _beam_rays(self, avatar: Avatar, *, length: int, radius: int) -> list[list[Position]]:
+    def _beam_rays(
+        self, avatar: Avatar, *, length: int, radius: int
+    ) -> list[list[Position]]:
         rays = []
         for lateral in range(-radius, radius + 1):
             ray_length = length - abs(lateral)
             rays.append(
                 [
-                    _relative_to_world(avatar.position, avatar.orientation, lateral, forward)
+                    _relative_to_world(
+                        avatar.position, avatar.orientation, lateral, forward
+                    )
                     for forward in range(1, ray_length + 1)
                 ]
             )
@@ -529,7 +549,9 @@ class CleanUp(ParallelEnv):
             if candidates:
                 dirt = candidates[int(self._rng.integers(len(candidates)))]
                 dirt.active = True
-                self._last_events.append({"event": "dirt_spawned", "position": dirt.position})
+                self._last_events.append(
+                    {"event": "dirt_spawned", "position": dirt.position}
+                )
         self._dirt_spawn_step += 1
 
     def _should_terminate(self) -> bool:
@@ -547,21 +569,30 @@ class CleanUp(ParallelEnv):
 
     def _blocked(self, position: Position) -> bool:
         x, y = position
-        return not (0 <= x < self._cols and 0 <= y < self._rows) or position in self._walls
+        return (
+            not (0 <= x < self._cols and 0 <= y < self._rows) or position in self._walls
+        )
 
-    def _avatar_at(self, position: Position, exclude: Agent | None = None) -> Avatar | None:
+    def _avatar_at(
+        self, position: Position, exclude: Agent | None = None
+    ) -> Avatar | None:
         return next(
             (
                 avatar
                 for avatar in self._avatars.values()
-                if avatar.active and avatar.agent != exclude and avatar.position == position
+                if avatar.active
+                and avatar.agent != exclude
+                and avatar.position == position
             ),
             None,
         )
 
     def _event_count(self, name: str, index: int, key: str = "player_index") -> float:
         return float(
-            sum(event.get("event") == name and event.get(key) == index for event in self._last_events)
+            sum(
+                event.get("event") == name and event.get(key) == index
+                for event in self._last_events
+            )
         )
 
     def _observation(self, agent: Agent) -> np.ndarray:
@@ -580,7 +611,9 @@ class CleanUp(ParallelEnv):
                 sum(cleaner != agent for cleaner in self._cleaned_agents),
                 self._event_count("player_cleaned", avatar.index),
                 self._event_count("edible_consumed", avatar.index),
-                sum(event.get("event") == "dirt_spawned" for event in self._last_events),
+                sum(
+                    event.get("event") == "dirt_spawned" for event in self._last_events
+                ),
                 self._event_count("fired", avatar.index),
                 self._event_count("zap", avatar.index, "target"),
                 self._event_count("avatar_respawned", avatar.index),

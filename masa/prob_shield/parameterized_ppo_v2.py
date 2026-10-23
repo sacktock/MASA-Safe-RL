@@ -18,9 +18,14 @@ from masa.common.metrics import Stats, Dist
 
 from tqdm.auto import tqdm
 
-class ParameterizedPPOV2(PPO):
 
-    def __init__(self, *args, policy_class: type[BaseJaxPolicy] = ParameterizedPPOPolicyV2, **kwargs):
+class ParameterizedPPOV2(PPO):
+    def __init__(
+        self,
+        *args,
+        policy_class: type[BaseJaxPolicy] = ParameterizedPPOPolicyV2,
+        **kwargs,
+    ):
         super().__init__(*args, policy_class=policy_class, **kwargs)
 
     def _validate_and_extract_action_specs(self):
@@ -33,7 +38,10 @@ class ParameterizedPPOV2(PPO):
                 "Consider using the original PPO class instead."
             )
 
-        if "multi_discrete" not in self.action_space.spaces or "box" not in self.action_space.spaces:
+        if (
+            "multi_discrete" not in self.action_space.spaces
+            or "box" not in self.action_space.spaces
+        ):
             raise KeyError(
                 "ParameterizedPPOV2 requires env.action_space = Dict({'multi_discrete': ..., 'box': ...}). "
                 f"Got keys: {list(self.action_space.spaces.keys())}. "
@@ -103,8 +111,8 @@ class ParameterizedPPOV2(PPO):
         self.key = self.policy.build(self.key, self.lr_schedule, self.max_grad_norm)
 
         self.featurizer = self.policy.featurizer  # type: ignore[assignment]
-        self.actor = self.policy.actor            # type: ignore[assignment]
-        self.critic = self.policy.critic          # type: ignore[assignment]
+        self.actor = self.policy.actor  # type: ignore[assignment]
+        self.critic = self.policy.critic  # type: ignore[assignment]
 
     @staticmethod
     @partial(jit, static_argnames=["normalize_advantage"])
@@ -151,14 +159,14 @@ class ParameterizedPPOV2(PPO):
 
             # Critic loss
             critic_values = critic_state.apply_fn(critic_params, features).flatten()
-            value_loss = vf_coef * ((returns - critic_values)**2).mean()
+            value_loss = vf_coef * ((returns - critic_values) ** 2).mean()
 
             total_loss = total_policy_loss + value_loss
             return total_loss, (total_policy_loss, value_loss)
 
-        (loss, (pg_loss, vf_loss)), grads = jax.value_and_grad(actor_critic_loss, argnums=(0, 1, 2), has_aux=True)(
-            featurizer_state.params, actor_state.params, critic_state.params
-        )
+        (loss, (pg_loss, vf_loss)), grads = jax.value_and_grad(
+            actor_critic_loss, argnums=(0, 1, 2), has_aux=True
+        )(featurizer_state.params, actor_state.params, critic_state.params)
 
         featurizer_state = featurizer_state.apply_gradients(grads=grads[0])
         actor_state = actor_state.apply_gradients(grads=grads[1])
@@ -167,38 +175,49 @@ class ParameterizedPPOV2(PPO):
         return (featurizer_state, actor_state, critic_state), (pg_loss, vf_loss)
 
     def optimize(
-        self,
-        step: int, 
-        logger: Optional[TrainLogger] = None,
-        tqdm_position: int = 1
+        self, step: int, logger: Optional[TrainLogger] = None, tqdm_position: int = 1
     ):
-        
+
         clip_range = self.clip_range_schedule(step)
         current_lr = self.lr_schedule(step)
 
         t_stats = Stats(prefix="mix")
 
         with tqdm(
-            total=self.n_epochs*self.n_steps//(self.batch_size//self.n_envs),
+            total=self.n_epochs * self.n_steps // (self.batch_size // self.n_envs),
             desc="optimize",
             position=tqdm_position,
             leave=False,
             dynamic_ncols=True,
             colour="cyan",
         ) as pbar:
-
             for _ in range(self.n_epochs):
                 self.key, subkey = jr.split(self.key)
-                for rollout_data in self.rollout_buffer.get(subkey, self.batch_size//self.n_envs):
-
-                    observations, actions, rewards, values, returns, advantages, old_log_probs = rollout_data
+                for rollout_data in self.rollout_buffer.get(
+                    subkey, self.batch_size // self.n_envs
+                ):
+                    (
+                        observations,
+                        actions,
+                        rewards,
+                        values,
+                        returns,
+                        advantages,
+                        old_log_probs,
+                    ) = rollout_data
 
                     if isinstance(self.action_space, spaces.Discrete):
                         # Convert discrete action from float to int
                         actions = actions.flatten().astype(np.int32)
 
-                    (self.policy.featurizer_state, self.policy.actor_state, self.policy.critic_state), (pg_loss, vf_loss) = \
-                    self._one_update(
+                    (
+                        (
+                            self.policy.featurizer_state,
+                            self.policy.actor_state,
+                            self.policy.critic_state,
+                        ),
+                        (pg_loss, vf_loss),
+                    ) = self._one_update(
                         featurizer_state=self.policy.featurizer_state,
                         actor_state=self.policy.actor_state,
                         critic_state=self.policy.critic_state,
@@ -216,20 +235,22 @@ class ParameterizedPPOV2(PPO):
                     pbar.update(1)
 
                     t_stats.update(actions[:, 2:])
-                
+
         if logger:
-            logger.add("train/stats", {
-                "t": t_stats,
-                "policy_loss": float(pg_loss),
-                "value_loss": float(vf_loss),
-                "clip_range": float(clip_range),
-                "lr": float(current_lr)
-            })
+            logger.add(
+                "train/stats",
+                {
+                    "t": t_stats,
+                    "policy_loss": float(pg_loss),
+                    "value_loss": float(vf_loss),
+                    "clip_range": float(clip_range),
+                    "lr": float(current_lr),
+                },
+            )
 
     def prepare_act(self, act: Any, n_envs: int = 1) -> np.ndarray:
 
         if isinstance(self.action_space, spaces.Dict):
-
             if isinstance(act, dict):
                 md = act.get("multi_discrete", None)
                 bx = act.get("box", None)
@@ -267,4 +288,3 @@ class ParameterizedPPOV2(PPO):
             return flat
 
         return super().prepare_act(act, n_envs=n_envs)
-

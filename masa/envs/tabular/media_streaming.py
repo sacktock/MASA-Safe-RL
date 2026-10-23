@@ -3,25 +3,29 @@ from typing import Any, Literal
 from gymnasium import spaces
 import numpy as np
 from masa.common.label_fn import LabelFn
-from collections import defaultdict 
+from collections import defaultdict
 from masa.envs.tabular.base import TabularEnv
-from masa.envs.tabular.renderers.media_streaming import MediaStreamingRenderer, validate_renderer_options
+from masa.envs.tabular.renderers.media_streaming import (
+    MediaStreamingRenderer,
+    validate_renderer_options,
+)
 
 
 FAST_RATE = 0.9
 SLOW_RATE = 0.1
 OUT_RATE = 0.7
 BUFFER_SIZE = 20
-START_STATE = BUFFER_SIZE//2
+START_STATE = BUFFER_SIZE // 2
 EMPTY = 0
 
 LABEL_DICT = defaultdict(set)
 LABEL_DICT[START_STATE] = {"start"}
-LABEL_DICT[EMPTY] = {"empty"} 
+LABEL_DICT[EMPTY] = {"empty"}
 
-label_fn = lambda obs: LABEL_DICT[obs] 
+label_fn = lambda obs: LABEL_DICT[obs]
 
 cost_fn = lambda labels: 1.0 if "empty" in labels else 0.0
+
 
 class MediaStreaming(TabularEnv):
     metadata = {"render_modes": ["ansi", "rgb_array", "human"], "render_fps": 4}
@@ -46,21 +50,37 @@ class MediaStreaming(TabularEnv):
         self.observation_space = spaces.Discrete(self._n_states)
         self.action_space = spaces.Discrete(self._n_actions)
 
-        self._transition_matrix = np.zeros((self._n_states, self._n_states, self._n_actions))
+        self._transition_matrix = np.zeros(
+            (self._n_states, self._n_states, self._n_actions)
+        )
         for s in range(self._n_states):
             for a in range(self._n_actions):
                 in_rate = self._slow_rate if a == 0 else self._fast_rate
                 if s == 0:
-                    self._transition_matrix[s+1, s, a] = in_rate * (1 - self._out_rate)
-                    self._transition_matrix[s, s, a] = 1 - in_rate * (1 - self._out_rate)
+                    self._transition_matrix[s + 1, s, a] = in_rate * (
+                        1 - self._out_rate
+                    )
+                    self._transition_matrix[s, s, a] = 1 - in_rate * (
+                        1 - self._out_rate
+                    )
                 elif s == (self._n_states - 1):
                     in_rate = self._slow_rate if a == 0 else 1.0
-                    self._transition_matrix[s-1, s, a] = (1 - in_rate) * self._out_rate
-                    self._transition_matrix[s, s, a] = 1 - (1 - in_rate) * self._out_rate
+                    self._transition_matrix[s - 1, s, a] = (
+                        1 - in_rate
+                    ) * self._out_rate
+                    self._transition_matrix[s, s, a] = (
+                        1 - (1 - in_rate) * self._out_rate
+                    )
                 else:
-                    self._transition_matrix[s+1, s, a] = in_rate * (1 - self._out_rate)
-                    self._transition_matrix[s, s, a] = 1 - (in_rate * (1 - self._out_rate) + (1 - in_rate) * self._out_rate)
-                    self._transition_matrix[s-1, s, a] = (1 - in_rate) * self._out_rate
+                    self._transition_matrix[s + 1, s, a] = in_rate * (
+                        1 - self._out_rate
+                    )
+                    self._transition_matrix[s, s, a] = 1 - (
+                        in_rate * (1 - self._out_rate) + (1 - in_rate) * self._out_rate
+                    )
+                    self._transition_matrix[s - 1, s, a] = (
+                        1 - in_rate
+                    ) * self._out_rate
 
         self._start_state = START_STATE
 
@@ -91,7 +111,9 @@ class MediaStreaming(TabularEnv):
 
     def step(self, action):
         assert self.action_space.contains(action), f"Invalid action {action}!"
-        self._state = self.np_random.choice(self._n_states, p=self._transition_matrix[:, self._state, action])
+        self._state = self.np_random.choice(
+            self._n_states, p=self._transition_matrix[:, self._state, action]
+        )
         self._step_count += 1
         self._last_action = int(action)
 

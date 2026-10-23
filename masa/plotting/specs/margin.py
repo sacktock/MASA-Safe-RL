@@ -32,12 +32,9 @@ _X_LABEL = "Training steps (in thousands)"
 
 def _discover_horizons(ctx: RenderContext, pattern: re.Pattern) -> list[int]:
     metrics = ctx.long_df.loc[ctx.long_df["env"] == ctx.env, "metric"].unique()
-    return sorted({
-        int(m.group(1))
-        for c in metrics
-        for m in [pattern.match(c)]
-        if m is not None
-    })
+    return sorted(
+        {int(m.group(1)) for c in metrics for m in [pattern.match(c)] if m is not None}
+    )
 
 
 def _build_panels(ctx: RenderContext) -> Sequence[Panel]:
@@ -79,10 +76,12 @@ def _grid_for(panels: Sequence[Panel]) -> tuple[int, int]:
     return (rows, cols)
 
 
-margin = register(PlotSpec(
-    id="margin",
-    panels=_build_panels,
-    grid=_grid_for,
-    suptitle_fmt="{env_title} — Shield Safety Budget over Training",
-    out_subdir="margin",
-))
+margin = register(
+    PlotSpec(
+        id="margin",
+        panels=_build_panels,
+        grid=_grid_for,
+        suptitle_fmt="{env_title} — Shield Safety Budget over Training",
+        out_subdir="margin",
+    )
+)

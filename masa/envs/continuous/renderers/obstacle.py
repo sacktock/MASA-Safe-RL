@@ -136,7 +136,9 @@ class ObstacleRenderer:
         if self._human_window is None:
             pygame.init()
             pygame.display.set_caption("MASA - Obstacle")
-            self._human_window = pygame.display.set_mode(self._human_window_size, pygame.RESIZABLE)
+            self._human_window = pygame.display.set_mode(
+                self._human_window_size, pygame.RESIZABLE
+            )
             self._human_clock = pygame.time.Clock()
 
         for event in pygame.event.get():
@@ -146,13 +148,17 @@ class ObstacleRenderer:
             return
 
         window_width, window_height = self._human_window.get_size()
-        target_width, target_height = _fit_size((width, height), (window_width, window_height))
+        target_width, target_height = _fit_size(
+            (width, height), (window_width, window_height)
+        )
         left = (window_width - target_width) // 2
         top = (window_height - target_height) // 2
 
         frame_surface = pygame.surfarray.make_surface(np.transpose(frame, (1, 0, 2)))
         if (target_width, target_height) != (width, height):
-            frame_surface = pygame.transform.smoothscale(frame_surface, (target_width, target_height))
+            frame_surface = pygame.transform.smoothscale(
+                frame_surface, (target_width, target_height)
+            )
 
         self._human_window.fill(BACKGROUND_COLOR)
         self._human_window.blit(frame_surface, (left, top))
@@ -170,11 +176,25 @@ class ObstacleRenderer:
         goal_position = np.asarray(self.env._goal_position, dtype=np.float32)
         position = np.asarray(state[:2], dtype=np.float32)
         velocity = np.asarray(state[2:], dtype=np.float32)
-        obstacles = tuple(np.asarray(obstacle, dtype=np.float32) for obstacle in self.env._obstacles)
-        boundaries = tuple(np.asarray(boundary, dtype=np.float32) for boundary in getattr(self.env, "_boundaries", ()))
+        obstacles = tuple(
+            np.asarray(obstacle, dtype=np.float32) for obstacle in self.env._obstacles
+        )
+        boundaries = tuple(
+            np.asarray(boundary, dtype=np.float32)
+            for boundary in getattr(self.env, "_boundaries", ())
+        )
         obstacle_hit = _obstacle_hit(position, obstacles)
         boundary_hit = _boundary_hit(position, min_position, max_position, boundaries)
-        status = _status(position, velocity, min_position, max_position, max_speed, goal_position, obstacle_hit, boundary_hit)
+        status = _status(
+            position,
+            velocity,
+            min_position,
+            max_position,
+            max_speed,
+            goal_position,
+            obstacle_hit,
+            boundary_hit,
+        )
         return _ObstacleSnapshot(
             position=position,
             velocity=velocity,
@@ -191,7 +211,9 @@ class ObstacleRenderer:
             status=status,
         )
 
-    def _draw_scene(self, surface: Any, snapshot: "_ObstacleSnapshot", size: int) -> None:
+    def _draw_scene(
+        self, surface: Any, snapshot: "_ObstacleSnapshot", size: int
+    ) -> None:
         import pygame
 
         margin = max(24, size // 14)
@@ -205,8 +227,16 @@ class ObstacleRenderer:
             panel.width - map_margin * 2,
             panel.height - map_margin * 2 - size // 12,
         )
-        pygame.draw.rect(surface, WORLD_COLOR, map_rect, border_radius=max(6, size // 70))
-        pygame.draw.rect(surface, BOUNDARY_COLOR, map_rect, width=max(3, size // 110), border_radius=max(6, size // 70))
+        pygame.draw.rect(
+            surface, WORLD_COLOR, map_rect, border_radius=max(6, size // 70)
+        )
+        pygame.draw.rect(
+            surface,
+            BOUNDARY_COLOR,
+            map_rect,
+            width=max(3, size // 110),
+            border_radius=max(6, size // 70),
+        )
 
         self._draw_boundary_regions(surface, snapshot, map_rect)
         self._draw_grid(surface, snapshot, map_rect, size)
@@ -214,53 +244,127 @@ class ObstacleRenderer:
         self._draw_obstacles(surface, snapshot, map_rect)
 
         agent = _point_for_position(snapshot.position, snapshot, map_rect)
-        velocity_vector = _vector_to_screen(snapshot.velocity, snapshot.max_speed, map_rect.width * 0.18)
+        velocity_vector = _vector_to_screen(
+            snapshot.velocity, snapshot.max_speed, map_rect.width * 0.18
+        )
         self._draw_arrow(surface, agent, velocity_vector, VELOCITY_COLOR, size)
 
         action_vector = _last_action_vector(snapshot.last_action)
         if action_vector is not None:
-            self._draw_arrow(surface, agent, _vector_to_screen(action_vector, 2.0, map_rect.width * 0.12), ACTION_COLOR, size)
+            self._draw_arrow(
+                surface,
+                agent,
+                _vector_to_screen(action_vector, 2.0, map_rect.width * 0.12),
+                ACTION_COLOR,
+                size,
+            )
 
         agent_radius = max(8, size // 40)
-        pygame.draw.circle(surface, AGENT_SHADOW_COLOR, (agent[0] + max(2, size // 120), agent[1] + max(2, size // 120)), agent_radius)
+        pygame.draw.circle(
+            surface,
+            AGENT_SHADOW_COLOR,
+            (agent[0] + max(2, size // 120), agent[1] + max(2, size // 120)),
+            agent_radius,
+        )
         pygame.draw.circle(surface, _status_color(snapshot.status), agent, agent_radius)
-        pygame.draw.circle(surface, TEXT_COLOR, agent, agent_radius, width=max(2, size // 150))
+        pygame.draw.circle(
+            surface, TEXT_COLOR, agent, agent_radius, width=max(2, size // 150)
+        )
 
-        action_label = "last action: none" if action_vector is None else f"last action: ({action_vector[0]:.2f}, {action_vector[1]:.2f})"
-        self._draw_text(surface, type(self.env).__name__, (panel.left + size // 28, panel.top + size // 28), max(18, size // 18), TEXT_COLOR)
-        self._draw_text(surface, f"x {snapshot.position[0]:.2f}, {snapshot.position[1]:.2f}  v {np.linalg.norm(snapshot.velocity):.3f}", (panel.left + size // 28, panel.top + size // 10), max(14, size // 25), MUTED_TEXT_COLOR)
-        self._draw_text(surface, snapshot.status, (panel.left + size // 28, panel.bottom - size // 12), max(16, size // 22), _status_color(snapshot.status))
-        self._draw_text(surface, action_label, (panel.left + size // 3, panel.bottom - size // 12), max(16, size // 22), ACTION_COLOR if action_vector is not None else MUTED_TEXT_COLOR)
+        action_label = (
+            "last action: none"
+            if action_vector is None
+            else f"last action: ({action_vector[0]:.2f}, {action_vector[1]:.2f})"
+        )
+        self._draw_text(
+            surface,
+            type(self.env).__name__,
+            (panel.left + size // 28, panel.top + size // 28),
+            max(18, size // 18),
+            TEXT_COLOR,
+        )
+        self._draw_text(
+            surface,
+            f"x {snapshot.position[0]:.2f}, {snapshot.position[1]:.2f}  v {np.linalg.norm(snapshot.velocity):.3f}",
+            (panel.left + size // 28, panel.top + size // 10),
+            max(14, size // 25),
+            MUTED_TEXT_COLOR,
+        )
+        self._draw_text(
+            surface,
+            snapshot.status,
+            (panel.left + size // 28, panel.bottom - size // 12),
+            max(16, size // 22),
+            _status_color(snapshot.status),
+        )
+        self._draw_text(
+            surface,
+            action_label,
+            (panel.left + size // 3, panel.bottom - size // 12),
+            max(16, size // 22),
+            ACTION_COLOR if action_vector is not None else MUTED_TEXT_COLOR,
+        )
 
-    def _draw_grid(self, surface: Any, snapshot: "_ObstacleSnapshot", map_rect: Any, size: int) -> None:
+    def _draw_grid(
+        self, surface: Any, snapshot: "_ObstacleSnapshot", map_rect: Any, size: int
+    ) -> None:
         import pygame
 
-        for value in range(math.ceil(snapshot.min_position), math.floor(snapshot.max_position) + 1):
+        for value in range(
+            math.ceil(snapshot.min_position), math.floor(snapshot.max_position) + 1
+        ):
             x = _x_to_px(float(value), snapshot, map_rect)
             y = _y_to_px(float(value), snapshot, map_rect)
             width = max(2, size // 130) if value == 0 else max(1, size // 260)
             color = MUTED_TEXT_COLOR if value == 0 else GRID_COLOR
-            pygame.draw.line(surface, color, (x, map_rect.top), (x, map_rect.bottom), width=width)
-            pygame.draw.line(surface, color, (map_rect.left, y), (map_rect.right, y), width=width)
+            pygame.draw.line(
+                surface, color, (x, map_rect.top), (x, map_rect.bottom), width=width
+            )
+            pygame.draw.line(
+                surface, color, (map_rect.left, y), (map_rect.right, y), width=width
+            )
 
-    def _draw_goal_region(self, surface: Any, snapshot: "_ObstacleSnapshot", map_rect: Any) -> None:
+    def _draw_goal_region(
+        self, surface: Any, snapshot: "_ObstacleSnapshot", map_rect: Any
+    ) -> None:
         import pygame
 
         goal_left = _x_to_px(float(snapshot.goal_position[0]), snapshot, map_rect)
         goal_bottom = _y_to_px(float(snapshot.goal_position[1]), snapshot, map_rect)
-        goal_rect = pygame.Rect(goal_left, map_rect.top, map_rect.right - goal_left, goal_bottom - map_rect.top)
+        goal_rect = pygame.Rect(
+            goal_left,
+            map_rect.top,
+            map_rect.right - goal_left,
+            goal_bottom - map_rect.top,
+        )
         pygame.draw.rect(surface, GOAL_FILL_COLOR, goal_rect)
-        pygame.draw.rect(surface, GOAL_COLOR, goal_rect, width=max(2, map_rect.width // 120))
+        pygame.draw.rect(
+            surface, GOAL_COLOR, goal_rect, width=max(2, map_rect.width // 120)
+        )
 
-    def _draw_obstacles(self, surface: Any, snapshot: "_ObstacleSnapshot", map_rect: Any) -> None:
+    def _draw_obstacles(
+        self, surface: Any, snapshot: "_ObstacleSnapshot", map_rect: Any
+    ) -> None:
         for obstacle in snapshot.obstacles:
             lower = obstacle[:, 0]
             upper = obstacle[:, 1]
-            rect = _rect_for_bounds(float(lower[0]), float(upper[0]), float(lower[1]), float(upper[1]), snapshot, map_rect)
-            is_hit = bool(np.all(snapshot.position >= lower) and np.all(snapshot.position <= upper))
+            rect = _rect_for_bounds(
+                float(lower[0]),
+                float(upper[0]),
+                float(lower[1]),
+                float(upper[1]),
+                snapshot,
+                map_rect,
+            )
+            is_hit = bool(
+                np.all(snapshot.position >= lower)
+                and np.all(snapshot.position <= upper)
+            )
             self._draw_obstacle_region(surface, rect, map_rect, is_hit)
 
-    def _draw_obstacle_region(self, surface: Any, rect: Any, map_rect: Any, is_hit: bool) -> None:
+    def _draw_obstacle_region(
+        self, surface: Any, rect: Any, map_rect: Any, is_hit: bool
+    ) -> None:
         import pygame
 
         radius = max(4, map_rect.width // 48)
@@ -270,21 +374,31 @@ class ObstacleRenderer:
         stripe_spacing = max(10, map_rect.width // 22)
 
         shadow_rect = rect.move(shadow_offset, shadow_offset)
-        _draw_alpha_rect(surface, OBSTACLE_SHADOW_COLOR, 58, shadow_rect, border_radius=radius)
+        _draw_alpha_rect(
+            surface, OBSTACLE_SHADOW_COLOR, 58, shadow_rect, border_radius=radius
+        )
         _draw_alpha_rect(surface, OBSTACLE_FILL_COLOR, 224, rect, border_radius=radius)
 
         stripe_rect = rect.inflate(-border_width * 3, -border_width * 3)
         if stripe_rect.width > stripe_width and stripe_rect.height > stripe_width:
             previous_clip = surface.get_clip()
             surface.set_clip(stripe_rect)
-            for offset in range(-stripe_rect.height, stripe_rect.width + stripe_rect.height, stripe_spacing):
+            for offset in range(
+                -stripe_rect.height,
+                stripe_rect.width + stripe_rect.height,
+                stripe_spacing,
+            ):
                 start = (stripe_rect.left + offset, stripe_rect.bottom)
                 end = (stripe_rect.left + offset + stripe_rect.height, stripe_rect.top)
-                pygame.draw.line(surface, OBSTACLE_STRIPE_COLOR, start, end, width=stripe_width)
+                pygame.draw.line(
+                    surface, OBSTACLE_STRIPE_COLOR, start, end, width=stripe_width
+                )
             surface.set_clip(previous_clip)
 
         outline_color = OBSTACLE_HIT_COLOR if is_hit else OBSTACLE_COLOR
-        pygame.draw.rect(surface, outline_color, rect, width=border_width, border_radius=radius)
+        pygame.draw.rect(
+            surface, outline_color, rect, width=border_width, border_radius=radius
+        )
 
         inset = rect.inflate(-border_width * 2, -border_width * 2)
         if inset.width > 0 and inset.height > 0:
@@ -296,7 +410,9 @@ class ObstacleRenderer:
                 border_radius=max(1, radius - border_width),
             )
 
-    def _draw_boundary_regions(self, surface: Any, snapshot: "_ObstacleSnapshot", map_rect: Any) -> None:
+    def _draw_boundary_regions(
+        self, surface: Any, snapshot: "_ObstacleSnapshot", map_rect: Any
+    ) -> None:
         import pygame
 
         for boundary in snapshot.boundaries:
@@ -304,18 +420,63 @@ class ObstacleRenderer:
             upper = boundary[:, 1]
             rects: list[Any] = []
             if np.isfinite(lower[0]) and lower[0] > snapshot.min_position:
-                rects.append(_rect_for_bounds(snapshot.min_position, float(lower[0]), snapshot.min_position, snapshot.max_position, snapshot, map_rect))
+                rects.append(
+                    _rect_for_bounds(
+                        snapshot.min_position,
+                        float(lower[0]),
+                        snapshot.min_position,
+                        snapshot.max_position,
+                        snapshot,
+                        map_rect,
+                    )
+                )
             if np.isfinite(upper[0]) and upper[0] < snapshot.max_position:
-                rects.append(_rect_for_bounds(float(upper[0]), snapshot.max_position, snapshot.min_position, snapshot.max_position, snapshot, map_rect))
+                rects.append(
+                    _rect_for_bounds(
+                        float(upper[0]),
+                        snapshot.max_position,
+                        snapshot.min_position,
+                        snapshot.max_position,
+                        snapshot,
+                        map_rect,
+                    )
+                )
             if np.isfinite(lower[1]) and lower[1] > snapshot.min_position:
-                rects.append(_rect_for_bounds(snapshot.min_position, snapshot.max_position, snapshot.min_position, float(lower[1]), snapshot, map_rect))
+                rects.append(
+                    _rect_for_bounds(
+                        snapshot.min_position,
+                        snapshot.max_position,
+                        snapshot.min_position,
+                        float(lower[1]),
+                        snapshot,
+                        map_rect,
+                    )
+                )
             if np.isfinite(upper[1]) and upper[1] < snapshot.max_position:
-                rects.append(_rect_for_bounds(snapshot.min_position, snapshot.max_position, float(upper[1]), snapshot.max_position, snapshot, map_rect))
+                rects.append(
+                    _rect_for_bounds(
+                        snapshot.min_position,
+                        snapshot.max_position,
+                        float(upper[1]),
+                        snapshot.max_position,
+                        snapshot,
+                        map_rect,
+                    )
+                )
             for rect in rects:
                 pygame.draw.rect(surface, BOUNDARY_FILL_COLOR, rect)
-                pygame.draw.rect(surface, BOUNDARY_COLOR, rect, width=max(2, map_rect.width // 140))
+                pygame.draw.rect(
+                    surface, BOUNDARY_COLOR, rect, width=max(2, map_rect.width // 140)
+                )
 
-    def _draw_arrow(self, surface: Any, start: Position, vector: np.ndarray, color: RGBColor, size: int) -> None:
+    def _draw_arrow(
+        self,
+        surface: Any,
+        start: Position,
+        vector: np.ndarray,
+        color: RGBColor,
+        size: int,
+    ) -> None:
         import pygame
 
         length = float(np.linalg.norm(vector))
@@ -338,7 +499,9 @@ class ObstacleRenderer:
         ]
         pygame.draw.polygon(surface, color, head)
 
-    def _draw_text(self, surface: Any, text: str, pos: Position, size: int, color: RGBColor) -> None:
+    def _draw_text(
+        self, surface: Any, text: str, pos: Position, size: int, color: RGBColor
+    ) -> None:
         import pygame
 
         pygame.font.init()
@@ -394,19 +557,27 @@ def _fit_size(source: Position, target: Position) -> Position:
     return max(1, int(source_width * scale)), max(1, int(source_height * scale))
 
 
-def _point_for_position(position: np.ndarray, snapshot: _ObstacleSnapshot, map_rect: Any) -> Position:
-    return _x_to_px(float(position[0]), snapshot, map_rect), _y_to_px(float(position[1]), snapshot, map_rect)
+def _point_for_position(
+    position: np.ndarray, snapshot: _ObstacleSnapshot, map_rect: Any
+) -> Position:
+    return _x_to_px(float(position[0]), snapshot, map_rect), _y_to_px(
+        float(position[1]), snapshot, map_rect
+    )
 
 
 def _x_to_px(x: float, snapshot: _ObstacleSnapshot, map_rect: Any) -> int:
     clipped = max(snapshot.min_position, min(snapshot.max_position, x))
-    ratio = (clipped - snapshot.min_position) / (snapshot.max_position - snapshot.min_position)
+    ratio = (clipped - snapshot.min_position) / (
+        snapshot.max_position - snapshot.min_position
+    )
     return int(map_rect.left + ratio * map_rect.width)
 
 
 def _y_to_px(y: float, snapshot: _ObstacleSnapshot, map_rect: Any) -> int:
     clipped = max(snapshot.min_position, min(snapshot.max_position, y))
-    ratio = (clipped - snapshot.min_position) / (snapshot.max_position - snapshot.min_position)
+    ratio = (clipped - snapshot.min_position) / (
+        snapshot.max_position - snapshot.min_position
+    )
     return int(map_rect.bottom - ratio * map_rect.height)
 
 
@@ -427,7 +598,9 @@ def _rect_for_bounds(
     return pygame.Rect(left, top, max(1, right - left), max(1, bottom - top))
 
 
-def _draw_alpha_rect(surface: Any, color: RGBColor, alpha: int, rect: Any, *, border_radius: int = 0) -> None:
+def _draw_alpha_rect(
+    surface: Any, color: RGBColor, alpha: int, rect: Any, *, border_radius: int = 0
+) -> None:
     import pygame
 
     overlay = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
@@ -435,14 +608,18 @@ def _draw_alpha_rect(surface: Any, color: RGBColor, alpha: int, rect: Any, *, bo
     surface.blit(overlay, (0, 0))
 
 
-def _vector_to_screen(vector: np.ndarray, max_norm: float, max_length: float) -> np.ndarray:
+def _vector_to_screen(
+    vector: np.ndarray, max_norm: float, max_length: float
+) -> np.ndarray:
     if max_norm <= 0:
         return np.zeros(2, dtype=np.float32)
     clipped = np.asarray(vector, dtype=np.float32)
     norm = float(np.linalg.norm(clipped))
     if norm > max_norm:
         clipped = clipped * (max_norm / norm)
-    return np.array([clipped[0], -clipped[1]], dtype=np.float32) * (max_length / max_norm)
+    return np.array([clipped[0], -clipped[1]], dtype=np.float32) * (
+        max_length / max_norm
+    )
 
 
 def _obstacle_hit(position: np.ndarray, obstacles: tuple[np.ndarray, ...]) -> bool:

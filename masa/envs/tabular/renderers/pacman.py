@@ -125,16 +125,23 @@ class PacmanRenderer:
         import pygame
 
         snapshot = self._snapshot()
-        cell_size = max(12, int(self.env.render_window_size) // max(snapshot.layout.shape))
+        cell_size = max(
+            12, int(self.env.render_window_size) // max(snapshot.layout.shape)
+        )
         scale = 3
         high_cell = cell_size * scale
-        high_size = (snapshot.layout.shape[1] * high_cell, snapshot.layout.shape[0] * high_cell)
+        high_size = (
+            snapshot.layout.shape[1] * high_cell,
+            snapshot.layout.shape[0] * high_cell,
+        )
         surface = pygame.Surface(high_size)
         surface.fill(FLOOR_COLOR)
 
         for row in range(snapshot.layout.shape[0]):
             for col in range(snapshot.layout.shape[1]):
-                rect = pygame.Rect(col * high_cell, row * high_cell, high_cell, high_cell)
+                rect = pygame.Rect(
+                    col * high_cell, row * high_cell, high_cell, high_cell
+                )
                 if snapshot.layout[row, col] == 1:
                     self._draw_wall_tile(surface, rect, high_cell)
                 else:
@@ -143,10 +150,19 @@ class PacmanRenderer:
         self._draw_terminal(surface, high_cell, snapshot.terminal)
         self._draw_collectibles(surface, high_cell, snapshot.collectibles, "food")
         self._draw_ghosts(surface, high_cell, snapshot.ghosts, snapshot.agent_position)
-        self._draw_pacman(surface, high_cell, snapshot.agent_position, snapshot.agent_direction, snapshot.step_count)
+        self._draw_pacman(
+            surface,
+            high_cell,
+            snapshot.agent_position,
+            snapshot.agent_direction,
+            snapshot.step_count,
+        )
 
         if scale > 1:
-            final_size = (snapshot.layout.shape[1] * cell_size, snapshot.layout.shape[0] * cell_size)
+            final_size = (
+                snapshot.layout.shape[1] * cell_size,
+                snapshot.layout.shape[0] * cell_size,
+            )
             surface = pygame.transform.smoothscale(surface, final_size)
 
         frame = np.transpose(pygame.surfarray.array3d(surface), (1, 0, 2))
@@ -166,7 +182,9 @@ class PacmanRenderer:
         if self._human_window is None:
             pygame.init()
             pygame.display.set_caption("MASA - Pacman")
-            self._human_window = pygame.display.set_mode(self._human_window_size, pygame.RESIZABLE)
+            self._human_window = pygame.display.set_mode(
+                self._human_window_size, pygame.RESIZABLE
+            )
             self._human_clock = pygame.time.Clock()
 
         for event in pygame.event.get():
@@ -176,13 +194,17 @@ class PacmanRenderer:
             return
 
         window_width, window_height = self._human_window.get_size()
-        target_width, target_height = _fit_size((width, height), (window_width, window_height))
+        target_width, target_height = _fit_size(
+            (width, height), (window_width, window_height)
+        )
         left = (window_width - target_width) // 2
         top = (window_height - target_height) // 2
 
         frame_surface = pygame.surfarray.make_surface(np.transpose(frame, (1, 0, 2)))
         if (target_width, target_height) != (width, height):
-            frame_surface = pygame.transform.smoothscale(frame_surface, (target_width, target_height))
+            frame_surface = pygame.transform.smoothscale(
+                frame_surface, (target_width, target_height)
+            )
 
         self._human_window.fill(FLOOR_COLOR)
         self._human_window.blit(frame_surface, (left, top))
@@ -191,8 +213,12 @@ class PacmanRenderer:
             self._human_clock.tick(self.env.metadata["render_fps"])
 
     def _snapshot(self) -> "_PacmanSnapshot":
-        state = self.env._start_state if self.env._state is None else int(self.env._state)
-        agent_y, agent_x, agent_direction, ghost_y, ghost_x, ghost_direction, food = self.env._reverse_state_map[state]
+        state = (
+            self.env._start_state if self.env._state is None else int(self.env._state)
+        )
+        agent_y, agent_x, agent_direction, ghost_y, ghost_x, ghost_direction, food = (
+            self.env._reverse_state_map[state]
+        )
         collectibles = np.zeros_like(self.env._layout, dtype=np.float32)
         if food:
             collectibles[self.env._food_y, self.env._food_x] = 1.0
@@ -212,7 +238,13 @@ class PacmanRenderer:
         inset = max(1, cell_size // 24)
         inner = rect.inflate(-inset * 2, -inset * 2)
         pygame.draw.rect(surface, FLOOR_COLOR, rect)
-        pygame.draw.rect(surface, FLOOR_GRID_COLOR, inner, width=max(1, cell_size // 40), border_radius=max(2, cell_size // 12))
+        pygame.draw.rect(
+            surface,
+            FLOOR_GRID_COLOR,
+            inner,
+            width=max(1, cell_size // 40),
+            border_radius=max(2, cell_size // 12),
+        )
 
     def _draw_wall_tile(self, surface: Any, rect: Any, cell_size: int) -> None:
         import pygame
@@ -222,7 +254,13 @@ class PacmanRenderer:
         body = rect.inflate(-max(2, cell_size // 14), -max(2, cell_size // 14))
         pygame.draw.rect(surface, WALL_COLOR, body, border_radius=radius)
         highlight = body.inflate(-max(3, cell_size // 8), -max(3, cell_size // 8))
-        pygame.draw.rect(surface, WALL_HIGHLIGHT_COLOR, highlight, width=max(1, cell_size // 24), border_radius=radius)
+        pygame.draw.rect(
+            surface,
+            WALL_HIGHLIGHT_COLOR,
+            highlight,
+            width=max(1, cell_size // 24),
+            border_radius=radius,
+        )
 
     def _draw_terminal(self, surface: Any, cell_size: int, terminal: Position) -> None:
         import pygame
@@ -230,10 +268,14 @@ class PacmanRenderer:
         center = _cell_center(terminal[0], terminal[1], cell_size)
         radius = max(6, cell_size // 4)
         pygame.draw.circle(surface, PORTAL_DARK_COLOR, center, radius)
-        pygame.draw.circle(surface, PORTAL_COLOR, center, radius, width=max(2, cell_size // 18))
+        pygame.draw.circle(
+            surface, PORTAL_COLOR, center, radius, width=max(2, cell_size // 18)
+        )
         pygame.draw.circle(surface, (173, 255, 216), center, max(2, radius // 3))
 
-    def _draw_collectibles(self, surface: Any, cell_size: int, collectibles: np.ndarray, mode: str) -> None:
+    def _draw_collectibles(
+        self, surface: Any, cell_size: int, collectibles: np.ndarray, mode: str
+    ) -> None:
         import pygame
 
         cells = np.argwhere(collectibles > 0.0)
@@ -245,7 +287,9 @@ class PacmanRenderer:
                 pygame.draw.circle(surface, (108, 79, 31), center, glow)
                 pygame.draw.circle(surface, POWER_PELLET_COLOR, center, radius)
             else:
-                pygame.draw.circle(surface, PELLET_COLOR, center, max(2, cell_size // 16))
+                pygame.draw.circle(
+                    surface, PELLET_COLOR, center, max(2, cell_size // 16)
+                )
 
     def _draw_ghosts(
         self,
@@ -260,17 +304,36 @@ class PacmanRenderer:
         for idx, ghost in enumerate(ghosts):
             ghosts_by_position.setdefault(ghost.position, []).append((idx, ghost))
 
-        collision_positions = {ghost.position for ghost in ghosts if ghost.position == agent_position}
+        collision_positions = {
+            ghost.position for ghost in ghosts if ghost.position == agent_position
+        }
         for position, positioned_ghosts in ghosts_by_position.items():
             for offset_idx, (ghost_idx, ghost) in enumerate(positioned_ghosts):
                 offset = _overlap_offset(offset_idx, cell_size)
-                center = _offset_position(_cell_center(position[0], position[1], cell_size), offset)
+                center = _offset_position(
+                    _cell_center(position[0], position[1], cell_size), offset
+                )
                 color = self._ghost_colors[ghost_idx % len(self._ghost_colors)]
                 if position in collision_positions:
-                    pygame.draw.circle(surface, COLLISION_COLOR, center, max(7, cell_size // 3), width=max(3, cell_size // 18))
-                self._draw_single_ghost(surface, center, cell_size, color, ghost.direction)
+                    pygame.draw.circle(
+                        surface,
+                        COLLISION_COLOR,
+                        center,
+                        max(7, cell_size // 3),
+                        width=max(3, cell_size // 18),
+                    )
+                self._draw_single_ghost(
+                    surface, center, cell_size, color, ghost.direction
+                )
 
-    def _draw_single_ghost(self, surface: Any, center: Position, cell_size: int, color: RGBColor, direction: int) -> None:
+    def _draw_single_ghost(
+        self,
+        surface: Any,
+        center: Position,
+        cell_size: int,
+        color: RGBColor,
+        direction: int,
+    ) -> None:
         import pygame
 
         width = int(cell_size * 0.58)
@@ -285,27 +348,56 @@ class PacmanRenderer:
         pygame.draw.rect(surface, color, body_rect)
         scallop_radius = max(3, width // 7)
         for x_pos in (left + scallop_radius, center[0], left + width - scallop_radius):
-            pygame.draw.circle(surface, FLOOR_COLOR, (x_pos, top + height), scallop_radius)
+            pygame.draw.circle(
+                surface, FLOOR_COLOR, (x_pos, top + height), scallop_radius
+            )
 
         shadow = (max(0, color[0] - 70), max(0, color[1] - 70), max(0, color[2] - 70))
-        pygame.draw.arc(surface, shadow, pygame.Rect(left, top + height // 5, width, height // 2), math.pi, 2 * math.pi, max(2, cell_size // 20))
+        pygame.draw.arc(
+            surface,
+            shadow,
+            pygame.Rect(left, top + height // 5, width, height // 2),
+            math.pi,
+            2 * math.pi,
+            max(2, cell_size // 20),
+        )
 
         eye_radius = max(3, cell_size // 13)
         pupil_radius = max(1, eye_radius // 2)
         eye_y = top + height // 3
         eye_dx = width // 5
         look = DIRECTION_DELTAS.get(direction, (0, 0))
-        pupil_offset = (look[1] * max(1, eye_radius // 3), look[0] * max(1, eye_radius // 3))
+        pupil_offset = (
+            look[1] * max(1, eye_radius // 3),
+            look[0] * max(1, eye_radius // 3),
+        )
         for eye_x in (center[0] - eye_dx, center[0] + eye_dx):
             pygame.draw.circle(surface, (248, 250, 255), (eye_x, eye_y), eye_radius)
-            pygame.draw.circle(surface, (20, 34, 78), (eye_x + pupil_offset[0], eye_y + pupil_offset[1]), pupil_radius)
+            pygame.draw.circle(
+                surface,
+                (20, 34, 78),
+                (eye_x + pupil_offset[0], eye_y + pupil_offset[1]),
+                pupil_radius,
+            )
 
-    def _draw_pacman(self, surface: Any, cell_size: int, position: Position, direction: int, step_count: int) -> None:
+    def _draw_pacman(
+        self,
+        surface: Any,
+        cell_size: int,
+        position: Position,
+        direction: int,
+        step_count: int,
+    ) -> None:
         import pygame
 
         center = _cell_center(position[0], position[1], cell_size)
         radius = int(cell_size * 0.36)
-        pygame.draw.circle(surface, PACMAN_SHADOW_COLOR, (center[0] + max(1, cell_size // 24), center[1] + max(1, cell_size // 24)), radius)
+        pygame.draw.circle(
+            surface,
+            PACMAN_SHADOW_COLOR,
+            (center[0] + max(1, cell_size // 24), center[1] + max(1, cell_size // 24)),
+            radius,
+        )
         pygame.draw.circle(surface, PACMAN_COLOR, center, radius)
 
         mouth_open = math.radians(34 + (step_count % 2) * 10)
@@ -333,7 +425,9 @@ class PacmanRenderer:
         pygame.draw.circle(surface, (25, 21, 28), eye_pos, max(2, cell_size // 24))
         self._draw_pacman_hat(surface, center, radius, cell_size)
 
-    def _draw_pacman_hat(self, surface: Any, center: Position, radius: int, cell_size: int) -> None:
+    def _draw_pacman_hat(
+        self, surface: Any, center: Position, radius: int, cell_size: int
+    ) -> None:
         import pygame
 
         hat = self.env.pacman_hat
@@ -345,12 +439,23 @@ class PacmanRenderer:
         outline = (40, 33, 46)
 
         if hat == "cap":
-            brim = pygame.Rect(x - radius, top + radius // 5, radius * 2, max(3, cell_size // 12))
+            brim = pygame.Rect(
+                x - radius, top + radius // 5, radius * 2, max(3, cell_size // 12)
+            )
             crown = pygame.Rect(x - radius // 2, top - radius // 4, radius, radius // 2)
-            pygame.draw.rect(surface, outline, brim.inflate(max(2, cell_size // 36), max(2, cell_size // 36)), border_radius=max(2, cell_size // 20))
+            pygame.draw.rect(
+                surface,
+                outline,
+                brim.inflate(max(2, cell_size // 36), max(2, cell_size // 36)),
+                border_radius=max(2, cell_size // 20),
+            )
             pygame.draw.ellipse(surface, (255, 82, 99), crown)
-            pygame.draw.rect(surface, (201, 43, 73), brim, border_radius=max(2, cell_size // 20))
-            pygame.draw.circle(surface, (255, 179, 92), (x + radius // 4, top), max(2, cell_size // 28))
+            pygame.draw.rect(
+                surface, (201, 43, 73), brim, border_radius=max(2, cell_size // 20)
+            )
+            pygame.draw.circle(
+                surface, (255, 179, 92), (x + radius // 4, top), max(2, cell_size // 28)
+            )
             return
 
         if hat == "crown":
@@ -373,7 +478,9 @@ class PacmanRenderer:
                 (x - radius + inset, base_y + max(4, cell_size // 8) - inset),
             ]
             pygame.draw.polygon(surface, (255, 209, 82), inner_points)
-            pygame.draw.circle(surface, (78, 201, 255), (x, top - radius // 5), max(2, cell_size // 30))
+            pygame.draw.circle(
+                surface, (78, 201, 255), (x, top - radius // 5), max(2, cell_size // 30)
+            )
             return
 
         cone_points = [
@@ -382,11 +489,30 @@ class PacmanRenderer:
             (x + radius, top + radius // 2),
         ]
         pygame.draw.polygon(surface, outline, cone_points)
-        pygame.draw.polygon(surface, (116, 82, 255), [(x, top - radius // 3), (x - radius + 3, top + radius // 2), (x + radius - 3, top + radius // 2)])
-        brim = pygame.Rect(x - radius, top + radius // 3, radius * 2, max(4, cell_size // 10))
-        pygame.draw.rect(surface, outline, brim.inflate(max(2, cell_size // 36), max(2, cell_size // 36)), border_radius=max(2, cell_size // 20))
-        pygame.draw.rect(surface, (77, 58, 180), brim, border_radius=max(2, cell_size // 20))
-        pygame.draw.circle(surface, (255, 245, 160), (x + radius // 4, top), max(2, cell_size // 28))
+        pygame.draw.polygon(
+            surface,
+            (116, 82, 255),
+            [
+                (x, top - radius // 3),
+                (x - radius + 3, top + radius // 2),
+                (x + radius - 3, top + radius // 2),
+            ],
+        )
+        brim = pygame.Rect(
+            x - radius, top + radius // 3, radius * 2, max(4, cell_size // 10)
+        )
+        pygame.draw.rect(
+            surface,
+            outline,
+            brim.inflate(max(2, cell_size // 36), max(2, cell_size // 36)),
+            border_radius=max(2, cell_size // 20),
+        )
+        pygame.draw.rect(
+            surface, (77, 58, 180), brim, border_radius=max(2, cell_size // 20)
+        )
+        pygame.draw.circle(
+            surface, (255, 245, 160), (x + radius // 4, top), max(2, cell_size // 28)
+        )
 
 
 class _GhostSnapshot:
@@ -416,7 +542,9 @@ class _PacmanSnapshot:
         self.step_count = step_count
 
 
-def validate_renderer_options(render_mode: str | None, render_window_size: int, pacman_hat: str) -> None:
+def validate_renderer_options(
+    render_mode: str | None, render_window_size: int, pacman_hat: str
+) -> None:
     if render_mode not in (None, "ansi", "rgb_array", "human"):
         raise ValueError("render_mode must be None, 'ansi', 'rgb_array', or 'human'.")
     if int(render_window_size) <= 0:
@@ -425,7 +553,9 @@ def validate_renderer_options(render_mode: str | None, render_window_size: int, 
         raise ValueError("pacman_hat must be 'none', 'cap', 'crown', or 'wizard'.")
 
 
-def _normalize_ghost_colors(colors: Sequence[Sequence[int]] | None) -> tuple[RGBColor, ...]:
+def _normalize_ghost_colors(
+    colors: Sequence[Sequence[int]] | None,
+) -> tuple[RGBColor, ...]:
     if colors is None:
         return GHOST_COLORS
 
@@ -439,7 +569,9 @@ def _normalize_ghost_colors(colors: Sequence[Sequence[int]] | None) -> tuple[RGB
         normalized.append((red, green, blue))
 
     if not normalized:
-        raise ValueError("ghost_colors must contain at least one RGB triplet when provided.")
+        raise ValueError(
+            "ghost_colors must contain at least one RGB triplet when provided."
+        )
     return tuple(normalized)
 
 

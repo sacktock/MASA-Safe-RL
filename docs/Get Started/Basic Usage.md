@@ -1,24 +1,24 @@
 # Basic Usage
 
-This page shows the **minimal** way to use MASA *without* [`masa.common.utils.make_env`][masa.common.utils.make_env], by manually
+This page shows the **minimal** way to use MASA *without* \[`masa.common.utils.make_env`\][masa.common.utils.make_env], by manually
 constructing a Gymnasium environment and wrapping it in the recommended order:
 
 > `TimeLimit` $\rightarrow$
-> [`LabelledEnv`][masa.common.labelled_env.LabelledEnv] $\rightarrow$
-> [`BaseConstraintEnv`][masa.common.constraints.base.BaseConstraintEnv] $\rightarrow$
-> [`ConstraintMonitor`][masa.common.wrappers.ConstraintMonitor] $\rightarrow$
-> [`RewardMonitor`][masa.common.wrappers.RewardMonitor]
+> \[`LabelledEnv`\][masa.common.labelled_env.LabelledEnv] $\rightarrow$
+> \[`BaseConstraintEnv`\][masa.common.constraints.base.BaseConstraintEnv] $\rightarrow$
+> \[`ConstraintMonitor`\][masa.common.wrappers.ConstraintMonitor] $\rightarrow$
+> \[`RewardMonitor`\][masa.common.wrappers.RewardMonitor]
 
-This is the same order enforced by [`make_env`][masa.common.utils.make_env] (notably, ``TimeLimit`` must come first).
+This is the same order enforced by \[`make_env`\][masa.common.utils.make_env] (notably, `TimeLimit` must come first).
 
 ## Overview
 
 MASA components reason over **labels** (atomic predicates) derived from observations. The wrapper
-[`masa.common.labelled_env.LabelledEnv`][masa.common.labelled_env.LabelledEnv] computes these labels on every `gymnasium.Env.reset`
-and `gymnasium.Env.step` and stores them in ``info["labels"]``.
+\[`masa.common.labelled_env.LabelledEnv`\][masa.common.labelled_env.LabelledEnv] computes these labels on every `gymnasium.Env.reset`
+and `gymnasium.Env.step` and stores them in `info["labels"]`.
 
 Constraints then consume these labels and expose consistent metrics, while the monitor wrappers
-attach step/episode summaries to the ``info`` dictionary for logging and debugging.
+attach step/episode summaries to the `info` dictionary for logging and debugging.
 
 ## Minimal environment construction
 
@@ -37,6 +37,7 @@ from masa.common.constraints.cmdp import CumulativeCostEnv
 
 # --- 1) Define label and cost functions ---
 
+
 def label_fn(obs):
     """
     Example labelling function for MediaStreaming-like observations.
@@ -53,11 +54,13 @@ def label_fn(obs):
         return set()
     return labels
 
+
 def cost_fn(labels):
     """
     Example 0/1 cost: unsafe if the 'unsafe' predicate holds.
     """
     return 1.0 if "unsafe" in labels else 0.0
+
 
 # --- 1.5) Or use default label_fn and cost_fn supplied by the environment (recommended)
 from masa.env.tabular.media_streaming import label_fn, cost_fn
@@ -127,7 +130,7 @@ for ep in range(num_episodes):
     print(
         f"[episode {ep}] return={ep_return:.2f} len={ep_len} "
         f"episode_cost={ep_cost} episode_satisfied={ep_satisfied}"
-   )
+    )
 ```
 
 ## Training with PPO
@@ -139,6 +142,7 @@ saving); the snippet mirrors the general style used in MASA runs.
 ```python
 from masa.algorithms.on_policy import PPO
 
+
 # (Optional) create a separate evaluation environment with the same wrapper stack.
 def make_eval_env():
     eval_env = MediaStreaming()
@@ -149,6 +153,7 @@ def make_eval_env():
     eval_env = RewardMonitor(eval_env)
     return eval_env
 
+
 eval_env = make_eval_env()
 
 # Initialize PPO.
@@ -158,17 +163,17 @@ algo = PPO(
     seed=0,
     device="auto",
     verbose=1,
-    eval_env=eval_env,            # optional
-    tensorboard_logdir=None,      # optional
+    eval_env=eval_env,  # optional
+    tensorboard_logdir=None,  # optional
 )
 
 # Train PPO. MASA algorithms automatically support eval/log frequencies and windowed stats.
 algo.train(
     total_timesteps=200_000,
-    num_eval_episodes=10,         # optional
-    eval_freq=10_000,             # optional
-    log_freq=2_000,               # optional
-    stats_window_size=100,        # optional
+    num_eval_episodes=10,  # optional
+    eval_freq=10_000,  # optional
+    log_freq=2_000,  # optional
+    stats_window_size=100,  # optional
 )
 ```
 
@@ -176,14 +181,16 @@ algo.train(
 
 The central environment factories can optionally wrap the completed environment
 stack with video recording. Recording is disabled by default and requires an
-image-producing render mode such as ``"rgb_array"``.
+image-producing render mode such as `"rgb_array"`.
 
 ```python
 from masa.common.utils import make_env
 from masa.envs.discrete.conveyor_belt import cost_fn, label_fn
 
+
 def record_every_episode(episode_id):
     return True
+
 
 env = make_env(
     "conveyor_belt",
@@ -199,15 +206,17 @@ env = make_env(
 )
 ```
 
-For renderable PettingZoo parallel environments, ``make_marl_env`` applies
+For renderable PettingZoo parallel environments, `make_marl_env` applies
 MASA's PettingZoo video wrapper in the same outermost position:
 
 ```python
 from masa.common.constraints.multi_agent.cmg import Budget
 from masa.common.utils import make_marl_env
 
+
 def record_every_episode(episode_id):
     return True
+
 
 env = make_marl_env(
     "renderable_marl_env",
@@ -221,7 +230,7 @@ env = make_marl_env(
 ```
 
 The PettingZoo wrapper supports renderable parallel environments and plugins
-whose ``render()`` returns RGB numpy arrays. The built-in matrix games expose
+whose `render()` returns RGB numpy arrays. The built-in matrix games expose
 the central wrapper path, but do not yet include concrete image renderers.
 
 ## API Reference for environment factories

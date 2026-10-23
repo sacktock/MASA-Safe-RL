@@ -8,8 +8,8 @@
 - Metadata name: `inspection_matrix_v0`
 - Agents: `player_0` (inspector), `player_1` (inspectee)
 - Actions:
-  `player_0`: `NotInspect=0`, `Inspect=1`
-  `player_1`: `Comply=0`, `Violate=1`
+    `player_0`: `NotInspect=0`, `Inspect=1`
+    `player_1`: `Comply=0`, `Violate=1`
 - Default parameters: `b=5`, `f=10`, `c=2`, `h=4`, `v=3`
 
 The stage game is:

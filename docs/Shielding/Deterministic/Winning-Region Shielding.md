@@ -9,9 +9,9 @@ property.
 There are two interfaces to the same safety analysis:
 
 - `PreemptiveLTLShield` exposes the permitted actions before the policy chooses.
-  An unsafe choice is rejected before the environment advances.
+    An unsafe choice is rejected before the environment advances.
 - `PostposedLTLShield` checks the policy's proposal and replaces it only when
-  necessary. Safe proposals are executed unchanged.
+    necessary. Safe proposals are executed unchanged.
 
 These are environment wrappers, not learning algorithms. They do not optimize
 reward, learn a dynamics model, or guarantee eventual task completion.
@@ -47,7 +47,7 @@ The product state $x=(q,s)$ records both the physical state and the monitor's
 memory. The game interpretation is:
 
 1. the controller chooses an action;
-2. the environment may realize any successor in that action's transition support.
+1. the environment may realize any successor in that action's transition support.
 
 An explicit second player does not need to be implemented in the simulator.
 
@@ -326,12 +326,12 @@ masa/deterministic_shield/replacement_strategies.py
 
 and are also exported from `masa.deterministic_shield`.
 
-| Configuration | Behavior on an unsafe proposal |
-|---|---|
-| `replacement=None` | Uses the precomputed lowest-index safe action. |
-| `replacement=random_safe(seed=23)` | Samples uniformly among the current safe actions. |
-| `replacement=highest_score(score_fn)` | Chooses the safe action with the highest score. Ties use the lowest index. |
-| `replacement=custom_callback` | Calls `custom_callback(product_obs, proposal, safe_mask)` and validates the result before execution. |
+| Configuration                         | Behavior on an unsafe proposal                                                                       |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `replacement=None`                    | Uses the precomputed lowest-index safe action.                                                       |
+| `replacement=random_safe(seed=23)`    | Samples uniformly among the current safe actions.                                                    |
+| `replacement=highest_score(score_fn)` | Chooses the safe action with the highest score. Ties use the lowest index.                           |
+| `replacement=custom_callback`         | Calls `custom_callback(product_obs, proposal, safe_mask)` and validates the result before execution. |
 
 ### Random safe replacement
 
@@ -345,7 +345,7 @@ Important details:
 
 - `env.reset(seed=...)` does **not** seed or rewind the replacement generator;
 - the same replacement seed and the same sequence of intervention masks reproduce
-  the same replacement sequence;
+    the same replacement sequence;
 - construct a fresh `random_safe(seed)` to restart the replacement sequence;
 - use a separate replacement callback for each environment;
 - safe proposals do not consume replacement random numbers.
@@ -385,13 +385,13 @@ environment.
 
 Both wrappers expose the same synthesized safety information:
 
-| Attribute or method | Meaning |
-|---|---|
-| `winning_region` | Read-only Boolean array of shape `(n_dfa * n_states,)`. |
-| `safe_actions` | Read-only Boolean array of shape `(n_dfa * n_states, n_actions)`. |
-| `action_masks()` | Copy of the safe-action row for the current product state. |
-| `reset(...)` | Resets the environment and validates the initial product state. |
-| `step(action)` | Executes the preemptive or postposed shielding behavior. |
+| Attribute or method | Meaning                                                           |
+| ------------------- | ----------------------------------------------------------------- |
+| `winning_region`    | Read-only Boolean array of shape `(n_dfa * n_states,)`.           |
+| `safe_actions`      | Read-only Boolean array of shape `(n_dfa * n_states, n_actions)`. |
+| `action_masks()`    | Copy of the safe-action row for the current product state.        |
+| `reset(...)`        | Resets the environment and validates the initial product state.   |
+| `step(action)`      | Executes the preemptive or postposed shielding behavior.          |
 
 After a successful step, `info` contains:
 

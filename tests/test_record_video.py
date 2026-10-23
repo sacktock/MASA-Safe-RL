@@ -21,7 +21,6 @@ def _never(_):
 
 def test_make_env_records_video(tmp_path):
     from masa.common.utils import make_env
-    
 
     video_folder = tmp_path / "gymnasium-videos"
     env = make_env(
@@ -64,17 +63,25 @@ def test_make_env_recording_is_off_by_default():
 
     try:
         assert isinstance(env, RewardMonitor)
-        assert not isinstance(env, ConstraintPersistentGymnasiumWrapper) and not hasattr(env, "wrapper_cls")
+        assert not isinstance(
+            env, ConstraintPersistentGymnasiumWrapper
+        ) and not hasattr(env, "wrapper_cls")
     finally:
         env.close()
 
 
 class DummyVideoParallelEnv(ParallelEnv):
-    metadata = {"name": "dummy_video_parallel_v0", "render_modes": ["rgb_array"], "render_fps": 4}
+    metadata = {
+        "name": "dummy_video_parallel_v0",
+        "render_modes": ["rgb_array"],
+        "render_fps": 4,
+    }
 
     def __init__(self, render_mode: str | None = "rgb_array"):
         if render_mode != "rgb_array":
-            raise ValueError("DummyVideoParallelEnv only supports render_mode='rgb_array'.")
+            raise ValueError(
+                "DummyVideoParallelEnv only supports render_mode='rgb_array'."
+            )
         self.render_mode = render_mode
         self.possible_agents = ["player_0", "player_1"]
         self.agents = []
@@ -128,7 +135,11 @@ def test_make_marl_env_records_video(tmp_path):
     env = make_marl_env(
         "DummyVideoParallelEnv",
         "CMG",
-        constraint_kwargs={"budgets": [Budget(amount=3.0, agents=("player_0", "player_1"), name="shared")]},
+        constraint_kwargs={
+            "budgets": [
+                Budget(amount=3.0, agents=("player_0", "player_1"), name="shared")
+            ]
+        },
         env_kwargs={"render_mode": "rgb_array"},
         record_video=True,
         record_video_episode_trigger=_always,
@@ -173,7 +184,11 @@ def test_make_marl_env_recording_is_off_by_default():
     env = make_marl_env(
         "ChickenMatrix",
         "CMG",
-        constraint_kwargs={"budgets": [Budget(amount=3.0, agents=("player_0", "player_1"), name="shared")]},
+        constraint_kwargs={
+            "budgets": [
+                Budget(amount=3.0, agents=("player_0", "player_1"), name="shared")
+            ]
+        },
         env_kwargs={"max_moves": 1},
     )
 

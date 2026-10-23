@@ -73,10 +73,11 @@ ProdState = int
 
 product_cost_fn = lambda labels: 1.0 if "accepting" in labels else 0.0
 
+
 def create_product_transition_matrix(
     n_states: int,
     n_actions: int,
-    transition_matrix: np.ndarray, 
+    transition_matrix: np.ndarray,
     dfa: DFA,
     label_fn: LabelFn,
 ) -> np.ndarray:
@@ -113,19 +114,25 @@ def create_product_transition_matrix(
 
     """
 
-    assert len(transition_matrix.shape) == 3 and transition_matrix.shape[0] == transition_matrix.shape[1], \
-    f"Expected transition matrix with shape (n_states, n_states, n_actions), got shape {transition_matrix.shape} instead"
+    assert (
+        len(transition_matrix.shape) == 3
+        and transition_matrix.shape[0] == transition_matrix.shape[1]
+    ), (
+        f"Expected transition matrix with shape (n_states, n_states, n_actions), got shape {transition_matrix.shape} instead"
+    )
 
     aut_states = list(dfa.states)
     n_aut = len(aut_states)
     aut_index = {q: i for i, q in enumerate(aut_states)}
 
-    assert n_states == transition_matrix.shape[0], \
-    "Something went wrong, the provided n_states does not equal the number of states in transition_matrix"
+    assert n_states == transition_matrix.shape[0], (
+        "Something went wrong, the provided n_states does not equal the number of states in transition_matrix"
+    )
     f"Got n_states = {n_states} and transition_matrix.shape[0] == {transition_matrix.shape[0]}"
 
-    assert n_actions == transition_matrix.shape[2], \
-    "Something went wrong, the provided n_actions does not equal the number of states in transition_matrix"
+    assert n_actions == transition_matrix.shape[2], (
+        "Something went wrong, the provided n_actions does not equal the number of states in transition_matrix"
+    )
     f"Got n_actions = {n_actions} and transition_matrix.shape[2] == {transition_matrix.shape[2]}"
 
     sat = np.zeros((n_aut, n_aut, n_states), dtype=np.float32)
@@ -152,7 +159,7 @@ def create_product_transition_matrix(
     loop_sat = 1.0 - outgoing_any
     sat[idx, idx, :] = loop_sat
 
-    product = np.einsum('ijs,ska->jsika', sat, transition_matrix.astype(np.float32))
+    product = np.einsum("ijs,ska->jsika", sat, transition_matrix.astype(np.float32))
 
     n_prod_states = n_states * n_aut
     product_transition_matrix = product.reshape(
@@ -163,6 +170,7 @@ def create_product_transition_matrix(
 
     return product_transition_matrix
 
+
 def create_product_successor_states_and_probabilities(
     n_states: int,
     n_actions: int,
@@ -170,7 +178,9 @@ def create_product_successor_states_and_probabilities(
     probabilities: Dict[Tuple[State, Action], np.ndarray],
     dfa: DFA,
     label_fn: LabelFn,
-) -> Tuple[Dict[ProdState, List[ProdState]], Dict[Tuple[ProdState, Action], np.ndarray]]:
+) -> Tuple[
+    Dict[ProdState, List[ProdState]], Dict[Tuple[ProdState, Action], np.ndarray]
+]:
     """Create a sparse product successor representation (MDP x DFA).
 
     This constructs:
@@ -208,12 +218,13 @@ def create_product_successor_states_and_probabilities(
 
     base_states = sorted(successor_states.keys())
 
-    assert n_states == len(base_states), \
-    "Something went wrong, the provided n_states does not equal the numebr of states in successor_states "
+    assert n_states == len(base_states), (
+        "Something went wrong, the provided n_states does not equal the numebr of states in successor_states "
+    )
     f"Got n_states = {n_states} and len(successor_states) = {len(base_states)}"
 
     state_index = {s: idx for idx, s in enumerate(base_states)}
-    
+
     aut_states = list(dfa.states)
     n_aut = len(aut_states)
     aut_index = {q: i for i, q in enumerate(aut_states)}
@@ -252,6 +263,7 @@ def create_product_successor_states_and_probabilities(
 
     return prod_successor_states, prod_probabilities
 
+
 def create_product_label_fn(
     n_states: int,
     dfa: DFA,
@@ -285,6 +297,7 @@ def create_product_label_fn(
             return set()
 
     return product_label_fn
+
 
 class LTLSafety(Constraint):
     """DFA-based safety monitor.
@@ -360,7 +373,10 @@ class LTLSafety(Constraint):
             - ``"cum_unsafe"``: count of unsafe steps,
             - ``"satisfied"``: 1.0 if safe else 0.0.
         """
-        return {"cum_unsafe": float(self.total_unsafe), "satisfied": float(self.satisfied())}
+        return {
+            "cum_unsafe": float(self.total_unsafe),
+            "satisfied": float(self.satisfied()),
+        }
 
     def step_metric(self) -> Dict[str, float]:
         """Per-step metrics.
@@ -371,12 +387,17 @@ class LTLSafety(Constraint):
             - ``"cost"``: current step cost,
             - ``"violation"``: 1.0 if ``cost >= 0.5`` else 0.0.
         """
-        return {"cost": self.step_cost, "violation": float(self.step_cost >= 0.5), "cost_done": float(self.step_cost >= 0.5)}
+        return {
+            "cost": self.step_cost,
+            "violation": float(self.step_cost >= 0.5),
+            "cost_done": float(self.step_cost >= 0.5),
+        }
 
     @property
     def constraint_type(self) -> str:
         """Stable identifier string: ``"LTL_SAFETY"``."""
         return "LTL_SAFETY"
+
 
 class LTLSafetyEnv(BaseConstraintEnv):
     """Gymnasium wrapper that monitors LTL safety and augments observations.
@@ -442,7 +463,7 @@ class LTLSafetyEnv(BaseConstraintEnv):
             raise ValueError(
                 f"obs_type must be one of ['discrete', 'box', 'dict'], got {obs_type!r}"
             )
-            
+
         super().__init__(env, LTLSafety(dfa=dfa), **kw)
         self._num_automaton_states = int(dfa.num_automaton_states)
         if self._num_automaton_states < 1:
@@ -454,9 +475,13 @@ class LTLSafetyEnv(BaseConstraintEnv):
         self._obs_type = obs_type
         self._box_dtype = np.float32
 
-        self.observation_space = self._make_augmented_obs_space(self._orig_obs_space, self._obs_type)
+        self.observation_space = self._make_augmented_obs_space(
+            self._orig_obs_space, self._obs_type
+        )
 
-    def _make_augmented_obs_space(self, orig: spaces.Space, obs_type: str) -> spaces.Space:
+    def _make_augmented_obs_space(
+        self, orig: spaces.Space, obs_type: str
+    ) -> spaces.Space:
         """Construct the augmented observation space.
 
         Args:
@@ -485,7 +510,7 @@ class LTLSafetyEnv(BaseConstraintEnv):
                 return spaces.Dict(
                     {
                         "orig": spaces.Discrete(n),
-                        "automaton": spaces.Discrete(self._num_automaton_states)
+                        "automaton": spaces.Discrete(self._num_automaton_states),
                     }
                 )
             raise RuntimeError(f"Unhandled obs_type: {obs_type!r}")
@@ -519,7 +544,7 @@ class LTLSafetyEnv(BaseConstraintEnv):
                 return spaces.Dict(
                     {
                         "orig": orig,
-                        "automaton": spaces.Discrete(self._num_automaton_states)
+                        "automaton": spaces.Discrete(self._num_automaton_states),
                     }
                 )
             raise RuntimeError(f"Unhandled obs_type: {obs_type!r}")
@@ -583,15 +608,22 @@ class LTLSafetyEnv(BaseConstraintEnv):
 
         if isinstance(orig, spaces.Discrete):
             if not isinstance(obs, (int, np.integer)):
-                raise TypeError(f"Expected Discrete obs as int, got {type(obs).__name__}")
+                raise TypeError(
+                    f"Expected Discrete obs as int, got {type(obs).__name__}"
+                )
             s = int(obs)
             if not (0 <= s < int(orig.n)):
-                raise TypeError(f"Discrete obs out of range: got {s}, expected [0, {orig.n})")
+                raise TypeError(
+                    f"Discrete obs out of range: got {s}, expected [0, {orig.n})"
+                )
             if obs_type == "discrete":
                 return int(orig.n) * q_idx + s
             if obs_type == "box":
                 return np.concatenate(
-                    [self._one_hot(s, int(orig.n)), self._one_hot(q_idx, self._num_automaton_states)],
+                    [
+                        self._one_hot(s, int(orig.n)),
+                        self._one_hot(q_idx, self._num_automaton_states),
+                    ],
                     axis=0,
                 )
             if obs_type == "dict":
@@ -602,46 +634,52 @@ class LTLSafetyEnv(BaseConstraintEnv):
             raise RuntimeError(f"Unhandled obs_type: {obs_type!r}")
         if isinstance(orig, spaces.Box):
             if obs_type == "discrete":
-                raise RuntimeError("obs_type='discrete' with Box base should have been rejected.")
-            arr = obs if isinstance(obs, np.ndarray) else np.asarray(obs, dtype=self._box_dtype)
+                raise RuntimeError(
+                    "obs_type='discrete' with Box base should have been rejected."
+                )
+            arr = (
+                obs
+                if isinstance(obs, np.ndarray)
+                else np.asarray(obs, dtype=self._box_dtype)
+            )
             if arr.ndim != 1:
                 raise TypeError(
                     f"Expected 1-D Box observation, got shape {getattr(arr, 'shape', None)}"
                 )
             arr = arr.astype(self._box_dtype, copy=False)
             if obs_type == "box":
-                return np.concatenate([arr, self._one_hot(q_idx, self._num_automaton_states)], axis=0)
+                return np.concatenate(
+                    [arr, self._one_hot(q_idx, self._num_automaton_states)], axis=0
+                )
             if obs_type == "dict":
-                return {
-                    "orig": arr,
-                    "automaton": q_idx
-                }
+                return {"orig": arr, "automaton": q_idx}
             raise RuntimeError(f"Unhandled obs_type: {obs_type!r}")
         if isinstance(orig, spaces.Dict):
             if obs_type != "dict":
-                raise RuntimeError("Only obs_type='dict' is supported for Dict base spaces.")
+                raise RuntimeError(
+                    "Only obs_type='dict' is supported for Dict base spaces."
+                )
             if not isinstance(obs, dict):
                 raise TypeError(f"Expected Dict obs as dict, got {type(obs).__name__}")
             out = dict(obs)
             out["automaton"] = q_idx
             return out
 
-        raise RuntimeError(f"Unexpected base observation space type {type(orig).__name__}")
+        raise RuntimeError(
+            f"Unexpected base observation space type {type(orig).__name__}"
+        )
 
     def reset(self, *, seed: int | None = None, options: Dict[str, Any] | None = None):
         obs, info = self.env.reset(seed=seed, options=options)
         self._constraint.reset()
         labels = info.get("labels", set())
         self._constraint.update(labels)
-        info['automaton_state'] = self._constraint.get_automaton_state()
+        info["automaton_state"] = self._constraint.get_automaton_state()
         return self._augment_obs(obs), info
 
     def step(self, action):
         obs, reward, terminated, truncated, info = self.env.step(action)
         labels = info.get("labels", set())
         self._constraint.update(labels)
-        info['automaton_state'] = self._constraint.get_automaton_state()
+        info["automaton_state"] = self._constraint.get_automaton_state()
         return self._augment_obs(obs), reward, terminated, truncated, info
-    
-
-        

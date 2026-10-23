@@ -103,7 +103,9 @@ class BridgeCrossingRenderer:
 
         for row in range(snapshot.grid_size):
             for col in range(snapshot.grid_size):
-                rect = pygame.Rect(col * high_cell, row * high_cell, high_cell, high_cell)
+                rect = pygame.Rect(
+                    col * high_cell, row * high_cell, high_cell, high_cell
+                )
                 floor = FLOOR_COLOR if (row + col) % 2 == 0 else FLOOR_ALT_COLOR
                 self._draw_floor_tile(surface, rect, high_cell, floor)
 
@@ -112,11 +114,18 @@ class BridgeCrossingRenderer:
         for state in snapshot.lava_states:
             self._draw_lava_tile(surface, state, snapshot.grid_size, high_cell)
 
-        self._draw_start_tile(surface, snapshot.start_state, snapshot.grid_size, high_cell)
-        self._draw_agent(surface, snapshot.agent_position, high_cell, snapshot.step_count)
+        self._draw_start_tile(
+            surface, snapshot.start_state, snapshot.grid_size, high_cell
+        )
+        self._draw_agent(
+            surface, snapshot.agent_position, high_cell, snapshot.step_count
+        )
 
         if scale > 1:
-            final_size = (snapshot.grid_size * cell_size, snapshot.grid_size * cell_size)
+            final_size = (
+                snapshot.grid_size * cell_size,
+                snapshot.grid_size * cell_size,
+            )
             surface = pygame.transform.smoothscale(surface, final_size)
 
         frame = np.transpose(pygame.surfarray.array3d(surface), (1, 0, 2))
@@ -136,7 +145,9 @@ class BridgeCrossingRenderer:
         if self._human_window is None:
             pygame.init()
             pygame.display.set_caption("MASA - Bridge Crossing")
-            self._human_window = pygame.display.set_mode(self._human_window_size, pygame.RESIZABLE)
+            self._human_window = pygame.display.set_mode(
+                self._human_window_size, pygame.RESIZABLE
+            )
             self._human_clock = pygame.time.Clock()
 
         for event in pygame.event.get():
@@ -146,13 +157,17 @@ class BridgeCrossingRenderer:
             return
 
         window_width, window_height = self._human_window.get_size()
-        target_width, target_height = _fit_size((width, height), (window_width, window_height))
+        target_width, target_height = _fit_size(
+            (width, height), (window_width, window_height)
+        )
         left = (window_width - target_width) // 2
         top = (window_height - target_height) // 2
 
         frame_surface = pygame.surfarray.make_surface(np.transpose(frame, (1, 0, 2)))
         if (target_width, target_height) != (width, height):
-            frame_surface = pygame.transform.smoothscale(frame_surface, (target_width, target_height))
+            frame_surface = pygame.transform.smoothscale(
+                frame_surface, (target_width, target_height)
+            )
 
         self._human_window.fill(FLOOR_COLOR)
         self._human_window.blit(frame_surface, (left, top))
@@ -162,7 +177,9 @@ class BridgeCrossingRenderer:
 
     def _snapshot(self) -> "_BridgeCrossingSnapshot":
         grid_size = int(self.env._grid_size)
-        state = int(self.env._start_state if self.env._state is None else self.env._state)
+        state = int(
+            self.env._start_state if self.env._state is None else self.env._state
+        )
         return _BridgeCrossingSnapshot(
             grid_size=grid_size,
             agent_position=_state_position(state, grid_size),
@@ -172,42 +189,68 @@ class BridgeCrossingRenderer:
             step_count=int(getattr(self.env, "_step_count", 0)),
         )
 
-    def _draw_floor_tile(self, surface: Any, rect: Any, cell_size: int, color: RGBColor) -> None:
+    def _draw_floor_tile(
+        self, surface: Any, rect: Any, cell_size: int, color: RGBColor
+    ) -> None:
         import pygame
 
         pygame.draw.rect(surface, color, rect)
         pygame.draw.rect(surface, GRID_COLOR, rect, width=max(1, cell_size // 36))
 
-    def _draw_goal_tile(self, surface: Any, state: int, grid_size: int, cell_size: int) -> None:
+    def _draw_goal_tile(
+        self, surface: Any, state: int, grid_size: int, cell_size: int
+    ) -> None:
         import pygame
 
         rect = _cell_rect(state, grid_size, cell_size)
         pygame.draw.rect(surface, GOAL_COLOR, rect)
         inset = max(2, cell_size // 7)
         inner = rect.inflate(-inset * 2, -inset * 2)
-        pygame.draw.rect(surface, GOAL_GLOW_COLOR, inner, border_radius=max(2, cell_size // 10))
+        pygame.draw.rect(
+            surface, GOAL_GLOW_COLOR, inner, border_radius=max(2, cell_size // 10)
+        )
 
-    def _draw_lava_tile(self, surface: Any, state: int, grid_size: int, cell_size: int) -> None:
+    def _draw_lava_tile(
+        self, surface: Any, state: int, grid_size: int, cell_size: int
+    ) -> None:
         import pygame
 
         rect = _cell_rect(state, grid_size, cell_size)
         pygame.draw.rect(surface, LAVA_DARK_COLOR, rect)
         inner = rect.inflate(-max(2, cell_size // 16), -max(2, cell_size // 16))
-        pygame.draw.rect(surface, LAVA_COLOR, inner, border_radius=max(2, cell_size // 12))
+        pygame.draw.rect(
+            surface, LAVA_COLOR, inner, border_radius=max(2, cell_size // 12)
+        )
         center = rect.center
         radius = max(2, cell_size // 8)
-        pygame.draw.circle(surface, LAVA_GLOW_COLOR, (center[0] - cell_size // 6, center[1] + cell_size // 8), radius)
-        pygame.draw.circle(surface, LAVA_GLOW_COLOR, (center[0] + cell_size // 5, center[1] - cell_size // 7), max(2, radius // 2))
+        pygame.draw.circle(
+            surface,
+            LAVA_GLOW_COLOR,
+            (center[0] - cell_size // 6, center[1] + cell_size // 8),
+            radius,
+        )
+        pygame.draw.circle(
+            surface,
+            LAVA_GLOW_COLOR,
+            (center[0] + cell_size // 5, center[1] - cell_size // 7),
+            max(2, radius // 2),
+        )
 
-    def _draw_start_tile(self, surface: Any, state: int, grid_size: int, cell_size: int) -> None:
+    def _draw_start_tile(
+        self, surface: Any, state: int, grid_size: int, cell_size: int
+    ) -> None:
         import pygame
 
         center = _state_center(state, grid_size, cell_size)
         radius = max(4, cell_size // 5)
-        pygame.draw.circle(surface, (105, 76, 31), center, radius + max(2, cell_size // 24))
+        pygame.draw.circle(
+            surface, (105, 76, 31), center, radius + max(2, cell_size // 24)
+        )
         pygame.draw.circle(surface, START_COLOR, center, radius)
 
-    def _draw_agent(self, surface: Any, position: Position, cell_size: int, step_count: int) -> None:
+    def _draw_agent(
+        self, surface: Any, position: Position, cell_size: int, step_count: int
+    ) -> None:
         row, col = position
         draw_agent(
             surface,

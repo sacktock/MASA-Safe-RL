@@ -4,7 +4,7 @@ This module provides a **Gymnasium-compatible implementation of Probabilistic Sh
 
 > **Probabilistic Shielding for Safe Reinforcement Learning**
 > Edwin Hamel-De le Court, Francesco Belardinelli, Alexander W. Goodall
-> arXiv: [https://arxiv.org/abs/2503.07671](https://arxiv.org/abs/2503.07671) 
+> arXiv: [https://arxiv.org/abs/2503.07671](https://arxiv.org/abs/2503.07671)
 
 The approach guarantees **probabilistic safety during both training and evaluation**, while remaining **optimality-preserving** among all safe policies.
 
@@ -75,10 +75,10 @@ See
 
 Use Probabilistic Shielding when:
 
-* Safety is **non-negotiable**.
-* Constraints are **probabilistic**, not expected-cost based.
-* You want **formal guarantees**, not penalties or Lagrangians.
-* The safety dynamics (or a conservative abstraction) are known.
+- Safety is **non-negotiable**.
+- Constraints are **probabilistic**, not expected-cost based.
+- You want **formal guarantees**, not penalties or Lagrangians.
+- The safety dynamics (or a conservative abstraction) are known.
 
 ## Citation
 

@@ -9,6 +9,7 @@ The example intentionally keeps the policies independent: each agent owns a
 separate MASA ``QL`` learner.  The coordinator only assembles simultaneous
 PettingZoo actions and distributes the resulting per-agent transitions.
 """
+
 from __future__ import annotations
 
 import argparse

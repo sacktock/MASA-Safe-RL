@@ -15,10 +15,10 @@ $$
 
 An atomic predicate represents a Boolean property of the environment state, such as:
 
-- ``"unsafe"``
-- ``"goal"``
-- ``"collision"``
-- ``"near_obstacle"``
+- `"unsafe"`
+- `"goal"`
+- `"collision"`
+- `"near_obstacle"`
 
 At runtime, a state may satisfy **zero or more** atomic predicates simultaneously; therefore the label of a
 state/observation is a **set** of predicates.
@@ -44,12 +44,12 @@ atomic predicates.
 
 ### Semantics
 
-Given an observation ``obs``, the labelling function returns the **set of atomic predicates that hold** in
+Given an observation `obs`, the labelling function returns the **set of atomic predicates that hold** in
 that observation.
 
 Requirements:
 
-- The output must be **iterable** (e.g. ``list``, ``tuple``, ``set``).
+- The output must be **iterable** (e.g. `list`, `tuple`, `set`).
 - Elements must be **strings**, each naming an atomic predicate in $\mathcal{AP}$.
 - The returned collection is interpreted as a **set** (duplicates are ignored).
 
@@ -84,18 +84,18 @@ This improves:
 
 **Convention summary**
 
-| Concept | Convention |
-| --- | --- |
+| Concept                 | Convention                                                                |
+| ----------------------- | ------------------------------------------------------------------------- |
 | Input to label function | Raw observation returned by `gymnasium.Env.reset` / `gymnasium.Env.step`. |
-| Output | A set of atomic predicate strings ($L(obs) \subseteq \mathcal{AP}$). |
-| Empty output | Valid (no predicates satisfied). |
-| Determinism | Strongly recommended. |
+| Output                  | A set of atomic predicate strings ($L(obs) \subseteq \mathcal{AP}$).      |
+| Empty output            | Valid (no predicates satisfied).                                          |
+| Determinism             | Strongly recommended.                                                     |
 
 ## Labelled Environment Wrapper
 
-To standardise access to labels, MASA provides [`masa.common.labelled_env.LabelledEnv`][masa.common.labelled_env.LabelledEnv], a lightweight
+To standardise access to labels, MASA provides \[`masa.common.labelled_env.LabelledEnv`\][masa.common.labelled_env.LabelledEnv], a lightweight
 Gymnasium wrapper that computes labels on **every** `reset` and `step`
-and injects them into the ``info`` dictionary under the key ``"labels"``:
+and injects them into the `info` dictionary under the key `"labels"`:
 
 ```python
 info["labels"] = set(label_fn(obs))
@@ -125,9 +125,9 @@ labels = info["labels"]
 
 ## Common Pitfalls
 
-| Pitfall | Recommendation |
-| --- | --- |
-| Returning non-strings | Always return strings naming atomic predicates. |
-| Using environment internals | Derive labels from observations (not hidden state). |
-| Stateful label functions | Prefer pure, stateless functions (state belongs in constraints/monitors). |
-| Inconsistent predicate vocabulary | Define and document $\mathcal{AP}$ clearly (including spelling/casing). |
+| Pitfall                           | Recommendation                                                            |
+| --------------------------------- | ------------------------------------------------------------------------- |
+| Returning non-strings             | Always return strings naming atomic predicates.                           |
+| Using environment internals       | Derive labels from observations (not hidden state).                       |
+| Stateful label functions          | Prefer pure, stateless functions (state belongs in constraints/monitors). |
+| Inconsistent predicate vocabulary | Define and document $\mathcal{AP}$ clearly (including spelling/casing).   |

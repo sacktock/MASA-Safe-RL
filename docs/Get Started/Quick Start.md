@@ -1,29 +1,34 @@
-Quick Start
-===========
+# Quick Start
 
-Installation
-------------
+## Installation
 
 Python 3.13+ is required (3.13 recommended).
 
 ### Installation with conda
+
 - Install conda, e.g., via [anaconda](https://anaconda.org/channels/anaconda/packages/conda/overview).
 - Clone the repo:
+
 ```bash
 git clone https://github.com/sacktock/MASA-Safe-RL.git
 cd MASA-Safe-RL
 ```
+
 - Create a conda virtual environment:
+
 ```bash
 conda env create --name masa --file conda-environment.yaml
 conda activate masa
 ```
+
 - Install dependencies:
+
 ```bash
 pip install -e .
 ```
 
 ### Installation with uv
+
 `uv sync` installs only base dependency package from the repository root.
 
 **Easiest way to install all dependencies:** All dependency groups (docs and GPU support for CUDA13): `uv sync --all-groups --no-group cuda12`.
@@ -31,12 +36,13 @@ pip install -e .
 Alternatively, `uv sync --all-groups --no-group cuda13` if your system only supports CUDA 12.
 
 More minimal ways of installing dependency groups:
-* For building docs, use `uv sync --group docs` from the repository root.
-* Adding GPU support for Jax: `uv sync --group cuda13` (or `cuda12` if CUDA 13 is not supported by your device)
+
+- For building docs, use `uv sync --group docs` from the repository root.
+- Adding GPU support for Jax: `uv sync --group cuda13` (or `cuda12` if CUDA 13 is not supported by your device)
 
 ### Installation with PyPI
 
-MASA-Safe-RL is now available on PyPI: [MASA-Safe-RL](https://pypi.org/project/MASA-Safe-RL/). 
+MASA-Safe-RL is now available on PyPI: [MASA-Safe-RL](https://pypi.org/project/MASA-Safe-RL/).
 
 ```bash
 pip install -U MASA-Safe-RL
@@ -46,29 +52,40 @@ pip install -U MASA-Safe-RL
 
 MASA-Safe-RL relies on [JAX](https://docs.jax.dev/) for GPU acceleration. If you are only interested in the gymnasium wrappers and constraints API then you do not need to complete the following steps.
 
-- **Linux x86_64/aarch64**: jax and jaxlib `0.4.30` should already be installed via the `requirements.txt`. You need to reinstall JAX based on your cuda driver compatibility. Do not use the ```-U``` option here!
+- **Linux x86_64/aarch64**: jax and jaxlib `0.4.30` should already be installed via the `requirements.txt`. You need to reinstall JAX based on your cuda driver compatibility. Do not use the `-U` option here!
+
 ```bash
 pip install "jax[cuda13]"
 ```
+
 or
+
 ```bash
 pip install "jax[cuda12]"
 ```
-- **Windows**: GPU acceletartion is also supported (experimentally) on Windows WSL x86_64. We strongly recommend using [Ubuntu 22.04](https://apps.microsoft.com/detail/9pn20msr04dw?hl=en-GB&gl=BE) or similar. You need to reinstall JAX based on your cuda driver compatibility. Do not use the ```-U``` option here!
+
+- **Windows**: GPU acceletartion is also supported (experimentally) on Windows WSL x86_64. We strongly recommend using [Ubuntu 22.04](https://apps.microsoft.com/detail/9pn20msr04dw?hl=en-GB&gl=BE) or similar. You need to reinstall JAX based on your cuda driver compatibility. Do not use the `-U` option here!
+
 ```bash
 pip install "jax[cuda13]"
 ```
+
 or
+
 ```bash
 pip install "jax[cuda12]"
 ```
+
 - **MAC**: we recommend JAX with CPU. No further action is required if you correctly followed the earlier steps.
 
 #### uv
+
 Alternatively with `uv`,
+
 ```bash
 uv sync --group cuda12
 ```
+
 ```bash
 uv sync --group cuda13
 ```

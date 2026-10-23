@@ -21,6 +21,7 @@ All algorithms use the same constrained environment:
 from masa.common.utils import make_env
 from masa.envs.tabular.colour_grid_world import cost_fn, label_fn
 
+
 def make_train_env():
     return make_env(
         "colour_grid_world",
@@ -49,13 +50,13 @@ The unsafe script shows `cost=1.0`, `violation=1.0`, `cum_cost > 0`, and `satisf
 
 ## Algorithms Compared
 
-| Algorithm | Class | Safety mechanism |
-| --- | --- | --- |
-| `q_learning` | `QL` | Task `Q` table only; costs are logged but not penalized in the update target. |
-| `q_learning_lambda` | `QL_Lambda` | Subtracts `cost_lambda * cost` from the reward target. |
-| `lcrl` | `LCRL` | Maps violations to an absorbing-style value based on `r_min / (1 - gamma)`. |
-| `sem` | `SEM` | Learns task `Q` plus auxiliary `D` and `C` safety tables that alter action selection. |
-| `recreg` | `RECREG` | Learns task `Q`, backup `B`, risk `S`, and can report `override_rate` when actions are replaced. |
+| Algorithm           | Class       | Safety mechanism                                                                                 |
+| ------------------- | ----------- | ------------------------------------------------------------------------------------------------ |
+| `q_learning`        | `QL`        | Task `Q` table only; costs are logged but not penalized in the update target.                    |
+| `q_learning_lambda` | `QL_Lambda` | Subtracts `cost_lambda * cost` from the reward target.                                           |
+| `lcrl`              | `LCRL`      | Maps violations to an absorbing-style value based on `r_min / (1 - gamma)`.                      |
+| `sem`               | `SEM`       | Learns task `Q` plus auxiliary `D` and `C` safety tables that alter action selection.            |
+| `recreg`            | `RECREG`    | Learns task `Q`, backup `B`, risk `S`, and can report `override_rate` when actions are replaced. |
 
 The tutorial uses this compact registry:
 

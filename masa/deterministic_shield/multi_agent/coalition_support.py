@@ -1,4 +1,5 @@
 """Support aggregation and decentralised action rectangles for coalitions."""
+
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -29,9 +30,7 @@ class CoalitionSupport:
     support: np.ndarray
 
 
-def _legal_actions(
-    env: TabularParallelEnv, state: int, agent: str
-) -> tuple[int, ...]:
+def _legal_actions(env: TabularParallelEnv, state: int, agent: str) -> tuple[int, ...]:
     """Read one validated state-dependent primitive action set."""
     return env.get_legal_actions(state, agent)
 
@@ -145,9 +144,7 @@ def build_coalition_support(
 
     width = max(1, max(len(ids) for ids, _ in rows))
     successors = np.zeros((env.n_states, width), dtype=np.intp)
-    support = np.zeros(
-        (env.n_states, len(coalition_actions), width), dtype=bool
-    )
+    support = np.zeros((env.n_states, len(coalition_actions), width), dtype=bool)
     for state, (ids, positive) in enumerate(rows):
         successors[state, : len(ids)] = ids
         support[state, :, : len(ids)] = positive
@@ -212,9 +209,7 @@ def rectangular_action_masks(
         )
     action_index = {action: index for index, action in enumerate(actions)}
 
-    local_masks = tuple(
-        np.zeros((safe.shape[0], size), dtype=bool) for size in sizes
-    )
+    local_masks = tuple(np.zeros((safe.shape[0], size), dtype=bool) for size in sizes)
     rectangle_joint = np.zeros_like(safe)
 
     for state in range(safe.shape[0]):

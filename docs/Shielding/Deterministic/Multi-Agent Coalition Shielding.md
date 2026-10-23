@@ -16,9 +16,9 @@ runtime enforcement. No separate game-model object is required.
 
 The wrapper supports two independent choices:
 
-| Setting | Options | Meaning |
-|---|---|---|
-| `mode` | `preemptive`, `postposed` | Reject an unsafe proposal before stepping, or replace it. |
+| Setting     | Options                        | Meaning                                                                                            |
+| ----------- | ------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `mode`      | `preemptive`, `postposed`      | Reject an unsafe proposal before stepping, or replace it.                                          |
 | `execution` | `centralised`, `decentralised` | Select one coalition joint action, or let members choose independently from certified local masks. |
 
 Both execution modes use the same bad-prefix safety DFA and robust coalition
@@ -267,16 +267,16 @@ report proposed and executed primitive and coalition actions.
 
 - The implementation targets PettingZoo's Parallel API, not AEC timing.
 - State and action spaces must be finite; primitive actions are zero-based
-  `Discrete` values.
+    `Discrete` values.
 - The base environment must provide complete transition support.
 - Dynamic agent populations and asynchronous per-agent termination are not
-  supported.
+    supported.
 - Decentralised members must identify the same global tabular and DFA state. This
-  is not a partial-observation synthesis method.
-- As standard with safety-game based shielding, the DFA accepting states must denote bad prefixes; 
-  general liveness objectives are outside this shield.
+    is not a partial-observation synthesis method.
+- As standard with safety-game based shielding, the DFA accepting states must denote bad prefixes;
+    general liveness objectives are outside this shield.
 - Joint-action enumeration grows exponentially with the number of agents.
-  - You'd likely want to read further on shield decentralisation techniques if this becomes an issue in practice.
+    - You'd likely want to read further on shield decentralisation techniques if this becomes an issue in practice.
 
 ## API reference
 

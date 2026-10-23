@@ -34,11 +34,11 @@ Given a label set $L(s) \subseteq \mathcal{AP}$, the cost function returns the
 
 Typical interpretations include:
 
-- ``0.0`` - no safety violation,
-- ``> 0.0`` - degree of violation or risk,
-- ``> 0.5`` - treated as a *violation* by convention in PCTL-based and
-  probabilistic-safety components,
-- binary costs (``0`` / ``1``) are common but not required.
+- `0.0` - no safety violation,
+- `> 0.0` - degree of violation or risk,
+- `> 0.5` - treated as a *violation* by convention in PCTL-based and
+    probabilistic-safety components,
+- binary costs (`0` / `1`) are common but not required.
 
 The meaning of a cost is entirely user-defined, but must be **consistent across episodes**
 and evaluation.
@@ -80,12 +80,12 @@ This ensures:
 
 **Labels to cost summary**
 
-| Input | Output |
-| --- | --- |
-| `Iterable[str]` (labels) | `float` (cost) |
-| Empty label set | Valid input |
-| Stateless cost function | Recommended |
-| Stateful costs | Supported via constraints (e.g., DFA) |
+| Input                    | Output                                |
+| ------------------------ | ------------------------------------- |
+| `Iterable[str]` (labels) | `float` (cost)                        |
+| Empty label set          | Valid input                           |
+| Stateless cost function  | Recommended                           |
+| Stateful costs           | Supported via constraints (e.g., DFA) |
 
 ## Constraints (Conceptual Overview)
 
@@ -100,7 +100,7 @@ Conceptually, constraints may:
 - expose step-level and episode-level metrics for logging and evaluation.
 
 In MASA, constraints are implemented as **Gymnasium wrappers** around a
-[`masa.common.labelled_env.LabelledEnv`][masa.common.labelled_env.LabelledEnv], and are responsible for calling cost
+\[`masa.common.labelled_env.LabelledEnv`\][masa.common.labelled_env.LabelledEnv], and are responsible for calling cost
 functions, tracking state, and reporting metrics.
 
 For full details on the constraint interface, lifecycle, and provided implementations,

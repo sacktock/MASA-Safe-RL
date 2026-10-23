@@ -503,7 +503,9 @@ class ShapedCostFn(DFACostFn):
       - :meth:`reset` and :meth:`__call__` are disabled by design.
     """
 
-    def __init__(self, dfa: DFA, potential_fn: Callable[[int], float], gamma: float = 0.99):
+    def __init__(
+        self, dfa: DFA, potential_fn: Callable[[int], float], gamma: float = 0.99
+    ):
         r"""Creates a shaped DFA cost function.
 
         Args:
@@ -556,8 +558,11 @@ class ShapedCostFn(DFACostFn):
         """
         next_state = self.dfa.transition(state, labels)
         cost = float(next_state in self.dfa.accepting)
-        potential_cost = 0.0 if next_state in self.dfa.accepting or state in self.dfa.accepting else \
-          self._gamma * self.potential_fn(next_state) - self.potential_fn(state)
+        potential_cost = (
+            0.0
+            if next_state in self.dfa.accepting or state in self.dfa.accepting
+            else self._gamma * self.potential_fn(next_state) - self.potential_fn(state)
+        )
         return cost + potential_cost
 
     def __call__(self):

@@ -55,7 +55,7 @@ After reset, the observation has two important pieces:
 ```python
 obs, info = shielded_env.reset(seed=0)
 
-obs["orig_obs"]       # original MiniPacman discrete state
+obs["orig_obs"]  # original MiniPacman discrete state
 obs["safety_bound"]  # remaining safety budget
 ```
 
@@ -98,10 +98,10 @@ That inspection is the heart of the tutorial: it shows how the same MiniPacman a
 When the shielded environment steps:
 
 1. the wrapper parses the augmented action,
-2. projects it to a safe distribution over original actions,
-3. samples an original MiniPacman action,
-4. steps the PCTL-constrained environment,
-5. updates the next observation's `safety_bound`.
+1. projects it to a safe distribution over original actions,
+1. samples an original MiniPacman action,
+1. steps the PCTL-constrained environment,
+1. updates the next observation's `safety_bound`.
 
 The returned `info` still contains MASA constraint data:
 

@@ -12,6 +12,7 @@ DenseKernel = np.ndarray
 CompactKernel = Tuple[np.ndarray, np.ndarray]
 Kernel = Union[DenseKernel, CompactKernel]
 
+
 def kernel_n_states(kernel: Kernel) -> int:
     r"""Return the number of states induced by a transition kernel.
 
@@ -43,6 +44,7 @@ def kernel_n_states(kernel: Kernel) -> int:
         succ, p = kernel
         return succ.shape[1]
     return kernel.shape[1]
+
 
 class BoundedPCTLFormula:
     r"""Base class for bounded PCTL-style formulas.
@@ -80,6 +82,7 @@ class BoundedPCTLFormula:
         Implementations of temporal operators typically use JAX (e.g. ``jit``,
         ``vmap``, ``lax.scan``) to accelerate probability-sequence computation.
     """
+
     def __init__(self) -> None:
         pass
 
@@ -158,6 +161,7 @@ class BoundedPCTLFormula:
             self.bound
         ]
 
+
 class Next(BoundedPCTLFormula):
     r"""Bounded PCTL *next* operator :math:`X` with probability threshold.
 
@@ -214,7 +218,7 @@ class Next(BoundedPCTLFormula):
             operator is defined to have probability 0 at time 0), and rows 1..T
             contain one-step expectations of ``sub_seq``.
         """
-        tail = (m.T @ sub_seq.T)
+        tail = m.T @ sub_seq.T
         tail = jnp.swapaxes(tail, 0, 1)
         zeros = jnp.zeros_like(tail[:1, :])
         return jnp.concatenate([zeros, tail], axis=0)
@@ -235,6 +239,7 @@ class Next(BoundedPCTLFormula):
         Returns:
             Sequence of shape ``(T + 1, S)`` with row 0 all zeros.
         """
+
         def one_step(v):
             v_succ = v[succ]
             return jnp.sum(p * v_succ, axis=0)
@@ -271,14 +276,18 @@ class Next(BoundedPCTLFormula):
         if max_k == 0:
             return np.zeros((1, n_states), dtype=np.float64)
 
-        sub_seq_np = self.subformula._prob_seq(kernel, vec_label_fn, atom_dict, max_k=max_k - 1)
+        sub_seq_np = self.subformula._prob_seq(
+            kernel, vec_label_fn, atom_dict, max_k=max_k - 1
+        )
         sub_seq_j = jnp.asarray(sub_seq_np, dtype=jnp.float64)
 
         if isinstance(kernel, tuple):
             succ, p = kernel
             succ_j = jnp.asarray(succ, dtype=jnp.int64)
             p_j = jnp.asarray(p, dtype=jnp.float64)
-            seq_j = self._next_prob_seq_core_compact(succ_j, p_j, sub_seq_j, K=succ.shape[0])
+            seq_j = self._next_prob_seq_core_compact(
+                succ_j, p_j, sub_seq_j, K=succ.shape[0]
+            )
         else:
             m_j = jnp.asarray(kernel, dtype=jnp.float64)
             seq_j = self._next_prob_seq_core_dense(m_j, sub_seq_j)
@@ -305,6 +314,7 @@ class Next(BoundedPCTLFormula):
             self.bound_param
         ]
         return (probs >= self.prob).astype(np.float64)
+
 
 class Until(BoundedPCTLFormula):
     r"""Bounded PCTL *until* operator :math:`U^{\le B}` with probability threshold.
@@ -340,7 +350,13 @@ class Until(BoundedPCTLFormula):
         subformula_2: Target formula.
     """
 
-    def __init__(self, prob: float, bound, subformula_1: BoundedPCTLFormula, subformula_2: BoundedPCTLFormula):
+    def __init__(
+        self,
+        prob: float,
+        bound,
+        subformula_1: BoundedPCTLFormula,
+        subformula_2: BoundedPCTLFormula,
+    ):
         super().__init__()
         self.prob = prob
         self.bound_param = int(bound)
@@ -386,7 +402,12 @@ class Until(BoundedPCTLFormula):
     @staticmethod
     @partial(jit, static_argnames=("max_k", "K"))
     def _until_prob_seq_core_compact(
-        succ: jnp.ndarray, p: jnp.ndarray, sat1: jnp.ndarray, sat2: jnp.ndarray, max_k: int, K: int
+        succ: jnp.ndarray,
+        p: jnp.ndarray,
+        sat1: jnp.ndarray,
+        sat2: jnp.ndarray,
+        max_k: int,
+        K: int,
     ) -> jnp.ndarray:
         r"""JAX core for bounded-until probabilities using a compact kernel.
 
@@ -438,8 +459,12 @@ class Until(BoundedPCTLFormula):
         if max_k is None:
             max_k = self.bound_param
 
-        sat1_np = self.subformula_1.sat(kernel, vec_label_fn, atom_dict).astype(np.float64)
-        sat2_np = self.subformula_2.sat(kernel, vec_label_fn, atom_dict).astype(np.float64)
+        sat1_np = self.subformula_1.sat(kernel, vec_label_fn, atom_dict).astype(
+            np.float64
+        )
+        sat2_np = self.subformula_2.sat(kernel, vec_label_fn, atom_dict).astype(
+            np.float64
+        )
 
         sat1_j = jnp.asarray(sat1_np, dtype=jnp.float64)
         sat2_j = jnp.asarray(sat2_np, dtype=jnp.float64)
@@ -448,7 +473,9 @@ class Until(BoundedPCTLFormula):
             succ, p = kernel
             succ_j = jnp.asarray(succ, dtype=jnp.int64)
             p_j = jnp.asarray(p, dtype=jnp.float64)
-            seq_j = self._until_prob_seq_core_compact(succ_j, p_j, sat1_j, sat2_j, max_k=max_k, K=succ.shape[0])
+            seq_j = self._until_prob_seq_core_compact(
+                succ_j, p_j, sat1_j, sat2_j, max_k=max_k, K=succ.shape[0]
+            )
         else:
             m_j = jnp.asarray(kernel, dtype=jnp.float64)
             seq_j = self._until_prob_seq_core_dense(m_j, sat1_j, sat2_j, max_k=max_k)
@@ -475,6 +502,7 @@ class Until(BoundedPCTLFormula):
             self.bound_param
         ]
         return (probs >= self.prob).astype(np.float64)
+
 
 class Always(BoundedPCTLFormula):
     r"""Bounded PCTL *always* operator :math:`G^{\le B}` with probability threshold.
@@ -515,7 +543,7 @@ class Always(BoundedPCTLFormula):
 
         self._inner = Neg(
             Until(
-                prob=1.0-self.prob,
+                prob=1.0 - self.prob,
                 bound=self.bound_param,
                 subformula_1=Truth(),
                 subformula_2=Neg(self.subformula),
@@ -534,6 +562,7 @@ class Always(BoundedPCTLFormula):
     def sat(self, kernel, vec_label_fn, atom_dict):
         """Delegate probability-sequence computation to :attr:`_inner`."""
         return self._inner.sat(kernel, vec_label_fn, atom_dict)
+
 
 class Eventually(BoundedPCTLFormula):
     r"""Bounded PCTL *eventually* operator :math:`F^{\le B}` with probability threshold.
@@ -589,6 +618,7 @@ class Eventually(BoundedPCTLFormula):
         """Delegate satisfaction evaluation to :attr:`_inner`."""
         return self._inner.sat(kernel, vec_label_fn, atom_dict)
 
+
 class Truth(BoundedPCTLFormula):
     r"""Boolean constant :math:`\top` (true)."""
 
@@ -615,6 +645,7 @@ class Truth(BoundedPCTLFormula):
         """
         n_states = kernel_n_states(kernel)
         return np.ones(n_states, dtype=np.float64)
+
 
 class Atom(BoundedPCTLFormula):
     r"""Atomic proposition.
@@ -655,6 +686,7 @@ class Atom(BoundedPCTLFormula):
             Float64 array of shape ``(n_states,)`` in ``{0.0, 1.0}``.
         """
         return vec_label_fn[atom_dict[self.atom]]
+
 
 class Neg(BoundedPCTLFormula):
     r"""Logical negation :math:`\neg \Phi`.
@@ -708,6 +740,7 @@ class Neg(BoundedPCTLFormula):
         """
         return 1.0 - self.subformula.sat(kernel, vec_label_fn, atom_dict)
 
+
 class And(BoundedPCTLFormula):
     r"""Logical conjunction :math:`\Phi_1 \land \Phi_2`.
 
@@ -723,7 +756,9 @@ class And(BoundedPCTLFormula):
         subformula_2: Right operand.
     """
 
-    def __init__(self, subformula_1: BoundedPCTLFormula, subformula_2: BoundedPCTLFormula):
+    def __init__(
+        self, subformula_1: BoundedPCTLFormula, subformula_2: BoundedPCTLFormula
+    ):
         super().__init__()
         self.subformula_1 = subformula_1
         self.subformula_2 = subformula_2
@@ -760,10 +795,10 @@ class And(BoundedPCTLFormula):
         Returns:
             Float64 array of shape ``(n_states,)`` in ``{0.0, 1.0}``.
         """
-        return (
-            self.subformula_1.sat(kernel, vec_label_fn, atom_dict)
-            * self.subformula_2.sat(kernel, vec_label_fn, atom_dict)
-        )
+        return self.subformula_1.sat(
+            kernel, vec_label_fn, atom_dict
+        ) * self.subformula_2.sat(kernel, vec_label_fn, atom_dict)
+
 
 class Or(BoundedPCTLFormula):
     r"""Logical disjunction :math:`\Phi_1 \lor \Phi_2`.
@@ -783,7 +818,9 @@ class Or(BoundedPCTLFormula):
         subformula_2: Right operand.
     """
 
-    def __init__(self, subformula_1: BoundedPCTLFormula, subformula_2: BoundedPCTLFormula):
+    def __init__(
+        self, subformula_1: BoundedPCTLFormula, subformula_2: BoundedPCTLFormula
+    ):
         super().__init__()
         self.subformula_1 = subformula_1
         self.subformula_2 = subformula_2
@@ -817,6 +854,7 @@ class Or(BoundedPCTLFormula):
         seq1 = self.subformula_1._prob_seq(kernel, vec_label_fn, atom_dict, max_k)
         seq2 = self.subformula_2._prob_seq(kernel, vec_label_fn, atom_dict, max_k)
         return 1.0 - (1.0 - seq1) * (1.0 - seq2)
+
 
 class BoundedPCTLModelChecker:
     r"""Shared base for bounded PCTL model checkers.
@@ -915,7 +953,7 @@ class BoundedPCTLModelChecker:
         n_atoms = len(self.atomic_predicates)
         vec = np.zeros((n_atoms, self.n_states), dtype=np.float64)
         for s in range(self.n_states):
-            labels = self.label_fn(s) 
+            labels = self.label_fn(s)
             for atom, idx in self.atom_dict.items():
                 vec[idx, s] = 1.0 if atom in labels else 0.0
         return vec
@@ -969,6 +1007,7 @@ class BoundedPCTLModelChecker:
             self.successor_states = succ
             self.probabilities = probs
 
+
 class ExactModelChecker(BoundedPCTLModelChecker):
     r"""Exact model checker for bounded PCTL under a fixed policy.
 
@@ -996,19 +1035,15 @@ class ExactModelChecker(BoundedPCTLModelChecker):
     ):
 
         super().__init__(
-            formula, 
-            label_fn, 
-            atomic_predicates, 
+            formula,
+            label_fn,
+            atomic_predicates,
             transition_matrix=transition_matrix,
             successor_states=successor_states,
             probabilities=probabilities,
         )
 
-    def check_state(
-        self,
-        key: jax.Array, 
-        policy: np.array
-    ) -> np.ndarray:
+    def check_state(self, key: jax.Array, policy: np.array) -> np.ndarray:
         """Evaluate the stored formula on the policy-induced Markov chain.
 
         Args:
@@ -1031,10 +1066,10 @@ class ExactModelChecker(BoundedPCTLModelChecker):
 
         if policy.shape == (A, S):
             policy_sa = policy.T
-            m_pi = np.einsum('ija,ai->ij', tm, policy)
+            m_pi = np.einsum("ija,ai->ij", tm, policy)
         elif policy.shape == (S, A):
             policy_sa = policy
-            m_pi = np.einsum('ija,ia->ij', tm, policy)
+            m_pi = np.einsum("ija,ia->ij", tm, policy)
         else:
             raise ValueError(
                 f"Unexpected policy shape {policy.shape}; expected "
@@ -1051,7 +1086,6 @@ class ExactModelChecker(BoundedPCTLModelChecker):
             probs = self.probabilities
             p_pi = np.einsum("ksa,sa->ks", probs, policy_sa).astype(np.float64)
             kernel = (succ, p_pi)
-        
 
         return self.formula.sat(kernel, self.vec_label_fn, self.atom_dict)
 
@@ -1096,14 +1130,14 @@ class ExactModelChecker(BoundedPCTLModelChecker):
 
         if self.mode == "full":
             tm = self.transition_matrix
-            m_pi = np.einsum('nsa,sa->ns', tm, policy_sa)
+            m_pi = np.einsum("nsa,sa->ns", tm, policy_sa)
             kernel: Kernel = m_pi
         else:
             succ = self.successor_states
             probs = self.probabilities
             p_pi = np.einsum("ksa,sa->ks", probs, policy_sa).astype(np.float64)
             kernel = (succ, p_pi)
-            
+
         B = self.formula.bound
         seq = self.formula._prob_seq(kernel, self.vec_label_fn, self.atom_dict, max_k=B)
         V_Bm1 = seq[max(B - 1, 0)]
@@ -1118,6 +1152,7 @@ class ExactModelChecker(BoundedPCTLModelChecker):
             Q = np.sum(probs * V_succ[:, :, None], axis=0).astype(np.float64)
 
         return Q
+
 
 class StatisticalModelChecker(BoundedPCTLModelChecker):
     r"""Statistical model checker (SMC) for bounded PCTL formulas.
@@ -1146,9 +1181,9 @@ class StatisticalModelChecker(BoundedPCTLModelChecker):
         probabilities: Optional[np.ndarray] = None,
     ):
         super().__init__(
-            formula, 
-            label_fn, 
-            atomic_predicates, 
+            formula,
+            label_fn,
+            atomic_predicates,
             transition_matrix=transition_matrix,
             successor_states=successor_states,
             probabilities=probabilities,
@@ -1158,7 +1193,7 @@ class StatisticalModelChecker(BoundedPCTLModelChecker):
 
     def check_state(
         self,
-        key: jax.Array, 
+        key: jax.Array,
         policy: np.array,
         state: int,
         num_samples: int,
@@ -1210,7 +1245,7 @@ class StatisticalModelChecker(BoundedPCTLModelChecker):
                 m_rest=m_pi_j,
                 formula=self.formula,
                 vec_labels=self.vec_label_fn_jax,
-                atom_dict=self.atom_dict
+                atom_dict=self.atom_dict,
             )
         else:
             assert self.successor_states is not None and self.probabilities is not None
@@ -1230,7 +1265,7 @@ class StatisticalModelChecker(BoundedPCTLModelChecker):
                 p_rest=p_pi_j,
                 formula=self.formula,
                 vec_labels=self.vec_label_fn_jax,
-                atom_dict=self.atom_dict
+                atom_dict=self.atom_dict,
             )
 
         return jnp.where(p_hat >= prob_threshold, 1.0, 0.0).astype(jnp.float64)
@@ -1278,7 +1313,7 @@ class StatisticalModelChecker(BoundedPCTLModelChecker):
             tm = self.transition_matrix
             m_a = tm[:, :, action]
             m_pi = np.einsum("nsa,sa->ns", tm, policy_sa).astype(np.float64)
-            
+
             m_a_j = jnp.asarray(m_a, dtype=jnp.float64)
             m_pi_j = jnp.asarray(m_pi, dtype=jnp.float64)
 
@@ -1291,7 +1326,7 @@ class StatisticalModelChecker(BoundedPCTLModelChecker):
                 m_rest=m_pi_j,
                 formula=self.formula,
                 vec_labels=self.vec_label_fn_jax,
-                atom_dict=self.atom_dict
+                atom_dict=self.atom_dict,
             )
         else:
             assert self.successor_states is not None and self.probabilities is not None
@@ -1315,7 +1350,7 @@ class StatisticalModelChecker(BoundedPCTLModelChecker):
                 p_rest=p_pi_j,
                 formula=self.formula,
                 vec_labels=self.vec_label_fn_jax,
-                atom_dict=self.atom_dict
+                atom_dict=self.atom_dict,
             )
 
         return jnp.where(p_hat >= prob_threshold, 1.0, 0.0).astype(jnp.float64)
@@ -1342,7 +1377,9 @@ class StatisticalModelChecker(BoundedPCTLModelChecker):
             "Trying to get probability threshold from non-probabilistic formula."
         )
 
-    def _eval_state_formula_python(self, formula: BoundedPCTLFormula, state: int) -> bool:
+    def _eval_state_formula_python(
+        self, formula: BoundedPCTLFormula, state: int
+    ) -> bool:
         """Evaluate a pure state formula in Python.
 
         This supports only boolean (non-probabilistic) formulas. Nested
@@ -1367,15 +1404,13 @@ class StatisticalModelChecker(BoundedPCTLModelChecker):
         if isinstance(formula, Neg):
             return not self._eval_state_formula_python(formula.subformula, state)
         if isinstance(formula, And):
-            return (
-                self._eval_state_formula_python(formula.subformula_1, state)
-                and self._eval_state_formula_python(formula.subformula_2, state)
-            )
+            return self._eval_state_formula_python(
+                formula.subformula_1, state
+            ) and self._eval_state_formula_python(formula.subformula_2, state)
         if isinstance(formula, Or):
-            return (
-                self._eval_state_formula_python(formula.subformula_1, state)
-                or self._eval_state_formula_python(formula.subformula_2, state)
-            )
+            return self._eval_state_formula_python(
+                formula.subformula_1, state
+            ) or self._eval_state_formula_python(formula.subformula_2, state)
         if isinstance(formula, Implies):
             left = self._eval_state_formula_python(formula.subformula_1, state)
             right = self._eval_state_formula_python(formula.subformula_2, state)
@@ -1385,7 +1420,9 @@ class StatisticalModelChecker(BoundedPCTLModelChecker):
                 "Nested probabilistic operators in state formulas are not "
                 "supported in StatisticalModelChecker."
             )
-        raise TypeError(f"Unsupported formula type in Python state eval: {type(formula)}")
+        raise TypeError(
+            f"Unsupported formula type in Python state eval: {type(formula)}"
+        )
 
     @staticmethod
     @partial(jit, static_argnames=["n_states", "n_actions"])
@@ -1420,10 +1457,10 @@ class StatisticalModelChecker(BoundedPCTLModelChecker):
 
     @staticmethod
     def _eval_state_formula_jax(
-        state_idx: jnp.ndarray, 
+        state_idx: jnp.ndarray,
         formula: BoundedPCTLFormula,
-        vec_labels: jnp.ndarray, 
-        atom_dict: Dict[str, int], 
+        vec_labels: jnp.ndarray,
+        atom_dict: Dict[str, int],
     ) -> jnp.ndarray:
         """Evaluate a pure state formula in JAX.
 
@@ -1476,8 +1513,8 @@ class StatisticalModelChecker(BoundedPCTLModelChecker):
     def _path_satisfies_single(
         states_1d: jnp.ndarray,
         formula: BoundedPCTLFormula,
-        vec_labels: jnp.ndarray, 
-        atom_dict: Dict[str, int], 
+        vec_labels: jnp.ndarray,
+        atom_dict: Dict[str, int],
     ) -> jnp.ndarray:
         """Evaluate whether a single sampled path satisfies the formula.
 
@@ -1494,20 +1531,18 @@ class StatisticalModelChecker(BoundedPCTLModelChecker):
 
         if isinstance(formula, Next):
             s1 = states_1d[1]
-            return eval_state(
-                s1, formula.subformula, vec_labels, atom_dict
-            )
+            return eval_state(s1, formula.subformula, vec_labels, atom_dict)
 
         if isinstance(formula, Until):
             B = formula.bound
             idxs = jnp.arange(B + 1)
             s_seq = states_1d[idxs]
-            sat1 = jax.vmap(lambda s: eval_state(
-                s, formula.subformula_1, vec_labels, atom_dict
-            ))(s_seq)
-            sat2 = jax.vmap(lambda s: eval_state(
-                s, formula.subformula_2, vec_labels, atom_dict
-            ))(s_seq)
+            sat1 = jax.vmap(
+                lambda s: eval_state(s, formula.subformula_1, vec_labels, atom_dict)
+            )(s_seq)
+            sat2 = jax.vmap(
+                lambda s: eval_state(s, formula.subformula_2, vec_labels, atom_dict)
+            )(s_seq)
 
             def scan_body(carry, x):
                 new_carry = jnp.logical_and(carry, x)
@@ -1525,18 +1560,18 @@ class StatisticalModelChecker(BoundedPCTLModelChecker):
             B = formula.bound_param
             idxs = jnp.arange(B + 1)
             s_seq = states_1d[idxs]
-            sat = jax.vmap(lambda s: eval_state(
-                s, formula.subformula, vec_labels, atom_dict
-            ))(s_seq)
+            sat = jax.vmap(
+                lambda s: eval_state(s, formula.subformula, vec_labels, atom_dict)
+            )(s_seq)
             return jnp.any(sat)
 
         if isinstance(formula, Always):
             B = formula.bound_param
             idxs = jnp.arange(B + 1)
             s_seq = states_1d[idxs]
-            sat = jax.vmap(lambda s: eval_state(
-                s, formula.subformula, vec_labels, atom_dict
-            ))(s_seq)
+            sat = jax.vmap(
+                lambda s: eval_state(s, formula.subformula, vec_labels, atom_dict)
+            )(s_seq)
             return jnp.all(sat)
 
         return eval_state(states_1d[0], formula, vec_labels, atom_dict)
@@ -1695,8 +1730,8 @@ class StatisticalModelChecker(BoundedPCTLModelChecker):
 
             norm_probs = jnp.where(
                 has_mass,
-                probs / denom,   # valid rows
-                fallback,        # zero-mass rows
+                probs / denom,  # valid rows
+                fallback,  # zero-mass rows
             )
 
             logits = jnp.where(norm_probs > 0, jnp.log(norm_probs), -jnp.inf)
@@ -1705,12 +1740,11 @@ class StatisticalModelChecker(BoundedPCTLModelChecker):
             next_states = next_states.astype(jnp.int64)
 
             return (next_states, key), next_states
-            
-        
+
         ts = jnp.arange(max_steps, dtype=jnp.int64)
         (final_states, _), states_seq = jax.lax.scan(body, (states0, key), ts)
         states_all = jnp.concatenate([states0[None, :], states_seq], axis=0)
-        return states_all.T # expected output shape (N, T+1)
+        return states_all.T  # expected output shape (N, T+1)
 
     @staticmethod
     @partial(jit, static_argnames=["num_samples", "max_steps"])
@@ -1771,4 +1805,4 @@ class StatisticalModelChecker(BoundedPCTLModelChecker):
         ts = jnp.arange(max_steps, dtype=jnp.int64)
         (_, _), states_seq = jax.lax.scan(body, (states0, key), ts)
         states_all = jnp.concatenate([states0[None, :], states_seq], axis=0)
-        return states_all.T # expected output shape (N, T+1)
+        return states_all.T  # expected output shape (N, T+1)

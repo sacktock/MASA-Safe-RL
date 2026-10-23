@@ -1,4 +1,3 @@
-
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
@@ -6,15 +5,15 @@ from typing import Optional
 import jax
 import jax.random as jr
 
-class RolloutBuffer():
 
+class RolloutBuffer:
     def __init__(
-        self, 
-        buffer_size: int, 
-        observation_space: spaces.Space, 
-        action_space: spaces.Space, 
-        n_envs: int, 
-        gamma: float = 0.99, 
+        self,
+        buffer_size: int,
+        observation_space: spaces.Space,
+        action_space: spaces.Space,
+        n_envs: int,
+        gamma: float = 0.99,
         gae_lambda: float = 1.0,
     ):
 
@@ -24,7 +23,7 @@ class RolloutBuffer():
         self.n_envs = n_envs
         self.gamma = gamma
         self.gae_lambda = gae_lambda
-        
+
         self.obs_shape = self.observation_space.shape
 
         self.act_dim = self._compute_act_dim(self.action_space)
@@ -45,26 +44,42 @@ class RolloutBuffer():
             return int(space.n)
 
         if isinstance(space, spaces.Dict):
-            return int(sum(RolloutBuffer._compute_act_dim(sub) for sub in space.spaces.values()))
+            return int(
+                sum(
+                    RolloutBuffer._compute_act_dim(sub) for sub in space.spaces.values()
+                )
+            )
 
         if isinstance(space, spaces.Tuple):
             return int(sum(RolloutBuffer._compute_act_dim(sub) for sub in space.spaces))
 
-        raise NotImplementedError(f"RolloutBuffer does not support action space type {type(space).__name__}")
+        raise NotImplementedError(
+            f"RolloutBuffer does not support action space type {type(space).__name__}"
+        )
 
     def reset(self):
-        self.observations = np.zeros((self.buffer_size, self.n_envs, *self.obs_shape), dtype=np.float32)
-        self.actions = np.zeros((self.buffer_size, self.n_envs, self.act_dim), dtype=np.float32)
+        self.observations = np.zeros(
+            (self.buffer_size, self.n_envs, *self.obs_shape), dtype=np.float32
+        )
+        self.actions = np.zeros(
+            (self.buffer_size, self.n_envs, self.act_dim), dtype=np.float32
+        )
         self.rewards = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
         self.returns = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
-        self.episode_starts = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
+        self.episode_starts = np.zeros(
+            (self.buffer_size, self.n_envs), dtype=np.float32
+        )
         self.values = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
         self.log_probs = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
         self.advantages = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
         self.pos = 0
         self.full = False
 
-    def compute_returns_and_advantages(self, last_value: Optional[np.ndarray] = None, done: np.ndarray = np.array(False)):
+    def compute_returns_and_advantages(
+        self,
+        last_value: Optional[np.ndarray] = None,
+        done: np.ndarray = np.array(False),
+    ):
 
         if last_value is None:
             last_value = np.array(0.0)
@@ -72,26 +87,34 @@ class RolloutBuffer():
         last_gae_lam = 0
 
         for step in reversed(range(self.buffer_size)):
-            if step == (self.buffer_size-1):
+            if step == (self.buffer_size - 1):
                 next_non_terminal = 1.0 - done.astype(np.float32)
                 next_value = last_value
             else:
-                next_non_terminal = 1.0 - self.episode_starts[step+1].astype(np.float32)
-                next_value = self.values[step+1]
-            delta = self.rewards[step] + self.gamma * next_value * next_non_terminal - self.values[step]
-            last_gae_lam = delta + self.gamma * self.gae_lambda * next_non_terminal * last_gae_lam
+                next_non_terminal = 1.0 - self.episode_starts[step + 1].astype(
+                    np.float32
+                )
+                next_value = self.values[step + 1]
+            delta = (
+                self.rewards[step]
+                + self.gamma * next_value * next_non_terminal
+                - self.values[step]
+            )
+            last_gae_lam = (
+                delta + self.gamma * self.gae_lambda * next_non_terminal * last_gae_lam
+            )
             self.advantages[step] = last_gae_lam
 
         self.returns = self.advantages + self.values
 
     def add(
-        self, 
-        obs: np.ndarray, 
+        self,
+        obs: np.ndarray,
         actions: np.ndarray,
-        rewards: np.ndarray, 
+        rewards: np.ndarray,
         episode_starts: np.ndarray,
-        values: np.ndarray, 
-        log_probs: np.ndarray
+        values: np.ndarray,
+        log_probs: np.ndarray,
     ):
 
         if self.full:
@@ -113,7 +136,7 @@ class RolloutBuffer():
         self.pos += 1
         if self.pos == self.buffer_size:
             self.full = True
-        
+
         return True
 
     def get(self, key: jax.Array, batch_size: int):
@@ -121,11 +144,11 @@ class RolloutBuffer():
         indices = jr.permutation(key, self.buffer_size)
 
         if batch_size is None:
-            batch_size=self.buffer_size
+            batch_size = self.buffer_size
 
         start_idx = 0
         while start_idx < self.buffer_size:
-            yield self._get_samples(indices[start_idx: start_idx + batch_size])
+            yield self._get_samples(indices[start_idx : start_idx + batch_size])
             start_idx += batch_size
 
     def _get_samples(self, batch_inds: np.ndarray):
@@ -136,9 +159,10 @@ class RolloutBuffer():
             self.values[batch_inds].flatten(),
             self.returns[batch_inds].flatten(),
             self.advantages[batch_inds].flatten(),
-            self.log_probs[batch_inds].flatten()
+            self.log_probs[batch_inds].flatten(),
         )
         return data
+
 
 class CostRolloutBuffer(RolloutBuffer):
     """
@@ -147,12 +171,12 @@ class CostRolloutBuffer(RolloutBuffer):
     """
 
     def __init__(
-        self, 
-        buffer_size: int, 
-        observation_space: spaces.Space, 
-        action_space: spaces.Space, 
-        n_envs: int, 
-        gamma: float = 0.99, 
+        self,
+        buffer_size: int,
+        observation_space: spaces.Space,
+        action_space: spaces.Space,
+        n_envs: int,
+        gamma: float = 0.99,
         gae_lambda: float = 1.0,
         cost_gamma: float = 0.99,
         cost_gae_lambda: float = 1.0,
@@ -173,10 +197,14 @@ class CostRolloutBuffer(RolloutBuffer):
         super().reset()
 
         self.costs = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
-        self.cost_episode_starts = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
+        self.cost_episode_starts = np.zeros(
+            (self.buffer_size, self.n_envs), dtype=np.float32
+        )
         self.cost_returns = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
         self.cost_values = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
-        self.cost_advantages = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
+        self.cost_advantages = np.zeros(
+            (self.buffer_size, self.n_envs), dtype=np.float32
+        )
 
     def compute_returns_and_advantages(
         self,
@@ -196,26 +224,46 @@ class CostRolloutBuffer(RolloutBuffer):
         last_cost_gae_lam = 0
 
         for step in reversed(range(self.buffer_size)):
-            if step == (self.buffer_size-1):
+            if step == (self.buffer_size - 1):
                 next_non_terminal = 1.0 - done.astype(np.float32)
                 next_cost_non_terminal = 1.0 - cost_done.astype(np.float32)
 
                 next_value = last_value
                 next_cost_value = last_cost_value
             else:
-                next_non_terminal = 1.0 - self.episode_starts[step+1].astype(np.float32)
-                next_cost_non_terminal = 1.0 - self.cost_episode_starts[step + 1].astype(np.float32)
+                next_non_terminal = 1.0 - self.episode_starts[step + 1].astype(
+                    np.float32
+                )
+                next_cost_non_terminal = 1.0 - self.cost_episode_starts[
+                    step + 1
+                ].astype(np.float32)
 
-                next_value = self.values[step+1]
-                next_cost_value = self.cost_values[step+1]
+                next_value = self.values[step + 1]
+                next_cost_value = self.cost_values[step + 1]
             # reward
-            delta = self.rewards[step] + self.gamma * next_value * next_non_terminal - self.values[step]
-            last_gae_lam = delta + self.gamma * self.gae_lambda * next_non_terminal * last_gae_lam
+            delta = (
+                self.rewards[step]
+                + self.gamma * next_value * next_non_terminal
+                - self.values[step]
+            )
+            last_gae_lam = (
+                delta + self.gamma * self.gae_lambda * next_non_terminal * last_gae_lam
+            )
             self.advantages[step] = last_gae_lam
 
             # cost
-            cost_delta = self.costs[step] + self.cost_gamma * next_cost_value * next_cost_non_terminal - self.cost_values[step]
-            last_cost_gae_lam = cost_delta + self.cost_gamma * self.cost_gae_lambda * next_cost_non_terminal * last_cost_gae_lam
+            cost_delta = (
+                self.costs[step]
+                + self.cost_gamma * next_cost_value * next_cost_non_terminal
+                - self.cost_values[step]
+            )
+            last_cost_gae_lam = (
+                cost_delta
+                + self.cost_gamma
+                * self.cost_gae_lambda
+                * next_cost_non_terminal
+                * last_cost_gae_lam
+            )
             self.cost_advantages[step] = last_cost_gae_lam
 
         self.returns = self.advantages + self.values
@@ -251,7 +299,7 @@ class CostRolloutBuffer(RolloutBuffer):
         self.costs[pos] = np.array(costs)
         self.cost_episode_starts[pos] = np.array(cost_episode_starts)
         self.cost_values[pos] = np.array(cost_values)
-        
+
         return True
 
     def _get_samples(self, batch_inds: np.ndarray):
@@ -270,6 +318,7 @@ class CostRolloutBuffer(RolloutBuffer):
         )
         return data
 
+
 class VTraceRolloutBuffer(RolloutBuffer):
     """
     Rollout buffer with additional storage for the shieled action log probs
@@ -277,16 +326,16 @@ class VTraceRolloutBuffer(RolloutBuffer):
     """
 
     def __init__(
-        self, 
-        buffer_size: int, 
-        observation_space: spaces.Space, 
-        action_space: spaces.Space, 
-        n_envs: int, 
-        gamma: float = 0.99, 
+        self,
+        buffer_size: int,
+        observation_space: spaces.Space,
+        action_space: spaces.Space,
+        n_envs: int,
+        gamma: float = 0.99,
         gae_lambda: float = 1.0,
         clip_rho: float = 1.0,
         clip_c: float = 1.0,
-        clip_traj: bool = False
+        clip_traj: bool = False,
     ):
         super().__init__(
             buffer_size,
@@ -297,16 +346,22 @@ class VTraceRolloutBuffer(RolloutBuffer):
             gae_lambda=gae_lambda,
         )
 
-        self.clip_rho = clip_rho # TD-error IS clipping ratio
-        self.clip_c = clip_c # recursive trace cutting clipping
+        self.clip_rho = clip_rho  # TD-error IS clipping ratio
+        self.clip_c = clip_c  # recursive trace cutting clipping
         self.clip_traj = clip_traj
 
     def reset(self):
         super().reset()
 
-        self.shield_log_probs = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
+        self.shield_log_probs = np.zeros(
+            (self.buffer_size, self.n_envs), dtype=np.float32
+        )
 
-    def compute_returns_and_advantages(self, last_value: Optional[np.ndarray] = None, done: np.ndarray = np.array(False)):
+    def compute_returns_and_advantages(
+        self,
+        last_value: Optional[np.ndarray] = None,
+        done: np.ndarray = np.array(False),
+    ):
 
         if last_value is None:
             last_value = np.array(0.0)
@@ -319,22 +374,32 @@ class VTraceRolloutBuffer(RolloutBuffer):
         acc_ratios = np.ones_like(ratios)
 
         for step in reversed(range(self.buffer_size)):
-            if step == (self.buffer_size-1):
+            if step == (self.buffer_size - 1):
                 next_non_terminal = 1.0 - done.astype(np.float32)
                 next_value = last_value
             else:
-                next_non_terminal = 1.0 - self.episode_starts[step+1].astype(np.float32)
-                next_value = self.values[step+1]
+                next_non_terminal = 1.0 - self.episode_starts[step + 1].astype(
+                    np.float32
+                )
+                next_value = self.values[step + 1]
 
-            delta = self.rewards[step] + self.gamma * next_value * next_non_terminal - self.values[step]
+            delta = (
+                self.rewards[step]
+                + self.gamma * next_value * next_non_terminal
+                - self.values[step]
+            )
             deltas[step] = delta
 
             if self.clip_traj:
                 # trajectory-level cumulative IS ratio clipping
                 rho_traj = np.minimum(ratios[step] * acc_ratios[step:], self.clip_rho)
 
-                decay_weights = (self.gamma * self.gae_lambda) ** (np.arange(step, self.buffer_size) - step)
-                self.advantages[step] = np.sum(rho_traj * deltas[step:] * decay_weights[:, np.newaxis], axis=0)
+                decay_weights = (self.gamma * self.gae_lambda) ** (
+                    np.arange(step, self.buffer_size) - step
+                )
+                self.advantages[step] = np.sum(
+                    rho_traj * deltas[step:] * decay_weights[:, np.newaxis], axis=0
+                )
 
                 # accumulate ratios
                 acc_ratios[step:] *= ratios[step][np.newaxis, :]
@@ -343,18 +408,25 @@ class VTraceRolloutBuffer(RolloutBuffer):
                 rho = np.minimum(ratios[step], self.clip_rho)
                 c = np.minimum(ratios[step], self.clip_c)
 
-                last_gae_lam = rho * delta + self.gamma * self.gae_lambda * next_non_terminal * c * last_gae_lam
+                last_gae_lam = (
+                    rho * delta
+                    + self.gamma
+                    * self.gae_lambda
+                    * next_non_terminal
+                    * c
+                    * last_gae_lam
+                )
                 self.advantages[step] = last_gae_lam
 
         self.returns = self.advantages + self.values
 
     def add(
-        self, 
-        obs: np.ndarray, 
+        self,
+        obs: np.ndarray,
         actions: np.ndarray,
-        rewards: np.ndarray, 
+        rewards: np.ndarray,
         episode_starts: np.ndarray,
-        values: np.ndarray, 
+        values: np.ndarray,
         log_probs: np.ndarray,
         shield_log_probs: np.ndarray,
     ):
@@ -371,7 +443,7 @@ class VTraceRolloutBuffer(RolloutBuffer):
         if not success:
             return False
 
-        self.shield_log_probs[self.pos-1] = np.array(shield_log_probs)
+        self.shield_log_probs[self.pos - 1] = np.array(shield_log_probs)
 
         return True
 
@@ -384,9 +456,10 @@ class VTraceRolloutBuffer(RolloutBuffer):
             self.returns[batch_inds].flatten(),
             self.advantages[batch_inds].flatten(),
             self.log_probs[batch_inds].flatten(),
-            #self.shield_log_probs[batch_inds].flatten()
+            # self.shield_log_probs[batch_inds].flatten()
         )
         return data
+
 
 class VTraceCostRolloutBuffer(CostRolloutBuffer):
     """
@@ -395,18 +468,18 @@ class VTraceCostRolloutBuffer(CostRolloutBuffer):
     """
 
     def __init__(
-        self, 
-        buffer_size: int, 
-        observation_space: spaces.Space, 
-        action_space: spaces.Space, 
-        n_envs: int, 
-        gamma: float = 0.99, 
+        self,
+        buffer_size: int,
+        observation_space: spaces.Space,
+        action_space: spaces.Space,
+        n_envs: int,
+        gamma: float = 0.99,
         gae_lambda: float = 1.0,
         cost_gamma: float = 0.99,
         cost_gae_lambda: float = 1.0,
         clip_rho: float = 1.0,
         clip_c: float = 1.0,
-        clip_traj: bool = False
+        clip_traj: bool = False,
     ):
         super().__init__(
             buffer_size,
@@ -419,14 +492,16 @@ class VTraceCostRolloutBuffer(CostRolloutBuffer):
             cost_gae_lambda=cost_gae_lambda,
         )
 
-        self.clip_rho = clip_rho # TD-error IS clipping ratio
-        self.clip_c = clip_c # recursive trace cutting clipping
+        self.clip_rho = clip_rho  # TD-error IS clipping ratio
+        self.clip_c = clip_c  # recursive trace cutting clipping
         self.clip_traj = clip_traj
 
     def reset(self):
         super().reset()
 
-        self.shield_log_probs = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
+        self.shield_log_probs = np.zeros(
+            (self.buffer_size, self.n_envs), dtype=np.float32
+        )
 
     def compute_returns_and_advantages(
         self,
@@ -452,32 +527,50 @@ class VTraceCostRolloutBuffer(CostRolloutBuffer):
         acc_ratios = np.ones_like(ratios)
 
         for step in reversed(range(self.buffer_size)):
-            if step == (self.buffer_size-1):
+            if step == (self.buffer_size - 1):
                 next_non_terminal = 1.0 - done.astype(np.float32)
                 next_cost_non_terminal = 1.0 - cost_done.astype(np.float32)
 
                 next_value = last_value
                 next_cost_value = last_cost_value
             else:
-                next_non_terminal = 1.0 - self.episode_starts[step+1].astype(np.float32)
-                next_cost_non_terminal = 1.0 - self.cost_episode_starts[step + 1].astype(np.float32)
+                next_non_terminal = 1.0 - self.episode_starts[step + 1].astype(
+                    np.float32
+                )
+                next_cost_non_terminal = 1.0 - self.cost_episode_starts[
+                    step + 1
+                ].astype(np.float32)
 
-                next_value = self.values[step+1]
-                next_cost_value = self.cost_values[step+1]
-            
-            delta = self.rewards[step] + self.gamma * next_value * next_non_terminal - self.values[step]
+                next_value = self.values[step + 1]
+                next_cost_value = self.cost_values[step + 1]
+
+            delta = (
+                self.rewards[step]
+                + self.gamma * next_value * next_non_terminal
+                - self.values[step]
+            )
             deltas[step] = delta
 
-            cost_delta = self.costs[step] + self.cost_gamma * next_cost_value * next_cost_non_terminal - self.cost_values[step]
+            cost_delta = (
+                self.costs[step]
+                + self.cost_gamma * next_cost_value * next_cost_non_terminal
+                - self.cost_values[step]
+            )
             cost_deltas[step] = cost_delta
 
             if self.clip_traj:
                 # trajectory-level cumulative IS ratio clipping
                 rho_traj = np.minimum(ratios[step] * acc_ratios[step:], self.clip_rho)
 
-                decay_weights = (self.gamma * self.gae_lambda) ** (np.arange(step, self.buffer_size) - step)
-                self.advantages[step] = np.sum(rho_traj * deltas[step:] * decay_weights[:, np.newaxis], axis=0)
-                self.cost_advantages[step] = np.sum(rho_traj * cost_deltas[step:] * decay_weights[:, np.newaxis], axis=0)
+                decay_weights = (self.gamma * self.gae_lambda) ** (
+                    np.arange(step, self.buffer_size) - step
+                )
+                self.advantages[step] = np.sum(
+                    rho_traj * deltas[step:] * decay_weights[:, np.newaxis], axis=0
+                )
+                self.cost_advantages[step] = np.sum(
+                    rho_traj * cost_deltas[step:] * decay_weights[:, np.newaxis], axis=0
+                )
 
                 # accumulate ratios
                 acc_ratios[step:] *= ratios[step][np.newaxis, :]
@@ -486,24 +579,38 @@ class VTraceCostRolloutBuffer(CostRolloutBuffer):
                 rho = np.minimum(ratios[step], self.clip_rho)
                 c = np.minimum(ratios[step], self.clip_c)
 
-                last_gae_lam = rho * delta + self.gamma * self.gae_lambda * next_non_terminal * c * last_gae_lam
+                last_gae_lam = (
+                    rho * delta
+                    + self.gamma
+                    * self.gae_lambda
+                    * next_non_terminal
+                    * c
+                    * last_gae_lam
+                )
                 self.advantages[step] = last_gae_lam
 
-                last_cost_gae_lam = rho * cost_delta + self.cost_gamma * self.cost_gae_lambda * next_cost_non_terminal * c * last_cost_gae_lam
+                last_cost_gae_lam = (
+                    rho * cost_delta
+                    + self.cost_gamma
+                    * self.cost_gae_lambda
+                    * next_cost_non_terminal
+                    * c
+                    * last_cost_gae_lam
+                )
                 self.cost_advantages[step] = last_cost_gae_lam
 
         self.returns = self.advantages + self.values
         self.cost_returns = self.cost_advantages + self.cost_values
 
     def add(
-        self, 
-        obs: np.ndarray, 
+        self,
+        obs: np.ndarray,
         actions: np.ndarray,
-        rewards: np.ndarray, 
+        rewards: np.ndarray,
         costs: np.ndarray,
         episode_starts: np.ndarray,
         cost_episode_starts: np.ndarray,
-        values: np.ndarray, 
+        values: np.ndarray,
         cost_values: np.ndarray,
         log_probs: np.ndarray,
         shield_log_probs: np.ndarray,
@@ -542,7 +649,6 @@ class VTraceCostRolloutBuffer(CostRolloutBuffer):
             self.advantages[batch_inds].flatten(),
             self.cost_advantages[batch_inds].flatten(),
             self.log_probs[batch_inds].flatten(),
-            #self.shield_log_probs[batch_inds].flatten()
+            # self.shield_log_probs[batch_inds].flatten()
         )
         return data
-

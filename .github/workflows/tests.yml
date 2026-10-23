@@ -18,9 +18,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      # Lint only the files changed in this push/PR (not the whole tree), so the
-      # pre-existing backlog is adopted incrementally -- only new violations fail.
       - name: Determine changed-file range
+        # Lint only the files changed in this push/PR (not the whole tree), so the
+
+        # pre-existing backlog is adopted incrementally -- only new violations fail.
         id: range
         shell: bash
         run: |
@@ -38,8 +39,9 @@ jobs:
             echo "from=origin/$default" >> "$GITHUB_OUTPUT"
             echo "to=${{ github.sha }}" >> "$GITHUB_OUTPUT"
           fi
-      # Runs the exact pinned hooks from .pre-commit-config.yaml on changed files.
       - uses: pre-commit/action@v3.0.1
+        # Runs the exact pinned hooks from .pre-commit-config.yaml on changed files.
+
         with:
           extra_args: >-
             --from-ref ${{ steps.range.outputs.from }} --to-ref ${{ steps.range.outputs.to }}

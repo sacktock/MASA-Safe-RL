@@ -14,9 +14,10 @@ from masa.envs.multiagent.matrix._label_utils import (
     flatten_binary_obs,
 )
 
+
 class Actions(IntEnum):
     Contribute = 0
-    Withhold   = 1
+    Withhold = 1
 
 
 def label_fn(obs):
@@ -55,6 +56,7 @@ def label_fn(obs):
 
 def cost_fn(labels):
     return binary_cost(labels)
+
 
 class DPGGMatrix(ParallelEnv):
     """
@@ -149,7 +151,9 @@ class DPGGMatrix(ParallelEnv):
         self.cost_fn = cost_fn
 
         # Spaces
-        self.observation_spaces = {a: self.observation_space(a) for a in self.possible_agents}
+        self.observation_spaces = {
+            a: self.observation_space(a) for a in self.possible_agents
+        }
         self.action_spaces = {a: self.action_space(a) for a in self.possible_agents}
 
     # ─────────────────────────── PettingZoo API ───────────────────────────
@@ -221,7 +225,9 @@ class DPGGMatrix(ParallelEnv):
         pot_after = pot_before - payout_total
         pot_after = max(0.0, pot_after) * (1.0 - self.decay)
 
-        contributors = (1 if act0 == Actions.Contribute else 0) + (1 if act1 == Actions.Contribute else 0)
+        contributors = (1 if act0 == Actions.Contribute else 0) + (
+            1 if act1 == Actions.Contribute else 0
+        )
         pot_after += self.alpha * self.c * contributors
         pot_after = float(np.clip(pot_after, 0.0, self.pot_cap))
 
@@ -270,7 +276,9 @@ class DPGGMatrix(ParallelEnv):
         if self.render_mode is None:
             return
         if not self._renderer:
-            raise ValueError("Renderer missing; create env with render_mode='human' or 'rgb_array'.")
+            raise ValueError(
+                "Renderer missing; create env with render_mode='human' or 'rgb_array'."
+            )
 
         last = (self._last_actions.get("player_0"), self._last_actions.get("player_1"))
         params = {
@@ -409,10 +417,15 @@ class DPGGMatrix(ParallelEnv):
             rng_state: object
           )
         """
-        agents = tuple(self.agents) if getattr(self, "agents", None) is not None else tuple()
+        agents = (
+            tuple(self.agents) if getattr(self, "agents", None) is not None else tuple()
+        )
         a0, a1 = self.possible_agents
         last = (self._last_actions.get(a0, None), self._last_actions.get(a1, None))
-        cum = (float(self._cum_rewards.get(a0, 0.0)), float(self._cum_rewards.get(a1, 0.0)))
+        cum = (
+            float(self._cum_rewards.get(a0, 0.0)),
+            float(self._cum_rewards.get(a1, 0.0)),
+        )
         rng_state = self.rng.get_state()
         return (agents, int(self._round), last, int(self._pot_idx), cum, rng_state)
 
@@ -424,9 +437,13 @@ class DPGGMatrix(ParallelEnv):
 
         a0, a1 = self.possible_agents
         if len(last) != 2:
-            raise ValueError(f"DPGGMatrix.set_state: last_actions must be len 2, got {len(last)}")
+            raise ValueError(
+                f"DPGGMatrix.set_state: last_actions must be len 2, got {len(last)}"
+            )
         if len(cum) != 2:
-            raise ValueError(f"DPGGMatrix.set_state: cum_rewards must be len 2, got {len(cum)}")
+            raise ValueError(
+                f"DPGGMatrix.set_state: cum_rewards must be len 2, got {len(cum)}"
+            )
 
         self._last_actions = {
             a0: (None if last[0] is None else int(last[0])),

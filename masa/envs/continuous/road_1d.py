@@ -5,13 +5,17 @@ import numpy as np
 import math
 from masa.common.label_fn import LabelFn
 from masa.envs.continuous.base import ContinuousEnv
-from masa.envs.continuous.renderers.road_1d import Road1DRenderer, validate_renderer_options
+from masa.envs.continuous.renderers.road_1d import (
+    Road1DRenderer,
+    validate_renderer_options,
+)
 
 GOAL_POSITION = 3.0
 MAX_SPEED = 0.1
 SPEED_LIMIT = 0.01
 MIN_POSITION = -4.0
 MAX_POSITION = 4.0
+
 
 def label_fn(obs):
     labels = set()
@@ -25,8 +29,10 @@ def label_fn(obs):
     if np.abs(velocity) >= SPEED_LIMIT:
         labels.add("over")
     return labels
-    
+
+
 cost_fn = lambda labels: 1.0 if "over" in labels else 0.0
+
 
 class Road1D(ContinuousEnv):
     metadata = {"render_modes": ["ansi", "rgb_array", "human"], "render_fps": 25}
@@ -53,7 +59,7 @@ class Road1D(ContinuousEnv):
                 self._min_position,
                 -self._max_speed,
             ],
-            dtype=np.float32
+            dtype=np.float32,
         )
 
         high = np.array(
@@ -61,7 +67,7 @@ class Road1D(ContinuousEnv):
                 self._max_position,
                 self._max_speed,
             ],
-            dtype=np.float32
+            dtype=np.float32,
         )
 
         self.observation_space = spaces.Box(low=low, high=high, dtype=np.float32)
@@ -94,7 +100,7 @@ class Road1D(ContinuousEnv):
                 self.np_random.uniform(low=-0.05, high=-0.05),
                 0.0,
             ],
-            dtype=np.float32
+            dtype=np.float32,
         )
 
         self._step_count = 0
@@ -115,8 +121,8 @@ class Road1D(ContinuousEnv):
         self._step_count += 1
         self._last_action = np.array(action, dtype=np.float32)
 
-        reward = 20.0 if position >= self._goal_position else position - state[0] 
-            
+        reward = 20.0 if position >= self._goal_position else position - state[0]
+
         terminal = position >= self._goal_position
 
         if self.render_mode == "human":

@@ -12,12 +12,27 @@ TUTORIAL_02 = REPO_ROOT / "notebooks" / "tutorials" / "02_labels_costs_and_infos
 TUTORIAL_03 = REPO_ROOT / "notebooks" / "tutorials" / "03_wrapper_stack.ipynb"
 TUTORIAL_04 = REPO_ROOT / "notebooks" / "tutorials" / "04_constraints_tour.ipynb"
 TUTORIAL_05 = REPO_ROOT / "notebooks" / "tutorials" / "05_ltl_safety_colour_bomb.ipynb"
-TUTORIAL_06 = REPO_ROOT / "notebooks" / "tutorials" / "06_tabular_safe_rl_baselines.ipynb"
-TUTORIAL_07 = REPO_ROOT / "notebooks" / "tutorials" / "07_continuous_safe_rl_baselines.ipynb"
-TUTORIAL_08 = REPO_ROOT / "notebooks" / "tutorials" / "08_create_a_new_environment.ipynb"
-TUTORIAL_09 = REPO_ROOT / "notebooks" / "tutorials" / "09_probabilistic_shielding_minipacman.ipynb"
-TUTORIAL_10 = REPO_ROOT / "notebooks" / "tutorials" / "10_safety_abstractions_pacman_coins.ipynb"
-TUTORIAL_11 = REPO_ROOT / "notebooks" / "tutorials" / "11_vectorization_and_normalization.ipynb"
+TUTORIAL_06 = (
+    REPO_ROOT / "notebooks" / "tutorials" / "06_tabular_safe_rl_baselines.ipynb"
+)
+TUTORIAL_07 = (
+    REPO_ROOT / "notebooks" / "tutorials" / "07_continuous_safe_rl_baselines.ipynb"
+)
+TUTORIAL_08 = (
+    REPO_ROOT / "notebooks" / "tutorials" / "08_create_a_new_environment.ipynb"
+)
+TUTORIAL_09 = (
+    REPO_ROOT
+    / "notebooks"
+    / "tutorials"
+    / "09_probabilistic_shielding_minipacman.ipynb"
+)
+TUTORIAL_10 = (
+    REPO_ROOT / "notebooks" / "tutorials" / "10_safety_abstractions_pacman_coins.ipynb"
+)
+TUTORIAL_11 = (
+    REPO_ROOT / "notebooks" / "tutorials" / "11_vectorization_and_normalization.ipynb"
+)
 TUTORIAL_12 = REPO_ROOT / "notebooks" / "tutorials" / "12_multi_agent_cmg.ipynb"
 
 
@@ -300,7 +315,7 @@ def test_probabilistic_shielding_minipacman_notebook_is_valid_and_executable():
         "project_candidate_action",
         "safe_actions",
         "bounds",
-        "\"alpha\": 0.01",
+        '"alpha": 0.01',
     ):
         assert token in source, f"{token} missing"
     assert "<svg" not in source
@@ -336,7 +351,7 @@ def test_safety_abstractions_pacman_coins_notebook_is_valid_and_executable():
         "successor_states_matrix",
         "probabilities",
         "project_candidate_action",
-        "\"alpha\": 0.01",
+        '"alpha": 0.01',
     ):
         assert token in source, f"{token} missing"
     assert "<svg" not in source

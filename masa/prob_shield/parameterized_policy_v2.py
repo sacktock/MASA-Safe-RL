@@ -1,4 +1,5 @@
 import os
+
 os.environ["TF_USE_LEGACY_KERAS"] = "1"
 
 from dataclasses import dataclass
@@ -19,6 +20,7 @@ from masa.common import distributions as dists
 
 tfd = dists
 tfb = dists
+
 
 class ParameterizedActorV2(nn.Module):
     n_actions: int
@@ -56,8 +58,12 @@ class ParameterizedActorV2(nn.Module):
         return x, logits_i, logits_j
 
     def _forward_embedding(self):
-        emb_i_tbl = self.param("emb_i", nn.initializers.normal(0.02), (self.n_actions, self.embed_dim))
-        emb_j_tbl = self.param("emb_j", nn.initializers.normal(0.02), (self.n_actions, self.embed_dim))
+        emb_i_tbl = self.param(
+            "emb_i", nn.initializers.normal(0.02), (self.n_actions, self.embed_dim)
+        )
+        emb_j_tbl = self.param(
+            "emb_j", nn.initializers.normal(0.02), (self.n_actions, self.embed_dim)
+        )
         return emb_i_tbl, emb_j_tbl
 
     def _foward_mix_net(self, x: jnp.ndarray):
@@ -78,9 +84,11 @@ class ParameterizedActorV2(nn.Module):
         scale = jnp.exp(log_scale) + self.eps
 
         return loc, scale
-        
+
     @nn.compact
-    def evaluate_actions(self, x: jnp.ndarray, actions: jnp.ndarray) -> Tuple[jnp.ndarray, jnp.ndarray]:
+    def evaluate_actions(
+        self, x: jnp.ndarray, actions: jnp.ndarray
+    ) -> Tuple[jnp.ndarray, jnp.ndarray]:
         i = actions[:, 0].astype(jnp.int32)
         j = actions[:, 1].astype(jnp.int32)
 
@@ -93,24 +101,30 @@ class ParameterizedActorV2(nn.Module):
             emb_i_tbl, emb_j_tbl = self._forward_embedding()
             ei = emb_i_tbl[i]
             ej = emb_j_tbl[j]
-            y = jnp.concatenate([x, ei, ej], axis=1) # concatenate state input with action embedding
+            y = jnp.concatenate(
+                [x, ei, ej], axis=1
+            )  # concatenate state input with action embedding
 
         loc, scale = self._foward_mix_net(y)
 
         mix_dist = self._mix_dist(loc, scale)
         mix = actions[:, 2:].reshape((-1, 1)).astype(dtype=loc.dtype)
 
-        margin = jnp.array(self.eps*2, dtype=loc.dtype)
-        mix = jnp.clip(mix, margin, 1.0 - margin) # guard against nans
+        margin = jnp.array(self.eps * 2, dtype=loc.dtype)
+        mix = jnp.clip(mix, margin, 1.0 - margin)  # guard against nans
         mix_log_prob = mix_dist.log_prob(mix)
 
         log_prob = di.log_prob(i) + dj.log_prob(j) + mix_log_prob
-        entropy = di.entropy() + dj.entropy() - mix_log_prob # approximate entropy with negative log_prob
+        entropy = (
+            di.entropy() + dj.entropy() - mix_log_prob
+        )  # approximate entropy with negative log_prob
 
         return log_prob, entropy
 
     @nn.compact
-    def sample_action(self, x: jnp.ndarray, key: jax.Array) -> Tuple[jnp.ndarray,jnp.ndarray,jnp.ndarray]:
+    def sample_action(
+        self, x: jnp.ndarray, key: jax.Array
+    ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
         key_i, key_j, key_m = jax.random.split(key, 3)
 
         y, logits_i, logits_j = self._forward_features(x)
@@ -125,20 +139,24 @@ class ParameterizedActorV2(nn.Module):
             emb_i_tbl, emb_j_tbl = self._forward_embedding()
             ei = emb_i_tbl[i]
             ej = emb_j_tbl[j]
-            y = jnp.concatenate([x, ei, ej], axis=1) # concatenate state input with action embedding
+            y = jnp.concatenate(
+                [x, ei, ej], axis=1
+            )  # concatenate state input with action embedding
 
         loc, scale = self._foward_mix_net(y)
 
         mix_dist = self._mix_dist(loc, scale)
         mix = mix_dist.sample(seed=key_m)
 
-        margin = jnp.array(self.eps*2, dtype=loc.dtype)
-        mix = jnp.clip(mix, margin, 1.0 - margin) # guard against nans
+        margin = jnp.array(self.eps * 2, dtype=loc.dtype)
+        mix = jnp.clip(mix, margin, 1.0 - margin)  # guard against nans
         mix_log_prob = mix_dist.log_prob(mix)
 
         action = jnp.concatenate([i[:, None], j[:, None], mix], axis=1)
         log_prob = di.log_prob(i) + dj.log_prob(j) + mix_log_prob
-        entropy = di.entropy() + dj.entropy() - mix_log_prob # approximate entropy with negative log_prob
+        entropy = (
+            di.entropy() + dj.entropy() - mix_log_prob
+        )  # approximate entropy with negative log_prob
 
         return action, log_prob, entropy
 
@@ -154,13 +172,16 @@ class ParameterizedActorV2(nn.Module):
             emb_i_tbl, emb_j_tbl = self._forward_embedding()
             ei = emb_i_tbl[i]
             ej = emb_j_tbl[j]
-            y = jnp.concatenate([x, ei, ej], axis=1) # concatenate state input with action embedding
+            y = jnp.concatenate(
+                [x, ei, ej], axis=1
+            )  # concatenate state input with action embedding
 
         loc, _ = self._foward_mix_net(y)
 
-        margin = jnp.array(self.eps*2, dtype=loc.dtype)
+        margin = jnp.array(self.eps * 2, dtype=loc.dtype)
         mix = jnp.clip(jax.nn.sigmoid(loc), margin, 1.0 - margin)
         return jnp.concatenate([i[:, None], j[:, None], mix], axis=1)
+
 
 class ParameterizedPPOPolicyV2(BaseJaxPolicy):
     def __init__(
@@ -178,7 +199,6 @@ class ParameterizedPPOPolicyV2(BaseJaxPolicy):
         optimizer_kwargs: Optional[dict[str, Any]] = None,
         actor_class: type[nn.Module] = ParameterizedActorV2,
         critic_class: type[nn.Module] = Critic,
-        
     ):
         super().__init__(observation_space, action_space)
 
@@ -214,7 +234,12 @@ class ParameterizedPPOPolicyV2(BaseJaxPolicy):
 
         self.key = self.noise_key = jax.random.PRNGKey(0)
 
-    def build(self, key: jax.Array, lr_schedule: Union[optax.Schedule, float], max_grad_norm: float) -> jax.Array:
+    def build(
+        self,
+        key: jax.Array,
+        lr_schedule: Union[optax.Schedule, float],
+        max_grad_norm: float,
+    ) -> jax.Array:
         key, feat_key, actor_key, actor_noise_key, critic_key = jax.random.split(key, 5)
         key, self.key = jax.random.split(key, 2)
 
@@ -253,12 +278,14 @@ class ParameterizedPPOPolicyV2(BaseJaxPolicy):
             head_arch=self.actor_net_arch,
             conditional_mix_network=self.conditional_mix_network,
             activation_fn=self.activation_fn,
-            log_std_init=self.log_std_init
+            log_std_init=self.log_std_init,
         )
 
         self.actor_state = TrainState.create(
             apply_fn=self.actor.apply,
-            params=self.actor.init(actor_key, obs, actor_noise_key, method="sample_action"),
+            params=self.actor.init(
+                actor_key, obs, actor_noise_key, method="sample_action"
+            ),
             tx=optax.chain(
                 optax.clip_by_global_norm(max_grad_norm),
                 optimizer,
@@ -266,8 +293,7 @@ class ParameterizedPPOPolicyV2(BaseJaxPolicy):
         )
 
         self.critic = self.critic_class(
-            net_arch=self.critic_net_arch, 
-            activation_fn=self.activation_fn
+            net_arch=self.critic_net_arch, activation_fn=self.activation_fn
         )
 
         self.critic_state = TrainState.create(
@@ -286,14 +312,22 @@ class ParameterizedPPOPolicyV2(BaseJaxPolicy):
 
     def reset_noise(self):
         self.key, self.noise_key = jax.random.split(self.key)
- 
-    def forward(self, key: jax.Array, obs: np.ndarray, deterministic: bool = False) -> np.ndarray:
+
+    def forward(
+        self, key: jax.Array, obs: np.ndarray, deterministic: bool = False
+    ) -> np.ndarray:
         return self._predict(key, obs, deterministic=deterministic)
 
-    def predict_all(self, key: jax.Array, observation: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        return self._predict_all(key, self.featurizer_state, self.actor_state, self.critic_state, observation)
+    def predict_all(
+        self, key: jax.Array, observation: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        return self._predict_all(
+            key, self.featurizer_state, self.actor_state, self.critic_state, observation
+        )
 
-    def _predict(self, key: jax.Array, obs: np.ndarray, deterministic: bool = False) -> np.ndarray:
+    def _predict(
+        self, key: jax.Array, obs: np.ndarray, deterministic: bool = False
+    ) -> np.ndarray:
         if deterministic:
             return self.select_action(self.featurizer_state, self.actor_state, obs)
         else:
@@ -302,7 +336,11 @@ class ParameterizedPPOPolicyV2(BaseJaxPolicy):
     @staticmethod
     @jit
     def _predict_all(
-        key: jax.Array, featurizer_state: TrainState, actor_state: TrainState, critic_state: TrainState, observations: jnp.ndarray
+        key: jax.Array,
+        featurizer_state: TrainState,
+        actor_state: TrainState,
+        critic_state: TrainState,
+        observations: jnp.ndarray,
     ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
         feats = featurizer_state.apply_fn(featurizer_state.params, observations)
         actions, log_probs, entropy = actor_state.apply_fn(
@@ -326,11 +364,14 @@ class ParameterizedPPOPolicyV2(BaseJaxPolicy):
             method="select_action",
         )
         return action
-        
+
     @staticmethod
     @jit
     def sample_action(
-        key: jax.Array, featurizer_state: TrainState, actor_state: TrainState, obs: jnp.ndarray
+        key: jax.Array,
+        featurizer_state: TrainState,
+        actor_state: TrainState,
+        obs: jnp.ndarray,
     ) -> jnp.ndarray:
         feats = featurizer_state.apply_fn(featurizer_state.params, obs)
         action, _, _ = actor_state.apply_fn(

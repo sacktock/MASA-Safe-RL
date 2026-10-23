@@ -1,10 +1,12 @@
 from masa.common.wrappers import RewardShapingWrapper
 from masa.algorithms.tabular import RECREG
 
+
 def main():
     # Import the masa make_env function
     from masa.common.utils import make_env
-    '''
+
+    """
     def make_env(
         env_id: str, 
         constraint: str, 
@@ -19,30 +21,34 @@ def main():
         video_kwargs: Optional[dict[str, Any]] = None,
         **kw
     ) -> gym.Env:
-    '''
+    """
 
     # Import the labelling and cost functions for the ColourBombGridWorld
     from masa.envs.tabular.colour_bomb_grid_world_v2 import label_fn, cost_fn
 
-    # Import example DFA 
+    # Import example DFA
     from masa.examples.colour_bomb_grid_world.property_3 import make_dfa
 
-    # We're going to use the LTL safety constraint, which just has one key word args: (dfa: DFA = dummy_dfa) 
-    constraint_kwargs = dict(
-        dfa=make_dfa()
-    )
+    # We're going to use the LTL safety constraint, which just has one key word args: (dfa: DFA = dummy_dfa)
+    constraint_kwargs = dict(dfa=make_dfa())
 
     # Intialize the environment (env_id, constraint, max_epsiode_steps)
     # make_env wraps the environment in TimeLimit -> LabelledEnv -> LTLSafetyEnv -> ConstraintMonitor -> RewardMonitor
-    env = make_env("ColourBombGridWorldV2", "LTL_SAFETY", 250, label_fn=label_fn, constraint_kwargs=constraint_kwargs)
+    env = make_env(
+        "ColourBombGridWorldV2",
+        "LTL_SAFETY",
+        250,
+        label_fn=label_fn,
+        constraint_kwargs=constraint_kwargs,
+    )
 
     # Now we're going to wrap our environment in RewardShapingWrapper
     # The wrapper takes one arg: env
     #   and two key word args: (gamma: float = 0.99, impl: str = "none")
     env = RewardShapingWrapper(
-        env, 
+        env,
         gamma=0.99,
-        impl="cycle" # which implementation to use ("none", "vi", "cycle")
+        impl="cycle",  # which implementation to use ("none", "vi", "cycle")
     )
 
     # The RewardShapingWrapper implements two different types of potential-based reward shaping
@@ -60,7 +66,7 @@ def main():
     #   device: str = "auto",
     #   verbose: int = 0,
     #   env_fn: Optional[Callable[[], gym.Env]] = None,
-    #   eval_env: Optional[gym.Env] = None, 
+    #   eval_env: Optional[gym.Env] = None,
     #   task_alpha: float = 0.1,
     #   task_gamma: float = 0.9,
     #   safe_alpha: float = 0.1,
@@ -76,41 +82,48 @@ def main():
     #   initial_epsilon: float = 1.0,
     #   final_epsilon: float = 0.1,
     #   epsilon_decay: str = 'linear',
-    #   epsilon_decay_frames: int = 10000, 
+    #   epsilon_decay_frames: int = 10000,
 
     # First lets initialize the eval_env
-    eval_env = make_env("ColourBombGridWorldV2", "LTL_SAFETY", 250, label_fn=label_fn, constraint_kwargs=constraint_kwargs)
+    eval_env = make_env(
+        "ColourBombGridWorldV2",
+        "LTL_SAFETY",
+        250,
+        label_fn=label_fn,
+        constraint_kwargs=constraint_kwargs,
+    )
 
     # Now let's initialize RECREG
     algo = RECREG(
         env,
-        tensorboard_logdir="runs/masa/recreg_model_free_reward_shaping_cycle_colour_bomb_grid_world_v2_property_3_seed_0", # ignoring tensorboard logging
+        tensorboard_logdir="runs/masa/recreg_model_free_reward_shaping_cycle_colour_bomb_grid_world_v2_property_3_seed_0",  # ignoring tensorboard logging
         seed=0,
-        monitor=True, # monitors training progress
-        device="cpu", # keep everything on the cpu 
-        verbose=0, # verbosity level for monitoring
-        eval_env=eval_env, # separate environment instance for eval
-        task_alpha=0.05, # learning rate for the task policy
-        task_gamma=0.95, # discount factor for the task policy
-        safe_alpha=0.05, # learning rate for the safe (backup) policy
-        safe_gamma=0.99, # discount factor for the safe (backup) policy
-        model_free_alpha=0.05, # learning rate for safety Bellman update
-        mode="model_free", # using model_free mode as it is much quicker
-        horizon=9, # recoverability horizon for RECREG
-        safety_prob=0.01, # safety constraint from the initial state
+        monitor=True,  # monitors training progress
+        device="cpu",  # keep everything on the cpu
+        verbose=0,  # verbosity level for monitoring
+        eval_env=eval_env,  # separate environment instance for eval
+        task_alpha=0.05,  # learning rate for the task policy
+        task_gamma=0.95,  # discount factor for the task policy
+        safe_alpha=0.05,  # learning rate for the safe (backup) policy
+        safe_gamma=0.99,  # discount factor for the safe (backup) policy
+        model_free_alpha=0.05,  # learning rate for safety Bellman update
+        mode="model_free",  # using model_free mode as it is much quicker
+        horizon=9,  # recoverability horizon for RECREG
+        safety_prob=0.01,  # safety constraint from the initial state
         # Using the RECREG specific defaults after this
     )
 
     # Now we begin training
     algo.train(
-        num_frames=500_000, # total number of frames (environment interactions)
-        num_eval_episodes=10, # total number of evaluation episodes to run
-        eval_freq=10_000, # how frequently to run evaluation (default=0 => never run evaluation)
-        log_freq=10_000, # how frequenntly to log metrics to stdout or tensorboard
+        num_frames=500_000,  # total number of frames (environment interactions)
+        num_eval_episodes=10,  # total number of evaluation episodes to run
+        eval_freq=10_000,  # how frequently to run evaluation (default=0 => never run evaluation)
+        log_freq=10_000,  # how frequenntly to log metrics to stdout or tensorboard
         # prefill: Optional[int] = None (not implemented yet)
         # save_freq: int = 0, (not implemented yet)
-        stats_window_size=100, # sliding window size for metrics logging
+        stats_window_size=100,  # sliding window size for metrics logging
     )
+
 
 if __name__ == "__main__":
     main()

@@ -6,8 +6,8 @@ from masa.common.label_fn import LabelFn
 
 class LabelledParallelEnv(ParallelEnv):
     """PettingZoo parallel API wrapper that attaches the per-agent labelling function."""
-    metadata = {"name": "labelled_parallel_env"}
 
+    metadata = {"name": "labelled_parallel_env"}
 
     def __init__(self, env: ParallelEnv, label_fn: Dict[str, LabelFn] | LabelFn):
         self.env = env

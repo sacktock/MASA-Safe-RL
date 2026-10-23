@@ -141,13 +141,17 @@ class ColourBombGridWorldRenderer:
 
         for row in range(snapshot.grid_size):
             for col in range(snapshot.grid_size):
-                rect = pygame.Rect(col * high_cell, row * high_cell, high_cell, high_cell)
+                rect = pygame.Rect(
+                    col * high_cell, row * high_cell, high_cell, high_cell
+                )
                 floor = FLOOR_COLOR if (row + col) % 2 == 0 else FLOOR_ALT_COLOR
                 self._draw_floor_tile(surface, rect, high_cell, floor)
 
         for colour, cells in snapshot.colour_cells.items():
             for state in cells:
-                self._draw_colour_tile(surface, state, snapshot.grid_size, high_cell, ZONE_COLORS[colour])
+                self._draw_colour_tile(
+                    surface, state, snapshot.grid_size, high_cell, ZONE_COLORS[colour]
+                )
 
         if snapshot.active_colour is not None:
             for state in snapshot.colour_cells[snapshot.active_colour]:
@@ -162,10 +166,15 @@ class ColourBombGridWorldRenderer:
         for state in snapshot.wall_cells:
             self._draw_wall_tile(surface, state, snapshot.grid_size, high_cell)
 
-        self._draw_agent(surface, snapshot.agent_position, high_cell, snapshot.step_count)
+        self._draw_agent(
+            surface, snapshot.agent_position, high_cell, snapshot.step_count
+        )
 
         if scale > 1:
-            final_size = (snapshot.grid_size * cell_size, snapshot.grid_size * cell_size)
+            final_size = (
+                snapshot.grid_size * cell_size,
+                snapshot.grid_size * cell_size,
+            )
             surface = pygame.transform.smoothscale(surface, final_size)
 
         frame = np.transpose(pygame.surfarray.array3d(surface), (1, 0, 2))
@@ -185,7 +194,9 @@ class ColourBombGridWorldRenderer:
         if self._human_window is None:
             pygame.init()
             pygame.display.set_caption("MASA - Colour Bomb Grid World")
-            self._human_window = pygame.display.set_mode(self._human_window_size, pygame.RESIZABLE)
+            self._human_window = pygame.display.set_mode(
+                self._human_window_size, pygame.RESIZABLE
+            )
             self._human_clock = pygame.time.Clock()
 
         for event in pygame.event.get():
@@ -195,13 +206,17 @@ class ColourBombGridWorldRenderer:
             return
 
         window_width, window_height = self._human_window.get_size()
-        target_width, target_height = _fit_size((width, height), (window_width, window_height))
+        target_width, target_height = _fit_size(
+            (width, height), (window_width, window_height)
+        )
         left = (window_width - target_width) // 2
         top = (window_height - target_height) // 2
 
         frame_surface = pygame.surfarray.make_surface(np.transpose(frame, (1, 0, 2)))
         if (target_width, target_height) != (width, height):
-            frame_surface = pygame.transform.smoothscale(frame_surface, (target_width, target_height))
+            frame_surface = pygame.transform.smoothscale(
+                frame_surface, (target_width, target_height)
+            )
 
         self._human_window.fill(FLOOR_COLOR)
         self._human_window.blit(frame_surface, (left, top))
@@ -212,7 +227,9 @@ class ColourBombGridWorldRenderer:
     def _snapshot(self) -> "_ColourBombSnapshot":
         grid_size = int(self.env._grid_size)
         grid_area = grid_size**2
-        state = int(self.env._start_state if self.env._state is None else self.env._state)
+        state = int(
+            self.env._start_state if self.env._state is None else self.env._state
+        )
         zone = state // grid_area
         active_colour = getattr(self.env, "_active_colour_dict", {}).get(zone)
 
@@ -225,7 +242,9 @@ class ColourBombGridWorldRenderer:
             medic_cells=_base_cells(getattr(self.env, "_medic_states", []), grid_area),
             colour_cells={
                 "green": _base_cells(getattr(self.env, "_green_states", []), grid_area),
-                "yellow": _base_cells(getattr(self.env, "_yellow_states", []), grid_area),
+                "yellow": _base_cells(
+                    getattr(self.env, "_yellow_states", []), grid_area
+                ),
                 "red": _base_cells(getattr(self.env, "_red_states", []), grid_area),
                 "blue": _base_cells(getattr(self.env, "_blue_states", []), grid_area),
                 "pink": _base_cells(getattr(self.env, "_pink_states", []), grid_area),
@@ -234,21 +253,31 @@ class ColourBombGridWorldRenderer:
             step_count=int(getattr(self.env, "_step_count", 0)),
         )
 
-    def _draw_floor_tile(self, surface: Any, rect: Any, cell_size: int, color: RGBColor) -> None:
+    def _draw_floor_tile(
+        self, surface: Any, rect: Any, cell_size: int, color: RGBColor
+    ) -> None:
         import pygame
 
         pygame.draw.rect(surface, color, rect)
         pygame.draw.rect(surface, GRID_COLOR, rect, width=max(1, cell_size // 36))
 
-    def _draw_wall_tile(self, surface: Any, state: int, grid_size: int, cell_size: int) -> None:
+    def _draw_wall_tile(
+        self, surface: Any, state: int, grid_size: int, cell_size: int
+    ) -> None:
         import pygame
 
         rect = _cell_rect(state, grid_size, cell_size)
-        pygame.draw.rect(surface, WALL_EDGE_COLOR, rect, border_radius=max(3, cell_size // 12))
+        pygame.draw.rect(
+            surface, WALL_EDGE_COLOR, rect, border_radius=max(3, cell_size // 12)
+        )
         body = rect.inflate(-max(2, cell_size // 18), -max(2, cell_size // 18))
-        pygame.draw.rect(surface, WALL_COLOR, body, border_radius=max(3, cell_size // 12))
+        pygame.draw.rect(
+            surface, WALL_COLOR, body, border_radius=max(3, cell_size // 12)
+        )
 
-    def _draw_colour_tile(self, surface: Any, state: int, grid_size: int, cell_size: int, color: RGBColor) -> None:
+    def _draw_colour_tile(
+        self, surface: Any, state: int, grid_size: int, cell_size: int, color: RGBColor
+    ) -> None:
         import pygame
 
         rect = _cell_rect(state, grid_size, cell_size)
@@ -256,30 +285,53 @@ class ColourBombGridWorldRenderer:
         pygame.draw.rect(surface, color, body, border_radius=max(3, cell_size // 10))
         gloss = body.inflate(-body.width // 3, -body.height // 3)
         highlight = _mix(color, (255, 255, 255), 0.35)
-        pygame.draw.rect(surface, highlight, gloss, border_radius=max(2, cell_size // 14))
+        pygame.draw.rect(
+            surface, highlight, gloss, border_radius=max(2, cell_size // 14)
+        )
 
-    def _draw_active_outline(self, surface: Any, state: int, grid_size: int, cell_size: int) -> None:
+    def _draw_active_outline(
+        self, surface: Any, state: int, grid_size: int, cell_size: int
+    ) -> None:
         import pygame
 
-        rect = _cell_rect(state, grid_size, cell_size).inflate(-max(2, cell_size // 18), -max(2, cell_size // 18))
-        pygame.draw.rect(surface, ACTIVE_OUTLINE_COLOR, rect, width=max(3, cell_size // 16), border_radius=max(4, cell_size // 9))
+        rect = _cell_rect(state, grid_size, cell_size).inflate(
+            -max(2, cell_size // 18), -max(2, cell_size // 18)
+        )
+        pygame.draw.rect(
+            surface,
+            ACTIVE_OUTLINE_COLOR,
+            rect,
+            width=max(3, cell_size // 16),
+            border_radius=max(4, cell_size // 9),
+        )
 
-    def _draw_start_tile(self, surface: Any, state: int, grid_size: int, cell_size: int) -> None:
+    def _draw_start_tile(
+        self, surface: Any, state: int, grid_size: int, cell_size: int
+    ) -> None:
         import pygame
 
         center = _state_center(state, grid_size, cell_size)
         radius = max(4, cell_size // 5)
-        pygame.draw.circle(surface, (101, 76, 31), center, radius + max(2, cell_size // 24))
+        pygame.draw.circle(
+            surface, (101, 76, 31), center, radius + max(2, cell_size // 24)
+        )
         pygame.draw.circle(surface, START_COLOR, center, radius)
 
-    def _draw_bomb_tile(self, surface: Any, state: int, grid_size: int, cell_size: int) -> None:
+    def _draw_bomb_tile(
+        self, surface: Any, state: int, grid_size: int, cell_size: int
+    ) -> None:
         import pygame
 
         center = _state_center(state, grid_size, cell_size)
         radius = max(5, int(cell_size * 0.28))
         shadow_offset = max(1, cell_size // 22)
         outline = max(1, cell_size // 28)
-        pygame.draw.circle(surface, BOMB_CORE_COLOR, (center[0] + shadow_offset, center[1] + shadow_offset), radius)
+        pygame.draw.circle(
+            surface,
+            BOMB_CORE_COLOR,
+            (center[0] + shadow_offset, center[1] + shadow_offset),
+            radius,
+        )
         pygame.draw.circle(surface, BOMB_COLOR, center, radius)
         pygame.draw.circle(surface, BOMB_CORE_COLOR, center, radius, width=outline)
 
@@ -292,30 +344,78 @@ class ColourBombGridWorldRenderer:
         cap_left = center[0] + radius // 4
         cap_top = center[1] - radius - cap_height // 2
         cap = pygame.Rect(cap_left, cap_top, cap_width, cap_height)
-        pygame.draw.rect(surface, BOMB_CORE_COLOR, cap.inflate(outline * 2, outline * 2), border_radius=max(2, cell_size // 24))
-        pygame.draw.rect(surface, BOMB_CAP_COLOR, cap, border_radius=max(2, cell_size // 24))
+        pygame.draw.rect(
+            surface,
+            BOMB_CORE_COLOR,
+            cap.inflate(outline * 2, outline * 2),
+            border_radius=max(2, cell_size // 24),
+        )
+        pygame.draw.rect(
+            surface, BOMB_CAP_COLOR, cap, border_radius=max(2, cell_size // 24)
+        )
 
         fuse_start = (cap.centerx + cap_width // 3, cap.top)
-        fuse_mid = (fuse_start[0] + max(3, cell_size // 8), fuse_start[1] - max(4, cell_size // 7))
-        fuse_end = (fuse_mid[0] + max(3, cell_size // 9), fuse_mid[1] + max(1, cell_size // 18))
-        pygame.draw.lines(surface, BOMB_FUSE_COLOR, False, (fuse_start, fuse_mid, fuse_end), width=max(2, cell_size // 24))
+        fuse_mid = (
+            fuse_start[0] + max(3, cell_size // 8),
+            fuse_start[1] - max(4, cell_size // 7),
+        )
+        fuse_end = (
+            fuse_mid[0] + max(3, cell_size // 9),
+            fuse_mid[1] + max(1, cell_size // 18),
+        )
+        pygame.draw.lines(
+            surface,
+            BOMB_FUSE_COLOR,
+            False,
+            (fuse_start, fuse_mid, fuse_end),
+            width=max(2, cell_size // 24),
+        )
 
         spark_radius = max(3, cell_size // 14)
-        for dx, dy in ((spark_radius, 0), (-spark_radius, 0), (0, spark_radius), (0, -spark_radius)):
-            pygame.draw.line(surface, BOMB_SPARK_COLOR, fuse_end, (fuse_end[0] + dx, fuse_end[1] + dy), width=max(1, cell_size // 36))
-        pygame.draw.circle(surface, BOMB_SPARK_COLOR, fuse_end, max(2, spark_radius // 2))
-        pygame.draw.circle(surface, BOMB_SPARK_CORE_COLOR, fuse_end, max(1, spark_radius // 3))
+        for dx, dy in (
+            (spark_radius, 0),
+            (-spark_radius, 0),
+            (0, spark_radius),
+            (0, -spark_radius),
+        ):
+            pygame.draw.line(
+                surface,
+                BOMB_SPARK_COLOR,
+                fuse_end,
+                (fuse_end[0] + dx, fuse_end[1] + dy),
+                width=max(1, cell_size // 36),
+            )
+        pygame.draw.circle(
+            surface, BOMB_SPARK_COLOR, fuse_end, max(2, spark_radius // 2)
+        )
+        pygame.draw.circle(
+            surface, BOMB_SPARK_CORE_COLOR, fuse_end, max(1, spark_radius // 3)
+        )
 
-    def _draw_medic_tile(self, surface: Any, state: int, grid_size: int, cell_size: int) -> None:
+    def _draw_medic_tile(
+        self, surface: Any, state: int, grid_size: int, cell_size: int
+    ) -> None:
         import pygame
 
-        rect = _cell_rect(state, grid_size, cell_size).inflate(-cell_size // 5, -cell_size // 5)
-        pygame.draw.rect(surface, MEDIC_COLOR, rect, border_radius=max(3, cell_size // 12))
+        rect = _cell_rect(state, grid_size, cell_size).inflate(
+            -cell_size // 5, -cell_size // 5
+        )
+        pygame.draw.rect(
+            surface, MEDIC_COLOR, rect, border_radius=max(3, cell_size // 12)
+        )
         cx, cy = rect.center
         bar = max(3, cell_size // 9)
         length = max(8, cell_size // 2)
-        pygame.draw.rect(surface, MEDIC_CROSS_COLOR, pygame.Rect(cx - bar // 2, cy - length // 2, bar, length))
-        pygame.draw.rect(surface, MEDIC_CROSS_COLOR, pygame.Rect(cx - length // 2, cy - bar // 2, length, bar))
+        pygame.draw.rect(
+            surface,
+            MEDIC_CROSS_COLOR,
+            pygame.Rect(cx - bar // 2, cy - length // 2, bar, length),
+        )
+        pygame.draw.rect(
+            surface,
+            MEDIC_CROSS_COLOR,
+            pygame.Rect(cx - length // 2, cy - bar // 2, length, bar),
+        )
 
     def _draw_agent(
         self,
@@ -404,7 +504,15 @@ def _fit_size(source: Position, target: Position) -> Position:
 
 
 def _mix(color: RGBColor, other: RGBColor, ratio: float) -> RGBColor:
-    return tuple(int(channel * (1.0 - ratio) + other_channel * ratio) for channel, other_channel in zip(color, other))
+    return tuple(
+        int(channel * (1.0 - ratio) + other_channel * ratio)
+        for channel, other_channel in zip(color, other)
+    )
 
 
-__all__ = ["ColourBombGridWorldRenderer", "RenderMode", "RGBColor", "validate_renderer_options"]
+__all__ = [
+    "ColourBombGridWorldRenderer",
+    "RenderMode",
+    "RGBColor",
+    "validate_renderer_options",
+]

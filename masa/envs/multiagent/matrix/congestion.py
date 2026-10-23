@@ -68,6 +68,7 @@ def label_fn(obs):
 def cost_fn(labels):
     return binary_cost(labels)
 
+
 class CongestionMatrix(ParallelEnv):
     """
     6-agent congestion routing with 2 roads (A/B). Each agent picks a road.
@@ -155,7 +156,9 @@ class CongestionMatrix(ParallelEnv):
         self.cost_fn = cost_fn
 
         # Spaces
-        self.observation_spaces = {a: self.observation_space(a) for a in self.possible_agents}
+        self.observation_spaces = {
+            a: self.observation_space(a) for a in self.possible_agents
+        }
         self.action_spaces = {a: self.action_space(a) for a in self.possible_agents}
 
     # ─────────────────────────── PettingZoo API ───────────────────────────
@@ -184,7 +187,12 @@ class CongestionMatrix(ParallelEnv):
 
         obs = {a: self._obs() for a in self.agents}
         infos = {
-            a: {"round": self._round, "last_actions": None, "loads": (self._loadA, self._loadB), "jam": self._jam}
+            a: {
+                "round": self._round,
+                "last_actions": None,
+                "loads": (self._loadA, self._loadB),
+                "jam": self._jam,
+            }
             for a in self.agents
         }
         return obs, infos
@@ -204,7 +212,9 @@ class CongestionMatrix(ParallelEnv):
             if missing:
                 msg_parts.append(f"missing actions for agents: {sorted(missing)}")
             if extra:
-                msg_parts.append(f"got actions for non-existent agents: {sorted(extra)}")
+                msg_parts.append(
+                    f"got actions for non-existent agents: {sorted(extra)}"
+                )
             raise ValueError("Invalid action dict: " + "; ".join(msg_parts))
 
         chosen: dict[str, int] = {}
@@ -271,7 +281,9 @@ class CongestionMatrix(ParallelEnv):
         if self.render_mode is None:
             return
         if not self._renderer:
-            raise ValueError("Renderer missing; create env with render_mode='human' or 'rgb_array'.")
+            raise ValueError(
+                "Renderer missing; create env with render_mode='human' or 'rgb_array'."
+            )
 
         params = {
             "base_A": self.base_A,
@@ -431,9 +443,15 @@ class CongestionMatrix(ParallelEnv):
             rng_state: object                    # np.random.RandomState.get_state()
           )
         """
-        agents = tuple(self.agents) if getattr(self, "agents", None) is not None else tuple()
-        last_actions = tuple(self._last_actions.get(a, None) for a in self.possible_agents)
-        cum_rewards = tuple(float(self._cum_rewards.get(a, 0.0)) for a in self.possible_agents)
+        agents = (
+            tuple(self.agents) if getattr(self, "agents", None) is not None else tuple()
+        )
+        last_actions = tuple(
+            self._last_actions.get(a, None) for a in self.possible_agents
+        )
+        cum_rewards = tuple(
+            float(self._cum_rewards.get(a, 0.0)) for a in self.possible_agents
+        )
         rng_state = self.rng.get_state()  # fully reproducible
         return (
             agents,
@@ -475,9 +493,12 @@ class CongestionMatrix(ParallelEnv):
             )
 
         self._last_actions = {
-            a: (None if last_actions[i] is None else int(last_actions[i])) for i, a in enumerate(self.possible_agents)
+            a: (None if last_actions[i] is None else int(last_actions[i]))
+            for i, a in enumerate(self.possible_agents)
         }
-        self._cum_rewards = {a: float(cum_rewards[i]) for i, a in enumerate(self.possible_agents)}
+        self._cum_rewards = {
+            a: float(cum_rewards[i]) for i, a in enumerate(self.possible_agents)
+        }
 
         self._loadA = int(loadA)
         self._loadB = int(loadB)

@@ -1,4 +1,5 @@
 """Action replacement rules; every result must still pass the shield's safe mask."""
+
 from __future__ import annotations
 
 from collections.abc import Callable

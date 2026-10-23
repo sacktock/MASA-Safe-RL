@@ -1,4 +1,5 @@
 """Integration checks against MASA's repeated Chicken ParallelEnv."""
+
 from __future__ import annotations
 
 import numpy as np

@@ -1,5 +1,4 @@
 name: Dependencies sync
-
 on:
   push:
     paths:
@@ -9,10 +8,8 @@ on:
     paths:
       - requirements.txt
       - pyproject.toml
-
 permissions:
   contents: read
-
 jobs:
   check-requirements-sync:
     name: Check requirements.txt vs pyproject.toml
@@ -22,11 +19,9 @@ jobs:
         uses: actions/checkout@v5
         with:
           persist-credentials: false
-
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: '3.13'
-
       - name: Check dependency sync
         run: python scripts/check_requirements_sync.py

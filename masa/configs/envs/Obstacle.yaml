@@ -1,14 +1,12 @@
-defaults:  
+defaults:
   env:
     id: Obstacle
     max_episode_steps: 200
     label_fn: masa.envs.continuous.obstacle:label_fn
     cost_fn: masa.envs.continuous.obstacle:cost_fn
-
   constraint:
     type: CMDP
     cost_budget: 0
-
   run:
     total_timesteps: 100000
     eval_every: 5000

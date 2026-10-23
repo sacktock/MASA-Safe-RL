@@ -16,7 +16,9 @@ def _labels_text(labels: object) -> str:
     return ", ".join(str(label) for label in labels)
 
 
-def _metric(row: Mapping[str, object], group: str, key: str, default: float = 0.0) -> float:
+def _metric(
+    row: Mapping[str, object], group: str, key: str, default: float = 0.0
+) -> float:
     metrics = row.get(group)
     if not isinstance(metrics, Mapping):
         return default
@@ -24,7 +26,9 @@ def _metric(row: Mapping[str, object], group: str, key: str, default: float = 0.
     return float(value)
 
 
-def _state_center(state: int, grid_size: int, cell: int, margin: int) -> tuple[int, int]:
+def _state_center(
+    state: int, grid_size: int, cell: int, margin: int
+) -> tuple[int, int]:
     row, col = divmod(int(state), int(grid_size))
     return margin + col * cell + cell // 2, margin + row * cell + cell // 2
 
@@ -101,16 +105,19 @@ def render_colour_bomb_trace_svg(
         parts.append(rect_for(state, "#fde68a", "#f59e0b"))
 
     if len(states) > 1:
-        points = [
-            _state_center(state, grid_size, cell, margin)
-            for state in states
-        ]
-        d = " ".join(f"L{x},{y}" if idx else f"M{x},{y}" for idx, (x, y) in enumerate(points))
-        parts.append(f'<path d="{d}" fill="none" stroke="#1f2937" stroke-width="3" stroke-linejoin="round" marker-end="url(#trace-arrow)"/>')
+        points = [_state_center(state, grid_size, cell, margin) for state in states]
+        d = " ".join(
+            f"L{x},{y}" if idx else f"M{x},{y}" for idx, (x, y) in enumerate(points)
+        )
+        parts.append(
+            f'<path d="{d}" fill="none" stroke="#1f2937" stroke-width="3" stroke-linejoin="round" marker-end="url(#trace-arrow)"/>'
+        )
 
     for state, indices in visits.items():
         cx, cy = _state_center(state, grid_size, cell, margin)
-        parts.append(f'<circle cx="{cx}" cy="{cy}" r="{max(9, cell // 3)}" fill="#2563eb" stroke="#ffffff" stroke-width="2"/>')
+        parts.append(
+            f'<circle cx="{cx}" cy="{cy}" r="{max(9, cell // 3)}" fill="#2563eb" stroke="#ffffff" stroke-width="2"/>'
+        )
         parts.append(
             f'<text x="{cx}" y="{cy + 4}" text-anchor="middle" font-family="sans-serif" font-size="{10 if len(indices) > 1 else 12}" font-weight="700" fill="#ffffff">{escape(_state_label(indices))}</text>'
         )
@@ -124,11 +131,17 @@ def render_colour_bomb_trace_svg(
         ("wall", "#334155"),
         ("visited", "#2563eb"),
     ]
-    parts.append(f'<text x="{legend_x}" y="{margin}" font-family="sans-serif" font-size="13" font-weight="700" fill="#111827">Legend</text>')
+    parts.append(
+        f'<text x="{legend_x}" y="{margin}" font-family="sans-serif" font-size="13" font-weight="700" fill="#111827">Legend</text>'
+    )
     for idx, (label, color) in enumerate(legend, start=1):
         y = margin + idx * 24
-        parts.append(f'<rect x="{legend_x}" y="{y - 12}" width="14" height="14" rx="2" fill="{color}" stroke="#9ca3af"/>')
-        parts.append(f'<text x="{legend_x + 22}" y="{y}" font-family="sans-serif" font-size="12" fill="#374151">{label}</text>')
+        parts.append(
+            f'<rect x="{legend_x}" y="{y - 12}" width="14" height="14" rx="2" fill="{color}" stroke="#9ca3af"/>'
+        )
+        parts.append(
+            f'<text x="{legend_x + 22}" y="{y}" font-family="sans-serif" font-size="12" fill="#374151">{label}</text>'
+        )
 
     parts.append("</svg>")
     return "\n".join(parts)
@@ -174,23 +187,35 @@ def render_dfa_diagram_svg(
             parts.append(
                 f'<path d="M{sx - 10} {y - radius} C{sx - 42} {y - 70}, {sx + 42} {y - 70}, {sx + 10} {y - radius}" fill="none" stroke="#374151" stroke-width="2" marker-end="url(#dfa-arrow)"/>'
             )
-            parts.append(f'<text x="{sx}" y="{y - 72}" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#374151">{escape(label)}</text>')
+            parts.append(
+                f'<text x="{sx}" y="{y - 72}" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#374151">{escape(label)}</text>'
+            )
         else:
             top = y - 46 if x_by_state[source] < x_by_state[target] else y + 52
             parts.append(
                 f'<path d="M{sx + radius} {y} C{(sx + tx) // 2} {top}, {(sx + tx) // 2} {top}, {tx - radius} {y}" fill="none" stroke="#374151" stroke-width="2" marker-end="url(#dfa-arrow)"/>'
             )
-            parts.append(f'<text x="{(sx + tx) // 2}" y="{top - 6 if top < y else top + 16}" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" fill="#111827">{escape(label)}</text>')
+            parts.append(
+                f'<text x="{(sx + tx) // 2}" y="{top - 6 if top < y else top + 16}" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" fill="#111827">{escape(label)}</text>'
+            )
 
     for state in states:
         x = x_by_state[state]
         fill = "#fee2e2" if state in accepting_set else "#dcfce7"
         stroke = "#991b1b" if state in accepting_set else "#166534"
-        parts.append(f'<circle cx="{x}" cy="{y}" r="{radius}" fill="{fill}" stroke="{stroke}" stroke-width="3"/>')
+        parts.append(
+            f'<circle cx="{x}" cy="{y}" r="{radius}" fill="{fill}" stroke="{stroke}" stroke-width="3"/>'
+        )
         if state in accepting_set:
-            parts.append(f'<circle cx="{x}" cy="{y}" r="{radius - 7}" fill="none" stroke="{stroke}" stroke-width="2"/>')
-        parts.append(f'<text x="{x}" y="{y - 3}" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#111827">q{state}</text>')
-        parts.append(f'<text x="{x}" y="{y + 15}" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#374151">{escape(state_labels.get(state, ""))}</text>')
+            parts.append(
+                f'<circle cx="{x}" cy="{y}" r="{radius - 7}" fill="none" stroke="{stroke}" stroke-width="2"/>'
+            )
+        parts.append(
+            f'<text x="{x}" y="{y - 3}" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#111827">q{state}</text>'
+        )
+        parts.append(
+            f'<text x="{x}" y="{y + 15}" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#374151">{escape(state_labels.get(state, ""))}</text>'
+        )
 
     parts.append("</svg>")
     return "\n".join(parts)
@@ -216,18 +241,42 @@ def render_ltl_rollout_timeline_svg(
         x = left + idx * cell
         labels = list(row.get("labels", []))
         violation = _metric(row, "constraint_step", "violation")
-        fill = "#fee2e2" if violation >= 0.5 else "#fff7ed" if "bomb" in labels else "#eff6ff"
-        stroke = "#ef4444" if violation >= 0.5 else "#fdba74" if "bomb" in labels else "#93c5fd"
+        fill = (
+            "#fee2e2"
+            if violation >= 0.5
+            else "#fff7ed"
+            if "bomb" in labels
+            else "#eff6ff"
+        )
+        stroke = (
+            "#ef4444"
+            if violation >= 0.5
+            else "#fdba74"
+            if "bomb" in labels
+            else "#93c5fd"
+        )
         label_text = _labels_text(labels)
         if len(label_text) > 10:
             label_text = label_text[:9] + "."
-        parts.append(f'<rect x="{x}" y="50" width="58" height="88" rx="7" fill="{fill}" stroke="{stroke}" stroke-width="1.5"/>')
-        parts.append(f'<text x="{x + 29}" y="70" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" fill="#111827">t{idx}</text>')
-        parts.append(f'<text x="{x + 29}" y="90" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#374151">s={_obs_orig(row)}</text>')
-        parts.append(f'<text x="{x + 29}" y="108" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#374151">q={int(row.get("automaton_state", 0))}</text>')
-        parts.append(f'<text x="{x + 29}" y="126" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#374151">{escape(label_text)}</text>')
+        parts.append(
+            f'<rect x="{x}" y="50" width="58" height="88" rx="7" fill="{fill}" stroke="{stroke}" stroke-width="1.5"/>'
+        )
+        parts.append(
+            f'<text x="{x + 29}" y="70" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" fill="#111827">t{idx}</text>'
+        )
+        parts.append(
+            f'<text x="{x + 29}" y="90" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#374151">s={_obs_orig(row)}</text>'
+        )
+        parts.append(
+            f'<text x="{x + 29}" y="108" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#374151">q={int(row.get("automaton_state", 0))}</text>'
+        )
+        parts.append(
+            f'<text x="{x + 29}" y="126" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#374151">{escape(label_text)}</text>'
+        )
         if violation >= 0.5:
-            parts.append(f'<text x="{x + 29}" y="156" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" fill="#991b1b">violation</text>')
+            parts.append(
+                f'<text x="{x + 29}" y="156" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="700" fill="#991b1b">violation</text>'
+            )
 
     parts.append("</svg>")
     return "\n".join(parts)

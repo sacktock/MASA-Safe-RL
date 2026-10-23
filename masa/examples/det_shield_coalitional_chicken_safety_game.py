@@ -1,4 +1,5 @@
 """Helpers used by the coalition-shielding Chicken tutorials and tests."""
+
 from __future__ import annotations
 
 from masa.common.ltl import Atom, DFA

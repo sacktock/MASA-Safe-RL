@@ -6,14 +6,14 @@ Runnable notebook: [notebooks/tutorials/11_vectorization_and_normalization.ipynb
 
 ## Wrapper Map
 
-| Wrapper | Input | Output | Use it when |
-| --- | --- | --- | --- |
-| `OneHotObsWrapper` | `Discrete` observations, or `Dict` observations containing `Discrete` leaves | `Box` one-hot vectors | an algorithm expects vector observations |
-| `FlattenDictObsWrapper` | `Dict` observations whose values are already `Box` spaces | one flat `Box` | a wrapped environment emits structured observation pieces |
-| `DummyVecWrapper` | one environment | vector API with length-1 lists | code expects vectorized reset and step outputs |
-| `VecWrapper` | a list of environments | synchronous batched list outputs | you want to step several environments together |
-| `NormWrapper` | one `Box`-observation environment | normalized observations and/or rewards | you want running statistics for a single environment |
-| `VecNormWrapper` | a `DummyVecWrapper` or `VecWrapper` with `Box` observations | vectorized normalized observations and/or rewards | you want running statistics across parallel environments |
+| Wrapper                 | Input                                                                        | Output                                            | Use it when                                               |
+| ----------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------- | --------------------------------------------------------- |
+| `OneHotObsWrapper`      | `Discrete` observations, or `Dict` observations containing `Discrete` leaves | `Box` one-hot vectors                             | an algorithm expects vector observations                  |
+| `FlattenDictObsWrapper` | `Dict` observations whose values are already `Box` spaces                    | one flat `Box`                                    | a wrapped environment emits structured observation pieces |
+| `DummyVecWrapper`       | one environment                                                              | vector API with length-1 lists                    | code expects vectorized reset and step outputs            |
+| `VecWrapper`            | a list of environments                                                       | synchronous batched list outputs                  | you want to step several environments together            |
+| `NormWrapper`           | one `Box`-observation environment                                            | normalized observations and/or rewards            | you want running statistics for a single environment      |
+| `VecNormWrapper`        | a `DummyVecWrapper` or `VecWrapper` with `Box` observations                  | vectorized normalized observations and/or rewards | you want running statistics across parallel environments  |
 
 The notebook focuses on stable `reset` and `step` behavior. It does not cover `reset_done`.
 
@@ -50,9 +50,7 @@ The reset and step results are lists of length `1`.
 `VecWrapper` steps multiple environments synchronously:
 
 ```python
-vec_env = VecWrapper(
-    [OneHotObsWrapper(make_colour_grid_env()) for _ in range(2)]
-)
+vec_env = VecWrapper([OneHotObsWrapper(make_colour_grid_env()) for _ in range(2)])
 obs, infos = vec_env.reset(seed=10)
 obs, rewards, terminated, truncated, infos = vec_env.step([0, 1])
 ```

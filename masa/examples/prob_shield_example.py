@@ -1,10 +1,12 @@
 from masa.prob_shield.prob_shield_wrapper_v1 import ProbShieldWrapperDisc
 from masa.algorithms.on_policy import PPO
 
+
 def main():
     # Import the masa make_env function
     from masa.common.utils import make_env
-    '''
+
+    """
     def make_env(
         env_id: str, 
         constraint: str, 
@@ -19,12 +21,12 @@ def main():
         video_kwargs: Optional[dict[str, Any]] = None,
         **kw
     ) -> gym.Env:
-    '''
+    """
 
     # Import the labelling and cost functions for Mini-Pacman
     from masa.envs.tabular.mini_pacman import label_fn, cost_fn
 
-    # We're going to use the PCTL constraint, which has key word args: (cost_fn CostFn: = DummyCostFn, alpha: float = 0.01) 
+    # We're going to use the PCTL constraint, which has key word args: (cost_fn CostFn: = DummyCostFn, alpha: float = 0.01)
     constraint_kwargs = dict(
         cost_fn=cost_fn,
         alpha=0.01,
@@ -32,21 +34,27 @@ def main():
 
     # Intialize the environment (env_id, constraint, max_epsiode_steps)
     # make_env wraps the environment in TimeLimit -> LabelledEnv -> PCTLEnv -> ConstraintMonitor -> RewardMonitor
-    env = make_env("MiniPacman", "PCTL", 100, label_fn=label_fn, constraint_kwargs=constraint_kwargs)
+    env = make_env(
+        "MiniPacman",
+        "PCTL",
+        100,
+        label_fn=label_fn,
+        constraint_kwargs=constraint_kwargs,
+    )
 
     # Now we're going to wrap our environment in ProbShieldWrapperDisc
     # The wrapper takes one arg: env
-    #   and key word args: 
+    #   and key word args:
     #   theta: float = 1e-10,
     #   max_vi_steps: int = 1000,
     #   init_safety_bound: float = 0.5,
     #   granularity: int = 20,
     env = ProbShieldWrapperDisc(
-        env, 
-        init_safety_bound=0.01, # Safety constraint from the intial state
-        theta=1e-15, # early stopping condition for value iteration
-        max_vi_steps=10_000, # number of value iteration steps
-        granularity=20, # granulairty with which is discretize the successor state betas
+        env,
+        init_safety_bound=0.01,  # Safety constraint from the intial state
+        theta=1e-15,  # early stopping condition for value iteration
+        max_vi_steps=10_000,  # number of value iteration steps
+        granularity=20,  # granulairty with which is discretize the successor state betas
     )
 
     # PPO is a on-policy algorithm that takes one arg: env
@@ -59,7 +67,7 @@ def main():
     #   device: str = "auto",
     #   verbose: int = 0,
     #   env_fn: Optional[Callable[[], gym.Env]] = None,
-    #   eval_env: Optional[gym.Env] = None, 
+    #   eval_env: Optional[gym.Env] = None,
     #   learning_rate: Union[float, optax.Schedule] = 3e-4,
     #   n_steps: int = 2048,
     #   batch_size: int = 64,
@@ -76,7 +84,13 @@ def main():
 
     # First lets initialize the eval_env
     eval_env = ProbShieldWrapperDisc(
-        make_env("MiniPacman", "PCTL", 100, label_fn=label_fn, constraint_kwargs=constraint_kwargs), 
+        make_env(
+            "MiniPacman",
+            "PCTL",
+            100,
+            label_fn=label_fn,
+            constraint_kwargs=constraint_kwargs,
+        ),
         init_safety_bound=0.01,
         theta=1e-15,
         max_vi_steps=10_000,
@@ -87,25 +101,26 @@ def main():
     # PPO will automatically one-hot encode any discrete observations and flatten any dict observations
     algo = PPO(
         env,
-        tensorboard_logdir=None, # ignoring tensorboard logging
+        tensorboard_logdir=None,  # ignoring tensorboard logging
         seed=0,
-        monitor=True, # monitors training progress
-        device="auto", 
-        verbose=0, # verbosity level for monitoring
-        eval_env=eval_env, # separate environment instance for eval
+        monitor=True,  # monitors training progress
+        device="auto",
+        verbose=0,  # verbosity level for monitoring
+        eval_env=eval_env,  # separate environment instance for eval
         # Using the PPO specific defaults after this
     )
 
     # Now we begin training
     algo.train(
-        num_frames=100_000, # total number of frames (environment interactions)
-        num_eval_episodes=10, # total number of evaluation episodes to run
-        eval_freq=10_000, # how frequently to run evaluation (default=0 => never run evaluation)
-        log_freq=10_000, # how frequenntly to log metrics to stdout or tensorboard
+        num_frames=100_000,  # total number of frames (environment interactions)
+        num_eval_episodes=10,  # total number of evaluation episodes to run
+        eval_freq=10_000,  # how frequently to run evaluation (default=0 => never run evaluation)
+        log_freq=10_000,  # how frequenntly to log metrics to stdout or tensorboard
         # prefill: Optional[int] = None (not implemented yet)
         # save_freq: int = 0, (not implemented yet)
-        stats_window_size=100, # sliding window size for metrics logging
+        stats_window_size=100,  # sliding window size for metrics logging
     )
+
 
 if __name__ == "__main__":
     main()

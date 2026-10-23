@@ -1,4 +1,5 @@
 """Winning-region LTL shielding for PettingZoo parallel environments."""
+
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -43,9 +44,7 @@ def _normalise_execution(value: str) -> ExecutionMode:
     try:
         return aliases[value]
     except KeyError as exc:
-        raise ValueError(
-            "execution must be 'centralised' or 'decentralised'."
-        ) from exc
+        raise ValueError("execution must be 'centralised' or 'decentralised'.") from exc
 
 
 class CoalitionLTLShield(ParallelEnv):
@@ -141,9 +140,7 @@ class CoalitionLTLShield(ParallelEnv):
         self._configure_replacements(replacement)
         self._dfa = dfa
         self._dfa_states = tuple(dfa.states)
-        self._q_index = {
-            state: index for index, state in enumerate(self._dfa_states)
-        }
+        self._q_index = {state: index for index, state in enumerate(self._dfa_states)}
         if len(self._q_index) != len(self._dfa_states):
             raise ValueError("DFA states must be unique.")
         unknown_accepting = set(dfa.accepting) - set(self._dfa_states)
@@ -160,8 +157,7 @@ class CoalitionLTLShield(ParallelEnv):
             raise TypeError("label_combiner must be callable or None.")
         self._label_combiner = label_combiner or _union_labels
         labels = [
-            self._labels_for_state(state)
-            for state in range(self.tabular_env.n_states)
+            self._labels_for_state(state) for state in range(self.tabular_env.n_states)
         ]
         self._state_labels = tuple(labels)
         next_q = np.empty(
@@ -213,8 +209,7 @@ class CoalitionLTLShield(ParallelEnv):
             local_by_agent = dict(zip(self.coalition_agents, local_masks))
             self.local_safe_actions = MappingProxyType(local_by_agent)
             self._local_fallback = {
-                agent: mask.argmax(axis=1)
-                for agent, mask in local_by_agent.items()
+                agent: mask.argmax(axis=1) for agent, mask in local_by_agent.items()
             }
 
         self._base_state: int | None = None
@@ -320,7 +315,9 @@ class CoalitionLTLShield(ParallelEnv):
                         f"Replacement for {agent!r} must be callable or None."
                     )
                 configured[agent] = callback
-            callbacks = [callback for callback in configured.values() if callback is not None]
+            callbacks = [
+                callback for callback in configured.values() if callback is not None
+            ]
             if len({id(callback) for callback in callbacks}) != len(callbacks):
                 raise ValueError(
                     "Decentralised agents must use separate replacement callback "
@@ -380,8 +377,7 @@ class CoalitionLTLShield(ParallelEnv):
         state = int(state)
         if not 0 <= state < self.tabular_env.n_states:
             raise ValueError(
-                f"Tabular state {state} is outside "
-                f"[0, {self.tabular_env.n_states})."
+                f"Tabular state {state} is outside [0, {self.tabular_env.n_states})."
             )
         return self._state_labels[state]
 
@@ -396,9 +392,7 @@ class CoalitionLTLShield(ParallelEnv):
     def constraint_type(self) -> str:
         return "COALITION_LTL_SHIELD"
 
-    def encode_coalition_action(
-        self, action: Mapping[str, int] | Sequence[int]
-    ) -> int:
+    def encode_coalition_action(self, action: Mapping[str, int] | Sequence[int]) -> int:
         """Encode a coalition action in canonical environment-agent order."""
         if isinstance(action, Mapping):
             if set(action) != set(self.coalition_agents):
@@ -408,7 +402,9 @@ class CoalitionLTLShield(ParallelEnv):
             key = tuple(int(action[agent]) for agent in self.coalition_agents)
         else:
             if isinstance(action, (str, bytes)):
-                raise TypeError("Coalition action must be a mapping or action sequence.")
+                raise TypeError(
+                    "Coalition action must be a mapping or action sequence."
+                )
             key = tuple(int(primitive) for primitive in action)
         try:
             return self._coalition_action_index[key]
@@ -460,10 +456,7 @@ class CoalitionLTLShield(ParallelEnv):
 
     def local_action_masks(self) -> dict[str, np.ndarray]:
         """Copies of all current decentralised local masks."""
-        return {
-            agent: self.local_action_mask(agent)
-            for agent in self.coalition_agents
-        }
+        return {agent: self.local_action_mask(agent) for agent in self.coalition_agents}
 
     def reset(self, seed=None, options=None):
         self._clear_runtime_state()
@@ -587,9 +580,7 @@ class CoalitionLTLShield(ParallelEnv):
     def _centralised_actions(
         self, proposed: dict[str, int], product_state: int
     ) -> dict[str, int]:
-        coalition_action = tuple(
-            proposed[agent] for agent in self.coalition_agents
-        )
+        coalition_action = tuple(proposed[agent] for agent in self.coalition_agents)
         proposed_index = self._coalition_action_index[coalition_action]
         mask = self.safe_joint_actions[product_state]
         if mask[proposed_index]:
@@ -636,9 +627,7 @@ class CoalitionLTLShield(ParallelEnv):
             if callback is None:
                 replacement = int(self._local_fallback[agent][product_state])
             else:
-                replacement = callback(
-                    product_state, proposed[agent], mask.copy()
-                )
+                replacement = callback(product_state, proposed[agent], mask.copy())
             if (
                 not isinstance(replacement, (int, np.integer))
                 or isinstance(replacement, bool)
@@ -651,9 +640,7 @@ class CoalitionLTLShield(ParallelEnv):
                 )
             executed[agent] = int(replacement)
 
-        coalition_action = tuple(
-            executed[agent] for agent in self.coalition_agents
-        )
+        coalition_action = tuple(executed[agent] for agent in self.coalition_agents)
         coalition_index = self._coalition_action_index[coalition_action]
         assert self.independent_joint_actions is not None
         if not self.independent_joint_actions[product_state, coalition_index]:

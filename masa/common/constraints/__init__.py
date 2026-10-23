@@ -26,8 +26,7 @@ registry.CONSTRAINT_REGISTRY.register(
 )
 
 registry.MARL_CONSTRAINT_REGISTRY.register(
-    "CMG",
-    "masa.common.constraints.multi_agent.cmg:ConstrainedMarkovGameEnv"
+    "CMG", "masa.common.constraints.multi_agent.cmg:ConstrainedMarkovGameEnv"
 )
 
 CONSTRAINTS = registry.CONSTRAINT_REGISTRY.keys()

@@ -7,24 +7,33 @@ from gymnasium.wrappers import RecordVideo as GymnasiumRecordVideo
 from pettingzoo import ParallelEnv
 import masa
 from masa.common import registry
-from masa.common.wrappers import TimeLimit, ConstraintMonitor, RewardMonitor, ConstraintPersistentGymnasiumWrapper
+from masa.common.wrappers import (
+    TimeLimit,
+    ConstraintMonitor,
+    RewardMonitor,
+    ConstraintPersistentGymnasiumWrapper,
+)
 from masa.common.labelled_env import LabelledEnv
 from masa.common.multi_agent.labelled_pz_env import LabelledParallelEnv
 from masa.common.label_fn import LabelFn
 from masa.common.pettingzoo_record_video import RecordVideoParallel
 import warnings
 
+
 def format_env_id(env_id: str) -> str:
     """Convert snake_case environment IDs to PascalCase."""
     return "".join(part.capitalize() for part in env_id.split("_"))
+
 
 def format_constraint_id(constraint_id: str) -> str:
     """Convert constraint IDs to uppercase, preserving underscores."""
     return constraint_id.upper()
 
+
 def format_algo_id(constraint_id: str) -> str:
     """Convert constraint IDs to uppercase, preserving underscores."""
     return constraint_id.upper()
+
 
 def resolve_registered_id(
     value: str,
@@ -42,9 +51,7 @@ def resolve_registered_id(
             stacklevel=2,
         )
         return formatted
-    raise ValueError(
-        f"Unknown {kind} '{value}'. Available: {sorted(registry_keys)}"
-    )
+    raise ValueError(f"Unknown {kind} '{value}'. Available: {sorted(registry_keys)}")
 
 
 def load_callable(path: str):
@@ -75,18 +82,18 @@ def _resolve_video_kwargs(
 
 
 def make_env(
-    env_id: str, 
-    constraint: str, 
-    max_episode_steps: int, 
+    env_id: str,
+    constraint: str,
+    max_episode_steps: int,
     *,
-    label_fn: Optional[LabelFn] = None, 
+    label_fn: Optional[LabelFn] = None,
     constraint_kwargs: Optional[dict[str, Any]] = None,
     env_kwargs: Optional[dict[str, Any]] = None,
     record_video: bool = False,
     record_video_episode_trigger: Optional[Callable[[int], bool]] = None,
     video_folder: str = "videos",
     video_kwargs: Optional[dict[str, Any]] = None,
-    **kw
+    **kw,
 ) -> gym.Env:
     r"""
     Construct a fully wrapped MASA environment using the canonical wrapper order.
@@ -94,10 +101,10 @@ def make_env(
     This helper creates a Gymnasium environment and applies MASA wrappers in the
     **recommended and enforced order**:
 
-    :class:`~gymnasium.wrappers.TimeLimit` :math:`\rightarrow` 
-    :class:`~masa.common.labelled_env.LabelledEnv` :math:`\rightarrow` 
-    :class:`~masa.common.constraints.base.BaseConstraintEnv`  :math:`\rightarrow` 
-    :class:`~masa.common.wrappers.ConstraintMonitor` :math:`\rightarrow` 
+    :class:`~gymnasium.wrappers.TimeLimit` :math:`\rightarrow`
+    :class:`~masa.common.labelled_env.LabelledEnv` :math:`\rightarrow`
+    :class:`~masa.common.constraints.base.BaseConstraintEnv`  :math:`\rightarrow`
+    :class:`~masa.common.wrappers.ConstraintMonitor` :math:`\rightarrow`
     :class:`~masa.common.wrappers.RewardMonitor`
 
     The resulting environment exposes labels, constraint metrics, and reward
@@ -115,7 +122,7 @@ def make_env(
         label_fn:
             Optional function mapping observations to atomic predicate labels.
             If provided, labels are computed on every ``reset`` and ``step`` and
-            stored under ``info["labels"]``. If omitted, the base environment's 
+            stored under ``info["labels"]``. If omitted, the base environment's
             ``label_fn`` attribute is used.
         constraint_kwargs:
            Optional keyword arguments forwarded to the constraint wrapper
@@ -147,10 +154,10 @@ def make_env(
         - All semantic metadata (labels, costs, violations, metrics) is communicated
           via the ``info`` dictionary.
 
-    See Also: 
-        - :class:`masa.common.labelled_env.LabelledEnv` 
-        - :class:`masa.common.constraints.base.BaseConstraintEnv` 
-        - :class:`masa.common.wrappers.ConstraintMonitor` 
+    See Also:
+        - :class:`masa.common.labelled_env.LabelledEnv`
+        - :class:`masa.common.constraints.base.BaseConstraintEnv`
+        - :class:`masa.common.wrappers.ConstraintMonitor`
         - :class:`masa.common.wrappers.RewardMonitor`
     """
 
@@ -205,7 +212,7 @@ def make_marl_env(
     record_video_episode_trigger: Optional[Callable[[int], bool]] = None,
     video_folder: str = "videos",
     video_kwargs: Optional[dict[str, Any]] = None,
-    **kw
+    **kw,
 ) -> ParallelEnv:
     r"""
     Construct a fully wrapped MASA multi-agent environment.
@@ -267,7 +274,9 @@ def make_marl_env(
     env_ctor = registry.get_marl_env(env_id)
     constraint_ctor = registry.get_marl_constraint(constraint)
     raw_env = env_ctor(**dict(env_kwargs or {}))
-    resolved_label_fn = label_fn if label_fn is not None else getattr(raw_env, "label_fn", None)
+    resolved_label_fn = (
+        label_fn if label_fn is not None else getattr(raw_env, "label_fn", None)
+    )
     if resolved_label_fn is None:
         raise ValueError(
             f"MARL env '{env_id}' does not expose a default label_fn. "

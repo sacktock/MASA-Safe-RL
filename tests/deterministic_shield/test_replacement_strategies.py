@@ -74,9 +74,15 @@ def test_scores_receive_product_observation_and_ignore_unsafe_entries():
     assert calls == [17]
 
 
-@pytest.mark.parametrize("scores", [
-    [1, 2], [[1, 2, 3, 4]], [np.nan, 1, 2, 4], [1, 2, 3, np.inf],
-])
+@pytest.mark.parametrize(
+    "scores",
+    [
+        [1, 2],
+        [[1, 2, 3, 4]],
+        [np.nan, 1, 2, 4],
+        [1, 2, 3, np.inf],
+    ],
+)
 def test_bad_scores(scores):
     with pytest.raises(ValueError):
         highest_score(lambda s: scores)(0, 1, MASK)
@@ -87,13 +93,20 @@ def test_non_callable_scores():
         highest_score(np.ones(4))
 
 
-@pytest.mark.parametrize("factory", [
-    lambda: random_safe(seed=0), lambda: highest_score(lambda s: np.ones(4)),
-])
-@pytest.mark.parametrize("mask, message", [
-    (np.zeros(4, dtype=bool), "empty safe set"),
-    (np.ones((2, 2), dtype=bool), "one-dimensional"),
-])
+@pytest.mark.parametrize(
+    "factory",
+    [
+        lambda: random_safe(seed=0),
+        lambda: highest_score(lambda s: np.ones(4)),
+    ],
+)
+@pytest.mark.parametrize(
+    "mask, message",
+    [
+        (np.zeros(4, dtype=bool), "empty safe set"),
+        (np.ones((2, 2), dtype=bool), "one-dimensional"),
+    ],
+)
 def test_invalid_safe_masks(factory, mask, message):
     with pytest.raises(ValueError, match=message):
         factory()(0, 1, mask)

@@ -30,7 +30,9 @@ class RecordVideoParallel(BaseParallelWrapper):
         gc_trigger: Callable[[int], bool] | None = lambda episode: True,
     ):
         super().__init__(env)
-        assert isinstance(env, ParallelEnv), "RecordVideoParallel is only compatible with ParallelEnv environments."
+        assert isinstance(env, ParallelEnv), (
+            "RecordVideoParallel is only compatible with ParallelEnv environments."
+        )
 
         if env.render_mode in {None, "human", "ansi"}:  # type: ignore[attr-defined]
             raise ValueError(
@@ -39,8 +41,8 @@ class RecordVideoParallel(BaseParallelWrapper):
             )
 
         if episode_trigger is None and step_trigger is None:
-            episode_trigger = (
-                lambda episode_id: int(round(episode_id ** (1.0 / 3))) ** 3 == episode_id
+            episode_trigger = lambda episode_id: (
+                int(round(episode_id ** (1.0 / 3))) ** 3 == episode_id
                 if episode_id < 1000
                 else episode_id % 1000 == 0
             )
@@ -63,7 +65,9 @@ class RecordVideoParallel(BaseParallelWrapper):
         self.frames_per_sec: int = fps
         self.name_prefix: str = name_prefix
         self._video_name: str | None = None
-        self.video_length: int | float = video_length if video_length != 0 else float("inf")
+        self.video_length: int | float = (
+            video_length if video_length != 0 else float("inf")
+        )
         self.recording: bool = False
         self.recorded_frames: list[RenderFrame] = []
         self.render_history: list[RenderFrame] = []
@@ -163,7 +167,9 @@ class RecordVideoParallel(BaseParallelWrapper):
         assert self.recording, "stop_recording was called, but no recording was started"
 
         if len(self.recorded_frames) == 0:
-            gymnasium.logger.warn("Ignored saving a video as there were zero frames to save.")
+            gymnasium.logger.warn(
+                "Ignored saving a video as there were zero frames to save."
+            )
         else:
             try:
                 from moviepy.video.io.ImageSequenceClip import ImageSequenceClip
@@ -205,7 +211,9 @@ class RecordVideoAEC(BaseWrapper):
         gc_trigger: Callable[[int], bool] | None = lambda episode: True,
     ):
         super().__init__(env)
-        assert isinstance(env, AECEnv), "RecordVideoAEC is only compatible with AECEnv environments."
+        assert isinstance(env, AECEnv), (
+            "RecordVideoAEC is only compatible with AECEnv environments."
+        )
 
         if env.render_mode in {None, "human", "ansi"}:  # type: ignore[attr-defined]
             raise ValueError(
@@ -214,8 +222,8 @@ class RecordVideoAEC(BaseWrapper):
             )
 
         if episode_trigger is None and step_trigger is None:
-            episode_trigger = (
-                lambda episode_id: int(round(episode_id ** (1.0 / 3))) ** 3 == episode_id
+            episode_trigger = lambda episode_id: (
+                int(round(episode_id ** (1.0 / 3))) ** 3 == episode_id
                 if episode_id < 1000
                 else episode_id % 1000 == 0
             )
@@ -238,7 +246,9 @@ class RecordVideoAEC(BaseWrapper):
         self.frames_per_sec: int = fps
         self.name_prefix: str = name_prefix
         self._video_name: str | None = None
-        self.video_length: int | float = video_length if video_length != 0 else float("inf")
+        self.video_length: int | float = (
+            video_length if video_length != 0 else float("inf")
+        )
         self.recording: bool = False
         self.recorded_frames: list[RenderFrame] = []
         self.render_history: list[RenderFrame] = []
@@ -324,7 +334,9 @@ class RecordVideoAEC(BaseWrapper):
         assert self.recording, "stop_recording was called, but no recording was started"
 
         if len(self.recorded_frames) == 0:
-            gymnasium.logger.warn("Ignored saving a video as there were zero frames to save.")
+            gymnasium.logger.warn(
+                "Ignored saving a video as there were zero frames to save."
+            )
         else:
             try:
                 from moviepy.video.io.ImageSequenceClip import ImageSequenceClip

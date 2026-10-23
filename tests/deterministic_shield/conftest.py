@@ -1,4 +1,5 @@
 """Small modeled environments shared by the shielding tests."""
+
 import gymnasium as gym
 import numpy as np
 import pytest
@@ -45,12 +46,17 @@ class TinyMDP(gym.Env):
         if self.fail_step:
             raise RuntimeError("simulated environment failure")
         self.executed.append(int(action))
-        self.state = int(self.np_random.choice(
-            self.observation_space.n, p=self.actual_model[:, self.state, action]
-        ))
+        self.state = int(
+            self.np_random.choice(
+                self.observation_space.n, p=self.actual_model[:, self.state, action]
+            )
+        )
         return (
-            self.state, 0.25, self.ending == "terminated",
-            self.ending == "truncated", {"base_info": "preserved"},
+            self.state,
+            0.25,
+            self.ending == "terminated",
+            self.ending == "truncated",
+            {"base_info": "preserved"},
         )
 
 
@@ -61,8 +67,16 @@ def shield_class(request):
 
 @pytest.fixture
 def make_shield():
-    def make(cls, *, model=None, labels=None, dfa=None, sparse=False,
-             ending=None, **shield_options):
+    def make(
+        cls,
+        *,
+        model=None,
+        labels=None,
+        dfa=None,
+        sparse=False,
+        ending=None,
+        **shield_options,
+    ):
         if model is None:
             # State 1 is a delayed trap; state 2 is immediately bad.
             model = np.zeros((3, 3, 4))
@@ -80,7 +94,9 @@ def make_shield():
         base = TinyMDP(model, labels, sparse=sparse, ending=ending)
         monitor = LTLSafetyEnv(
             LabelledEnv(base, lambda s: base.labels[s]),
-            dfa=dfa, obs_type="discrete",
+            dfa=dfa,
+            obs_type="discrete",
         )
         return cls(monitor, **shield_options)
+
     return make

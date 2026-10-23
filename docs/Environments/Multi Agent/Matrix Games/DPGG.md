@@ -9,7 +9,7 @@
 - Agents: `player_0`, `player_1`
 - Actions: `Contribute=0`, `Withhold=1`
 - Default parameters:
-  `contribution_cost=10`, `alpha=1.5`, `payout_rate=0.3`, `decay=0.0`, `initial_pot=0`, `pot_cap=500`, `pot_step=1`
+    `contribution_cost=10`, `alpha=1.5`, `payout_rate=0.3`, `decay=0.0`, `initial_pot=0`, `pot_cap=500`, `pot_step=1`
 
 The environment maintains a discretized public pot. Each round pays out a fraction of the current pot and then updates the pot according to contributions, amplification, and decay.
 

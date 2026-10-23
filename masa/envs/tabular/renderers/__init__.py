@@ -1,2 +1,1 @@
 """Renderers for tabular environments."""
-

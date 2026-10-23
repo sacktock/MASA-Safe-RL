@@ -6,14 +6,14 @@ from masa.prob_shield.parameterized_policy import ParameterizedPPOPolicy
 from masa.common.base_class import BaseJaxPolicy
 from masa.common.policies import PPOLagPolicy
 
-class ProbShieldPPO(ParameterizedPPO):
 
+class ProbShieldPPO(ParameterizedPPO):
     def __init__(
         self,
         env: gym.Env,
         *args,
         env_fn: Optional[Callable[[], gym.Env]] = None,
-        eval_env: Optional[gym.Env] = None, 
+        eval_env: Optional[gym.Env] = None,
         policy_class: type[BaseJaxPolicy] = ParameterizedPPOPolicy,
         init_safety_bound: float = 0.01,
         theta: float = 1e-15,
@@ -42,5 +42,11 @@ class ProbShieldPPO(ParameterizedPPO):
             max_vi_steps=self.max_vi_steps,
         )
 
-        super().__init__(env, *args, env_fn=None, eval_env=eval_env, policy_class=policy_class, **kwargs)
-
+        super().__init__(
+            env,
+            *args,
+            env_fn=None,
+            eval_env=eval_env,
+            policy_class=policy_class,
+            **kwargs,
+        )
