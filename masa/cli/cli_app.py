@@ -184,7 +184,7 @@ def run_with_config(config, algo):
 
     constraint_kwargs = {
         "cost_fn": cost_fn,
-        "budget": config.constraint.budget,
+        "budget": config.constraint.cost_budget,
         "alpha": config.constraint.alpha,
         "avoid_label": config.constraint.avoid_label,
         "reach_label": config.constraint.reach_label,
