@@ -29,10 +29,18 @@ def test_cache_lives_in_the_gitignored_checkout_folder_by_default(monkeypatch):
     checkout = Path(masa.__file__).resolve().parents[1]
 
     assert dynamics_cache.cache_dir() == checkout / ".cache" / "dynamics"
-    assert subprocess.run(
-        ["git", "check-ignore", "-q", str(checkout / ".cache" / "dynamics" / "x.pkl")],
-        cwd=checkout,
-    ).returncode == 0
+    assert (
+        subprocess.run(
+            [
+                "git",
+                "check-ignore",
+                "-q",
+                str(checkout / ".cache" / "dynamics" / "x.pkl"),
+            ],
+            cwd=checkout,
+        ).returncode
+        == 0
+    )
 
 
 def test_cache_dir_falls_back_outside_a_checkout(monkeypatch):
@@ -81,7 +89,9 @@ def test_key_tracks_the_inputs_the_dynamics_depend_on():
     layout = np.array([[1, 1], [1, 0]])
     other = np.array([[1, 1], [0, 0]])
 
-    assert cache_key("pacman", layout, 4, 0.6) == cache_key("pacman", layout.copy(), 4, 0.6)
+    assert cache_key("pacman", layout, 4, 0.6) == cache_key(
+        "pacman", layout.copy(), 4, 0.6
+    )
     assert cache_key("pacman", layout, 4, 0.6) != cache_key("pacman", other, 4, 0.6)
     assert cache_key("pacman", layout, 4, 0.6) != cache_key("pacman", layout, 5, 0.6)
     assert cache_key("pacman", layout, 4, 0.6) != cache_key("pacman", layout, 4, 0.5)
@@ -95,7 +105,10 @@ def test_a_corrupt_cache_file_is_recomputed_rather_than_raising():
 
     assert cached_dynamics("corrupt", lambda: "recomputed") == "recomputed"
     # The unreadable file is replaced, so the next process gets a cache hit.
-    assert cached_dynamics("corrupt", lambda: pytest.fail("recomputed twice")) == "recomputed"
+    assert (
+        cached_dynamics("corrupt", lambda: pytest.fail("recomputed twice"))
+        == "recomputed"
+    )
 
 
 def test_an_unwritable_cache_dir_still_returns_the_value(monkeypatch):

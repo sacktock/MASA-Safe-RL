@@ -44,10 +44,7 @@ def test_coalition_rejects_unknown_agent_and_bare_string():
 
 def test_joint_action_codec_uses_possible_agent_order():
     transitions = {
-        (0, (a, b, c)): (0,)
-        for a in range(2)
-        for b in range(3)
-        for c in range(2)
+        (0, (a, b, c)): (0,) for a in range(2) for b in range(3) for c in range(2)
     }
     env = TinyParallelEnv(
         agents=("a", "b", "c"),
@@ -129,9 +126,7 @@ def test_state_dependent_legal_actions_are_validated():
         transitions=transitions,
         labels=lambda state: set(),
         legal_actions_fn=lambda state, agent: (
-            (0, 2) if state == 0 and agent == "a" else (0, 1)
-            if agent == "a"
-            else (0,)
+            (0, 2) if state == 0 and agent == "a" else (0, 1) if agent == "a" else (0,)
         ),
     )
     assert env.get_legal_actions(0, "a") == (0, 2)

@@ -3,29 +3,40 @@ from typing import Any, Literal
 from gymnasium import spaces
 import numpy as np
 from masa.common.label_fn import LabelFn
-from collections import defaultdict 
+from collections import defaultdict
 from masa.envs.tabular.base import TabularEnv
-from masa.envs.tabular.utils import create_pacman_transition_dict, create_pacman_end_component
-from masa.envs.tabular.renderers.pacman import PacmanHat, PacmanRenderer, RGBColor, validate_renderer_options
+from masa.envs.tabular.utils import (
+    create_pacman_transition_dict,
+    create_pacman_end_component,
+)
+from masa.envs.tabular.renderers.pacman import (
+    PacmanHat,
+    PacmanRenderer,
+    RGBColor,
+    validate_renderer_options,
+)
 from functools import lru_cache
 from masa.common.dynamics_cache import cache_key, cached_dynamics
 
-STANDARD_MAP = np.array([
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1],
-    [1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1],
-    [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
-    [1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1],
-    [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
-    [1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1],
-    [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]])
+STANDARD_MAP = np.array(
+    [
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+        [1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1],
+        [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+        [1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1],
+        [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+        [1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1],
+        [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    ]
+)
 N_GHOSTS = 1
 N_DIRECTIONS = 4
 N_ACTIONS = 5
@@ -60,30 +71,42 @@ def get_pacman_dynamics():
 
 def _compute_pacman_dynamics():
     return create_pacman_transition_dict(
-        STANDARD_MAP, 
-        return_matrix=RETURN_MATRIX, 
-        n_directions=N_DIRECTIONS, 
-        n_actions=N_ACTIONS, 
-        n_ghosts=N_GHOSTS, 
+        STANDARD_MAP,
+        return_matrix=RETURN_MATRIX,
+        n_directions=N_DIRECTIONS,
+        n_actions=N_ACTIONS,
+        n_ghosts=N_GHOSTS,
         ghost_rand_prob=GHOST_RAND_PROB,
-        food_x=FOOD[0], 
-        food_y=FOOD[1]
+        food_x=FOOD[0],
+        food_y=FOOD[1],
     )
 
 
-SUCCESSOR_STATES, TRANSITION_PROBS, _, N_STATES, STATE_MAP, REVERSE_STATE_MAP = get_pacman_dynamics()
+SUCCESSOR_STATES, TRANSITION_PROBS, _, N_STATES, STATE_MAP, REVERSE_STATE_MAP = (
+    get_pacman_dynamics()
+)
+
 
 def label_fn(obs):
-    (agent_y, agent_x, agent_direction, ghost_y, ghost_x, ghost_direction, food) = REVERSE_STATE_MAP[obs]
-    if (agent_y == FOOD[1]) and (agent_x == FOOD[0]) and (not ((agent_y, agent_x) == (ghost_y, ghost_x))) and food:
+    (agent_y, agent_x, agent_direction, ghost_y, ghost_x, ghost_direction, food) = (
+        REVERSE_STATE_MAP[obs]
+    )
+    if (
+        (agent_y == FOOD[1])
+        and (agent_x == FOOD[0])
+        and (not ((agent_y, agent_x) == (ghost_y, ghost_x)))
+        and food
+    ):
         return {"food"}
     elif (agent_y, agent_x) == (ghost_y, ghost_x):
         return {"ghost"}
     else:
         return set()
 
+
 cost_fn = lambda labels: 1.0 if "ghost" in labels else 0.0
-    
+
+
 class Pacman(TabularEnv):
     metadata = {"render_modes": ["ansi", "rgb_array", "human"], "render_fps": 4}
 
@@ -130,13 +153,13 @@ class Pacman(TabularEnv):
 
         self._start_state = self._state_map[
             (
-                self._agent_start_y, 
-                self._agent_start_x, 
-                self._agent_start_direction, 
-                self._ghost_start_y, 
-                self._ghost_start_x, 
+                self._agent_start_y,
+                self._agent_start_x,
+                self._agent_start_direction,
+                self._ghost_start_y,
+                self._ghost_start_x,
                 self._ghost_start_direction,
-                1
+                1,
             )
         ]
 
@@ -167,11 +190,21 @@ class Pacman(TabularEnv):
 
     def step(self, action):
         assert self.action_space.contains(action), f"Invalid action {action}!"
-        self._state = self.np_random.choice(self._successor_states[self._state], p=self._transition_probs[(self._state, action)])
+        self._state = self.np_random.choice(
+            self._successor_states[self._state],
+            p=self._transition_probs[(self._state, action)],
+        )
         self._step_count += 1
 
-        (agent_y, agent_x, agent_direction, ghost_y, ghost_x, ghost_direction, food) = self._reverse_state_map[self._state]
-        if (agent_y == self._food_y) and (agent_x == self._food_x) and (not ((agent_y, agent_x) == (ghost_y, ghost_x))) and food:
+        (agent_y, agent_x, agent_direction, ghost_y, ghost_x, ghost_direction, food) = (
+            self._reverse_state_map[self._state]
+        )
+        if (
+            (agent_y == self._food_y)
+            and (agent_x == self._food_x)
+            and (not ((agent_y, agent_x) == (ghost_y, ghost_x)))
+            and food
+        ):
             reward = 1.0
         else:
             reward = 0.0

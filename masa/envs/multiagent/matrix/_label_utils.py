@@ -14,6 +14,7 @@ def binary_cost(labels: Iterable[str]) -> float:
     """Default multi-agent matrix-game cost: 1 iff the label set is unsafe."""
     return 1.0 if "unsafe" in labels else 0.0
 
+
 def decode_lsb_bits(bits: np.ndarray) -> int:
     """Decode a little-endian binary vector into an integer."""
     value = 0

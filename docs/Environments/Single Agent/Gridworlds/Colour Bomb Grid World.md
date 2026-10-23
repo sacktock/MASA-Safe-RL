@@ -65,7 +65,7 @@ The interface is:
 Two implementation details matter for algorithms:
 
 1. The environment does not terminate on goal states.
-2. After entering a goal state, the next-state distribution is replaced with a uniform reset over the predefined start states.
+1. After entering a goal state, the next-state distribution is replaced with a uniform reset over the predefined start states.
 
 Medic states are passed to the transition helper as `safe_states`, which means slip is disabled there. In other words, medic states
 behave like locally deterministic recovery points.

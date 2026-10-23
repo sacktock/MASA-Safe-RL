@@ -13,17 +13,17 @@ safety signal suitable for reinforcement learning.
 In practice, MASA uses:
 
 - **A labelling function**
-  Environment state/observation → set of atomic proposition names (strings).
+    Environment state/observation → set of atomic proposition names (strings).
 
 - **Propositional guard formulae** on DFA edges
-  For example ``Atom``, ``And``, ``Or``, ``Neg``, ``Implies``, and ``Truth``.
+    For example `Atom`, `And`, `Or`, `Neg`, `Implies`, and `Truth`.
 
 - **A DFA monitor**
-  Consumes the label trace and tracks progress or violation of the specification.
+    Consumes the label trace and tracks progress or violation of the specification.
 
 - **A DFA cost function**
-  ``DFACostFn`` returns ``1.0`` when a violation is detected (reaching an
-  accepting *bad* state), and ``0.0`` otherwise.
+    `DFACostFn` returns `1.0` when a violation is detected (reaching an
+    accepting *bad* state), and `0.0` otherwise.
 
 The key design choice in MASA is that **accepting DFA states are interpreted as
 violation states** for safety monitoring. This makes “a violation occurred”
@@ -52,8 +52,8 @@ $$
 g : 2^{AP} \rightarrow \{\mathsf{true}, \mathsf{false}\}.
 $$
 
-Concretely, a propositional guard ``g`` is satisfied by labels ``L`` iff
-``g.sat(L)`` returns ``True``.
+Concretely, a propositional guard `g` is satisfied by labels `L` iff
+`g.sat(L)` returns `True`.
 
 ### Safety Fragment and DFA Monitors
 
@@ -78,7 +78,7 @@ where:
 - $Q$ is a finite set of automaton states,
 - $q_0 \in Q$ is the initial state,
 - $F \subseteq Q$ is a set of **accepting states**, interpreted in MASA as
-  *violation states* for safety,
+    *violation states* for safety,
 - $\delta$ is a transition function driven by labels.
 
 ### DFA Transitions Guarded by Propositional Formulae
@@ -88,9 +88,9 @@ $2^{AP}$, MASA represents outgoing transitions from a state $q$ as
 **guarded edges**:
 
 - Each edge $(q \rightarrow q')$ is associated with a propositional guard
-  formula $g_{q,q'}$.
+    formula $g_{q,q'}$.
 - At runtime, the transition taken is the first outgoing edge whose guard is
-  satisfied by the current label set.
+    satisfied by the current label set.
 
 Formally:
 
@@ -105,49 +105,49 @@ $$
 
 This representation makes DFA construction readable and modular: guards are
 built from propositional connectives, and transitions are added explicitly using
-``Formula`` objects.
+`Formula` objects.
 
 ## MASA LTL Pipeline (High-Level)
 
 1. **Environment state → labels (atomic propositions)**
-   Environments expose a *labelling function* that maps an observation or state
-   to a set of atomic proposition names (strings), for example
-   ``{"unsafe"}``, ``{"goal"}``, or ``{"bomb"}``.
+    Environments expose a *labelling function* that maps an observation or state
+    to a set of atomic proposition names (strings), for example
+    `{"unsafe"}`, `{"goal"}`, or `{"bomb"}`.
 
-2. **Propositional formulae guard transitions**
-   DFA edges are guarded by lightweight propositional ``Formula`` objects such
-   as ``Atom``, ``And``, ``Or``, ``Neg``, ``Implies``, and ``Truth``.
+1. **Propositional formulae guard transitions**
+    DFA edges are guarded by lightweight propositional `Formula` objects such
+    as `Atom`, `And`, `Or`, `Neg`, `Implies`, and `Truth`.
 
-3. **DFA execution**
-   The DFA consumes the label trace step-by-step, updating its internal state to
-   reflect progress or violation of the safety specification.
+1. **DFA execution**
+    The DFA consumes the label trace step-by-step, updating its internal state to
+    reflect progress or violation of the safety specification.
 
-4. **DFA → cost function**
-   MASA wraps DFAs as constraint costs using ``DFACostFn``. In this convention:
+1. **DFA → cost function**
+    MASA wraps DFAs as constraint costs using `DFACostFn`. In this convention:
 
-   - The cost is ``1.0`` if the DFA transitions into an accepting (violation)
-     state at the current step.
-   - The cost is ``0.0`` otherwise.
+    - The cost is `1.0` if the DFA transitions into an accepting (violation)
+        state at the current step.
+    - The cost is `0.0` otherwise.
 
-   Two evaluation modes are supported:
+    Two evaluation modes are supported:
 
-   - **Stateful monitoring** via ``DFACostFn(labels)``, which steps the internal
-     DFA.
-   - **Counterfactual / offline evaluation** via
-     ``DFACostFn.cost(state, labels)``, which computes the one-step cost from an
-     explicit automaton state *without* mutating internal state.
+    - **Stateful monitoring** via `DFACostFn(labels)`, which steps the internal
+        DFA.
+    - **Counterfactual / offline evaluation** via
+        `DFACostFn.cost(state, labels)`, which computes the one-step cost from an
+        explicit automaton state *without* mutating internal state.
 
-5. **Shaped costs for counterfactual experience**
-   For certain algorithms (e.g., counterfactual rollouts or shaping for
-   exploration), MASA provides ``ShapedCostFn``, which augments the base DFA cost
-   with a potential-based shaping term:
+1. **Shaped costs for counterfactual experience**
+    For certain algorithms (e.g., counterfactual rollouts or shaping for
+    exploration), MASA provides `ShapedCostFn`, which augments the base DFA cost
+    with a potential-based shaping term:
 
-   $$
-   c'(q, L) = c(q, L) + \gamma \Phi(\delta(q, L)) - \Phi(q).
-   $$
+    $$
+    c'(q, L) = c(q, L) + \gamma \Phi(\delta(q, L)) - \Phi(q).
+    $$
 
-   This shaped cost is intentionally **not stateful** and is meant to be queried
-   using explicit automaton states during counterfactual computations.
+    This shaped cost is intentionally **not stateful** and is meant to be queried
+    using explicit automaton states during counterfactual computations.
 
 ## Next Steps
 

@@ -1,4 +1,5 @@
 """Expose safe actions before the policy chooses; never replace its choice."""
+
 from .base import _LTLShieldBase
 
 

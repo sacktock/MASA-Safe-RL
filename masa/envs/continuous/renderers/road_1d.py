@@ -130,7 +130,9 @@ class Road1DRenderer:
         if self._human_window is None:
             pygame.init()
             pygame.display.set_caption("MASA - Road1D")
-            self._human_window = pygame.display.set_mode(self._human_window_size, pygame.RESIZABLE)
+            self._human_window = pygame.display.set_mode(
+                self._human_window_size, pygame.RESIZABLE
+            )
             self._human_clock = pygame.time.Clock()
 
         for event in pygame.event.get():
@@ -140,13 +142,17 @@ class Road1DRenderer:
             return
 
         window_width, window_height = self._human_window.get_size()
-        target_width, target_height = _fit_size((width, height), (window_width, window_height))
+        target_width, target_height = _fit_size(
+            (width, height), (window_width, window_height)
+        )
         left = (window_width - target_width) // 2
         top = (window_height - target_height) // 2
 
         frame_surface = pygame.surfarray.make_surface(np.transpose(frame, (1, 0, 2)))
         if (target_width, target_height) != (width, height):
-            frame_surface = pygame.transform.smoothscale(frame_surface, (target_width, target_height))
+            frame_surface = pygame.transform.smoothscale(
+                frame_surface, (target_width, target_height)
+            )
 
         self._human_window.fill(BACKGROUND_COLOR)
         self._human_window.blit(frame_surface, (left, top))
@@ -156,7 +162,7 @@ class Road1DRenderer:
 
     def _snapshot(self) -> "_Road1DSnapshot":
         state = np.zeros(2, dtype=np.float32)
-        if getattr(self.env, "_state", None) is not None:
+        if self.env._state is not None:
             state = np.asarray(self.env._state, dtype=np.float32)
         position = float(state[0])
         velocity = float(state[1])
@@ -165,7 +171,15 @@ class Road1DRenderer:
         max_speed = float(self.env._max_speed)
         speed_limit = float(self.env._speed_limit)
         goal_position = float(self.env._goal_position)
-        status = _status(position, velocity, min_position, max_position, max_speed, speed_limit, goal_position)
+        status = _status(
+            position,
+            velocity,
+            min_position,
+            max_position,
+            max_speed,
+            speed_limit,
+            goal_position,
+        )
         return _Road1DSnapshot(
             position=position,
             velocity=velocity,
@@ -174,8 +188,8 @@ class Road1DRenderer:
             max_speed=max_speed,
             speed_limit=speed_limit,
             goal_position=goal_position,
-            last_action=getattr(self.env, "_last_action", None),
-            step_count=int(getattr(self.env, "_step_count", 0)),
+            last_action=self.env._last_action,
+            step_count=int(self.env._step_count),
             status=status,
         )
 
@@ -185,23 +199,61 @@ class Road1DRenderer:
         margin = max(24, size // 14)
         panel = pygame.Rect(margin, margin, size - margin * 2, size - margin * 2)
         pygame.draw.rect(surface, PANEL_COLOR, panel, border_radius=max(8, size // 32))
-        pygame.draw.rect(surface, ROAD_EDGE_COLOR, panel, width=max(2, size // 180), border_radius=max(8, size // 32))
+        pygame.draw.rect(
+            surface,
+            ROAD_EDGE_COLOR,
+            panel,
+            width=max(2, size // 180),
+            border_radius=max(8, size // 32),
+        )
 
         track_left = panel.left + max(28, panel.width // 12)
         track_right = panel.right - max(28, panel.width // 12)
         track_y = panel.top + int(panel.height * 0.58)
         track_height = max(28, size // 12)
-        track_rect = pygame.Rect(track_left, track_y - track_height // 2, track_right - track_left, track_height)
+        track_rect = pygame.Rect(
+            track_left,
+            track_y - track_height // 2,
+            track_right - track_left,
+            track_height,
+        )
         shoulder_rect = track_rect.inflate(max(12, size // 34), max(14, size // 42))
 
-        pygame.draw.rect(surface, ROAD_SHOULDER_COLOR, shoulder_rect, border_radius=max(10, size // 48))
-        pygame.draw.rect(surface, ROAD_EDGE_COLOR, shoulder_rect, width=max(2, size // 120), border_radius=max(10, size // 48))
-        pygame.draw.rect(surface, ROAD_COLOR, track_rect, border_radius=max(6, size // 70))
-        pygame.draw.rect(surface, BOUNDARY_COLOR, track_rect, width=max(3, size // 110), border_radius=max(6, size // 70))
+        pygame.draw.rect(
+            surface,
+            ROAD_SHOULDER_COLOR,
+            shoulder_rect,
+            border_radius=max(10, size // 48),
+        )
+        pygame.draw.rect(
+            surface,
+            ROAD_EDGE_COLOR,
+            shoulder_rect,
+            width=max(2, size // 120),
+            border_radius=max(10, size // 48),
+        )
+        pygame.draw.rect(
+            surface, ROAD_COLOR, track_rect, border_radius=max(6, size // 70)
+        )
+        pygame.draw.rect(
+            surface,
+            BOUNDARY_COLOR,
+            track_rect,
+            width=max(3, size // 110),
+            border_radius=max(6, size // 70),
+        )
 
         goal_x = _x_to_px(snapshot.goal_position, snapshot, track_left, track_right)
-        goal_rect = pygame.Rect(goal_x, track_rect.top, track_right - goal_x, track_rect.height)
-        _draw_translucent_rect(surface, goal_rect, GOAL_FILL_COLOR, alpha=115, border_radius=max(4, size // 90))
+        goal_rect = pygame.Rect(
+            goal_x, track_rect.top, track_right - goal_x, track_rect.height
+        )
+        _draw_translucent_rect(
+            surface,
+            goal_rect,
+            GOAL_FILL_COLOR,
+            alpha=115,
+            border_radius=max(4, size // 90),
+        )
 
         edge_inset = max(5, size // 70)
         pygame.draw.line(
@@ -235,37 +287,110 @@ class Road1DRenderer:
             width=max(4, size // 105),
         )
 
-        for value in range(math.ceil(snapshot.min_position), math.floor(snapshot.max_position) + 1):
+        for value in range(
+            math.ceil(snapshot.min_position), math.floor(snapshot.max_position) + 1
+        ):
             tick_x = _x_to_px(float(value), snapshot, track_left, track_right)
             tick_color = ROAD_EDGE_COLOR if value == 0 else GRID_COLOR
             tick_width = max(2, size // 130) if value == 0 else max(1, size // 180)
             if value == 0:
-                pygame.draw.line(surface, tick_color, (tick_x, track_rect.top), (tick_x, track_rect.bottom), width=tick_width)
-            pygame.draw.line(surface, tick_color, (tick_x, shoulder_rect.top), (tick_x, track_rect.top), width=tick_width)
-            pygame.draw.line(surface, tick_color, (tick_x, track_rect.bottom), (tick_x, shoulder_rect.bottom), width=tick_width)
+                pygame.draw.line(
+                    surface,
+                    tick_color,
+                    (tick_x, track_rect.top),
+                    (tick_x, track_rect.bottom),
+                    width=tick_width,
+                )
+            pygame.draw.line(
+                surface,
+                tick_color,
+                (tick_x, shoulder_rect.top),
+                (tick_x, track_rect.top),
+                width=tick_width,
+            )
+            pygame.draw.line(
+                surface,
+                tick_color,
+                (tick_x, track_rect.bottom),
+                (tick_x, shoulder_rect.bottom),
+                width=tick_width,
+            )
 
         agent_x = _x_to_px(snapshot.position, snapshot, track_left, track_right)
         agent = (agent_x, track_y)
-        velocity_vector = np.array([_scalar_to_screen(snapshot.velocity, snapshot.max_speed, track_rect.width * 0.18), 0.0], dtype=np.float32)
+        velocity_vector = np.array(
+            [
+                _scalar_to_screen(
+                    snapshot.velocity, snapshot.max_speed, track_rect.width * 0.18
+                ),
+                0.0,
+            ],
+            dtype=np.float32,
+        )
         self._draw_arrow(surface, agent, velocity_vector, VELOCITY_COLOR, size)
 
         action_value = _last_action_value(snapshot.last_action)
         if action_value is not None:
-            action_vector = np.array([_scalar_to_screen(action_value, 2.0, track_rect.width * 0.12), 0.0], dtype=np.float32)
+            action_vector = np.array(
+                [_scalar_to_screen(action_value, 2.0, track_rect.width * 0.12), 0.0],
+                dtype=np.float32,
+            )
             self._draw_arrow(surface, agent, action_vector, ACTION_COLOR, size)
 
         agent_radius = max(9, size // 38)
-        pygame.draw.circle(surface, AGENT_SHADOW_COLOR, (agent[0] + max(2, size // 120), agent[1] + max(2, size // 120)), agent_radius)
+        pygame.draw.circle(
+            surface,
+            AGENT_SHADOW_COLOR,
+            (agent[0] + max(2, size // 120), agent[1] + max(2, size // 120)),
+            agent_radius,
+        )
         pygame.draw.circle(surface, _status_color(snapshot.status), agent, agent_radius)
-        pygame.draw.circle(surface, TEXT_COLOR, agent, agent_radius, width=max(2, size // 150))
+        pygame.draw.circle(
+            surface, TEXT_COLOR, agent, agent_radius, width=max(2, size // 150)
+        )
 
-        action_label = "last action: none" if action_value is None else f"last action: {action_value:.2f}"
-        self._draw_text(surface, "Road1D", (panel.left + size // 28, panel.top + size // 28), max(18, size // 18), TEXT_COLOR)
-        self._draw_text(surface, f"x {snapshot.position:.2f}  v {snapshot.velocity:.3f}", (panel.left + size // 28, panel.top + size // 10), max(14, size // 25), MUTED_TEXT_COLOR)
-        self._draw_text(surface, snapshot.status, (panel.left + size // 28, panel.bottom - size // 12), max(16, size // 22), _status_color(snapshot.status))
-        self._draw_text(surface, action_label, (panel.left + size // 3, panel.bottom - size // 12), max(16, size // 22), ACTION_COLOR if action_value is not None else MUTED_TEXT_COLOR)
+        action_label = (
+            "last action: none"
+            if action_value is None
+            else f"last action: {action_value:.2f}"
+        )
+        self._draw_text(
+            surface,
+            "Road1D",
+            (panel.left + size // 28, panel.top + size // 28),
+            max(18, size // 18),
+            TEXT_COLOR,
+        )
+        self._draw_text(
+            surface,
+            f"x {snapshot.position:.2f}  v {snapshot.velocity:.3f}",
+            (panel.left + size // 28, panel.top + size // 10),
+            max(14, size // 25),
+            MUTED_TEXT_COLOR,
+        )
+        self._draw_text(
+            surface,
+            snapshot.status,
+            (panel.left + size // 28, panel.bottom - size // 12),
+            max(16, size // 22),
+            _status_color(snapshot.status),
+        )
+        self._draw_text(
+            surface,
+            action_label,
+            (panel.left + size // 3, panel.bottom - size // 12),
+            max(16, size // 22),
+            ACTION_COLOR if action_value is not None else MUTED_TEXT_COLOR,
+        )
 
-    def _draw_arrow(self, surface: Any, start: Position, vector: np.ndarray, color: RGBColor, size: int) -> None:
+    def _draw_arrow(
+        self,
+        surface: Any,
+        start: Position,
+        vector: np.ndarray,
+        color: RGBColor,
+        size: int,
+    ) -> None:
         import pygame
 
         length = float(np.linalg.norm(vector))
@@ -288,7 +413,9 @@ class Road1DRenderer:
         ]
         pygame.draw.polygon(surface, color, head)
 
-    def _draw_text(self, surface: Any, text: str, pos: Position, size: int, color: RGBColor) -> None:
+    def _draw_text(
+        self, surface: Any, text: str, pos: Position, size: int, color: RGBColor
+    ) -> None:
         import pygame
 
         pygame.font.init()
@@ -338,11 +465,15 @@ def _fit_size(source: Position, target: Position) -> Position:
     return max(1, int(source_width * scale)), max(1, int(source_height * scale))
 
 
-def _draw_translucent_rect(surface: Any, rect: Any, color: RGBColor, *, alpha: int, border_radius: int = 0) -> None:
+def _draw_translucent_rect(
+    surface: Any, rect: Any, color: RGBColor, *, alpha: int, border_radius: int = 0
+) -> None:
     import pygame
 
     overlay = pygame.Surface(rect.size, pygame.SRCALPHA)
-    pygame.draw.rect(overlay, (*color, alpha), overlay.get_rect(), border_radius=border_radius)
+    pygame.draw.rect(
+        overlay, (*color, alpha), overlay.get_rect(), border_radius=border_radius
+    )
     surface.blit(overlay, rect.topleft)
 
 
@@ -369,15 +500,25 @@ def _draw_dashed_line(
     cursor = 0.0
     while cursor < length:
         next_cursor = min(cursor + dash_length, length)
-        segment_start = (int(start[0] + step_x * cursor), int(start[1] + step_y * cursor))
-        segment_end = (int(start[0] + step_x * next_cursor), int(start[1] + step_y * next_cursor))
+        segment_start = (
+            int(start[0] + step_x * cursor),
+            int(start[1] + step_y * cursor),
+        )
+        segment_end = (
+            int(start[0] + step_x * next_cursor),
+            int(start[1] + step_y * next_cursor),
+        )
         pygame.draw.line(surface, color, segment_start, segment_end, width=width)
         cursor += dash_length + gap_length
 
 
-def _x_to_px(position: float, snapshot: _Road1DSnapshot, track_left: int, track_right: int) -> int:
+def _x_to_px(
+    position: float, snapshot: _Road1DSnapshot, track_left: int, track_right: int
+) -> int:
     clipped = max(snapshot.min_position, min(snapshot.max_position, position))
-    ratio = (clipped - snapshot.min_position) / (snapshot.max_position - snapshot.min_position)
+    ratio = (clipped - snapshot.min_position) / (
+        snapshot.max_position - snapshot.min_position
+    )
     return int(track_left + ratio * (track_right - track_left))
 
 

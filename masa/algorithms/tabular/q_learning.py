@@ -13,20 +13,19 @@ from functools import partial
 
 
 class QL(TabularAlgorithm):
-
     def __init__(
         self,
-        *args, 
+        *args,
         alpha: float = 0.1,
         gamma: float = 0.9,
-        exploration: str = 'boltzmann',
+        exploration: str = "boltzmann",
         boltzmann_temp: float = 0.05,
         initial_epsilon: float = 1.0,
         final_epsilon: float = 0.1,
-        epsilon_decay: str = 'linear',
-        epsilon_decay_frames: int = 10000, 
+        epsilon_decay: str = "linear",
+        epsilon_decay_frames: int = 10000,
         use_counter_factual_experiences: bool = True,
-        **kwargs
+        **kwargs,
     ):
 
         super().__init__(
@@ -34,8 +33,12 @@ class QL(TabularAlgorithm):
             **kwargs,
         )
 
-        assert exploration in ["boltzmann", "epsilon_greedy"], f"Unsupported exploration type: {exploration}"
-        assert epsilon_decay in ["linear"], f"Unsupported epsilon decay schedule: {epsilon_decay}"
+        assert exploration in ["boltzmann", "epsilon_greedy"], (
+            f"Unsupported exploration type: {exploration}"
+        )
+        assert epsilon_decay in ["linear"], (
+            f"Unsupported epsilon decay schedule: {epsilon_decay}"
+        )
 
         self.n_states = self.observation_space.n
         self.n_actions = self.action_space.n
@@ -52,7 +55,7 @@ class QL(TabularAlgorithm):
         self._setup_q_table()
         self._setup_buffer()
         self._setup_decay_schedule()
-        
+
     def _setup_q_table(self):
         self.Q = np.zeros((self.n_states, self.n_actions), dtype=np.float32)
 
@@ -64,9 +67,11 @@ class QL(TabularAlgorithm):
         self._epsilon = self.initial_epsilon
         self._step = 0
         if self.epsilon_decay == "linear":
-            self._epsilon_decay_schedule = lambda step: self.final_epsilon + \
-                (self.initial_epsilon - self.final_epsilon) * \
-                max(0, (self.epsilon_decay_frames - step) / self.epsilon_decay_frames)
+            self._epsilon_decay_schedule = lambda step: (
+                self.final_epsilon
+                + (self.initial_epsilon - self.final_epsilon)
+                * max(0, (self.epsilon_decay_frames - step) / self.epsilon_decay_frames)
+            )
         else:
             raise NotImplementedError(f"epsilon decay schedule: {self.epsilon_decay}")
 
@@ -75,11 +80,11 @@ class QL(TabularAlgorithm):
         if len(self.buffer) == 0:
             return
 
-        for (state, action, reward, _, _, next_state, terminal) in self.buffer:
-
+        for state, action, reward, _, _, next_state, terminal in self.buffer:
             current = self.Q[next_state]
-            self.Q[state, action] = (1 - self.alpha) * self.Q[state, action] \
-            + self.alpha * (reward + (1 - terminal) * self.gamma * np.max(current))
+            self.Q[state, action] = (1 - self.alpha) * self.Q[
+                state, action
+            ] + self.alpha * (reward + (1 - terminal) * self.gamma * np.max(current))
 
         self.buffer.clear()
 
@@ -96,15 +101,27 @@ class QL(TabularAlgorithm):
         action = self.act(subkey, self._last_obs)
         next_obs, reward, terminated, truncated, info = self.env.step(action)
 
-        if hasattr(self.env, "cost_fn") and isinstance(self.env.cost_fn, DFACostFn) and self.use_counter_factual_experiences:
+        if (
+            hasattr(self.env, "cost_fn")
+            and isinstance(self.env.cost_fn, DFACostFn)
+            and self.use_counter_factual_experiences
+        ):
             # if the cost function associated with the constraint is a DFA, by default use counter factual experiences
             self.buffer += self.generate_counter_factuals(
-                self._last_obs, action, reward, next_obs, terminated, info, getattr(self.env, "cost_fn", None)
+                self._last_obs,
+                action,
+                reward,
+                next_obs,
+                terminated,
+                info,
+                self.env.cost_fn,
             )
         else:
             cost = info["constraint"]["step"].get("cost", 0.0)
             violation = info["constraint"]["step"].get("violation", False)
-            self.buffer.append((self._last_obs, action, reward, cost, violation, next_obs, terminated))
+            self.buffer.append(
+                (self._last_obs, action, reward, cost, violation, next_obs, terminated)
+            )
 
         if terminated or truncated:
             self._last_obs, _ = self.env.reset()
@@ -118,7 +135,14 @@ class QL(TabularAlgorithm):
             logger.add("train/rollout", info)
 
     def generate_counter_factuals(
-        self, state: int, action: int, reward: float, next_state: int, terminated: bool, info: Dict[str, Any], cost_fn: DFACostFn,
+        self,
+        state: int,
+        action: int,
+        reward: float,
+        next_state: int,
+        terminated: bool,
+        info: Dict[str, Any],
+        cost_fn: DFACostFn,
     ) -> List[Tuple[int, int, float, float, bool, int, bool]]:
 
         dfa: DFA = cost_fn.dfa
@@ -154,20 +178,19 @@ class QL(TabularAlgorithm):
 
         return counter_fac_exp
 
-
     def act(self, key, obs, deterministic=False):
         if deterministic:
             action = self.select_action(self.Q[obs])
         else:
             action = self.sample_action(
-                key, 
-                jnp.asarray(self.Q[obs], dtype=jnp.float32), 
-                self.boltzmann_temp, 
-                self._epsilon, 
-                exploration=self.exploration
+                key,
+                jnp.asarray(self.Q[obs], dtype=jnp.float32),
+                self.boltzmann_temp,
+                self._epsilon,
+                exploration=self.exploration,
             )
         return self.prepare_act(action)
-            
+
     def prepare_act(self, act: Any):
         return int(np.asarray(act).item())
 
@@ -185,7 +208,7 @@ class QL(TabularAlgorithm):
         if exploration == "epsilon_greedy":
             probs = jnp.zeros(q_values.shape[0])
             probs = probs.at[jnp.argmax(q_values)].set(1.0 - eps)
-            probs += (eps / q_values.shape[0])
+            probs += eps / q_values.shape[0]
         return jr.choice(key, q_values.shape[0], p=probs)
 
     @property

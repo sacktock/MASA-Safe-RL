@@ -3,7 +3,6 @@
 MASA provides two shielding approaches with different safety semantics and policy
 interfaces.
 
-
 ## Winning-region safety-game shielding
 
 [Winning-region safety-game shielding](Deterministic/Winning-Region%20Shielding.md)

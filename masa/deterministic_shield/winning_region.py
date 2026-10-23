@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
+
 def winning_region(
     targets: np.ndarray, support: np.ndarray, rejecting: np.ndarray
 ) -> tuple[np.ndarray, np.ndarray]:

@@ -36,6 +36,7 @@ All examples use `colour_grid_world`. The blue state is unsafe for cost-based co
 UNSAFE_SCRIPT = {"seed": 1, "actions": [2, 2, 2, 2]}
 GOAL_SCRIPT = {"seed": 4, "actions": [2] * 8 + [1] * 8}
 
+
 def make_never_blue_dfa():
     dfa = DFA([0, 1], 0, [1])
     dfa.add_edge(0, 1, Atom("blue"))
@@ -105,6 +106,7 @@ The base environment and labels stay fixed. Only the constraint wrapper and its 
 ```python
 CONSTRAINT_NAMES = ["cmdp", "prob", "pctl", "reach_avoid", "ltl_safety"]
 
+
 def build_constraint_env(name, max_episode_steps=40):
     if name == "cmdp":
         return make_env(
@@ -161,6 +163,7 @@ The helper below records the final row for each constraint. `ltl_safety` augment
 ```python
 ACTION_NAMES = {0: "left", 1: "right", 2: "down", 3: "up", 4: "stay"}
 
+
 def simplify_obs(obs):
     if isinstance(obs, dict):
         return {key: simplify_obs(value) for key, value in obs.items()}
@@ -168,6 +171,7 @@ def simplify_obs(obs):
         return int(obs)
     except (TypeError, ValueError):
         return obs
+
 
 def run_constraint(name, *, seed, actions, max_episode_steps=40):
     env = build_constraint_env(name, max_episode_steps=max_episode_steps)
@@ -202,6 +206,7 @@ def run_constraint(name, *, seed, actions, max_episode_steps=40):
 
     env.close()
     return rows
+
 
 def final_metrics_for(script):
     return {

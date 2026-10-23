@@ -209,7 +209,9 @@ class MarkovStagHunt(ParallelEnv):
 
         hunted_stags: set[Position] = set()
         for stag in self.stags:
-            present = [agent for agent, position in new_positions.items() if position == stag]
+            present = [
+                agent for agent, position in new_positions.items() if position == stag
+            ]
             if len(present) >= self.min_hunters_for_stag:
                 hunted_stags.add(stag)
                 self._last_hunters.update(present)

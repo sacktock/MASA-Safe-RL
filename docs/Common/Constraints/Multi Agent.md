@@ -3,7 +3,6 @@
 Here, we consider constraints and model interfaces applicable to multi-agent
 environments.
 
-
 ## Labelled parallel environments
 
 `LabelledParallelEnv` attaches proposition labels to each agent's `info` mapping

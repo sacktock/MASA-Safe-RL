@@ -16,6 +16,7 @@ from typing import Any, Dict
 import gymnasium as gym
 from masa.common.label_fn import LabelFn
 
+
 class LabelledEnv(gym.Wrapper):
     """
     Gymnasium wrapper that attaches a labelling function to an environment.

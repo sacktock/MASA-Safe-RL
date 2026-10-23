@@ -17,6 +17,7 @@ PanelSource = Literal["aggregated", "per_seed", "logged_quantile"]
 @dataclass(frozen=True)
 class Band:
     """Shaded band between two quantile column names (or _qXX suffixes)."""
+
     lower: str
     upper: str
     alpha: float = 0.3
@@ -47,6 +48,7 @@ class Panel:
         ``metric`` is the *base* metric name; bands reference suffixes like
         ``q05``/``q95``; only ``seed_for_logged_quantiles`` is read.
     """
+
     metric: str
     title: str
     source: PanelSource = "aggregated"
@@ -80,6 +82,7 @@ class PlotSpec:
         or any layout. Builder mutates the ``drawn`` set to register which
         variants appear for legend purposes.
     """
+
     id: str
     panels: Union[tuple[Panel, ...], PanelsFactory] = ()
     grid: Union[tuple[int, int], GridFactory] = (1, 1)
@@ -104,9 +107,10 @@ class PlotSpec:
 @dataclass(frozen=True)
 class RenderContext:
     """Per-figure data passed to panel factories and custom panels."""
+
     env: str
-    long_df: "pd.DataFrame"          # full long-form (all envs)
-    quantile_df: "pd.DataFrame"      # full quantile frame (all envs)
-    variants: list["VariantStyle"]   # ordered, with colours filled
+    long_df: "pd.DataFrame"  # full long-form (all envs)
+    quantile_df: "pd.DataFrame"  # full quantile frame (all envs)
+    variants: list["VariantStyle"]  # ordered, with colours filled
     seed_for_logged_quantiles: int
     available_metrics: frozenset[str] = field(default_factory=frozenset)

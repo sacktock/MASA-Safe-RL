@@ -59,6 +59,7 @@ from masa.envs.tabular.bridge_crossing import cost_fn, label_fn
 
 load_plugins()
 
+
 def build_masa_env():
     return make_env(
         "bridge_crossing",
@@ -68,6 +69,7 @@ def build_masa_env():
         cost_fn=cost_fn,
         alpha=0.01,
     )
+
 
 env = build_masa_env()
 obs, info = env.reset(seed=0)

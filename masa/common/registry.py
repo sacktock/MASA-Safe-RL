@@ -5,6 +5,7 @@ import inspect
 
 Factory = Union[Callable, str]
 
+
 class Registry:
     def __init__(self):
         self._items: Dict[str, Callable] = {}
@@ -21,7 +22,13 @@ class Registry:
         ctor = self._items[name]
         if isinstance(ctor, str):
             mod, obj = ctor.split(":", 1)
-            ctor = getattr(importlib.import_module(mod), obj)
+            module = importlib.import_module(mod)
+            try:
+                ctor = getattr(module, obj)
+            except AttributeError:
+                raise AttributeError(
+                    f"{module.__name__} has no attribute {obj!r}"
+                ) from None
             self._items[name] = ctor
         return ctor
 

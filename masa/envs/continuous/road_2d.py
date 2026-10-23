@@ -5,13 +5,17 @@ import numpy as np
 import math
 from masa.common.label_fn import LabelFn
 from masa.envs.continuous.base import ContinuousEnv
-from masa.envs.continuous.renderers.road_2d import Road2DRenderer, validate_renderer_options
+from masa.envs.continuous.renderers.road_2d import (
+    Road2DRenderer,
+    validate_renderer_options,
+)
 
 GOAL_POSITION = np.array([3.0, 3.0])
 MAX_SPEED = 0.1
 SPEED_LIMIT = 0.01
 MIN_POSITION = -4.0
 MAX_POSITION = 4.0
+
 
 def label_fn(obs):
     labels = set()
@@ -25,8 +29,10 @@ def label_fn(obs):
     if np.any(np.abs(velocity) >= SPEED_LIMIT):
         labels.add("over")
     return labels
-    
+
+
 cost_fn = lambda labels: 1.0 if "over" in labels else 0.0
+
 
 class Road2D(ContinuousEnv):
     metadata = {"render_modes": ["ansi", "rgb_array", "human"], "render_fps": 25}
@@ -55,7 +61,7 @@ class Road2D(ContinuousEnv):
                 -self._max_speed,
                 -self._max_speed,
             ],
-            dtype=np.float32
+            dtype=np.float32,
         )
 
         high = np.array(
@@ -65,11 +71,16 @@ class Road2D(ContinuousEnv):
                 self._max_speed,
                 self._max_speed,
             ],
-            dtype=np.float32
+            dtype=np.float32,
         )
 
         self.observation_space = spaces.Box(low=low, high=high, dtype=np.float32)
-        self.action_space = spaces.Box(low=np.array([-2.0, -2.0]), high=np.array([2.0, 2.0]), shape=(2,), dtype=np.float32)
+        self.action_space = spaces.Box(
+            low=np.array([-2.0, -2.0]),
+            high=np.array([2.0, 2.0]),
+            shape=(2,),
+            dtype=np.float32,
+        )
 
         self.np_random = None
         self._state = None
@@ -100,7 +111,7 @@ class Road2D(ContinuousEnv):
                 0.0,
                 0.0,
             ],
-            dtype=np.float32
+            dtype=np.float32,
         )
 
         self._step_count = 0
@@ -121,9 +132,15 @@ class Road2D(ContinuousEnv):
         self._step_count += 1
         self._last_action = np.array(action, dtype=np.float32)
 
-        reward = 20.0 if np.all(position >= self._goal_position) else \
-            (np.linalg.norm(state[:2] - self._goal_position) - np.linalg.norm(position - self._goal_position))
-            
+        reward = (
+            20.0
+            if np.all(position >= self._goal_position)
+            else (
+                np.linalg.norm(state[:2] - self._goal_position)
+                - np.linalg.norm(position - self._goal_position)
+            )
+        )
+
         terminal = np.all(position >= self._goal_position)
 
         if self.render_mode == "human":

@@ -124,7 +124,9 @@ class CartPoleRenderer:
         if self._human_window is None:
             pygame.init()
             pygame.display.set_caption("MASA - CartPole")
-            self._human_window = pygame.display.set_mode(self._human_window_size, pygame.RESIZABLE)
+            self._human_window = pygame.display.set_mode(
+                self._human_window_size, pygame.RESIZABLE
+            )
             self._human_clock = pygame.time.Clock()
 
         for event in pygame.event.get():
@@ -134,13 +136,17 @@ class CartPoleRenderer:
             return
 
         window_width, window_height = self._human_window.get_size()
-        target_width, target_height = _fit_size((width, height), (window_width, window_height))
+        target_width, target_height = _fit_size(
+            (width, height), (window_width, window_height)
+        )
         left = (window_width - target_width) // 2
         top = (window_height - target_height) // 2
 
         frame_surface = pygame.surfarray.make_surface(np.transpose(frame, (1, 0, 2)))
         if (target_width, target_height) != (width, height):
-            frame_surface = pygame.transform.smoothscale(frame_surface, (target_width, target_height))
+            frame_surface = pygame.transform.smoothscale(
+                frame_surface, (target_width, target_height)
+            )
 
         self._human_window.fill(BACKGROUND_COLOR)
         self._human_window.blit(frame_surface, (left, top))
@@ -150,10 +156,12 @@ class CartPoleRenderer:
 
     def _snapshot(self) -> "_CartPoleSnapshot":
         state = np.zeros(4, dtype=np.float32)
-        if getattr(self.env, "_state", None) is not None:
+        if self.env._state is not None:
             state = np.asarray(self.env._state, dtype=np.float32)
         x, x_dot, theta, theta_dot = (float(v) for v in state)
-        stable = abs(theta) <= float(self.env._theta_threshold_radians) and abs(x) <= float(self.env._x_threshold)
+        stable = abs(theta) <= float(self.env._theta_threshold_radians) and abs(
+            x
+        ) <= float(self.env._x_threshold)
         return _CartPoleSnapshot(
             x=x,
             x_dot=x_dot,
@@ -162,12 +170,14 @@ class CartPoleRenderer:
             x_threshold=float(self.env._x_threshold),
             theta_threshold=float(self.env._theta_threshold_radians),
             force_mag=float(self.env._force_mag),
-            last_action=getattr(self.env, "_last_action", None),
-            step_count=int(getattr(self.env, "_step_count", 0)),
+            last_action=self.env._last_action,
+            step_count=int(self.env._step_count),
             stable=stable,
         )
 
-    def _draw_scene(self, surface: Any, snapshot: "_CartPoleSnapshot", size: int) -> None:
+    def _draw_scene(
+        self, surface: Any, snapshot: "_CartPoleSnapshot", size: int
+    ) -> None:
         import pygame
 
         margin = max(24, size // 14)
@@ -178,24 +188,64 @@ class CartPoleRenderer:
         track_left = panel.left + max(18, panel.width // 14)
         track_right = panel.right - max(18, panel.width // 14)
         track_width = track_right - track_left
-        track_rect = pygame.Rect(track_left, track_y - max(4, size // 110), track_width, max(8, size // 55))
-        pygame.draw.rect(surface, TRACK_COLOR, track_rect, border_radius=max(3, size // 80))
+        track_rect = pygame.Rect(
+            track_left, track_y - max(4, size // 110), track_width, max(8, size // 55)
+        )
+        pygame.draw.rect(
+            surface, TRACK_COLOR, track_rect, border_radius=max(3, size // 80)
+        )
 
-        safe_left = _x_to_px(-snapshot.x_threshold, snapshot.x_threshold, track_left, track_right)
-        safe_right = _x_to_px(snapshot.x_threshold, snapshot.x_threshold, track_left, track_right)
-        pygame.draw.line(surface, SAFE_COLOR, (safe_left, track_y - size // 12), (safe_left, track_y + size // 12), width=max(2, size // 120))
-        pygame.draw.line(surface, SAFE_COLOR, (safe_right, track_y - size // 12), (safe_right, track_y + size // 12), width=max(2, size // 120))
+        safe_left = _x_to_px(
+            -snapshot.x_threshold, snapshot.x_threshold, track_left, track_right
+        )
+        safe_right = _x_to_px(
+            snapshot.x_threshold, snapshot.x_threshold, track_left, track_right
+        )
+        pygame.draw.line(
+            surface,
+            SAFE_COLOR,
+            (safe_left, track_y - size // 12),
+            (safe_left, track_y + size // 12),
+            width=max(2, size // 120),
+        )
+        pygame.draw.line(
+            surface,
+            SAFE_COLOR,
+            (safe_right, track_y - size // 12),
+            (safe_right, track_y + size // 12),
+            width=max(2, size // 120),
+        )
 
         cart_x = _x_to_px(snapshot.x, snapshot.x_threshold, track_left, track_right)
         cart_width = max(34, size // 7)
         cart_height = max(18, size // 18)
-        cart = pygame.Rect(cart_x - cart_width // 2, track_y - cart_height - max(6, size // 90), cart_width, cart_height)
-        pygame.draw.rect(surface, CART_SHADOW_COLOR, cart.move(max(2, size // 120), max(2, size // 120)), border_radius=max(4, size // 70))
-        pygame.draw.rect(surface, CART_COLOR if snapshot.stable else DANGER_COLOR, cart, border_radius=max(4, size // 70))
+        cart = pygame.Rect(
+            cart_x - cart_width // 2,
+            track_y - cart_height - max(6, size // 90),
+            cart_width,
+            cart_height,
+        )
+        pygame.draw.rect(
+            surface,
+            CART_SHADOW_COLOR,
+            cart.move(max(2, size // 120), max(2, size // 120)),
+            border_radius=max(4, size // 70),
+        )
+        pygame.draw.rect(
+            surface,
+            CART_COLOR if snapshot.stable else DANGER_COLOR,
+            cart,
+            border_radius=max(4, size // 70),
+        )
 
         wheel_radius = max(5, size // 55)
         for wheel_x in (cart.left + cart_width // 4, cart.right - cart_width // 4):
-            pygame.draw.circle(surface, WHEEL_COLOR, (wheel_x, cart.bottom + wheel_radius), wheel_radius)
+            pygame.draw.circle(
+                surface,
+                WHEEL_COLOR,
+                (wheel_x, cart.bottom + wheel_radius),
+                wheel_radius,
+            )
 
         pivot = (cart.centerx, cart.top)
         pole_len = max(72, int(size * 0.34))
@@ -208,22 +258,62 @@ class CartPoleRenderer:
                 int(pivot[0] + math.sin(threshold) * pole_len),
                 int(pivot[1] - math.cos(threshold) * pole_len),
             )
-            pygame.draw.line(surface, DANGER_COLOR, pivot, end, width=max(2, size // 160))
+            pygame.draw.line(
+                surface, DANGER_COLOR, pivot, end, width=max(2, size // 160)
+            )
 
         pygame.draw.line(surface, POLE_COLOR, pivot, pole_end, width=max(6, size // 38))
         pygame.draw.circle(surface, POLE_TIP_COLOR, pole_end, max(7, size // 45))
         pygame.draw.circle(surface, WHEEL_COLOR, pivot, max(5, size // 60))
 
         action_force = _last_action_force(snapshot.last_action, snapshot.force_mag)
-        action_color = MUTED_TEXT_COLOR if action_force is None else SAFE_COLOR if action_force < 0 else DANGER_COLOR if action_force > 0 else TEXT_COLOR
-        action_label = "last action: none" if action_force is None else f"last force: {action_force:.1f}"
+        action_color = (
+            MUTED_TEXT_COLOR
+            if action_force is None
+            else SAFE_COLOR
+            if action_force < 0
+            else DANGER_COLOR
+            if action_force > 0
+            else TEXT_COLOR
+        )
+        action_label = (
+            "last action: none"
+            if action_force is None
+            else f"last force: {action_force:.1f}"
+        )
         status = "stable" if snapshot.stable else "unstable"
-        self._draw_text(surface, "CartPole", (panel.left + size // 28, panel.top + size // 28), max(18, size // 18), TEXT_COLOR)
-        self._draw_text(surface, f"x {snapshot.x:.2f}  theta {snapshot.theta:.2f}", (panel.left + size // 28, panel.top + size // 10), max(14, size // 25), MUTED_TEXT_COLOR)
-        self._draw_text(surface, status, (panel.left + size // 28, panel.bottom - size // 12), max(16, size // 22), SAFE_COLOR if snapshot.stable else DANGER_COLOR)
-        self._draw_text(surface, action_label, (panel.left + size // 3, panel.bottom - size // 12), max(16, size // 22), action_color)
+        self._draw_text(
+            surface,
+            "CartPole",
+            (panel.left + size // 28, panel.top + size // 28),
+            max(18, size // 18),
+            TEXT_COLOR,
+        )
+        self._draw_text(
+            surface,
+            f"x {snapshot.x:.2f}  theta {snapshot.theta:.2f}",
+            (panel.left + size // 28, panel.top + size // 10),
+            max(14, size // 25),
+            MUTED_TEXT_COLOR,
+        )
+        self._draw_text(
+            surface,
+            status,
+            (panel.left + size // 28, panel.bottom - size // 12),
+            max(16, size // 22),
+            SAFE_COLOR if snapshot.stable else DANGER_COLOR,
+        )
+        self._draw_text(
+            surface,
+            action_label,
+            (panel.left + size // 3, panel.bottom - size // 12),
+            max(16, size // 22),
+            action_color,
+        )
 
-    def _draw_text(self, surface: Any, text: str, pos: Position, size: int, color: RGBColor) -> None:
+    def _draw_text(
+        self, surface: Any, text: str, pos: Position, size: int, color: RGBColor
+    ) -> None:
         import pygame
 
         pygame.font.init()

@@ -6,24 +6,35 @@ from masa.common.label_fn import LabelFn
 
 class LabelledParallelEnv(ParallelEnv):
     """PettingZoo parallel API wrapper that attaches the per-agent labelling function."""
-    metadata = {"name": "labelled_parallel_env"}
 
+    metadata = {"name": "labelled_parallel_env"}
 
     def __init__(self, env: ParallelEnv, label_fn: Dict[str, LabelFn] | LabelFn):
         self.env = env
-        self.metadata = getattr(env, "metadata", self.metadata)
-        self.agents = list(getattr(env, "agents", env.possible_agents))
+        try:
+            self.metadata = env.metadata
+        except AttributeError:
+            self.metadata = self.metadata
+        try:
+            self.agents = list(env.agents)
+        except AttributeError:
+            self.agents = list(env.possible_agents)
         self.label_fn = label_fn
-        self.cost_fn = getattr(env, "cost_fn", None)
-
-    def __getattr__(self, name: str):
-        if name == "env":
-            raise AttributeError(name)
-        return getattr(self.env, name)
+        try:
+            self.cost_fn = env.cost_fn
+        except AttributeError:
+            self.cost_fn = None
+        try:
+            self.render_mode = env.render_mode
+        except AttributeError:
+            self.render_mode = None
 
     def reset(self, seed: int | None = None, options: Dict[str, Any] | None = None):
         obs, info = self.env.reset(seed=seed, options=options)
-        self.agents = list(getattr(self.env, "agents", self.possible_agents))
+        try:
+            self.agents = list(self.env.agents)
+        except AttributeError:
+            self.agents = list(self.possible_agents)
         for a in obs:
             lf = self.label_fn[a] if isinstance(self.label_fn, dict) else self.label_fn
             agent_info = info.setdefault(a, {})
@@ -35,7 +46,10 @@ class LabelledParallelEnv(ParallelEnv):
 
     def step(self, actions):
         obs, rewards, term, trunc, infos = self.env.step(actions)
-        self.agents = list(getattr(self.env, "agents", self.possible_agents))
+        try:
+            self.agents = list(self.env.agents)
+        except AttributeError:
+            self.agents = list(self.possible_agents)
         for a in obs:
             lf = self.label_fn[a] if isinstance(self.label_fn, dict) else self.label_fn
             labels = set(lf(obs[a]))

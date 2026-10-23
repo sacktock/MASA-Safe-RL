@@ -26,20 +26,19 @@ def markdown_table(rows: Sequence[Mapping[str, object]], columns: Sequence[str])
 def algorithm_state_summary(name: str, algo: object) -> dict[str, object]:
     """Return compact diagnostics that are stable enough for a smoke tutorial."""
     row: dict[str, object] = {"algorithm": name}
-    q_table = getattr(algo, "Q", None)
-    if q_table is not None:
-        row["Q shape"] = getattr(q_table, "shape", "")
-        row["max Q"] = float(q_table.max())
-        row["min Q"] = float(q_table.min())
+    if hasattr(algo, "Q"):
+        row["Q shape"] = algo.Q.shape
+        row["max Q"] = float(algo.Q.max())
+        row["min Q"] = float(algo.Q.min())
 
     if hasattr(algo, "D"):
-        row["D shape"] = getattr(algo.D, "shape", "")
+        row["D shape"] = algo.D.shape
     if hasattr(algo, "C"):
-        row["C shape"] = getattr(algo.C, "shape", "")
+        row["C shape"] = algo.C.shape
     if hasattr(algo, "B"):
-        row["B shape"] = getattr(algo.B, "shape", "")
+        row["B shape"] = algo.B.shape
     if hasattr(algo, "S"):
-        row["S shape"] = getattr(algo.S, "shape", "")
+        row["S shape"] = algo.S.shape
     return row
 
 

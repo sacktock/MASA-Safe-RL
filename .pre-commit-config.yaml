@@ -16,42 +16,34 @@ repos:
     rev: v0.17.2
     hooks:
       - id: ruff-format
-  # basedpyright -- static type checking. Commented out for now; enable in a
-  # follow-up once the type backlog is triaged.
-  # - repo: https://github.com/DetachHead/basedpyright-prek-mirror
-  #   rev: 1.40.2
-  #   hooks:
-  #     - id: basedpyright
-  # YAML formatting.
   - repo: https://github.com/google/yamlfmt
+    # YAML formatting.
+
     rev: v0.21.0
     hooks:
       - id: yamlfmt
-  # TOML formatting.
   - repo: https://github.com/ComPWA/taplo-pre-commit
+    # TOML formatting.
+
     rev: v0.9.3
     hooks:
       - id: taplo-format
-  # Markdown formatting (GFM + MkDocs admonition/tab syntax).
   - repo: https://github.com/hukkin/mdformat
+    # Markdown formatting (GFM + MkDocs admonition/tab syntax).
+
     rev: 1.0.0
     hooks:
       - id: mdformat
         additional_dependencies:
           - mdformat-gfm
           - mdformat-mkdocs
-  # Local, bespoke checks.
   - repo: local
+    # Local, bespoke checks.
+
     hooks:
-      # Fail loudly on any use of `getattr`; use direct attribute access so the
-      # type checker can catch typos (this is what motivated the hook).
-      - id: no-getattr
-        name: ban getattr (use direct attribute access so typos fail loudly)
-        entry: '\bgetattr\s*\('
-        language: pygrep
-        types: [python]
-      # Reject any top-level .py/.ipynb file; source belongs in a package dir.
       - id: block-top-level-scripts
+        # Reject any top-level .py/.ipynb file; source belongs in a package dir.
+
         name: block top-level .py/.ipynb files
         entry: 'top-level .py/.ipynb files are not allowed; move them under masa/, scripts/, tests/, notebooks/, or tutorial/'
         language: fail

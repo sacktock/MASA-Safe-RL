@@ -12,7 +12,7 @@ The implementation focuses on:
 - **Vectorized evaluation** of atomic predicates via a labeling function.
 - **JAX-accelerated computation** for scalable probability-sequence evaluation.
 - **Dense and compact transition-kernel representations** to handle both
-  small tabular and large sparse dynamics.
+    small tabular and large sparse dynamics.
 
 ## Bounded PCTL formulas in MASA
 
@@ -20,7 +20,7 @@ MASA implements a *bounded* fragment of PCTL: all temporal operators are evaluat
 over a finite horizon, which aligns naturally with finite rollouts and Monte Carlo
 estimation.
 
-A bounded PCTL formula is represented as a tree of ``BoundedPCTLFormula`` objects and
+A bounded PCTL formula is represented as a tree of `BoundedPCTLFormula` objects and
 falls into two broad categories.
 
 ### State (propositional) formulas
@@ -28,20 +28,20 @@ falls into two broad categories.
 State formulas are Boolean formulas evaluated **at a single state**, without reference
 to transitions. MASA supports:
 
-- ``Truth``
-- Atomic predicates (``Atom``)
+- `Truth`
+- Atomic predicates (`Atom`)
 - Boolean connectives: $\neg$, $\land$, $\lor$, $\to$
 
 State formulas are evaluated using a **vectorized labeling representation**:
 
-- A ``LabelFn`` maps each state to a set of atomic predicates (strings).
+- A `LabelFn` maps each state to a set of atomic predicates (strings).
 - Internally, MASA builds a dense matrix:
 
 $$
 \mathrm{vec\_label\_fn} \in \{0, 1\}^{|AP| \times |S|}
 $$
 
-where ``vec_label_fn[i, s] = 1`` iff atomic predicate ``AP[i]`` holds in state ``s``.
+where `vec_label_fn[i, s] = 1` iff atomic predicate `AP[i]` holds in state `s`.
 
 State formulas have **zero temporal bound** (they do not extend the horizon).
 
@@ -56,8 +56,8 @@ $$
 \mathbb{P}_{\ge p}[\,X\ \Phi\,]
 $$
 
-The formula holds in state ``s`` if the probability that $\Phi$ holds in the
-*next* state is at least ``p``.
+The formula holds in state `s` if the probability that $\Phi$ holds in the
+*next* state is at least `p`.
 
 #### Until (bounded)
 
@@ -65,8 +65,8 @@ $$
 \mathbb{P}_{\ge p}[\,\Phi_1\ U^{\le B}\ \Phi_2\,]
 $$
 
-The formula holds in state ``s`` if the probability that $\Phi_2$ becomes true
-within ``B`` steps while $\Phi_1$ holds at all preceding steps is at least ``p``.
+The formula holds in state `s` if the probability that $\Phi_2$ becomes true
+within `B` steps while $\Phi_1$ holds at all preceding steps is at least `p`.
 
 #### Eventually (syntactic sugar)
 
@@ -111,23 +111,23 @@ MASA supports two representations of the resulting transition kernel.
 
 ### Dense kernel
 
-A dense Markov-chain transition matrix of shape ``(n_states, n_states)``.
-Entry ``(s', s)`` gives the probability of transitioning **from** ``s`` **to** ``s'``
+A dense Markov-chain transition matrix of shape `(n_states, n_states)`.
+Entry `(s', s)` gives the probability of transitioning **from** `s` **to** `s'`
 (i.e., columns represent source states).
 
 This form is used when the full transition structure is available and reasonably sized.
 
 ### Compact kernel
 
-A sparse successor representation that stores at most ``K`` successors per state:
+A sparse successor representation that stores at most `K` successors per state:
 
-- ``succ`` with shape ``(K, n_states)`` storing successor state ids.
-- ``p`` with shape ``(K, n_states)`` storing the corresponding transition probabilities.
+- `succ` with shape `(K, n_states)` storing successor state ids.
+- `p` with shape `(K, n_states)` storing the corresponding transition probabilities.
 
 This form is efficient when each state has relatively few successors, even if the
 overall state space is large.
 
-In both cases, probabilistic operators (e.g., ``Next`` and bounded ``Until``) evaluate
+In both cases, probabilistic operators (e.g., `Next` and bounded `Until`) evaluate
 expectations of the form $\mathbb{E}[V(s')]$ by either:
 
 - matrix multiplication for dense kernels, or
@@ -138,12 +138,12 @@ expectations of the form $\mathbb{E}[V(s')]$ by either:
 MASA provides both exact and sampling-based checking behind a shared interface:
 
 - If a transition model is available, MASA can evaluate the probability sequences
-  deterministically by dynamic programming over the policy-induced Markov chain.
+    deterministically by dynamic programming over the policy-induced Markov chain.
 - If the model is unknown or too large, MASA can estimate satisfaction probabilities
-  by Monte Carlo sampling of bounded trajectories under the policy, and then compare
-  the estimate to the formula's probability threshold.
+    by Monte Carlo sampling of bounded trajectories under the policy, and then compare
+    the estimate to the formula's probability threshold.
 
-Pure state formulas (``Truth``, ``Atom``, and boolean connectives) can be evaluated
+Pure state formulas (`Truth`, `Atom`, and boolean connectives) can be evaluated
 directly without sampling, while probabilistic temporal operators use either the
 exact recurrence or sampled trajectory satisfaction depending on the chosen approach.
 

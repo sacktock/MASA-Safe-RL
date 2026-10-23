@@ -9,15 +9,17 @@ shaping for DFA-based constraints, and (4) provide basic observation/reward
 normalization and light-weight vector-environment helpers.
 
 ### Key conventions
-* Constraint-enabled environments expose a `_constraint` object and (often)
-  `label_fn` / `cost_fn` attributes. See [`masa.common.constraints.base.BaseConstraintEnv`][masa.common.constraints.base.BaseConstraintEnv].
-* Monitoring wrappers add structured dictionaries under `info["constraint"]`
-  and/or `info["metrics"]`.
-* Vector wrappers in this file use a simple Python list API:
-  observations, rewards, terminals, truncations, infos are lists of length
-  `VecEnvWrapperBase.n_envs`.
+
+- Constraint-enabled environments expose a `_constraint` object and (often)
+    `label_fn` / `cost_fn` attributes. See \[`masa.common.constraints.base.BaseConstraintEnv`\][masa.common.constraints.base.BaseConstraintEnv].
+- Monitoring wrappers add structured dictionaries under `info["constraint"]`
+    and/or `info["metrics"]`.
+- Vector wrappers in this file use a simple Python list API:
+    observations, rewards, terminals, truncations, infos are lists of length
+    `VecEnvWrapperBase.n_envs`.
 
 ### Notes
+
 For potential-based shaping, the shaped *cost* inserted into `info` is of the
 form
 

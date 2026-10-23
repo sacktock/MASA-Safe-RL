@@ -32,6 +32,7 @@ from __future__ import annotations
 from typing import Any, Dict, Iterable
 from masa.common.constraints.base import Constraint, BaseConstraintEnv
 
+
 class ReachAvoid(Constraint):
     """Reach target label set while avoiding unsafe label set.
 
@@ -95,7 +96,11 @@ class ReachAvoid(Constraint):
             - ``"violated"``: whether unsafe was ever visited,
             - ``"satisfied"``: 1.0 if satisfied else 0.0.
         """
-        return {"reached": self.reached, "violated": self.violated, "satisfied": float(self.satisfied)}
+        return {
+            "reached": self.reached,
+            "violated": self.violated,
+            "satisfied": float(self.satisfied),
+        }
 
     def step_metric(self) -> Dict[str, float]:
         """Per-step metrics.
@@ -107,12 +112,18 @@ class ReachAvoid(Constraint):
             - ``"violation"``: 1.0 if avoid violated else 0.0,
             - ``"reached"``: 1.0 if reach holds at this step else 0.0.
         """
-        return {"cost": float(not self.avoid), "violation": bool(not self.avoid), "reached": self.reach, "cost_done": bool(not self.avoid or self.reach)}
+        return {
+            "cost": float(not self.avoid),
+            "violation": bool(not self.avoid),
+            "reached": self.reach,
+            "cost_done": bool(not self.avoid or self.reach),
+        }
 
     @property
     def constraint_type(self) -> str:
         """Stable identifier string: ``"REACH_AVOID"``."""
         return "REACH_AVOID"
+
 
 class ReachAvoidEnv(BaseConstraintEnv):
     """Gymnasium wrapper for the :class:`ReachAvoid` monitor.
@@ -125,8 +136,13 @@ class ReachAvoidEnv(BaseConstraintEnv):
 
     """
 
-    def __init__(self, env: gym.Env, avoid_label: str = "unsafe", reach_label: str = "target", **kw):
-        super().__init__(env, ReachAvoid(avoid_label=avoid_label, reach_label=reach_label), **kw)
-
-
-    
+    def __init__(
+        self,
+        env: gym.Env,
+        avoid_label: str = "unsafe",
+        reach_label: str = "target",
+        **kw,
+    ):
+        super().__init__(
+            env, ReachAvoid(avoid_label=avoid_label, reach_label=reach_label), **kw
+        )

@@ -125,7 +125,9 @@ class MountainCarRenderer:
         if self._human_window is None:
             pygame.init()
             pygame.display.set_caption("MASA - MountainCar")
-            self._human_window = pygame.display.set_mode(self._human_window_size, pygame.RESIZABLE)
+            self._human_window = pygame.display.set_mode(
+                self._human_window_size, pygame.RESIZABLE
+            )
             self._human_clock = pygame.time.Clock()
 
         for event in pygame.event.get():
@@ -135,13 +137,17 @@ class MountainCarRenderer:
             return
 
         window_width, window_height = self._human_window.get_size()
-        target_width, target_height = _fit_size((width, height), (window_width, window_height))
+        target_width, target_height = _fit_size(
+            (width, height), (window_width, window_height)
+        )
         left = (window_width - target_width) // 2
         top = (window_height - target_height) // 2
 
         frame_surface = pygame.surfarray.make_surface(np.transpose(frame, (1, 0, 2)))
         if (target_width, target_height) != (width, height):
-            frame_surface = pygame.transform.smoothscale(frame_surface, (target_width, target_height))
+            frame_surface = pygame.transform.smoothscale(
+                frame_surface, (target_width, target_height)
+            )
 
         self._human_window.fill(BACKGROUND_COLOR)
         self._human_window.blit(frame_surface, (left, top))
@@ -151,7 +157,7 @@ class MountainCarRenderer:
 
     def _snapshot(self) -> "_MountainCarSnapshot":
         state = np.zeros(2, dtype=np.float32)
-        if getattr(self.env, "_state", None) is not None:
+        if self.env._state is not None:
             state = np.asarray(self.env._state, dtype=np.float32)
         position, velocity = (float(v) for v in state)
         min_position = float(self.env._min_position)
@@ -167,12 +173,14 @@ class MountainCarRenderer:
             max_speed=max_speed,
             goal_position=goal_position,
             power=float(self.env._power),
-            last_action=getattr(self.env, "_last_action", None),
-            step_count=int(getattr(self.env, "_step_count", 0)),
+            last_action=self.env._last_action,
+            step_count=int(self.env._step_count),
             status=status,
         )
 
-    def _draw_scene(self, surface: Any, snapshot: "_MountainCarSnapshot", size: int) -> None:
+    def _draw_scene(
+        self, surface: Any, snapshot: "_MountainCarSnapshot", size: int
+    ) -> None:
         import pygame
         from pygame import gfxdraw
 
@@ -181,21 +189,52 @@ class MountainCarRenderer:
         scale = _gym_scale(snapshot, size)
 
         hill_points = _hill_points(snapshot, scale, size)
-        hill_polygon = hill_points + [(panel.right, panel.bottom), (panel.left, panel.bottom)]
-        pygame.draw.polygon(surface, HILL_SHADOW_COLOR, [(x, y + max(2, size // 120)) for x, y in hill_polygon])
+        hill_polygon = hill_points + [
+            (panel.right, panel.bottom),
+            (panel.left, panel.bottom),
+        ]
+        pygame.draw.polygon(
+            surface,
+            HILL_SHADOW_COLOR,
+            [(x, y + max(2, size // 120)) for x, y in hill_polygon],
+        )
         pygame.draw.polygon(surface, HILL_COLOR, hill_polygon)
         pygame.draw.aalines(surface, TEXT_COLOR, False, hill_points)
 
         wall_width = max(3, size // 120)
-        wall_x, wall_y = _screen_point(snapshot.min_position, _hill_height(snapshot.min_position) * scale, snapshot, scale, size)
+        wall_x, wall_y = _screen_point(
+            snapshot.min_position,
+            _hill_height(snapshot.min_position) * scale,
+            snapshot,
+            scale,
+            size,
+        )
         wall_x = max(wall_width // 2, wall_x)
-        pygame.draw.line(surface, WALL_COLOR, (wall_x, wall_y - size // 14), (wall_x, wall_y + size // 16), width=wall_width)
+        pygame.draw.line(
+            surface,
+            WALL_COLOR,
+            (wall_x, wall_y - size // 14),
+            (wall_x, wall_y + size // 16),
+            width=wall_width,
+        )
 
-        goal_x, goal_y = _screen_point(snapshot.goal_position, _hill_height(snapshot.goal_position) * scale, snapshot, scale, size)
+        goal_x, goal_y = _screen_point(
+            snapshot.goal_position,
+            _hill_height(snapshot.goal_position) * scale,
+            snapshot,
+            scale,
+            size,
+        )
         flag_height = max(32, int(size * 50 / 600))
         flag_width = max(16, int(size * 25 / 600))
         flag_tip_offset = max(3, int(size * 5 / 600))
-        pygame.draw.line(surface, GOAL_COLOR, (goal_x, goal_y), (goal_x, goal_y - flag_height), width=max(2, size // 180))
+        pygame.draw.line(
+            surface,
+            GOAL_COLOR,
+            (goal_x, goal_y),
+            (goal_x, goal_y - flag_height),
+            width=max(2, size // 180),
+        )
         flag = [
             (goal_x, goal_y - flag_height),
             (goal_x, goal_y - flag_height + flag_tip_offset * 2),
@@ -207,12 +246,52 @@ class MountainCarRenderer:
         self._draw_car(surface, snapshot, scale, size)
 
         action_force = _last_action_force(snapshot.last_action, snapshot.power)
-        action_label = "last action: none" if action_force is None else f"last force: {action_force:.4f}"
-        action_color = MUTED_TEXT_COLOR if action_force is None else GOAL_COLOR if action_force > 0 else WALL_COLOR if action_force < 0 else TEXT_COLOR
-        self._draw_text(surface, "MountainCar", (panel.left + size // 28, panel.top + size // 28), max(18, size // 18), TEXT_COLOR)
-        self._draw_text(surface, f"x {snapshot.position:.2f}  v {snapshot.velocity:.3f}", (panel.left + size // 28, panel.top + size // 10), max(14, size // 25), MUTED_TEXT_COLOR)
-        self._draw_text(surface, snapshot.status, (panel.left + size // 28, panel.top + size // 6), max(16, size // 22), GOAL_COLOR if snapshot.status == "goal" else WALL_COLOR if snapshot.status == "wall" else TEXT_COLOR)
-        self._draw_text(surface, action_label, (panel.left + size // 3, panel.top + size // 6), max(16, size // 22), action_color)
+        action_label = (
+            "last action: none"
+            if action_force is None
+            else f"last force: {action_force:.4f}"
+        )
+        action_color = (
+            MUTED_TEXT_COLOR
+            if action_force is None
+            else GOAL_COLOR
+            if action_force > 0
+            else WALL_COLOR
+            if action_force < 0
+            else TEXT_COLOR
+        )
+        self._draw_text(
+            surface,
+            "MountainCar",
+            (panel.left + size // 28, panel.top + size // 28),
+            max(18, size // 18),
+            TEXT_COLOR,
+        )
+        self._draw_text(
+            surface,
+            f"x {snapshot.position:.2f}  v {snapshot.velocity:.3f}",
+            (panel.left + size // 28, panel.top + size // 10),
+            max(14, size // 25),
+            MUTED_TEXT_COLOR,
+        )
+        self._draw_text(
+            surface,
+            snapshot.status,
+            (panel.left + size // 28, panel.top + size // 6),
+            max(16, size // 22),
+            GOAL_COLOR
+            if snapshot.status == "goal"
+            else WALL_COLOR
+            if snapshot.status == "wall"
+            else TEXT_COLOR,
+        )
+        self._draw_text(
+            surface,
+            action_label,
+            (panel.left + size // 3, panel.top + size // 6),
+            max(16, size // 22),
+            action_color,
+        )
 
     def _draw_car(
         self,
@@ -224,9 +303,13 @@ class MountainCarRenderer:
         import pygame
         from pygame import gfxdraw
 
-        body_points, window_points, wheel_centers, wheel_radius = _car_geometry(snapshot, scale, size)
+        body_points, window_points, wheel_centers, wheel_radius = _car_geometry(
+            snapshot, scale, size
+        )
 
-        shadow_points = [(x + max(2, size // 120), y + max(2, size // 120)) for x, y in body_points]
+        shadow_points = [
+            (x + max(2, size // 120), y + max(2, size // 120)) for x, y in body_points
+        ]
         pygame.draw.polygon(surface, CAR_SHADOW_COLOR, shadow_points)
         body_color = CAR_COLOR if snapshot.status != "wall" else WALL_COLOR
         gfxdraw.aapolygon(surface, body_points, body_color)
@@ -238,7 +321,9 @@ class MountainCarRenderer:
             gfxdraw.aacircle(surface, wheel_x, wheel_y, wheel_radius, WHEEL_COLOR)
             gfxdraw.filled_circle(surface, wheel_x, wheel_y, wheel_radius, WHEEL_COLOR)
 
-    def _draw_text(self, surface: Any, text: str, pos: Position, size: int, color: RGBColor) -> None:
+    def _draw_text(
+        self, surface: Any, text: str, pos: Position, size: int, color: RGBColor
+    ) -> None:
         import pygame
 
         pygame.font.init()
@@ -302,7 +387,13 @@ def _hill_points(
     size: int,
 ) -> list[Position]:
     return [
-        _screen_point(float(position), _hill_height(float(position)) * scale, snapshot, scale, size)
+        _screen_point(
+            float(position),
+            _hill_height(float(position)) * scale,
+            snapshot,
+            scale,
+            size,
+        )
         for position in np.linspace(snapshot.min_position, snapshot.max_position, 100)
     ]
 
@@ -332,7 +423,12 @@ def _car_geometry(
     angle = math.cos(3.0 * position)
 
     body_points = _local_points_to_screen(
-        [(-car_width / 2, 0.0), (-car_width / 2, car_height), (car_width / 2, car_height), (car_width / 2, 0.0)],
+        [
+            (-car_width / 2, 0.0),
+            (-car_width / 2, car_height),
+            (car_width / 2, car_height),
+            (car_width / 2, 0.0),
+        ],
         base_x,
         base_y,
         angle,
@@ -357,7 +453,12 @@ def _car_geometry(
         angle,
         size,
     )
-    return body_points, window_points, wheel_centers, max(4, int(round(car_height / 2.5)))
+    return (
+        body_points,
+        window_points,
+        wheel_centers,
+        max(4, int(round(car_height / 2.5))),
+    )
 
 
 def _local_points_to_screen(
@@ -378,7 +479,13 @@ def _local_points_to_screen(
     ]
 
 
-def _status(position: float, velocity: float, min_position: float, max_speed: float, goal_position: float) -> str:
+def _status(
+    position: float,
+    velocity: float,
+    min_position: float,
+    max_speed: float,
+    goal_position: float,
+) -> str:
     if position >= goal_position:
         return "goal"
     if position <= min_position:

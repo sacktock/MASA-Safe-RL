@@ -6,7 +6,6 @@ from gymnasium import spaces
 
 
 class TabularAlgorithm(BaseAlgorithm):
-
     def __init__(
         self,
         *args,

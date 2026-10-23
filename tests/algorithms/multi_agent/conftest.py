@@ -1,4 +1,5 @@
 """Shared deterministic CMG fixtures for independent-learning tests."""
+
 from __future__ import annotations
 
 from collections.abc import Callable

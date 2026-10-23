@@ -401,8 +401,12 @@ class CaptureTheFlag(ParallelEnv):
                 continue
             avatar.respawn_timer -= 1
             if avatar.respawn_timer <= 0:
-                occupied = {other.position for other in self._avatars.values() if other.active}
-                candidates = [p for p in self._spawn_points[avatar.team] if p not in occupied]
+                occupied = {
+                    other.position for other in self._avatars.values() if other.active
+                }
+                candidates = [
+                    p for p in self._spawn_points[avatar.team] if p not in occupied
+                ]
                 if not candidates:
                     candidates = self._spawn_points[avatar.team]
                 avatar.position = candidates[int(self._rng.integers(len(candidates)))]
@@ -416,9 +420,13 @@ class CaptureTheFlag(ParallelEnv):
                     {"event": "avatar_respawned", "player_index": avatar.index}
                 )
 
-    def _move(self, agents: list[Agent], decoded: dict[Agent, tuple[int, int, int]]) -> None:
+    def _move(
+        self, agents: list[Agent], decoded: dict[Agent, tuple[int, int, int]]
+    ) -> None:
         occupied = {
-            avatar.position: avatar.agent for avatar in self._avatars.values() if avatar.active
+            avatar.position: avatar.agent
+            for avatar in self._avatars.values()
+            if avatar.active
         }
         desired: dict[Agent, Position] = {}
         for agent in agents:
@@ -437,10 +445,16 @@ class CaptureTheFlag(ParallelEnv):
         for agent, target in desired.items():
             avatar = self._avatars[agent]
             occupant = occupied.get(target)
-            if target != avatar.position and counts[target] == 1 and occupant in (None, agent):
+            if (
+                target != avatar.position
+                and counts[target] == 1
+                and occupant in (None, agent)
+            ):
                 avatar.position = target
 
-    def _fire(self, agents: list[Agent], decoded: dict[Agent, tuple[int, int, int]]) -> None:
+    def _fire(
+        self, agents: list[Agent], decoded: dict[Agent, tuple[int, int, int]]
+    ) -> None:
         for agent in agents:
             avatar = self._avatars[agent]
             if not avatar.active:
@@ -452,11 +466,15 @@ class CaptureTheFlag(ParallelEnv):
                 avatar.cooling_timer = self.primary_zap_cooldown
                 self._paint(avatar.position, avatar.team)
                 self._zap_from(avatar, length=3, radius=1)
-                self._last_events.append({"event": "fired", "player_index": avatar.index})
+                self._last_events.append(
+                    {"event": "fired", "player_index": avatar.index}
+                )
             elif fire == 2 and avatar.previous_position == avatar.position:
                 avatar.cooling_timer = self.secondary_zap_cooldown
                 self._zap_from(avatar, length=6, radius=0)
-                self._last_events.append({"event": "fired", "player_index": avatar.index})
+                self._last_events.append(
+                    {"event": "fired", "player_index": avatar.index}
+                )
             avatar.previous_position = avatar.position
 
     def _zap_from(self, source: Avatar, *, length: int, radius: int) -> None:
@@ -470,9 +488,13 @@ class CaptureTheFlag(ParallelEnv):
                 if wall is not None and wall.active:
                     wall.health -= 1
                     if wall.health == 2:
-                        self._last_events.append({"event": "wall_damaged", "position": position})
+                        self._last_events.append(
+                            {"event": "wall_damaged", "position": position}
+                        )
                     if wall.health <= 0:
-                        self._last_events.append({"event": "wall_destroyed", "position": position})
+                        self._last_events.append(
+                            {"event": "wall_destroyed", "position": position}
+                        )
                     else:
                         break
                 self._paint(position, source.team)
@@ -484,12 +506,19 @@ class CaptureTheFlag(ParallelEnv):
                     continue
                 target.health -= 1
                 self._last_events.append(
-                    {"event": "avatar_hit", "source": source.index, "target": target.index}
+                    {
+                        "event": "avatar_hit",
+                        "source": source.index,
+                        "target": target.index,
+                    }
                 )
                 if target.health <= 0:
                     if target.carrying_flag is not None:
                         self._last_events.append(
-                            {"event": "zapped_flag_carrier", "player_index": source.index}
+                            {
+                                "event": "zapped_flag_carrier",
+                                "player_index": source.index,
+                            }
                         )
                     self._drop_flag(target)
                     target.active = False
@@ -500,13 +529,17 @@ class CaptureTheFlag(ParallelEnv):
                     )
                     break
 
-    def _beam_rays(self, avatar: Avatar, length: int, radius: int) -> list[list[Position]]:
+    def _beam_rays(
+        self, avatar: Avatar, length: int, radius: int
+    ) -> list[list[Position]]:
         rays = []
         for lateral in range(-radius, radius + 1):
             ray_length = length - abs(lateral)
             rays.append(
                 [
-                    _relative_to_world(avatar.position, avatar.orientation, lateral, forward)
+                    _relative_to_world(
+                        avatar.position, avatar.orientation, lateral, forward
+                    )
                     for forward in range(1, ray_length + 1)
                 ]
             )
@@ -542,7 +575,11 @@ class CaptureTheFlag(ParallelEnv):
             flag.position = flag.home
             flag.carried_by = None
         self._last_events.append(
-            {"event": "flag_captured", "player_index": carrier.index, "team": carrier.team}
+            {
+                "event": "flag_captured",
+                "player_index": carrier.index,
+                "team": carrier.team,
+            }
         )
 
     def _drop_flag(self, avatar: Avatar) -> None:
@@ -552,7 +589,9 @@ class CaptureTheFlag(ParallelEnv):
         flag.carried_by = None
         flag.position = avatar.position
         avatar.carrying_flag = None
-        self._last_events.append({"event": "flag_dropped", "player_index": avatar.index})
+        self._last_events.append(
+            {"event": "flag_dropped", "player_index": avatar.index}
+        )
 
     def _update_carried_flags(self) -> None:
         for flag in self._flags.values():
@@ -564,7 +603,9 @@ class CaptureTheFlag(ParallelEnv):
             if not avatar.active or self._rng.random() >= 0.05:
                 continue
             colour = self._terrain.get(avatar.position)
-            maximum = 3 if colour == avatar.team else 1 if colour in {"red", "blue"} else 2
+            maximum = (
+                3 if colour == avatar.team else 1 if colour in {"red", "blue"} else 2
+            )
             avatar.health = min(avatar.health + 1, maximum)
 
     def _paint(self, position: Position, team: Team) -> None:
@@ -587,19 +628,26 @@ class CaptureTheFlag(ParallelEnv):
         x, y = position
         return 0 <= x < self._cols and 0 <= y < self._rows
 
-    def _avatar_at(self, position: Position, exclude: Agent | None = None) -> Avatar | None:
+    def _avatar_at(
+        self, position: Position, exclude: Agent | None = None
+    ) -> Avatar | None:
         return next(
             (
                 avatar
                 for avatar in self._avatars.values()
-                if avatar.active and avatar.agent != exclude and avatar.position == position
+                if avatar.active
+                and avatar.agent != exclude
+                and avatar.position == position
             ),
             None,
         )
 
     def _event(self, name: str, index: int, key: str = "player_index") -> float:
         return float(
-            any(event.get("event") == name and event.get(key) == index for event in self._last_events)
+            any(
+                event.get("event") == name and event.get(key) == index
+                for event in self._last_events
+            )
         )
 
     def _observation(self, agent: Agent) -> np.ndarray:
@@ -617,7 +665,8 @@ class CaptureTheFlag(ParallelEnv):
                 float(avatar.active),
                 avatar.health,
                 avatar.respawn_timer,
-                float(avatar.active) * max(0.0, 1.0 - avatar.cooling_timer / self.primary_zap_cooldown),
+                float(avatar.active)
+                * max(0.0, 1.0 - avatar.cooling_timer / self.primary_zap_cooldown),
                 float(avatar.carrying_flag == "red"),
                 float(avatar.carrying_flag == "blue"),
                 red_home * blue_home,

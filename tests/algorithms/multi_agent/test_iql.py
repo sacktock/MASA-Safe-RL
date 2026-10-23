@@ -39,7 +39,9 @@ def test_agent_spaces_cannot_advance_shared_game():
         view.step(0)
 
 
-def test_one_parallel_step_per_round_and_separate_q_tables(model_factory, toy_env_factory):
+def test_one_parallel_step_per_round_and_separate_q_tables(
+    model_factory, toy_env_factory
+):
     env = toy_env_factory(horizon=3)
     model = model_factory(IQL, env=env)
     rows = model.train(2)

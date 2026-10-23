@@ -1,12 +1,23 @@
 import pytest
 
-from masa.common.constraints.multi_agent.cmg import Budget, ConstrainedMarkovGame, ConstrainedMarkovGameEnv
+from masa.common.constraints.multi_agent.cmg import (
+    Budget,
+    ConstrainedMarkovGame,
+    ConstrainedMarkovGameEnv,
+)
 from masa.common.multi_agent.labelled_pz_env import LabelledParallelEnv
-from masa.envs.multiagent.matrix.chicken import Actions, ChickenMatrix, cost_fn, label_fn
+from masa.envs.multiagent.matrix.chicken import (
+    Actions,
+    ChickenMatrix,
+    cost_fn,
+    label_fn,
+)
 
 
 def test_budget_normalizes_agents():
-    budget = Budget(amount=3, agents=("player_0", "player_0", "player_1"), name="shared")
+    budget = Budget(
+        amount=3, agents=("player_0", "player_0", "player_1"), name="shared"
+    )
 
     assert budget.amount == 3.0
     assert budget.agents == ("player_0", "player_1")
@@ -89,7 +100,7 @@ def test_make_marl_env_uses_central_wrapper_path():
         "ChickenMatrix",
         "CMG",
         env_kwargs={"max_moves": 1},
-        constraint_kwargs={"budgets": [budget]}
+        constraint_kwargs={"budgets": [budget]},
     )
 
     assert isinstance(env, ConstrainedMarkovGameEnv)

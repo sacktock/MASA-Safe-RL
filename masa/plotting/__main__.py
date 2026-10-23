@@ -1,7 +1,7 @@
 """Benchmark pipeline CLI: load runs, aggregate quantiles, render PlotSpecs.
 
-    python -m masa.plotting --config configs/example_wandb.yaml --stages all
-    python -m masa.plotting --config <yaml> --specs-from <module> --specs my_plot
+python -m masa.plotting --config configs/example_wandb.yaml --stages all
+python -m masa.plotting --config <yaml> --specs-from <module> --specs my_plot
 """
 
 from __future__ import annotations
@@ -47,20 +47,40 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
         prog="python -m masa.plotting",
         description="Load runs from W&B or TensorBoard, aggregate to quantiles, render figures from PlotSpecs.",
     )
-    p.add_argument("--config", required=True, type=Path,
-                   help="Path to a YAML config (see configs/example_wandb.yaml or example_tensorboard.yaml).")
-    p.add_argument("--stages", default="all",
-                   help="Comma separated subset of {download,process,render}, or 'all'.")
-    p.add_argument("--specs", default=None,
-                   help="Comma separated PlotSpec ids to render. Default: all registered.")
-    p.add_argument("--specs-from", action="append", default=[],
-                   metavar="MODULE",
-                   help="Dotted Python module to import for additional spec registrations. "
-                        "May be passed multiple times.")
-    p.add_argument("--force-download", action="store_true",
-                   help="Refetch every run even if a cached CSV exists.")
-    p.add_argument("--dry-run", action="store_true",
-                   help="Print the resolved plan and exit without W&B or disk writes.")
+    p.add_argument(
+        "--config",
+        required=True,
+        type=Path,
+        help="Path to a YAML config (see configs/example_wandb.yaml or example_tensorboard.yaml).",
+    )
+    p.add_argument(
+        "--stages",
+        default="all",
+        help="Comma separated subset of {download,process,render}, or 'all'.",
+    )
+    p.add_argument(
+        "--specs",
+        default=None,
+        help="Comma separated PlotSpec ids to render. Default: all registered.",
+    )
+    p.add_argument(
+        "--specs-from",
+        action="append",
+        default=[],
+        metavar="MODULE",
+        help="Dotted Python module to import for additional spec registrations. "
+        "May be passed multiple times.",
+    )
+    p.add_argument(
+        "--force-download",
+        action="store_true",
+        help="Refetch every run even if a cached CSV exists.",
+    )
+    p.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print the resolved plan and exit without W&B or disk writes.",
+    )
     p.add_argument("-v", "--verbose", action="store_true")
     return p.parse_args(argv)
 
@@ -69,13 +89,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     args = parse_args(argv)
     setup_logging(logging.DEBUG if args.verbose else logging.INFO)
 
-    _preload_spec_modules(getattr(args, "specs_from", []))
+    _preload_spec_modules(args.specs_from)
 
     cfg = load_config(args.config)
     if args.force_download:
         cfg = replace(cfg, force_download=True)
 
-    spec_ids = [s.strip() for s in args.specs.split(",") if s.strip()] if args.specs else None
+    spec_ids = (
+        [s.strip() for s in args.specs.split(",") if s.strip()] if args.specs else None
+    )
     specs = all_specs(spec_ids)
 
     stages = _parse_stages(args.stages)

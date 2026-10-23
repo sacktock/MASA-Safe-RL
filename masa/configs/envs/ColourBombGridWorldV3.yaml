@@ -4,23 +4,19 @@ defaults:
     max_episode_steps: 250
     label_fn: masa.envs.tabular.colour_bomb_grid_world_v3:label_fn
     cost_fn: masa.envs.tabular.colour_bomb_grid_world_v3:cost_fn
-  
   constraint:
     type: PCTL
     cost_budget: 0.025
-
   run:
     total_timesteps: 1000000
     eval_every: 10000
     eval_episodes: 10
     log_every: 10000
     stats_window_size: 100
-
 Property2:
   constraint:
     type: LTL_SAFETY
     dfa: masa.examples.colour_bomb_grid_world.property_2:make_dfa
-
 Property3:
   constraint:
     type: LTL_SAFETY

@@ -13,7 +13,13 @@ from masa.envs import ENVIRONMENTS
 from masa.common.constraints import CONSTRAINTS
 from masa.common import registry
 from masa.common.configs import Config, Flags, Path
-from masa.common.utils import make_env, load_callable, format_algo_id, format_constraint_id, format_env_id
+from masa.common.utils import (
+    make_env,
+    load_callable,
+    format_algo_id,
+    format_constraint_id,
+    format_env_id,
+)
 from masa.common.wrappers import RewardShapingWrapper
 
 import runpy
@@ -27,6 +33,7 @@ app = typer.Typer(
     }
 )
 console = Console()
+
 
 def resolve_id(
     value: str,
@@ -47,9 +54,11 @@ def resolve_id(
         f"Unknown {kind} '{value}'. Available: {sorted(valid_ids)}"
     )
 
+
 def load_yaml(package: str, filename: str) -> dict[str, Any]:
     path = resources.files(package).joinpath(filename)
     return yaml.YAML(typ="safe").load(path.read_text())
+
 
 def select_cfg(
     package: str,
@@ -61,6 +70,7 @@ def select_cfg(
     for name in selected:
         config = config.update(configs[name])
     return config
+
 
 def load_custom_cfg(path: Optional[str]) -> dict[str, Any]:
     if path is None:
@@ -75,7 +85,7 @@ def deep_update(config: Config, overrides: dict[str, Any]) -> Config:
         for key, value in values.items():
             config = config.update({f"{section}.{key}": value})
     return config
-    
+
 
 def parse_config(env_id, env_cfgs, algo, algo_cfgs) -> Config:
     configs = load_yaml("masa.configs", "defaults.yaml")
@@ -98,6 +108,7 @@ def parse_config(env_id, env_cfgs, algo, algo_cfgs) -> Config:
 
     return config
 
+
 def parse_benchmark(env_id, env_variant, algo) -> Config:
     configs = load_yaml("masa.configs", "defaults.yaml")
     config = Config(configs["defaults"])
@@ -105,7 +116,7 @@ def parse_benchmark(env_id, env_variant, algo) -> Config:
     env_configs = load_yaml("masa.configs.envs", f"{env_id}.yaml")
     env_config = Config(env_configs["defaults"])
     config = config.update(env_config)
-    
+
     if env_variant is not None:
         if env_variant not in env_configs:
             raise ValueError(
@@ -113,7 +124,7 @@ def parse_benchmark(env_id, env_variant, algo) -> Config:
             )
         config = config.update(env_configs[env_variant])
 
-    algo_variant =  f"{env_id}_{env_variant}" if env_variant is not None else env_id
+    algo_variant = f"{env_id}_{env_variant}" if env_variant is not None else env_id
 
     try:
         algo_config = select_cfg(
@@ -122,7 +133,9 @@ def parse_benchmark(env_id, env_variant, algo) -> Config:
             [algo_variant],
         )
     except KeyError:
-        warnings.warn(f"No benchmark configuration for {algo}:{algo_variant}. Using defaults.")
+        warnings.warn(
+            f"No benchmark configuration for {algo}:{algo_variant}. Using defaults."
+        )
         algo_configs = load_yaml("masa.configs.algorithms", f"{algo}.yaml")
         algo_config = Config(algo_configs["defaults"])
 
@@ -152,20 +165,30 @@ def print_config(config: Config, algo: str) -> None:
     console.print()
     console.print("[bold green]Beginning training ...[/]")
 
+
 def run_with_config(config, algo):
     print_config(config, algo)
 
-    label_fn = load_callable(getattr(config.env, "label_fn", "masa.common.dummy:label_fn"))
-    cost_fn = load_callable(getattr(config.env, "cost_fn", "masa.common.dummy:cost_fn"))
-    make_dfa = load_callable(getattr(config.constraint, "dfa", "masa.common.dummy:make_dfa"))
+    try:
+        label_fn = load_callable(config.env.label_fn)
+    except AttributeError:
+        label_fn = load_callable("masa.common.dummy:label_fn")
+    try:
+        cost_fn = load_callable(config.env.cost_fn)
+    except AttributeError:
+        cost_fn = load_callable("masa.common.dummy:cost_fn")
+    try:
+        make_dfa = load_callable(config.constraint.dfa)
+    except AttributeError:
+        make_dfa = load_callable("masa.common.dummy:make_dfa")
 
     constraint_kwargs = {
         "cost_fn": cost_fn,
-        "budget": getattr(config.constraint, "cost_budget", None),
-        "alpha": getattr(config.constraint, "alpha", None),
-        "avoid_label": getattr(config.constraint, "avoid_label", None),
-        "reach_label": getattr(config.constraint, "reach_label", None),
-        "dfa": make_dfa()
+        "budget": config.constraint.cost_budget,
+        "alpha": config.constraint.alpha,
+        "avoid_label": config.constraint.avoid_label,
+        "reach_label": config.constraint.reach_label,
+        "dfa": make_dfa(),
     }
 
     constraint_kwargs = {
@@ -178,52 +201,73 @@ def run_with_config(config, algo):
             "Only evaluation episodes will be recorded; training episodes will not be recorded."
         )
 
-    env_kwargs = {"render_mode": "rgb_array"} if config.run.record_video else {} 
+    env_kwargs = {"render_mode": "rgb_array"} if config.run.record_video else {}
 
     # Optional potential-based reward shaping, threaded through the config.
     # The wrapper is applied as the outermost env wrapper (downstream of make_env),
     # so algorithms read the shaped cost via env.cost_fn / info["constraint"]["step"]["cost"].
-    reward_shaping = config.reward_shaping if "reward_shaping" in config else None
-    reward_shaping_impl = getattr(reward_shaping, "impl", "none") if reward_shaping is not None else "none"
-    reward_shaping_gamma = getattr(reward_shaping, "gamma", 0.99) if reward_shaping is not None else 0.99
+    if "reward_shaping" in config:
+        reward_shaping = config.reward_shaping
+        try:
+            reward_shaping_impl = reward_shaping.impl
+        except AttributeError:
+            raise ValueError("reward_shaping.impl is required")
+        try:
+            reward_shaping_gamma = reward_shaping.gamma
+        except AttributeError:
+            warnings.warn("reward_shaping.gamma is not set, using default value 0.99")
+            reward_shaping_gamma = 0.99
+    else:
+        reward_shaping = None
 
     def _apply_reward_shaping(env):
-        if reward_shaping_impl and reward_shaping_impl != "none":
-            return RewardShapingWrapper(env, gamma=reward_shaping_gamma, impl=reward_shaping_impl)
+        if reward_shaping is not None and reward_shaping_impl != "none":
+            return RewardShapingWrapper(
+                env, gamma=reward_shaping_gamma, impl=reward_shaping_impl
+            )
         return env
 
-    train_env = _apply_reward_shaping(make_env(
-        config.env.id,
-        config.constraint.type,
-        config.env.max_episode_steps,
-        label_fn=label_fn,
-        constraint_kwargs=constraint_kwargs,
-        env_kwargs=env_kwargs,
-        record_video=config.run.record_video,
-        record_video_episode_trigger=None,
-        video_folder=f"{config.run.logdir}/videos",
-        video_kwargs={
-            "step_trigger": lambda x: (x % config.run.record_every == 0) and (config.run.record_every != 0),
-            "video_length": config.env.max_episode_steps,
-            "name_prefix": "training",
-        },
-    ))
+    train_env = _apply_reward_shaping(
+        make_env(
+            config.env.id,
+            config.constraint.type,
+            config.env.max_episode_steps,
+            label_fn=label_fn,
+            constraint_kwargs=constraint_kwargs,
+            env_kwargs=env_kwargs,
+            record_video=config.run.record_video,
+            record_video_episode_trigger=None,
+            video_folder=f"{config.run.logdir}/videos",
+            video_kwargs={
+                "step_trigger": lambda x: (
+                    (x % config.run.record_every == 0)
+                    and (config.run.record_every != 0)
+                ),
+                "video_length": config.env.max_episode_steps,
+                "name_prefix": "training",
+            },
+        )
+    )
 
-    eval_env_fn = lambda: _apply_reward_shaping(make_env(
-        config.env.id,
-        config.constraint.type,
-        config.env.max_episode_steps,
-        label_fn=label_fn,
-        constraint_kwargs=constraint_kwargs,
-        env_kwargs=env_kwargs,
-        record_video=config.run.record_video,
-        record_video_episode_trigger=lambda x: (x % config.run.eval_episodes == 0) and (config.run.eval_episodes != 0),
-        video_folder=f"{config.run.logdir}/videos",
-        video_kwargs={
-            "name_prefix": "eval",
-        },
-    ))
-    
+    eval_env_fn = lambda: _apply_reward_shaping(
+        make_env(
+            config.env.id,
+            config.constraint.type,
+            config.env.max_episode_steps,
+            label_fn=label_fn,
+            constraint_kwargs=constraint_kwargs,
+            env_kwargs=env_kwargs,
+            record_video=config.run.record_video,
+            record_video_episode_trigger=lambda x: (
+                (x % config.run.eval_episodes == 0) and (config.run.eval_episodes != 0)
+            ),
+            video_folder=f"{config.run.logdir}/videos",
+            video_kwargs={
+                "name_prefix": "eval",
+            },
+        )
+    )
+
     algo_cls = registry.get_algorithm(algo)
     algo_kwargs = dict(config[algo])
 
@@ -258,9 +302,7 @@ def run_with_config(config, algo):
 def run(
     ctx: typer.Context,
     env_id: str = typer.Option(
-        ..., 
-        "--env-id", 
-        help="Supported environment id in ENV_REGISTRY"
+        ..., "--env-id", help="Supported environment id in ENV_REGISTRY"
     ),
     algo: str = typer.Option(
         ...,
@@ -292,7 +334,7 @@ def run(
         "--total-timesteps",
         help="Override run.total_timesteps.",
     ),
-    seed: int = typer.Option(0, "--seed", help="Random seed.")
+    seed: int = typer.Option(0, "--seed", help="Random seed."),
 ) -> None:
     r"""
     Train a MASA agent.
@@ -345,21 +387,12 @@ def run(
 
     run_with_config(config, algo)
 
+
 @app.command()
 def benchmark(
-    env: str = typer.Argument(
-        ...,
-        help="Benchmark environment."
-    ),
-    variant: Optional[str] = typer.Argument(
-        None,
-        help="Benchmark variant."
-    ),
-    algo: str = typer.Option(
-        ...,
-        "--algo",
-        help="Algorithm."
-    ),
+    env: str = typer.Argument(..., help="Benchmark environment."),
+    variant: Optional[str] = typer.Argument(None, help="Benchmark variant."),
+    algo: str = typer.Option(..., "--algo", help="Algorithm."),
     seed: int = typer.Option(0, "--seed", help="Random seed."),
 ):
 
@@ -381,9 +414,12 @@ def benchmark(
 
     config = parse_benchmark(env_id, variant, algo)
     config = config.update({"run.seed": seed})
-    config = config.update({"run.logdir": f"benchmarks/masa/{benchmark_id}/{algo}_{seed}"})
+    config = config.update(
+        {"run.logdir": f"benchmarks/masa/{benchmark_id}/{algo}_{seed}"}
+    )
 
     run_with_config(config, algo)
+
 
 @app.command(
     context_settings={
@@ -394,7 +430,7 @@ def benchmark(
 def example(
     ctx: typer.Context,
     example_script: str = typer.Argument(help="Example script in masa.examples."),
-)-> None:
+) -> None:
     r"""
     Run an example module from masa.examples.
 

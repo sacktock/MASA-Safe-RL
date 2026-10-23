@@ -22,10 +22,10 @@ The full task observation needs coin locations because reward depends on collect
 
 For the mini environment, a naive exact task state model would need the 4,624 agent/ghost safety states plus 70 coin bits:
 
-| Model | State count | What it remembers |
-| --- | --- | --- |
+| Model                                 | State count                | What it remembers                             |
+| ------------------------------------- | -------------------------- | --------------------------------------------- |
 | Naive original task state upper bound | `4,624 * 2^70 ~= 5.459e24` | agent/ghost safety state plus every coin mask |
-| Safety abstract states | `4,624` | agent and ghost positions/directions only |
+| Safety abstract states                | `4,624`                    | agent and ghost positions/directions only     |
 
 That is a `2^70 ~= 1.181e21`-fold reduction for safety analysis. This is the point of the tutorial.
 

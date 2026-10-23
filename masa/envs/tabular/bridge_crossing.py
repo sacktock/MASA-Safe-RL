@@ -3,10 +3,13 @@ from typing import Any, Literal
 from gymnasium import spaces
 import numpy as np
 from masa.common.label_fn import LabelFn
-from collections import defaultdict 
+from collections import defaultdict
 from masa.envs.tabular.base import TabularEnv
 from masa.envs.tabular.utils import create_transition_matrix
-from masa.envs.tabular.renderers.bridge_crossing import BridgeCrossingRenderer, validate_renderer_options
+from masa.envs.tabular.renderers.bridge_crossing import (
+    BridgeCrossingRenderer,
+    validate_renderer_options,
+)
 from functools import lru_cache
 
 GRID_SIZE = 20
@@ -26,19 +29,21 @@ for _state in GOAL_STATES:
 for _state in LAVA_STATES:
     LABEL_DICT[_state] = {"lava"}
 
-label_fn = lambda obs: LABEL_DICT[obs] 
+label_fn = lambda obs: LABEL_DICT[obs]
 
 cost_fn = lambda labels: 1.0 if "lava" in labels else 0.0
+
 
 @lru_cache(maxsize=None)
 def get_transition_matrix(slip_prob: float = DEFAULT_SLIP_PROBABILITY):
     return create_transition_matrix(
-        GRID_SIZE, 
+        GRID_SIZE,
         N_STATES,
         N_ACTIONS,
         slip_prob=slip_prob,
-        terminal_states=TERMINAL_STATES
+        terminal_states=TERMINAL_STATES,
     )
+
 
 class BridgeCrossing(TabularEnv):
     metadata = {"render_modes": ["ansi", "rgb_array", "human"], "render_fps": 4}
@@ -47,15 +52,13 @@ class BridgeCrossing(TabularEnv):
         self,
         render_mode: Literal["ansi", "rgb_array", "human"] | None = None,
         render_window_size: int = 512,
-        slip_prob: float = DEFAULT_SLIP_PROBABILITY
+        slip_prob: float = DEFAULT_SLIP_PROBABILITY,
     ):
         super().__init__()
         validate_renderer_options(render_mode, render_window_size)
 
         if not 0.0 <= slip_prob <= 1.0:
-            raise ValueError(
-                f"slip_prob must be in [0, 1], got {slip_prob}"
-            )
+            raise ValueError(f"slip_prob must be in [0, 1], got {slip_prob}")
         self._slip_prob = float(slip_prob)
 
         self._grid_size = GRID_SIZE
@@ -83,7 +86,6 @@ class BridgeCrossing(TabularEnv):
         self.render_window_size = int(render_window_size)
         self._renderer = BridgeCrossingRenderer(self)
 
-
     def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None):
         super().reset(seed=seed)
 
@@ -100,10 +102,11 @@ class BridgeCrossing(TabularEnv):
             self.render()
         return self._state, {}
 
-
     def step(self, action):
         assert self.action_space.contains(action), f"Invalid action {action}!"
-        self._state = self.np_random.choice(self._n_states, p=self._transition_matrix[:, self._state, action])
+        self._state = self.np_random.choice(
+            self._n_states, p=self._transition_matrix[:, self._state, action]
+        )
         self._step_count += 1
 
         terminated = bool(self._state in self._terminal_states)
@@ -125,6 +128,6 @@ class BridgeCrossing(TabularEnv):
 
     def handle_pygame_event(self, event: Any) -> bool:
         return self._renderer.handle_pygame_event(event)
-    
+
     def get_transition_matrix(self):
         return self._transition_matrix

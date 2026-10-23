@@ -9,6 +9,7 @@ its own transition.
 The Q-learning target, exploration rule, and epsilon schedule are therefore not
 reimplemented here.  Only the multi-agent rollout coordination is new.
 """
+
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
@@ -46,8 +47,7 @@ class _AgentSpaces(gym.Env):
 
     def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None):
         raise RuntimeError(
-            "Use the IQL coordinator, not an individual learner's "
-            "rollout/train method."
+            "Use the IQL coordinator, not an individual learner's rollout/train method."
         )
 
     def step(self, action: int):
@@ -102,12 +102,16 @@ def _as_agent_mapping(
 
 def _cmg_budgets(env: ParallelEnv) -> tuple[Budget, ...]:
     """Return CMG budget definitions through the public API, with compatibility fallback."""
-    budgets = getattr(env, "budgets", None)
-    if budgets is None:
+    try:
+        budgets = env.budgets
+    except AttributeError:
         # Compatibility with MASA versions preceding the public ``budgets``
         # property on ConstrainedMarkovGameEnv.
-        constraint = getattr(env, "_constraint", None)
-        budgets = getattr(constraint, "budgets", None)
+        try:
+            constraint = env._constraint
+            budgets = constraint.budgets
+        except AttributeError:
+            budgets = None
     if budgets is None:
         raise TypeError("The CMG environment must expose its budget definitions.")
     return tuple(budgets)
@@ -154,7 +158,9 @@ class IQL:
         self.horizon = index(horizon)
         if self.horizon < 1:
             raise ValueError("horizon must be a positive integer.")
-        if getattr(env, "constraint_type", None) != "CMG":
+        try:
+            assert env.constraint_type == "CMG"
+        except (AttributeError, AssertionError):
             raise TypeError("IQL expects a MASA CMG ParallelEnv.")
 
         self.env = env
@@ -186,7 +192,10 @@ class IQL:
         self.learners: dict[str, _ExternalQL] = {}
         for position, agent in enumerate(self.agents):
             action_space = env.action_space(agent)
-            if not isinstance(action_space, spaces.Discrete) or int(action_space.start) != 0:
+            if (
+                not isinstance(action_space, spaces.Discrete)
+                or int(action_space.start) != 0
+            ):
                 raise TypeError(
                     f"Agent {agent!r} needs a zero-based Discrete action space; "
                     f"got {action_space!r}."
@@ -324,7 +333,9 @@ class IQL:
                     deterministic=deterministic,
                 )
 
-            next_observations, rewards, terminations, truncations, _ = self.env.step(actions)
+            next_observations, rewards, terminations, truncations, _ = self.env.step(
+                actions
+            )
             step_metrics = self.env.constraint_step_metrics()
             next_time = time + 1
 
@@ -333,9 +344,13 @@ class IQL:
                     terminations.get(agent, False) or truncations.get(agent, False)
                 )
                 if not terminal and agent not in self.env.agents:
-                    raise ValueError(f"Agent {agent!r} disappeared without a done flag.")
+                    raise ValueError(
+                        f"Agent {agent!r} disappeared without a done flag."
+                    )
                 if agent not in rewards:
-                    raise ValueError(f"ParallelEnv omitted reward for active agent {agent!r}.")
+                    raise ValueError(
+                        f"ParallelEnv omitted reward for active agent {agent!r}."
+                    )
 
                 reward = float(rewards[agent])
                 shaped_reward = reward - self._penalty(agent, step_metrics)
@@ -368,15 +383,14 @@ class IQL:
         row: dict[str, float] = {"steps": float(time), **episode_metrics}
         row.update({f"return/{agent}": value for agent, value in returns.items()})
         row.update(
-            {
-                f"shaped_return/{agent}": value
-                for agent, value in shaped_returns.items()
-            }
+            {f"shaped_return/{agent}": value for agent, value in shaped_returns.items()}
         )
         # ``lambda/...`` is the value used for this rollout.  ``lambda_next/...``
         # records an episode-end dual update, when present.
         row.update({f"lambda/{name}": value for name, value in used_lambdas.items()})
-        row.update({f"lambda_next/{name}": value for name, value in self.lambdas.items()})
+        row.update(
+            {f"lambda_next/{name}": value for name, value in self.lambdas.items()}
+        )
         return row
 
     def train(self, episodes: int) -> list[dict[str, float]]:

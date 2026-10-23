@@ -15,8 +15,8 @@ from masa.common.on_policy_algorithm import OnPolicyAlgorithm
 from masa.common.policies import PPOPolicy
 from tqdm.auto import tqdm
 
-class TRPO(OnPolicyAlgorithm):
 
+class TRPO(OnPolicyAlgorithm):
     def __init__(
         self,
         *args,
@@ -41,7 +41,7 @@ class TRPO(OnPolicyAlgorithm):
     ):
         super().__init__(
             *args,
-            use_tqdm_rollout=True, # Turn on tqdm progress bar for rollout
+            use_tqdm_rollout=True,  # Turn on tqdm progress bar for rollout
             learning_rate=learning_rate,
             n_steps=n_steps,
             gamma=gamma,
@@ -51,9 +51,9 @@ class TRPO(OnPolicyAlgorithm):
             max_grad_norm=max_grad_norm,
             policy_class=policy_class,
             policy_kwargs=policy_kwargs,
-            **kwargs
+            **kwargs,
         )
-        
+
         self.normalize_advantage = normalize_advantage
         self.n_critic_updates = n_critic_updates
         self.target_kl = target_kl
@@ -62,7 +62,6 @@ class TRPO(OnPolicyAlgorithm):
         self.fvp_sample_freq = fvp_sample_freq
         self.line_search_steps = line_search_steps
         self.line_search_decay = line_search_decay
-
 
     @staticmethod
     @jit
@@ -77,7 +76,7 @@ class TRPO(OnPolicyAlgorithm):
         idx = 0
         for leaf in leaves:
             size = leaf.size
-            new_leaf = flat_params[idx: idx + size].reshape(leaf.shape)
+            new_leaf = flat_params[idx : idx + size].reshape(leaf.shape)
             new_leaves.append(new_leaf)
             idx += size
         return jax.tree_util.tree_unflatten(treedef, new_leaves)
@@ -92,7 +91,7 @@ class TRPO(OnPolicyAlgorithm):
         leaves_a, _ = jax.tree_util.tree_flatten(tree_a)
         leaves_b, _ = jax.tree_util.tree_flatten(tree_b)
         return sum([jnp.sum(a * b) for a, b in zip(leaves_a, leaves_b)])
-        
+
     @staticmethod
     def conjugate_gradient(Ax, b, iters=10):
         x = jax.tree.map(jnp.zeros_like, b)
@@ -123,7 +122,7 @@ class TRPO(OnPolicyAlgorithm):
             features = featurizer_state.apply_fn(featurizer_params, observations)
             # Critic loss
             critic_values = critic_state.apply_fn(critic_params, features).flatten()
-            value_loss = vf_coef * ((returns - critic_values)**2).mean()
+            value_loss = vf_coef * ((returns - critic_values) ** 2).mean()
             return value_loss
 
         loss, grads = jax.value_and_grad(critic_loss, argnums=(0, 1))(
@@ -184,7 +183,10 @@ class TRPO(OnPolicyAlgorithm):
         cg_damping: float,
     ):
         def kl_fn(params):
-            return TRPO._mean_kl(actor_params, params, featurizer_state, actor_state, observations)
+            return TRPO._mean_kl(
+                actor_params, params, featurizer_state, actor_state, observations
+            )
+
         grad_fn = jax.grad(kl_fn)
         vector_tree = TRPO.unflatten_params(vector, actor_params)
         _, hvp = jax.jvp(grad_fn, (actor_params,), (vector_tree,))
@@ -192,15 +194,14 @@ class TRPO(OnPolicyAlgorithm):
         return flat_hvp + cg_damping * vector
 
     def optimize(
-        self,
-        step: int, 
-        logger: Optional[TrainLogger] = None,
-        tqdm_position: int = 1
+        self, step: int, logger: Optional[TrainLogger] = None, tqdm_position: int = 1
     ):
 
         self.key, subkey = jr.split(self.key)
         rollout_data = next(self.rollout_buffer.get(subkey, self.n_steps))
-        observations, actions, rewards, values, returns, advantages, old_log_probs = rollout_data
+        observations, actions, rewards, values, returns, advantages, old_log_probs = (
+            rollout_data
+        )
 
         if isinstance(self.action_space, spaces.Discrete):
             # Convert discrete action from float to int
@@ -227,7 +228,7 @@ class TRPO(OnPolicyAlgorithm):
 
         flat_grads = self.flatten_params(grads)
 
-        fvp_observations = observations[::self.fvp_sample_freq]
+        fvp_observations = observations[:: self.fvp_sample_freq]
 
         def fvp(v):
             return self._fisher_vector_product(
@@ -250,9 +251,7 @@ class TRPO(OnPolicyAlgorithm):
             fvp(step_direction),
         )
 
-        step_size = jnp.sqrt(
-            self.target_kl / (shs + 1e-8)
-        )
+        step_size = jnp.sqrt(self.target_kl / (shs + 1e-8))
 
         full_step = step_direction * step_size
 
@@ -263,7 +262,7 @@ class TRPO(OnPolicyAlgorithm):
         accepted = False
 
         for i in range(self.line_search_steps):
-            frac = self.line_search_decay ** i
+            frac = self.line_search_decay**i
             candidate = old_flat + frac * full_step
             candidate_params = self.unflatten_params(
                 candidate,
@@ -271,8 +270,8 @@ class TRPO(OnPolicyAlgorithm):
             )
             loss = actor_loss(candidate_params)
             kl = self._mean_kl(
-                old_actor_params, 
-                candidate_params, 
+                old_actor_params,
+                candidate_params,
                 self.policy.featurizer_state,
                 self.policy.actor_state,
                 observations,
@@ -280,45 +279,49 @@ class TRPO(OnPolicyAlgorithm):
             improve = loss_before - loss
             last_kl = kl
             if improve > 0 and kl < self.target_kl:
-                self.policy.actor_state = self.policy.actor_state.replace(params=candidate_params)
+                self.policy.actor_state = self.policy.actor_state.replace(
+                    params=candidate_params
+                )
                 accepted = True
                 break
 
         with tqdm(
-                total=self.n_critic_updates,
-                desc="optimize_critic",
-                position=tqdm_position,
-                leave=False,
-                dynamic_ncols=True,
-                colour="cyan",
+            total=self.n_critic_updates,
+            desc="optimize_critic",
+            position=tqdm_position,
+            leave=False,
+            dynamic_ncols=True,
+            colour="cyan",
         ) as pbar:
-
             for _ in range(self.n_critic_updates):
-                (self.policy.featurizer_state, self.policy.critic_state), vf_loss = \
-                self._value_update(
-                    featurizer_state=self.policy.featurizer_state,
-                    critic_state=self.policy.critic_state,
-                    observations=observations,
-                    returns=returns,
-                    vf_coef=self.vf_coef,
+                (self.policy.featurizer_state, self.policy.critic_state), vf_loss = (
+                    self._value_update(
+                        featurizer_state=self.policy.featurizer_state,
+                        critic_state=self.policy.critic_state,
+                        observations=observations,
+                        returns=returns,
+                        vf_coef=self.vf_coef,
+                    )
                 )
 
                 pbar.update(1)
 
         if logger:
             logger.add(
-                "train/stats",{
-                "policy_loss": float(loss_before),
-                "value_loss": float(vf_loss),
-                "kl": float(kl),
-                "accepted": float(accepted),
-                "expected_improve": float(expected_improve),
-                "step_size": float(step_size),
-                "grad_norm": float(jnp.linalg.norm(flat_grads)),
-                "xHx": float(shs * 2.0),
-                "final_kl": float(last_kl),
-                "lr": float(self.lr_schedule(step)),
-            })
+                "train/stats",
+                {
+                    "policy_loss": float(loss_before),
+                    "value_loss": float(vf_loss),
+                    "kl": float(kl),
+                    "accepted": float(accepted),
+                    "expected_improve": float(expected_improve),
+                    "step_size": float(step_size),
+                    "grad_norm": float(jnp.linalg.norm(flat_grads)),
+                    "xHx": float(shs * 2.0),
+                    "final_kl": float(last_kl),
+                    "lr": float(self.lr_schedule(step)),
+                },
+            )
 
     @property
     def train_ratio(self):

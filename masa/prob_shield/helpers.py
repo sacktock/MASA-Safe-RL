@@ -9,6 +9,7 @@ from masa.common.ltl import DFA
 from masa.common.constraints.base import CostFn
 from masa.common.label_fn import LabelFn
 
+
 def build_successor_states_matrix(
     env: gym.Env,
     label_fn: Optional[LabelFn] = None,
@@ -24,7 +25,9 @@ def build_successor_states_matrix(
     label_fn = label_fn if label_fn else env.label_fn
 
     use_transition_matrix = bool(env.unwrapped.has_transition_matrix)
-    use_successor_states_dict = not use_transition_matrix and bool(env.unwrapped.has_successor_states_dict) 
+    use_successor_states_dict = not use_transition_matrix and bool(
+        env.unwrapped.has_successor_states_dict
+    )
 
     if not (use_transition_matrix or use_successor_states_dict):
         raise ValueError(
@@ -32,11 +35,20 @@ def build_successor_states_matrix(
             "successor-states dictionary (or both), but neither was found."
         )
 
-    transition_matrix = env.unwrapped.get_transition_matrix() if use_transition_matrix else None
-    successor_states, probs_dict = env.unwrapped.get_successor_states_dict() if use_successor_states_dict else (None, None)
+    transition_matrix = (
+        env.unwrapped.get_transition_matrix() if use_transition_matrix else None
+    )
+    successor_states, probs_dict = (
+        env.unwrapped.get_successor_states_dict()
+        if use_successor_states_dict
+        else (None, None)
+    )
 
-    assert (transition_matrix is not None) or ((successor_states is not None) and (probs_dict is not None)),\
-    "Something went wrong, you must provide either the transition matrix or both the successor states and probabilities for the environment"
+    assert (transition_matrix is not None) or (
+        (successor_states is not None) and (probs_dict is not None)
+    ), (
+        "Something went wrong, you must provide either the transition matrix or both the successor states and probabilities for the environment"
+    )
 
     if not hasattr(env, "action_space"):
         raise AttributeError("Environment must have an `action_space` attribute.")
@@ -48,7 +60,10 @@ def build_successor_states_matrix(
     n_actions = env.action_space.n
 
     if is_wrapped(env, LTLSafetyEnv):
-        from masa.common.constraints.ltl_safety import create_product_label_fn, product_cost_fn
+        from masa.common.constraints.ltl_safety import (
+            create_product_label_fn,
+            product_cost_fn,
+        )
 
         ltl_safety_env: LTLSafetyEnv | None = get_wrapped(env, LTLSafetyEnv)
         dfa = env._constraint.get_dfa()
@@ -63,14 +78,22 @@ def build_successor_states_matrix(
                 n_state = len(successor_states.keys())
 
         if use_transition_matrix:
-            from masa.common.constraints.ltl_safety import create_product_transition_matrix
+            from masa.common.constraints.ltl_safety import (
+                create_product_transition_matrix,
+            )
+
             transition_matrix = create_product_transition_matrix(
                 n_states, n_actions, transition_matrix, dfa, label_fn
             )
         if use_successor_states_dict:
-            from masa.common.constraints.ltl_safety import create_product_successor_states_and_probabilities
-            successor_states, probs_dict = create_product_successor_states_and_probabilities(
-                n_states, n_actions, successor_states, probs_dict, dfa, label_fn
+            from masa.common.constraints.ltl_safety import (
+                create_product_successor_states_and_probabilities,
+            )
+
+            successor_states, probs_dict = (
+                create_product_successor_states_and_probabilities(
+                    n_states, n_actions, successor_states, probs_dict, dfa, label_fn
+                )
             )
 
         label_fn = create_product_label_fn(n_states, dfa)
@@ -82,22 +105,27 @@ def build_successor_states_matrix(
         n_states = env.observation_space.n
     else:
         if use_transition_matrix:
-            n_states = transition_matrix.shape[0] # expected shape (n_states, n_states, n_actions)
+            n_states = transition_matrix.shape[
+                0
+            ]  # expected shape (n_states, n_states, n_actions)
         if use_successor_states_dict:
             n_states = len(successor_states.keys())
 
     if transition_matrix is not None:
-        assert n_states == transition_matrix.shape[0], \
-        "Something went wrong, the provided n_states does not equal the number of states in transition_matrix"
+        assert n_states == transition_matrix.shape[0], (
+            "Something went wrong, the provided n_states does not equal the number of states in transition_matrix"
+        )
         f"Got n_states = {n_states} and transition_matrix.shape[0] == {transition_matrix.shape[0]}"
-        assert n_actions == transition_matrix.shape[2], \
-        "Something went wrong, the provided n_actions does not equal the number of states in transition_matrix"
+        assert n_actions == transition_matrix.shape[2], (
+            "Something went wrong, the provided n_actions does not equal the number of states in transition_matrix"
+        )
         f"Got n_actions = {n_actions} and transition_matrix.shape[2] == {transition_matrix.shape[2]}"
 
     if successor_states is not None:
         base_states = sorted(successor_states.keys())
-        assert n_states == len(base_states), \
-        "Something went wrong, the provided n_states does not equal the numebr of states in successor_states "
+        assert n_states == len(base_states), (
+            "Something went wrong, the provided n_states does not equal the numebr of states in successor_states "
+        )
         f"Got n_states = {n_states} and len(successor_states) = {len(base_states)}"
 
     print("Calculating the maximum number of successor states ...")
@@ -115,7 +143,9 @@ def build_successor_states_matrix(
 
     print(f"Calculated maximum number of successor states [{max_successors}] ...")
 
-    successor_states_matrix = -np.ones((max_successors, n_states), dtype=np.int64) # -1 means invalid transition
+    successor_states_matrix = -np.ones(
+        (max_successors, n_states), dtype=np.int64
+    )  # -1 means invalid transition
     probabilities = np.zeros((max_successors, n_states, n_actions), dtype=np.float64)
 
     print("Building successor state matrix and probabilities ...")
@@ -134,10 +164,7 @@ def build_successor_states_matrix(
             successor_states_matrix[:k, s] = successors_s
 
             for a in range(n_actions):
-                probabilities[:k, s, a] = np.array(
-                    probs_dict[(s, a)],
-                    dtype=np.float64
-                )
+                probabilities[:k, s, a] = np.array(probs_dict[(s, a)], dtype=np.float64)
 
     print("Computing almost sure safe set ...")
 
@@ -148,7 +175,9 @@ def build_successor_states_matrix(
     ) -> List[int]:
 
         k, n_states = succ_matrix.shape
-        assert probs.shape == (k, n_states, n_actions), f"probs shape must be (k,n_states,n_actions) = {(k,n_states,n_actions)}"
+        assert probs.shape == (k, n_states, n_actions), (
+            f"probs shape must be (k,n_states,n_actions) = {(k, n_states, n_actions)}"
+        )
 
         W = set(safe_states)
         changed = True
@@ -174,4 +203,11 @@ def build_successor_states_matrix(
 
     safe_set = almost_sure_safe_set(successor_states_matrix, probabilities, safe_states)
 
-    return successor_states_matrix, probabilities, max_successors, label_fn, cost_fn, safe_set
+    return (
+        successor_states_matrix,
+        probabilities,
+        max_successors,
+        label_fn,
+        cost_fn,
+        safe_set,
+    )

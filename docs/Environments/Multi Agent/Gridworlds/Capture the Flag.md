@@ -1,6 +1,6 @@
 # Capture the Flag
 
-`CaptureTheFlag` is a native two-team PettingZoo `ParallelEnv`. Red and blue agents paint territory, disable opponents with paint beams, steal the opposing flag, and return it to their own flag while that flag is at home. 
+`CaptureTheFlag` is a native two-team PettingZoo `ParallelEnv`. Red and blue agents paint territory, disable opponents with paint beams, steal the opposing flag, and return it to their own flag while that flag is at home.
 
 Note that this environment was adapted from [MeltingPot v2](https://arxiv.org/pdf/2211.13746).
 

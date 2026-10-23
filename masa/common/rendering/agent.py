@@ -13,12 +13,12 @@ Position = tuple[int, int]
 # Player shirts cycle through this palette for agent ids greater than the
 # palette length. P1 is deliberately blue and P2 red for quick recognition.
 SHIRT_COLOURS: tuple[RGBColor, ...] = (
-    (55, 115, 206),   # P1 - blue
-    (216, 93, 83),    # P2 - red
-    (78, 166, 129),   # P3 - green
+    (55, 115, 206),  # P1 - blue
+    (216, 93, 83),  # P2 - red
+    (78, 166, 129),  # P3 - green
     (151, 101, 201),  # P4 - purple
-    (230, 153, 70),   # P5 - orange
-    (59, 158, 174),   # P6 - teal
+    (230, 153, 70),  # P5 - orange
+    (59, 158, 174),  # P6 - teal
 )
 
 _OUTLINE: RGBColor = (45, 48, 55)
@@ -153,15 +153,12 @@ def draw_agent(
         font.set_bold(True)
         text = font.render(label, True, _TEXT)
         if (
-            (text.get_width() <= max_text_width and text.get_height() <= max_text_height)
-            or font_size <= 8
-        ):
+            text.get_width() <= max_text_width and text.get_height() <= max_text_height
+        ) or font_size <= 8:
             break
         font_size -= 1
 
-    text_rect = text.get_rect(
-        center=(cx, torso.centery + int(cell_size * 0.015))
-    )
+    text_rect = text.get_rect(center=(cx, torso.centery + int(cell_size * 0.015)))
     surface.blit(text, text_rect)
 
     if frame is not None:

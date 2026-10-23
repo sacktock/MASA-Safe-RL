@@ -34,8 +34,10 @@ class TensorBoardSource:
         for run_dir in self._find_run_dirs():
             ea = event_accumulator.EventAccumulator(
                 run_dir,
-                size_guidance={event_accumulator.SCALARS: 0,
-                               event_accumulator.TENSORS: 0},
+                size_guidance={
+                    event_accumulator.SCALARS: 0,
+                    event_accumulator.TENSORS: 0,
+                },
             )
             ea.Reload()
             tags.update(ea.Tags().get("tensors", []))
@@ -61,14 +63,18 @@ class TensorBoardSource:
 
             ea = event_accumulator.EventAccumulator(
                 run_dir,
-                size_guidance={event_accumulator.SCALARS: 0,
-                               event_accumulator.TENSORS: 0},
+                size_guidance={
+                    event_accumulator.SCALARS: 0,
+                    event_accumulator.TENSORS: 0,
+                },
             )
             ea.Reload()
 
             available_tensors = set(ea.Tags().get("tensors", []))
             available_scalars = set(ea.Tags().get("scalars", []))
-            targets = metrics if metrics else sorted(available_tensors | available_scalars)
+            targets = (
+                metrics if metrics else sorted(available_tensors | available_scalars)
+            )
 
             for tag in targets:
                 if tag in available_tensors:
@@ -79,12 +85,22 @@ class TensorBoardSource:
                             # Skip non-scalar tensors (e.g. tf.summary.histogram
                             # margins) -- the scalar plotter can't use them.
                             continue
-                        rows.append({"step": e.step, "value": arr.item(),
-                                     "metric": tag, "run": run_name})
+                        rows.append(
+                            {
+                                "step": e.step,
+                                "value": arr.item(),
+                                "metric": tag,
+                                "run": run_name,
+                            }
+                        )
                 elif tag in available_scalars:
                     rows = [
-                        {"step": e.step, "value": e.value,
-                         "metric": tag, "run": run_name}
+                        {
+                            "step": e.step,
+                            "value": e.value,
+                            "metric": tag,
+                            "run": run_name,
+                        }
                         for e in ea.Scalars(tag)
                     ]
                 else:
@@ -104,7 +120,9 @@ class TensorBoardSource:
             if any(f.startswith("events.out.tfevents") for f in files):
                 run_dirs.append(root)
         if not run_dirs:
-            raise FileNotFoundError(f"No TensorBoard event files found under {self.logdir}")
+            raise FileNotFoundError(
+                f"No TensorBoard event files found under {self.logdir}"
+            )
         return sorted(run_dirs)
 
 
@@ -150,7 +168,9 @@ class WandBSource:
         api = wandb.Api()
         runs = api.runs(self._path(), filters=filters or {})
 
-        run_filters = [run_filter] if isinstance(run_filter, str) else (run_filter or [])
+        run_filters = (
+            [run_filter] if isinstance(run_filter, str) else (run_filter or [])
+        )
         frames: list[pd.DataFrame] = []
 
         for run in runs:
@@ -243,11 +263,14 @@ class CachedWandbSource:
 
     def _project_path(self) -> str:
         c = self.config
-        return f"{c.wandb_entity}/{c.wandb_project}" if c.wandb_entity else c.wandb_project
+        return (
+            f"{c.wandb_entity}/{c.wandb_project}" if c.wandb_entity else c.wandb_project
+        )
 
     @retry(**_RETRY)
     def _list_runs(self) -> Iterable:
         import wandb
+
         api = wandb.Api()
         return api.runs(self._project_path())
 
@@ -261,5 +284,8 @@ class CachedWandbSource:
     def _existing_csvs(self) -> list[Path]:
         if not self.config.cache_dir.exists():
             return []
-        return sorted(p for p in self.config.cache_dir.glob("*.csv")
-                      if p.name != "grouped_results.csv")
+        return sorted(
+            p
+            for p in self.config.cache_dir.glob("*.csv")
+            if p.name != "grouped_results.csv"
+        )

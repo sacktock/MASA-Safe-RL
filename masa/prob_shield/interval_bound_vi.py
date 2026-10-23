@@ -9,13 +9,14 @@ from typing import Tuple, List
 
 jax.config.update("jax_enable_x64", True)
 
+
 @jit
 def vi_one_step(
-    v_inf: jnp.ndarray, 
-    v_sup: jnp.ndarray, 
+    v_inf: jnp.ndarray,
+    v_sup: jnp.ndarray,
     successor_states_matrix: jnp.ndarray,
-    probabilities: jnp.ndarray
-)-> Tuple[jnp.ndarray, jnp.ndarray, float, int]:
+    probabilities: jnp.ndarray,
+) -> Tuple[jnp.ndarray, jnp.ndarray, float, int]:
     """
     v_inf, v_sup: (n_states,)
     successor_states_matrix: (max_successors, n_states) int
@@ -37,6 +38,7 @@ def vi_one_step(
     delta = jnp.max(jnp.abs(v_sup_new - v_inf_new))
 
     return v_inf_new, v_sup_new, delta
+
 
 def jax_interval_bound_value_iteration(
     v_inf_init: jnp.ndarray,
@@ -64,11 +66,10 @@ def jax_interval_bound_value_iteration(
         return v_inf_new, v_sup_new, delta_new, steps + 1
 
     v_inf, v_sup, delta, steps = lax.while_loop(
-        cond,
-        body,
-        (v_inf, v_sup, delta, steps)
+        cond, body, (v_inf, v_sup, delta, steps)
     )
     return v_inf, v_sup, delta, steps
+
 
 def interval_bound_value_iteration(
     successor_states_matrix: np.ndarray,
@@ -78,9 +79,11 @@ def interval_bound_value_iteration(
     sec: List[int],
     theta: float = 1e-10,
     max_steps: int = 1000,
-)-> Tuple[np.ndarray, np.ndarray, float, int]:
+) -> Tuple[np.ndarray, np.ndarray, float, int]:
 
-    n_states = successor_states_matrix.shape[1] # expected shape (max_successors, n_states)
+    n_states = successor_states_matrix.shape[
+        1
+    ]  # expected shape (max_successors, n_states)
 
     # Copy to edit in-place
     successor_states_abs = successor_states_matrix.copy()
@@ -96,10 +99,10 @@ def interval_bound_value_iteration(
         absorbing = False
         if cost_fn(label_fn(s)):
             v_inf[s] = 1.0
-            absorbing = True 
+            absorbing = True
         if s in sec:
             v_sup[s] = 0.0
-            absorbing = True 
+            absorbing = True
         if absorbing:
             successor_states_abs[:, s] = s
             probabilities_abs[:, s, :] = 0.0
@@ -109,7 +112,7 @@ def interval_bound_value_iteration(
     v_sup_j = jnp.array(v_sup)
     successor_states_j = jnp.array(successor_states_abs, dtype=jnp.int64)
     probabilities_j = jnp.array(probabilities_abs, dtype=jnp.float64)
-    
+
     v_inf_j, v_sup_j, delta, steps = jax_interval_bound_value_iteration(
         v_inf_j,
         v_sup_j,

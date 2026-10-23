@@ -21,8 +21,12 @@ Import the environment labels, DFA helpers, and the MASA factory:
 from masa.common.ltl import Atom, DFA
 from masa.common.utils import make_env
 from masa.envs.tabular.colour_bomb_grid_world import label_fn
-from masa.examples.colour_bomb_grid_world.property_2 import make_dfa as make_diffusion_dfa
-from masa.examples.colour_bomb_grid_world.property_3 import make_dfa as make_medic_recovery_dfa
+from masa.examples.colour_bomb_grid_world.property_2 import (
+    make_dfa as make_diffusion_dfa,
+)
+from masa.examples.colour_bomb_grid_world.property_3 import (
+    make_dfa as make_medic_recovery_dfa,
+)
 ```
 
 ## Define and Load DFA Properties

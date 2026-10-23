@@ -1,11 +1,9 @@
-
 defaults:
   env:
     id: DiscreteCartpole
     max_episode_steps: 200
     label_fn: masa.common.dummy:label_fn
     cost_fn: masa.common.dummy:cost_fn
-
   constraint:
     type: cmdp
     cost_budget: 1.0
@@ -13,11 +11,9 @@ defaults:
     avoid_label: unsafe
     reach_label: target
     dfa: masa.common.dummy:make_dfa
-
   reward_shaping:
-    impl: none      # none | vi | cycle
+    impl: none # none | vi | cycle
     gamma: 0.95
-
   run:
     seed: 0
     total_timesteps: 100000

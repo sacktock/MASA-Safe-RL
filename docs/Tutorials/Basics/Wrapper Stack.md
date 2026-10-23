@@ -94,6 +94,7 @@ def build_manual_env():
 ```python
 WRAPPERS = (TimeLimit, LabelledEnv, CumulativeCostEnv, ConstraintMonitor, RewardMonitor)
 
+
 def summarize_wrappers(env):
     return {
         wrapper.__name__: {
@@ -102,6 +103,7 @@ def summarize_wrappers(env):
         }
         for wrapper in WRAPPERS
     }
+
 
 factory_env = build_factory_env()
 manual_env = build_manual_env()
@@ -126,6 +128,7 @@ Both environments should emit the same observations, rewards, labels, constraint
 
 ```python
 ACTION_NAMES = {0: "left", 1: "right", 2: "down", 3: "up", 4: "stay"}
+
 
 def rollout(build_env, actions, *, seed):
     env = build_env()
@@ -160,6 +163,7 @@ def rollout(build_env, actions, *, seed):
     env.close()
     return rows
 
+
 actions = [2, 2, 2, 2]
 factory_rows = rollout(build_factory_env, actions, seed=1)
 manual_rows = rollout(build_manual_env, actions, seed=1)
@@ -191,7 +195,7 @@ record_human_episodes_5_10_15 = lambda episode_id: (episode_id + 1) % 5 == 0
 Gymnasium's `step_trigger` is useful for fixed-length clips that start immediately on a global environment step. This starts a 500-frame clip every 500 environment steps:
 
 ```python
-video_kwargs={
+video_kwargs = {
     "step_trigger": lambda step_id: step_id > 0 and step_id % 500 == 0,
     "video_length": 500,
 }
@@ -218,6 +222,7 @@ class RecordNextEpisodeEveryNSteps:
             return False
         self.pending_recordings -= 1
         return True
+
 
 trigger = RecordNextEpisodeEveryNSteps(500)
 

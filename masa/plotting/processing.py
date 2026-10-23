@@ -129,7 +129,9 @@ def build_long_form(config: Config) -> pd.DataFrame:
         frames.append(long[["env", "variant", "seed", "step", "metric", "value"]])
 
     if not frames:
-        return pd.DataFrame(columns=["env", "variant", "seed", "step", "metric", "value"])
+        return pd.DataFrame(
+            columns=["env", "variant", "seed", "step", "metric", "value"]
+        )
     out = pd.concat(frames, ignore_index=True)
     if config.max_step is not None:
         out = out[out["step"] <= config.max_step].reset_index(drop=True)
@@ -142,13 +144,15 @@ def build_quantile_frame(long_df: pd.DataFrame) -> pd.DataFrame:
     if long_df.empty:
         return pd.DataFrame(columns=cols)
     g = long_df.groupby(["env", "variant", "step", "metric"], sort=True)["value"]
-    out = pd.DataFrame({
-        "q05": g.quantile(0.05),
-        "q25": g.quantile(0.25),
-        "q50": g.quantile(0.50),
-        "q75": g.quantile(0.75),
-        "q95": g.quantile(0.95),
-    }).reset_index()
+    out = pd.DataFrame(
+        {
+            "q05": g.quantile(0.05),
+            "q25": g.quantile(0.25),
+            "q50": g.quantile(0.50),
+            "q75": g.quantile(0.75),
+            "q95": g.quantile(0.95),
+        }
+    ).reset_index()
     return out[cols]
 
 
@@ -182,7 +186,9 @@ def build_long_form_from_tb(
         sub["seed"] = seed
         frames.append(sub[["env", "variant", "seed", "step", "metric", "value"]])
     if not frames:
-        return pd.DataFrame(columns=["env", "variant", "seed", "step", "metric", "value"])
+        return pd.DataFrame(
+            columns=["env", "variant", "seed", "step", "metric", "value"]
+        )
     return pd.concat(frames, ignore_index=True)
 
 
@@ -269,9 +275,11 @@ def build_frames_from_tb(config: Config) -> tuple[pd.DataFrame, pd.DataFrame]:
         pattern=config.run_schema.pattern,
         max_step=config.max_step,
     )
-    log.info(f"  long-form: {len(long_df)} rows, "
-             f"{long_df['env'].nunique() if not long_df.empty else 0} envs, "
-             f"{long_df['variant'].nunique() if not long_df.empty else 0} variants")
+    log.info(
+        f"  long-form: {len(long_df)} rows, "
+        f"{long_df['env'].nunique() if not long_df.empty else 0} envs, "
+        f"{long_df['variant'].nunique() if not long_df.empty else 0} variants"
+    )
 
     log.info("Building quantile frame ...")
     q_df = build_quantile_frame(long_df)
@@ -286,9 +294,11 @@ def build_frames(config: Config) -> tuple[pd.DataFrame, pd.DataFrame]:
 
     log.info("Building long-form frame from per-run CSVs ...")
     long_df = build_long_form(config)
-    log.info(f"  long-form: {len(long_df)} rows, "
-             f"{long_df['env'].nunique() if not long_df.empty else 0} envs, "
-             f"{long_df['variant'].nunique() if not long_df.empty else 0} variants")
+    log.info(
+        f"  long-form: {len(long_df)} rows, "
+        f"{long_df['env'].nunique() if not long_df.empty else 0} envs, "
+        f"{long_df['variant'].nunique() if not long_df.empty else 0} variants"
+    )
 
     log.info("Building quantile frame ...")
     q_df = build_quantile_frame(long_df)

@@ -9,31 +9,31 @@ description = "A safe reinforcement library for providing a common interface for
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "gymnasium>=1.3.0",
-    "pettingzoo>=1.26.1",
-    "tensorflow>=2.20.0",
-    "tensorstore>=0.1.65",
-    "tf-keras>=2.17.0",
-    "numpy>=1.26.4",
-    "tensorboard>=2.17.1",
-    "tqdm>=4.66.5",
-    "jax>=0.4.30",
-    "optax>=0.1.9",
-    "flax>=0.9.0",
-    "ml-dtypes>=0.4.1",
-    "ruamel.yaml<0.20.0",
-    "ipykernel>=7.2.0",
-    "moviepy>=2.2.1,<3.0.0",
-    "pillow>=11.3.0,<12.0.0",
-    "pygame>=2.6.1",
-    "ipywidgets>=8.1.5",
-    "typer>=0.26.5",
-    "wandb>=0.17.0",
-    "notebook>=7.5.6",
-    "pandas>=2.3.3",
-    "matplotlib>=3.10.9",
-    "seaborn>=0.13.2",
-    "tenacity>=9.0.0",
+  "gymnasium>=1.3.0",
+  "pettingzoo>=1.26.1",
+  "tensorflow>=2.20.0",
+  "tensorstore>=0.1.65",
+  "tf-keras>=2.17.0",
+  "numpy>=1.26.4",
+  "tensorboard>=2.17.1",
+  "tqdm>=4.66.5",
+  "jax>=0.4.30",
+  "optax>=0.1.9",
+  "flax>=0.9.0",
+  "ml-dtypes>=0.4.1",
+  "ruamel.yaml<0.20.0",
+  "ipykernel>=7.2.0",
+  "moviepy>=2.2.1,<3.0.0",
+  "pillow>=11.3.0,<12.0.0",
+  "pygame>=2.6.1",
+  "ipywidgets>=8.1.5",
+  "typer>=0.26.5",
+  "wandb>=0.17.0",
+  "notebook>=7.5.6",
+  "pandas>=2.3.3",
+  "matplotlib>=3.10.9",
+  "seaborn>=0.13.2",
+  "tenacity>=9.0.0",
 ]
 
 [project.urls]
@@ -44,6 +44,12 @@ Documentation = "https://sacktock.github.io/MASA-Safe-RL/"
 [tool.setuptools]
 include-package-data = true
 
+[tool.ruff]
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
 [project.scripts]
 masa = "masa.cli.cli_app:app"
 
@@ -51,24 +57,11 @@ masa = "masa.cli.cli_app:app"
 include = ["masa", "masa.*"]
 
 [dependency-groups]
-cuda12 = [
-    "jax[cuda12]>=0.6.2",
-]
-cuda13 = [
-    "jax[cuda13]>=0.6.2",
-]
-dev = [
-    "nbclient>=0.10.4",
-    "nbformat>=5.10.4",
-    "pytest>=9.0.3",
-]
-docs = [
-    "zensical==0.0.60",
-    "mkdocstrings-python>=1.18,<3",
-]
-tutorial = [
-    "matplotlib>=3.10.9"
-]
+cuda12 = ["jax[cuda12]>=0.6.2"]
+cuda13 = ["jax[cuda13]>=0.6.2"]
+dev = ["nbclient>=0.10.4", "nbformat>=5.10.4", "pytest>=9.0.3"]
+docs = ["zensical==0.0.60", "mkdocstrings-python>=1.18,<3"]
+tutorial = ["matplotlib>=3.10.9"]
 
 [tool.pytest.ini_options]
 # tests/docs imports scripts.docs_docstrings; the repo root is not on sys.path
@@ -76,9 +69,4 @@ tutorial = [
 pythonpath = ["."]
 
 [tool.uv]
-conflicts = [
-    [
-        { group = "cuda12" },
-        { group = "cuda13" },
-    ],
-]
+conflicts = [[{ group = "cuda12" }, { group = "cuda13" }]]

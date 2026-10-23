@@ -5,26 +5,34 @@ import numpy as np
 import math
 from masa.common.label_fn import LabelFn
 from masa.envs.continuous.base import ContinuousEnv
-from masa.envs.continuous.renderers.obstacle import ObstacleRenderer, validate_renderer_options
+from masa.envs.continuous.renderers.obstacle import (
+    ObstacleRenderer,
+    validate_renderer_options,
+)
 
 OBSTACLES = [
-    np.array([
-        [1.5, 2.0], # in the interval [1.5, 2.0] on the x axis 
-        [0.5, 2.0], # in the interval [0.5, 2.0] on the y axis
-    ]),
+    np.array(
+        [
+            [1.5, 2.0],  # in the interval [1.5, 2.0] on the x axis
+            [0.5, 2.0],  # in the interval [0.5, 2.0] on the y axis
+        ]
+    ),
 ]
 
 BOUNDARIES = [
-    np.array([
-        [-np.inf, np.inf],
-        [-np.inf, 2.5],
-    ]),
+    np.array(
+        [
+            [-np.inf, np.inf],
+            [-np.inf, 2.5],
+        ]
+    ),
 ]
 
 GOAL_POSITION = np.array([3.0, 3.0])
-MAX_SPEED =  0.05
+MAX_SPEED = 0.05
 MIN_POSITION = -0.5
 MAX_POSITION = 3.5
+
 
 def label_fn(obs):
     labels = set()
@@ -52,7 +60,11 @@ def label_fn(obs):
 
     return labels
 
-cost_fn = lambda labels: 1.0 if {"obstacle", "boundary"} & labels else 0.0 # set intersection
+
+cost_fn = lambda labels: (
+    1.0 if {"obstacle", "boundary"} & labels else 0.0
+)  # set intersection
+
 
 class ObstacleV3(ContinuousEnv):
     metadata = {"render_modes": ["ansi", "rgb_array", "human"], "render_fps": 25}
@@ -70,7 +82,7 @@ class ObstacleV3(ContinuousEnv):
         self._min_position = MIN_POSITION
         self._max_position = MAX_POSITION
 
-        self._goal_position = GOAL_POSITION 
+        self._goal_position = GOAL_POSITION
 
         self._obstacles = OBSTACLES
 
@@ -83,7 +95,7 @@ class ObstacleV3(ContinuousEnv):
                 -self._max_speed,
                 -self._max_speed,
             ],
-            dtype=np.float32
+            dtype=np.float32,
         )
 
         high = np.array(
@@ -93,11 +105,16 @@ class ObstacleV3(ContinuousEnv):
                 self._max_speed,
                 self._max_speed,
             ],
-            dtype=np.float32
+            dtype=np.float32,
         )
 
         self.observation_space = spaces.Box(low=low, high=high, dtype=np.float32)
-        self.action_space = spaces.Box(low=np.array([-2.0, -2.0]), high=np.array([2.0, 2.0]), shape=(2,), dtype=np.float32)
+        self.action_space = spaces.Box(
+            low=np.array([-2.0, -2.0]),
+            high=np.array([2.0, 2.0]),
+            shape=(2,),
+            dtype=np.float32,
+        )
 
         self.np_random = None
         self._state = None
@@ -126,9 +143,9 @@ class ObstacleV3(ContinuousEnv):
                 self.np_random.uniform(low=-0.05, high=-0.05),
                 self.np_random.uniform(low=-0.05, high=-0.05),
                 0.0,
-                0.0
+                0.0,
             ],
-            dtype=np.float32
+            dtype=np.float32,
         )
 
         self._step_count = 0
@@ -149,8 +166,14 @@ class ObstacleV3(ContinuousEnv):
         self._step_count += 1
         self._last_action = np.array(action, dtype=np.float32)
 
-        reward = 30.0 if np.all(position >= self._goal_position) else \
-            (np.linalg.norm(state[:2] - self._goal_position) - np.linalg.norm(position - self._goal_position))
+        reward = (
+            30.0
+            if np.all(position >= self._goal_position)
+            else (
+                np.linalg.norm(state[:2] - self._goal_position)
+                - np.linalg.norm(position - self._goal_position)
+            )
+        )
         terminal = np.all(position >= self._goal_position)
 
         if self.render_mode == "human":

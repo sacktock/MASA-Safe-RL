@@ -38,6 +38,7 @@ from typing import Any, Dict
 from masa.common.constraints.base import Constraint, BaseConstraintEnv, CostFn
 from masa.common.dummy import cost_fn as dummy_cost_fn
 
+
 class CumulativeCost(Constraint):
     """CMDP-style cumulative cost constraint with a fixed budget.
 
@@ -107,12 +108,17 @@ class CumulativeCost(Constraint):
               under the local convention ``cost >= 0.5``,
             - ``"cum_cost"``: running total.
         """
-        return {"cost": self.step_cost, "violation": float(self.step_cost >= 0.5), "cum_cost": self.total}
+        return {
+            "cost": self.step_cost,
+            "violation": float(self.step_cost >= 0.5),
+            "cum_cost": self.total,
+        }
 
     @property
     def constraint_type(self) -> str:
         """Stable identifier string: ``"CMDP"``."""
         return "CMDP"
+
 
 class CumulativeCostEnv(BaseConstraintEnv):
     """Gymnasium wrapper that attaches :class:`CumulativeCost` to an environment.
@@ -125,9 +131,7 @@ class CumulativeCostEnv(BaseConstraintEnv):
 
     """
 
-    def __init__(self, env: gym.Env, cost_fn: CostFn = dummy_cost_fn, budget: float = 20.0, **kw):
+    def __init__(
+        self, env: gym.Env, cost_fn: CostFn = dummy_cost_fn, budget: float = 20.0, **kw
+    ):
         super().__init__(env, CumulativeCost(cost_fn=cost_fn, budget=budget), **kw)
-
-
-
-    

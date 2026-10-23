@@ -108,7 +108,9 @@ class ConstrainedMarkovGame:
         """Update the monitor from a mapping of agent ids to active labels."""
         unknown_agents = set(labels_by_agent) - self._possible_agent_set
         if unknown_agents:
-            raise ValueError(f"Unknown agents in labels_by_agent: {sorted(unknown_agents)}")
+            raise ValueError(
+                f"Unknown agents in labels_by_agent: {sorted(unknown_agents)}"
+            )
 
         for agent in self.possible_agents:
             labels = labels_by_agent.get(agent, set())
@@ -122,7 +124,9 @@ class ConstrainedMarkovGame:
             self.agent_totals[agent] += step_cost
 
         for key, budget in zip(self._budget_keys, self.budgets):
-            step_cost = float(sum(self.agent_step_costs[agent] for agent in budget.agents))
+            step_cost = float(
+                sum(self.agent_step_costs[agent] for agent in budget.agents)
+            )
             self.budget_step_costs[key] = step_cost
             self.budget_totals[key] += step_cost
 
@@ -143,7 +147,9 @@ class ConstrainedMarkovGame:
         for key, budget in zip(self._budget_keys, self.budgets):
             metrics[f"{key}_cost"] = self.budget_step_costs[key]
             metrics[f"{key}_cum_cost"] = self.budget_totals[key]
-            metrics[f"{key}_satisfied"] = float(self.budget_totals[key] <= budget.amount)
+            metrics[f"{key}_satisfied"] = float(
+                self.budget_totals[key] <= budget.amount
+            )
         metrics["satisfied"] = float(self.satisfied())
         return metrics
 
@@ -154,7 +160,9 @@ class ConstrainedMarkovGame:
             metrics[f"{agent}_cum_cost"] = self.agent_totals[agent]
         for key, budget in zip(self._budget_keys, self.budgets):
             metrics[f"{key}_cum_cost"] = self.budget_totals[key]
-            metrics[f"{key}_satisfied"] = float(self.budget_totals[key] <= budget.amount)
+            metrics[f"{key}_satisfied"] = float(
+                self.budget_totals[key] <= budget.amount
+            )
         metrics["satisfied"] = float(self.satisfied())
         return metrics
 
@@ -178,10 +186,20 @@ class ConstrainedMarkovGameEnv(ParallelEnv):
                 f"{self.__class__.__name__} must wrap a LabelledParallelEnv, but got {type(env).__name__}."
             )
         self.env = env
-        self.metadata = getattr(env, "metadata", {})
+        try:
+            self.metadata = env.metadata
+        except AttributeError:
+            self.metadata = {}
         self.possible_agents = tuple(env.possible_agents)
-        self.agents = list(getattr(env, "agents", self.possible_agents))
-        self.label_fn = getattr(env, "label_fn", None)
+        try:
+            self.render_mode = env.render_mode
+        except AttributeError:
+            self.render_mode = None
+        try:
+            self.agents = list(env.agents)
+        except AttributeError:
+            self.agents = list(self.possible_agents)
+        self.label_fn = env.label_fn
         self.cost_fn = cost_fn
         self._constraint = ConstrainedMarkovGame(
             possible_agents=self.possible_agents,
@@ -189,13 +207,13 @@ class ConstrainedMarkovGameEnv(ParallelEnv):
             cost_fn=cost_fn,
         )
 
-    def __getattr__(self, name: str):
-        return getattr(self.env, name)
-
     def reset(self, seed: int | None = None, options: dict[str, Any] | None = None):
         """Reset the wrapped env and seed the constraint from initial agent labels."""
         obs, infos = self.env.reset(seed=seed, options=options)
-        self.agents = list(getattr(self.env, "agents", self.possible_agents))
+        try:
+            self.agents = list(self.env.agents)
+        except AttributeError:
+            self.agents = list(self.possible_agents)
         self._constraint.reset()
         self._constraint.update(self._labels_by_agent(infos))
         return obs, infos
@@ -203,7 +221,10 @@ class ConstrainedMarkovGameEnv(ParallelEnv):
     def step(self, actions):
         """Step the wrapped env and update the constraint from per-agent labels."""
         obs, rewards, terminations, truncations, infos = self.env.step(actions)
-        self.agents = list(getattr(self.env, "agents", self.possible_agents))
+        try:
+            self.agents = list(self.env.agents)
+        except AttributeError:
+            self.agents = list(self.possible_agents)
         self._constraint.update(self._labels_by_agent(infos))
         return obs, rewards, terminations, truncations, infos
 
@@ -237,7 +258,9 @@ class ConstrainedMarkovGameEnv(ParallelEnv):
     def constraint_type(self) -> str:
         return self._constraint.constraint_type
 
-    def _labels_by_agent(self, infos: Mapping[str, Mapping[str, Any] | None]) -> dict[str, set[str] | frozenset[str]]:
+    def _labels_by_agent(
+        self, infos: Mapping[str, Mapping[str, Any] | None]
+    ) -> dict[str, set[str] | frozenset[str]]:
         """Extract and validate ``infos[agent]['labels']`` for all possible agents."""
         unknown_agents = set(infos) - set(self.possible_agents)
         if unknown_agents:

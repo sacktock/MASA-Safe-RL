@@ -3,10 +3,13 @@ from typing import Any, Literal
 from gymnasium import spaces
 import numpy as np
 from masa.common.label_fn import LabelFn
-from collections import defaultdict 
+from collections import defaultdict
 from masa.envs.tabular.base import TabularEnv
 from masa.envs.tabular.utils import create_advanced_transition_matrix
-from masa.envs.tabular.renderers.colour_bomb_grid_world import ColourBombGridWorldRenderer, validate_renderer_options
+from masa.envs.tabular.renderers.colour_bomb_grid_world import (
+    ColourBombGridWorldRenderer,
+    validate_renderer_options,
+)
 from functools import lru_cache
 
 GRID_SIZE = 15
@@ -27,20 +30,28 @@ MEDIC_STATES = []
 
 for i in range(N_COLOURED_ZONES):
     z = i * (GRID_SIZE**2)
-    START_STATES += list(np.array([16,199,178,112,26]) + z)
+    START_STATES += list(np.array([16, 199, 178, 112, 26]) + z)
     GREEN_STATES += list(np.array([170]) + z)
-    YELLOW_STATES += list(np.array([176,191]) + z)
-    RED_STATES += list(np.array([88,89,103,104]) + z)
-    BLUE_STATES += list(np.array([121,122,136,137]) + z)
-    PINK_STATES += list(np.array([53,54,68,69]) + z)
-    WALL_STATES += list(np.array([45,60,75,210,195,180,165,150, 142] + \
-        [211,212,213,214,215,216] + [220,221,222,223,224,209] + \
-        [183,184,169,185,186,187] + [192,177,162,161,160] + \
-        [143,144,129] + [138,139,140,141,125] + \
-        [3,18,47,62,63,64,50,35,20,80,81,95] + \
-        [83,84,99,100,116,131,133,134] + \
-        [87,72,57,70,55,39,9,13,14,29,44,59]) + z)
-    BOMB_STATES += list(np.array([76, 181, 123,82,207,8,58]) + z)
+    YELLOW_STATES += list(np.array([176, 191]) + z)
+    RED_STATES += list(np.array([88, 89, 103, 104]) + z)
+    BLUE_STATES += list(np.array([121, 122, 136, 137]) + z)
+    PINK_STATES += list(np.array([53, 54, 68, 69]) + z)
+    WALL_STATES += list(
+        np.array(
+            [45, 60, 75, 210, 195, 180, 165, 150, 142]
+            + [211, 212, 213, 214, 215, 216]
+            + [220, 221, 222, 223, 224, 209]
+            + [183, 184, 169, 185, 186, 187]
+            + [192, 177, 162, 161, 160]
+            + [143, 144, 129]
+            + [138, 139, 140, 141, 125]
+            + [3, 18, 47, 62, 63, 64, 50, 35, 20, 80, 81, 95]
+            + [83, 84, 99, 100, 116, 131, 133, 134]
+            + [87, 72, 57, 70, 55, 39, 9, 13, 14, 29, 44, 59]
+        )
+        + z
+    )
+    BOMB_STATES += list(np.array([76, 181, 123, 82, 207, 8, 58]) + z)
     MEDIC_STATES += list(np.array([154, 93, 38, 205, 74]) + z)
 DEFAULT_SLIP_PROBABILITY = 0.1
 GOAL_STATES = GREEN_STATES + YELLOW_STATES + RED_STATES + BLUE_STATES + PINK_STATES
@@ -63,9 +74,10 @@ for _state in BOMB_STATES:
 for _state in MEDIC_STATES:
     LABEL_DICT[_state] = {"medic"}
 
-label_fn = lambda obs: LABEL_DICT[obs] 
+label_fn = lambda obs: LABEL_DICT[obs]
 
 cost_fn = lambda labels: 1.0 if "bomb" in labels else 0.0
+
 
 @lru_cache(maxsize=None)
 def get_transition_matrix(slip_prob: float = DEFAULT_SLIP_PROBABILITY):
@@ -77,8 +89,9 @@ def get_transition_matrix(slip_prob: float = DEFAULT_SLIP_PROBABILITY):
         GOAL_STATES,
         slip_prob=slip_prob,
         safe_states=MEDIC_STATES,
-        wall_states=WALL_STATES
+        wall_states=WALL_STATES,
     )
+
 
 class ColourBombGridWorldV3(TabularEnv):
     metadata = {"render_modes": ["ansi", "rgb_array", "human"], "render_fps": 4}
@@ -93,9 +106,7 @@ class ColourBombGridWorldV3(TabularEnv):
         validate_renderer_options(render_mode, render_window_size)
 
         if not 0.0 <= slip_prob <= 1.0:
-            raise ValueError(
-                f"slip_prob must be in [0, 1], got {slip_prob}"
-            )
+            raise ValueError(f"slip_prob must be in [0, 1], got {slip_prob}")
         self._slip_prob = float(slip_prob)
 
         self._grid_size = GRID_SIZE
@@ -123,13 +134,15 @@ class ColourBombGridWorldV3(TabularEnv):
 
         self._goal_states = GOAL_STATES
 
-        self._active_colour_dict = dict({
-            0: "green",
-            1: "yellow",
-            2: "red",
-            3: "blue",
-            4: "pink",
-        })
+        self._active_colour_dict = dict(
+            {
+                0: "green",
+                1: "yellow",
+                2: "red",
+                3: "blue",
+                4: "pink",
+            }
+        )
 
         self._safe_states = MEDIC_STATES
 
@@ -149,7 +162,6 @@ class ColourBombGridWorldV3(TabularEnv):
         self.render_window_size = int(render_window_size)
         self._renderer = ColourBombGridWorldRenderer(self)
 
-
     def reset(self, *, seed: int | None = None, options: Dict[str, Any] | None = None):
         super().reset(seed=seed)
 
@@ -168,10 +180,17 @@ class ColourBombGridWorldV3(TabularEnv):
 
     def step(self, action):
         assert self.action_space.contains(action), f"Invalid action {action}!"
-        self._state = self.np_random.choice(self._n_states, p=self._transition_matrix[:, self._state, action])
+        self._state = self.np_random.choice(
+            self._n_states, p=self._transition_matrix[:, self._state, action]
+        )
         self._step_count += 1
 
-        reward = 1.0 if self._active_colour_dict[self._state//(self._grid_size**2)] in label_fn(self._state) else 0.0
+        reward = (
+            1.0
+            if self._active_colour_dict[self._state // (self._grid_size**2)]
+            in label_fn(self._state)
+            else 0.0
+        )
 
         if self.render_mode == "human":
             self.render()
@@ -189,6 +208,6 @@ class ColourBombGridWorldV3(TabularEnv):
 
     def handle_pygame_event(self, event: Any) -> bool:
         return self._renderer.handle_pygame_event(event)
-    
+
     def get_transition_matrix(self):
         return self._transition_matrix

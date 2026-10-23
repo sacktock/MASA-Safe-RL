@@ -1,7 +1,7 @@
 from masa.algorithms.tabular.recreg import RECERG
 
-class RECREG_EXACT(RECERG):
 
+class RECREG_EXACT(RECERG):
     def __init__(
         self,
         *args,

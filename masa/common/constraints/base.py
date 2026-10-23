@@ -57,6 +57,7 @@ import gymnasium as gym
 
 CostFn = Callable[Iterable[str], float]
 
+
 class Constraint(Protocol):
     """Protocol for stateful constraint monitors.
 
@@ -69,7 +70,7 @@ class Constraint(Protocol):
     after each environment transition using the label set from ``info["labels"]``.
 
     **Required interface**
-    
+
     Implementations should provide:
 
     - :meth:`reset`: clear any episode state.
@@ -77,7 +78,7 @@ class Constraint(Protocol):
     - :attr:`constraint_type`: a stable identifier string for logging/dispatch.
 
     **Metrics interface**
-    
+
     The protocol declares:
 
     - :meth:`step_metric`
@@ -100,7 +101,6 @@ class Constraint(Protocol):
     def constraint_type(self) -> str:
         """A stable identifier for the constraint (e.g., ``"cmdp"``, ``"ltl_safety"``)."""
 
-    
     def step_metric(self) -> Dict[str, float]:
         """Return per-step logging metrics.
 
@@ -126,6 +126,7 @@ class Constraint(Protocol):
         Returns:
             Dictionary of scalar metrics (values should be JSON/log friendly).
         """
+
 
 class BaseConstraintEnv(gym.Wrapper, Constraint):
     """Common base wrapper for constraint-aware environments.
@@ -227,7 +228,7 @@ class BaseConstraintEnv(gym.Wrapper, Constraint):
             raise ValueError(
                 f"Expected 'labels' in info to be a set of atomic propositions, got {type(labels).__name__}"
             )
-            
+
         self._constraint.update(labels)
         return obs, reward, terminated, truncated, info
 
@@ -239,10 +240,10 @@ class BaseConstraintEnv(gym.Wrapper, Constraint):
             The underlying cost function if present on the wrapped stack, else
             ``None``.
         """
-        if self._constraint is not None:
-            return getattr(self.env._constraint, "cost_fn", None)
-        return None
-
+        try:
+            return self.env._constraint.cost_fn
+        except AttributeError:
+            return None
 
     @property
     def label_fn(self):
@@ -251,7 +252,10 @@ class BaseConstraintEnv(gym.Wrapper, Constraint):
         Returns:
             The environment labelling function if present, else ``None``.
         """
-        return getattr(self.env, "label_fn", None)
+        try:
+            return self.env.label_fn
+        except AttributeError:
+            return None
 
     @property
     def constraint_type(self) -> str:

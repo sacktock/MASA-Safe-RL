@@ -9,6 +9,7 @@ import numpy as np
 from collections import deque
 from tqdm import tqdm
 
+
 def is_wrapped(env: gym.Env, wrapper_class: gym.Wrapper) -> bool:
     r"""
     Check whether ``env`` is wrapped (anywhere in its wrapper chain) by
@@ -52,6 +53,7 @@ def is_wrapped(env: gym.Env, wrapper_class: gym.Wrapper) -> bool:
 
         return False
 
+
 def get_wrapped(env: gym.Env, wrapper_class: gym.Wrapper) -> gym.Env:
     r"""
     Return the first wrapper instance of type ``wrapper_class`` found in ``env``'s
@@ -89,6 +91,7 @@ def get_wrapped(env: gym.Env, wrapper_class: gym.Wrapper) -> gym.Env:
 
         return None
 
+
 class ConstraintPersistentWrapper(gym.Wrapper):
     """
     Base wrapper that *persists* access to constraint-related attributes.
@@ -116,26 +119,22 @@ class ConstraintPersistentWrapper(gym.Wrapper):
         The underlying constraint object, if present.
 
         Returns:
-            The object stored in ``self.env._constraint`` if it exists, otherwise
-            ``None``.
+            The object stored in ``self.env._constraint``
         """
-        return getattr(self.env, "_constraint", None)
+        return self.env._constraint
 
     @property
     def cost_fn(self):
         """
         Cost function exposed by the underlying constraint, if available.
 
-        If ``self._constraint`` exists and it exposes ``cost_fn``, this returns
-        that callable-like object (often a :class:`masa.common.ltl.DFACostFn`).
-        Otherwise returns ``None``.
-
         Returns:
-            A cost function-like object or ``None``.
+            The underlying cost function if present on the wrapped stack, else
+            ``None``.
         """
-        if self._constraint is not None:
-            return getattr(self.env._constraint, "cost_fn", None)
-        else:
+        try:
+            return self.env._constraint.cost_fn
+        except AttributeError:
             return None
 
     @property
@@ -147,7 +146,11 @@ class ConstraintPersistentWrapper(gym.Wrapper):
             The object stored in ``self.env.label_fn`` if it exists, otherwise
             ``None``.
         """
-        return getattr(self.env, "label_fn", None)
+        try:
+            return self.env.label_fn
+        except AttributeError:
+            return None
+
 
 class ConstraintPersistentObsWrapper(ConstraintPersistentWrapper):
     """
@@ -208,6 +211,7 @@ class ConstraintPersistentObsWrapper(ConstraintPersistentWrapper):
         obs, rew, term, trunc, info = self.env.step(action)
         return self._get_obs(obs), rew, term, trunc, info
 
+
 class ConstraintPersistentGymnasiumWrapper(ConstraintPersistentWrapper):
     """
     Apply an arbitrary Gymnasium wrapper while preserving constraint access.
@@ -240,8 +244,10 @@ class ConstraintPersistentGymnasiumWrapper(ConstraintPersistentWrapper):
 
     @property
     def cost_fn(self):
-        constraint = self._constraint
-        return getattr(constraint, "cost_fn", None) if constraint is not None else None
+        try:
+            return self._constraint.cost_fn
+        except AttributeError:
+            return None
 
     @property
     def label_fn(self):
@@ -267,7 +273,8 @@ class ConstraintPersistentGymnasiumWrapper(ConstraintPersistentWrapper):
                 return None
 
         return None
-        
+
+
 class TimeLimit(ConstraintPersistentWrapper):
     """
     Episode time-limit wrapper compatible with constraint persistence.
@@ -322,6 +329,7 @@ class TimeLimit(ConstraintPersistentWrapper):
         """
         self._elapsed_steps = 0
         return self.env.reset(**kwargs)
+
 
 class ConstraintMonitor(ConstraintPersistentWrapper):
     """
@@ -420,6 +428,7 @@ class ConstraintMonitor(ConstraintPersistentWrapper):
         except Exception:
             return {}
 
+
 class RewardMonitor(ConstraintPersistentWrapper):
     """
     Monitor that injects reward/length metrics into ``info``.
@@ -477,7 +486,7 @@ class RewardMonitor(ConstraintPersistentWrapper):
         if terminated or truncated:
             info["metrics"]["episode"] = self._episode_metrics()
         return observation, reward, terminated, truncated, info
-        
+
     def _episode_metrics(self):
         """
         Compute episode-level reward metrics.
@@ -489,6 +498,7 @@ class RewardMonitor(ConstraintPersistentWrapper):
             * ``"ep_length"``: episode length in steps.
         """
         return {"ep_reward": self.total_reward, "ep_length": self.total_steps}
+
 
 class RewardShapingWrapper(ConstraintPersistentWrapper):
     r"""
@@ -547,8 +557,12 @@ class RewardShapingWrapper(ConstraintPersistentWrapper):
         Returns:
             ``None``. This method sets :attr:`shaped_cost_fn` as a side effect.
         """
-        if hasattr(self._constraint, "cost_fn") and isinstance(self._constraint.cost_fn, DFACostFn):
-            self.shaped_cost_fn = ShapedCostFn(self._constraint.cost_fn.dfa, self.potential_fn, gamma=self._gamma)
+        if hasattr(self._constraint, "cost_fn") and isinstance(
+            self._constraint.cost_fn, DFACostFn
+        ):
+            self.shaped_cost_fn = ShapedCostFn(
+                self._constraint.cost_fn.dfa, self.potential_fn, gamma=self._gamma
+            )
         else:
             self.shaped_cost_fn = lambda q: 0.0
 
@@ -576,17 +590,18 @@ class RewardShapingWrapper(ConstraintPersistentWrapper):
         """
 
         if self._impl != "none":
-            assert hasattr(self._constraint, "cost_fn"), \
-            ("RewardShapingWrapper requires env to implement a BaseConstraintEnv that exposes a cost_fn")
-            assert isinstance(getattr(self._constraint, "cost_fn", None), DFACostFn), \
-            ("RewardShapingWrapper requires env to implement a LTLSafetyEnv with cost_fn class: DFACostFn")
+            assert hasattr(self._constraint, "cost_fn"), (
+                "RewardShapingWrapper requires env to implement a BaseConstraintEnv that exposes a cost_fn"
+            )
+            assert isinstance(self._constraint.cost_fn, DFACostFn), (
+                "RewardShapingWrapper requires env to implement a LTLSafetyEnv with cost_fn class: DFACostFn"
+            )
 
             dfa: DFA = self.env._constraint.cost_fn.dfa
         else:
             self.potential_fn = lambda q: 0.0
 
         if self._impl == "vi":
-
             VI_STEPS = 100
             GAMMA = 0.9
             self.V = {q: 0.0 for q in dfa.states}
@@ -597,8 +612,11 @@ class RewardShapingWrapper(ConstraintPersistentWrapper):
                 diff = 0.0
                 for u in dfa.states:
                     V_u = self.V[u]
-                    self.V[u] = 1.0/(1.0 - GAMMA) if u in dfa.accepting else \
-                        np.max([GAMMA * self.V[v] for v in dfa.edges[u].keys()])
+                    self.V[u] = (
+                        1.0 / (1.0 - GAMMA)
+                        if u in dfa.accepting
+                        else np.max([GAMMA * self.V[v] for v in dfa.edges[u].keys()])
+                    )
                     diff = max(diff, np.abs(V_u - self.V[u]))
                 if diff < 1e-6:
                     break
@@ -606,7 +624,6 @@ class RewardShapingWrapper(ConstraintPersistentWrapper):
             self.potential_fn = lambda q: self.V[q]
 
         if self._impl == "cycle":
-            
             print("Reward shaping DFA ...")
             edges_rev = {v: set() for v in dfa.states}
             for u in dfa.states:
@@ -652,10 +669,10 @@ class RewardShapingWrapper(ConstraintPersistentWrapper):
                 while queue:
                     current = queue.popleft()
                     current_dist = self.dist_to_furthest[current]
-        
+
                     if current_dist > max_finite_dist:
                         max_finite_dist = current_dist
-                    
+
                     for w in edges_rev.get(current, []):
                         if self.dist_to_furthest[w] == np.inf:
                             self.dist_to_furthest[w] = current_dist + 1
@@ -713,7 +730,9 @@ class RewardShapingWrapper(ConstraintPersistentWrapper):
         cost = info["constraint"]["step"].get("cost", 0.0)
         automaton_state = info.get("automaton_state", 0)
         potential = self.potential_fn(automaton_state)
-        info["constraint"]["step"]["cost"] = cost + self._gamma * potential - self._last_potential
+        info["constraint"]["step"]["cost"] = (
+            cost + self._gamma * potential - self._last_potential
+        )
         self._last_potential = potential
         return observation, reward, terminated, truncated, info
 
@@ -726,6 +745,7 @@ class RewardShapingWrapper(ConstraintPersistentWrapper):
             The shaped cost function constructed in :meth:`_setup_cost_fn`.
         """
         return self.shaped_cost_fn
+
 
 class NormWrapper(ConstraintPersistentWrapper):
     """
@@ -763,23 +783,23 @@ class NormWrapper(ConstraintPersistentWrapper):
     """
 
     def __init__(
-        self, 
-        env: gym.Env, 
+        self,
+        env: gym.Env,
         norm_obs: bool = True,
         norm_rew: bool = True,
         training: bool = True,
         clip_obs: float = 10.0,
         clip_rew: float = 10.0,
         gamma: float = 0.99,
-        eps: float = 1e-8
+        eps: float = 1e-8,
     ):
-        assert not isinstance(
-            env, VecEnvWrapperBase
-        ), "NormWrapper does not expect a vectorized environment (DummyVecWrapper / VecWrapper). Please use VecNormWrapper instead"
+        assert not isinstance(env, VecEnvWrapperBase), (
+            "NormWrapper does not expect a vectorized environment (DummyVecWrapper / VecWrapper). Please use VecNormWrapper instead"
+        )
 
-        assert norm_obs and isinstance(
-            env.observation_space, spaces.Box
-        ), "NormWrapper only supports Box observation spaces when norm_obs=True."
+        assert norm_obs and isinstance(env.observation_space, spaces.Box), (
+            "NormWrapper only supports Box observation spaces when norm_obs=True."
+        )
 
         super().__init__(env)
 
@@ -809,7 +829,7 @@ class NormWrapper(ConstraintPersistentWrapper):
         return np.clip(
             (obs - self.obs_rms.mean) / np.sqrt(self.obs_rms.var + self.eps),
             -self.clip_obs,
-            self.clip_obs
+            self.clip_obs,
         )
 
     def _normalize_rew(self, rew: float) -> float:
@@ -880,6 +900,7 @@ class NormWrapper(ConstraintPersistentWrapper):
 
         return obs, rew, term, trunc, info
 
+
 class OneHotObsWrapper(ConstraintPersistentObsWrapper):
     """
     One-hot encode :class:`gymnasium.spaces.Discrete` observations.
@@ -915,7 +936,6 @@ class OneHotObsWrapper(ConstraintPersistentObsWrapper):
                 shape=(n,),
                 dtype=np.float32,
             )
-            
 
         elif isinstance(self._orig_obs_space, spaces.Dict):
             self._mode = "dict"
@@ -990,9 +1010,10 @@ class OneHotObsWrapper(ConstraintPersistentObsWrapper):
                     new_obs[key] = value
 
             return new_obs
-        else: 
+        else:
             # pass
             return obs
+
 
 class FlattenDictObsWrapper(ConstraintPersistentObsWrapper):
     """
@@ -1091,8 +1112,8 @@ class FlattenDictObsWrapper(ConstraintPersistentObsWrapper):
             this implementation currently enforces Box-only subspaces at runtime.
         """
         assert isinstance(obs, dict), (
-                f"Expected dict observation for Dict space, got {type(obs)}"
-            )
+            f"Expected dict observation for Dict space, got {type(obs)}"
+        )
 
         parts = []
         for key in sorted(self._orig_obs_space.spaces.keys()):
@@ -1109,7 +1130,8 @@ class FlattenDictObsWrapper(ConstraintPersistentObsWrapper):
             parts.append(arr)
 
         return np.concatenate(parts).astype(np.float32)
-        
+
+
 class VecEnvWrapperBase(ConstraintPersistentWrapper):
     """
     Base class for simple Python-list vector environment wrappers.
@@ -1139,11 +1161,11 @@ class VecEnvWrapperBase(ConstraintPersistentWrapper):
         super().__init__(env)
 
     def reset_done(
-        self, 
+        self,
         dones: Union[List[bool], np.ndarray],
-        *, 
-        seed: int | None = None, 
-        options: Dict[str, Any] | None = None
+        *,
+        seed: int | None = None,
+        options: Dict[str, Any] | None = None,
     ):
         """
         Reset only the environments indicated by ``dones``.
@@ -1166,7 +1188,8 @@ class VecEnvWrapperBase(ConstraintPersistentWrapper):
             NotImplementedError: If not implemented by a subclass.
         """
         raise NotImplementedError
-        
+
+
 class DummyVecWrapper(VecEnvWrapperBase):
     """
     Wrap a single environment with a vector-environment API (``n_envs=1``).
@@ -1202,11 +1225,11 @@ class DummyVecWrapper(VecEnvWrapperBase):
         return [obs], [info]
 
     def reset_done(
-        self, 
+        self,
         dones: Union[List[bool], np.ndarray],
-        *, 
-        seed: int | None = None, 
-        options: Dict[str, Any] | None = None
+        *,
+        seed: int | None = None,
+        options: Dict[str, Any] | None = None,
     ):
         """
         Conditionally reset the single environment.
@@ -1240,6 +1263,7 @@ class DummyVecWrapper(VecEnvWrapperBase):
         obs, rew, term, trunc, info = self.env.step(action)
         return [obs], [rew], [term], [trunc], [info]
 
+
 class VecWrapper(VecEnvWrapperBase):
     """
     Wrap a list of environments with a simple vector-environment API.
@@ -1257,7 +1281,7 @@ class VecWrapper(VecEnvWrapperBase):
 
     def __init__(self, envs: List[gym.Env]):
         assert len(envs) > 0, "VecWrapper requires at least one environment"
-        super().__init__(envs[0]) # maintain API compatibility
+        super().__init__(envs[0])  # maintain API compatibility
         self.envs: List[gym.Env] = envs
         self.n_envs = len(envs)
 
@@ -1281,11 +1305,11 @@ class VecWrapper(VecEnvWrapperBase):
         return obs_list, info_list
 
     def reset_done(
-        self, 
+        self,
         dones: Union[List[bool], np.ndarray],
-        *, 
-        seed: int | None = None, 
-        options: Dict[str, Any] | None = None
+        *,
+        seed: int | None = None,
+        options: Dict[str, Any] | None = None,
     ):
         """
         Reset only environments whose done flag is True.
@@ -1370,23 +1394,23 @@ class VecNormWrapper(VecEnvWrapperBase):
     """
 
     def __init__(
-        self, 
-        env: Union[gym.Env, List[gym.Env]], 
+        self,
+        env: Union[gym.Env, List[gym.Env]],
         norm_obs: bool = True,
         norm_rew: bool = True,
         training: bool = True,
         clip_obs: float = 10.0,
         clip_rew: float = 10.0,
         gamma: float = 0.99,
-        eps: float = 1e-8
+        eps: float = 1e-8,
     ):
-        assert isinstance(
-            env, VecEnvWrapperBase
-        ), "VecNormWrapper expects a vectorized environment (DummyVecWrapper / VecWrapper)."
+        assert isinstance(env, VecEnvWrapperBase), (
+            "VecNormWrapper expects a vectorized environment (DummyVecWrapper / VecWrapper)."
+        )
 
-        assert norm_obs and isinstance(
-            env.observation_space, spaces.Box
-        ), "VecNormWrapper only supports Box observation spaces when norm_obs=True."
+        assert norm_obs and isinstance(env.observation_space, spaces.Box), (
+            "VecNormWrapper only supports Box observation spaces when norm_obs=True."
+        )
 
         super().__init__(env)
 
@@ -1458,11 +1482,11 @@ class VecNormWrapper(VecEnvWrapperBase):
         return obs_list, info_list
 
     def reset_done(
-        self, 
+        self,
         dones: Union[List[bool], np.ndarray],
-        *, 
-        seed: int | None = None, 
-        options: Dict[str, Any] | None = None
+        *,
+        seed: int | None = None,
+        options: Dict[str, Any] | None = None,
     ):
         """
         Reset only environments indicated by ``dones`` and normalize those observations.
@@ -1477,14 +1501,16 @@ class VecNormWrapper(VecEnvWrapperBase):
             :meth:`VecEnvWrapperBase.reset_done`, with reset observations optionally
             normalized.
         """
-        reset_obs, reset_infos = self.env.reset_done(
-            dones, seed=seed, options=options
-        )
+        reset_obs, reset_infos = self.env.reset_done(dones, seed=seed, options=options)
 
-        obs_arr = np.asarray(
-            [o for o in reset_obs if o is not None],
-            dtype=np.float32,
-        ) if any(o is not None for o in reset_obs) else None
+        obs_arr = (
+            np.asarray(
+                [o for o in reset_obs if o is not None],
+                dtype=np.float32,
+            )
+            if any(o is not None for o in reset_obs)
+            else None
+        )
 
         if self.norm_obs and self.training and obs_arr is not None:
             self.obs_rms.update(obs_arr)
@@ -1499,7 +1525,9 @@ class VecNormWrapper(VecEnvWrapperBase):
             for i, done in enumerate(dones):
                 if done and reset_obs[i] is not None:
                     o = np.asarray(reset_obs[i], dtype=np.float32)
-                    norm = (o - self.obs_rms.mean) / np.sqrt(self.obs_rms.var + self.eps)
+                    norm = (o - self.obs_rms.mean) / np.sqrt(
+                        self.obs_rms.var + self.eps
+                    )
                     norm = np.clip(norm, -self.clip_obs, self.clip_obs)
                     norm_reset_obs[i] = norm
             reset_obs = norm_reset_obs
@@ -1536,5 +1564,3 @@ class VecNormWrapper(VecEnvWrapperBase):
             obs_list = self._normalize_obs(obs_list)
 
         return obs_list, rew_list, term_list, trunc_list, infos
-
-        

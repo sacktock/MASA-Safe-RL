@@ -68,9 +68,7 @@ def test_quantifier_order_is_exists_coalition_then_forall_outsider():
     assert not winning[0]
     assert not safe[0].any()
 
-    _, winning_all, safe_all = solve(
-        env, ("controlled", "outsider"), never_bad()
-    )
+    _, winning_all, safe_all = solve(env, ("controlled", "outsider"), never_bad())
     assert winning_all[0]
     safe_tuples = {
         action
@@ -243,14 +241,16 @@ def test_solver_matches_set_reference_on_random_games():
                     allowed[state, index] = all(
                         all(
                             successor in reference
-                            for successor in support[(
-                                state,
+                            for successor in support[
                                 (
-                                    coalition_action[0],
-                                    coalition_action[1],
-                                    outsider,
-                                ),
-                            )]
+                                    state,
+                                    (
+                                        coalition_action[0],
+                                        coalition_action[1],
+                                        outsider,
+                                    ),
+                                )
+                            ]
                         )
                         for outsider in range(2)
                     )

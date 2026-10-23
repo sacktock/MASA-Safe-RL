@@ -28,6 +28,7 @@ from typing import Any, Dict
 from masa.common.constraints.base import Constraint, BaseConstraintEnv, CostFn
 from masa.common.dummy import cost_fn as dummy_cost_fn
 
+
 class PCTL(Constraint):
     """Simplified PCTL-named monitor tracking whether any unsafe step occurred.
 
@@ -54,7 +55,7 @@ class PCTL(Constraint):
         self.safe = True
         self.step_cost = 0.0
         self.total_unsafe = 0.0
-    
+
     def update(self, labels: Iterable[str]):
         """Update safety flags from the current label set.
 
@@ -78,7 +79,10 @@ class PCTL(Constraint):
             - ``"cum_unsafe"``: count of unsafe steps,
             - ``"satisfied"``: 1.0 if safe else 0.0.
         """
-        return {"cum_unsafe": float(self.total_unsafe), "satisfied": float(self.satisfied())}
+        return {
+            "cum_unsafe": float(self.total_unsafe),
+            "satisfied": float(self.satisfied()),
+        }
 
     def step_metric(self) -> Dict[str, float]:
         """Per-step metrics.
@@ -89,12 +93,17 @@ class PCTL(Constraint):
             - ``"cost"``: current step cost,
             - ``"violation"``: 1.0 if ``cost >= 0.5`` else 0.0.
         """
-        return {"cost": self.step_cost, "violation": float(self.step_cost >= 0.5), "cost_done": float(self.step_cost >= 0.5)}
+        return {
+            "cost": self.step_cost,
+            "violation": float(self.step_cost >= 0.5),
+            "cost_done": float(self.step_cost >= 0.5),
+        }
 
     @property
     def constraint_type(self) -> str:
         """Stable identifier string: ``"PCTL"``."""
         return "PCTL"
+
 
 class PCTLEnv(BaseConstraintEnv):
     """Gymnasium wrapper for the :class:`PCTL` monitor.
@@ -107,6 +116,7 @@ class PCTLEnv(BaseConstraintEnv):
 
     """
 
-    def __init__(self, env: gym.Env, cost_fn: CostFn = dummy_cost_fn, alpha: float = 0.01, **kw):
+    def __init__(
+        self, env: gym.Env, cost_fn: CostFn = dummy_cost_fn, alpha: float = 0.01, **kw
+    ):
         super().__init__(env, PCTL(cost_fn=cost_fn, alpha=alpha), **kw)
-

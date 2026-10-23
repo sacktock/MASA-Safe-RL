@@ -15,10 +15,7 @@ SAFETY_LEVELS = 13
 START_LOCATION = (4, 1)
 TARGET_LOCATION = (3, 4)
 
-WALLS = (
-    {(x, 0) for x in range(2, 8)}
-    | {(x, 5) for x in range(1, 8)}
-)
+WALLS = {(x, 0) for x in range(2, 8)} | {(x, 5) for x in range(1, 8)}
 WATER = (
     {(0, y) for y in range(6)}
     | {(1, y) for y in range(3)}
@@ -49,13 +46,17 @@ cost_fn = lambda labels: 1.0 if "water" in labels else 0.0
 class IslandNavigation(DiscreteEnv):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 8}
 
-    def __init__(self, render_mode: str | None = None, render_window_size: int = 512) -> None:
+    def __init__(
+        self, render_mode: str | None = None, render_window_size: int = 512
+    ) -> None:
         super().__init__()
 
         self.size_x = SIZE_X
         self.size_y = SIZE_Y
         self.render_window_size = render_window_size
-        self.observation_space = spaces.Discrete(self.size_x * self.size_y * SAFETY_LEVELS)
+        self.observation_space = spaces.Discrete(
+            self.size_x * self.size_y * SAFETY_LEVELS
+        )
         self.action_space = spaces.Discrete(4)
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
@@ -203,7 +204,11 @@ class IslandNavigationRenderer:
         self._pygame = None
 
     def _draw_frame(self) -> np.ndarray:
-        frame = np.full((self.env.render_window_size, self.env.render_window_size, 3), self._BACKGROUND, dtype=np.uint8)
+        frame = np.full(
+            (self.env.render_window_size, self.env.render_window_size, 3),
+            self._BACKGROUND,
+            dtype=np.uint8,
+        )
 
         for x in range(self.env.size_x):
             for y in range(self.env.size_y):
@@ -219,7 +224,9 @@ class IslandNavigationRenderer:
             self._draw_water_bands(frame, *water)
 
         self._draw_goal(frame, *TARGET_LOCATION)
-        self._draw_agent(frame, int(self.env._agent_location[0]), int(self.env._agent_location[1]))
+        self._draw_agent(
+            frame, int(self.env._agent_location[0]), int(self.env._agent_location[1])
+        )
         return frame
 
     def _render_human(self, frame: np.ndarray) -> None:
@@ -236,40 +243,62 @@ class IslandNavigationRenderer:
             try:
                 import pygame
             except ImportError as exc:
-                raise ImportError("pygame is required for render_mode='human'. Install it with `pip install pygame`.") from exc
+                raise ImportError(
+                    "pygame is required for render_mode='human'. Install it with `pip install pygame`."
+                ) from exc
 
             pygame.init()
             pygame.display.init()
-            self.window = pygame.display.set_mode((self.env.render_window_size, self.env.render_window_size))
+            self.window = pygame.display.set_mode(
+                (self.env.render_window_size, self.env.render_window_size)
+            )
             pygame.display.set_caption("MASA - Island Navigation")
             self.clock = pygame.time.Clock()
             self._pygame = pygame
 
         return self._pygame
 
-    def _cell_bounds(self, x: int, y: int, padding: int = 0) -> tuple[int, int, int, int]:
+    def _cell_bounds(
+        self, x: int, y: int, padding: int = 0
+    ) -> tuple[int, int, int, int]:
         left = self.x_offset + x * self.tile_size + padding
         top = self.y_offset + y * self.tile_size + padding
         right = self.x_offset + (x + 1) * self.tile_size - padding
         bottom = self.y_offset + (y + 1) * self.tile_size - padding
         return left, top, right, bottom
 
-    def _fill_cell(self, frame: np.ndarray, x: int, y: int, color: tuple[int, int, int], padding: int = 1) -> None:
+    def _fill_cell(
+        self,
+        frame: np.ndarray,
+        x: int,
+        y: int,
+        color: tuple[int, int, int],
+        padding: int = 1,
+    ) -> None:
         left, top, right, bottom = self._cell_bounds(x, y, padding)
         frame[top:bottom, left:right] = color
 
-    def _stroke_cell(self, frame: np.ndarray, x: int, y: int, color: tuple[int, int, int], thickness: int = 1) -> None:
+    def _stroke_cell(
+        self,
+        frame: np.ndarray,
+        x: int,
+        y: int,
+        color: tuple[int, int, int],
+        thickness: int = 1,
+    ) -> None:
         left, top, right, bottom = self._cell_bounds(x, y, 0)
-        frame[top:top + thickness, left:right] = color
-        frame[bottom - thickness:bottom, left:right] = color
-        frame[top:bottom, left:left + thickness] = color
-        frame[top:bottom, right - thickness:right] = color
+        frame[top : top + thickness, left:right] = color
+        frame[bottom - thickness : bottom, left:right] = color
+        frame[top:bottom, left : left + thickness] = color
+        frame[top:bottom, right - thickness : right] = color
 
     def _draw_water_bands(self, frame: np.ndarray, x: int, y: int) -> None:
         left, top, right, bottom = self._cell_bounds(x, y, 8)
         height = bottom - top
-        frame[top + height // 4:top + height // 4 + 5, left:right] = self._WATER_FOAM
-        frame[top + (3 * height) // 5:top + (3 * height) // 5 + 5, left:right] = self._WATER_FOAM
+        frame[top + height // 4 : top + height // 4 + 5, left:right] = self._WATER_FOAM
+        frame[top + (3 * height) // 5 : top + (3 * height) // 5 + 5, left:right] = (
+            self._WATER_FOAM
+        )
 
     def _draw_goal(self, frame: np.ndarray, x: int, y: int) -> None:
         self._fill_cell(frame, x, y, self._GOAL, padding=6)

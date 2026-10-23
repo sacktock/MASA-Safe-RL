@@ -1,4 +1,5 @@
 """Shared LTL-product synthesis and episode bookkeeping for both shields."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -62,10 +63,9 @@ class _LTLShieldBase(ConstraintPersistentWrapper):
         )
         # The live monitor already consumed L(s); its next update consumes L(s').
         self._targets = next_q[:, successors] * self._n_states + successors
-        self._initial_states = (
-            next_q[q_index[dfa.initial]] * self._n_states
-            + np.arange(self._n_states)
-        )
+        self._initial_states = next_q[
+            q_index[dfa.initial]
+        ] * self._n_states + np.arange(self._n_states)
         self.winning_region, self.safe_actions = winning_region(
             self._targets, self._support, rejecting
         )
@@ -74,7 +74,9 @@ class _LTLShieldBase(ConstraintPersistentWrapper):
 
     def _require_state(self) -> int:
         if self._state is None:
-            raise RuntimeError("Call reset() before acting, including after episode end.")
+            raise RuntimeError(
+                "Call reset() before acting, including after episode end."
+            )
         return self._state
 
     def _check_state(self, obs) -> int:
@@ -135,7 +137,8 @@ class _LTLShieldBase(ConstraintPersistentWrapper):
             **info,
             "action_mask": (
                 np.zeros(self.action_space.n, dtype=bool)
-                if terminated else self.safe_actions[state].copy()
+                if terminated
+                else self.safe_actions[state].copy()
             ),
             "shield_intervened": executed != proposed,
             "shield_proposed_action": proposed,

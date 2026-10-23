@@ -17,8 +17,8 @@ from masa.common.policies import PPOLagPolicy
 from masa.common.metrics import TrainLogger
 from tqdm.auto import tqdm
 
-class PPOLag(OnPolicyNaiveLagrangeAlgorithm, PPO):
 
+class PPOLag(OnPolicyNaiveLagrangeAlgorithm, PPO):
     def __init__(
         self,
         *args,
@@ -34,7 +34,6 @@ class PPOLag(OnPolicyNaiveLagrangeAlgorithm, PPO):
         lambda_lr: float = 0.01,
         lagrangian_upper_bound: Optional[float] = None,
         **kwargs,
-        
     ):
         self.normalize_reward_advantages = normalize_reward_advantages
         self.normalize_cost_advantages = normalize_cost_advantages
@@ -46,9 +45,7 @@ class PPOLag(OnPolicyNaiveLagrangeAlgorithm, PPO):
         self.lambda_lr = lambda_lr
         self.lagrangian_upper_bound = lagrangian_upper_bound
 
-        self.lagrangian_multiplier = float(
-            max(lagrangian_multiplier_init, 0.0)
-        )
+        self.lagrangian_multiplier = float(max(lagrangian_multiplier_init, 0.0))
 
         super().__init__(*args, policy_class=policy_class, **kwargs)
 
@@ -70,7 +67,9 @@ class PPOLag(OnPolicyNaiveLagrangeAlgorithm, PPO):
         vf_coef: float,
     ):
 
-        def actor_critic_loss(featurizer_params, actor_params, critic_params, cost_critic_params):
+        def actor_critic_loss(
+            featurizer_params, actor_params, critic_params, cost_critic_params
+        ):
             features = featurizer_state.apply_fn(featurizer_params, observations)
             dist = actor_state.apply_fn(actor_params, features)
             log_prob = dist.log_prob(actions)
@@ -93,17 +92,24 @@ class PPOLag(OnPolicyNaiveLagrangeAlgorithm, PPO):
 
             # Critic loss
             critic_values = critic_state.apply_fn(critic_params, features).flatten()
-            cost_critic_values = cost_critic_state.apply_fn(cost_critic_params, features).flatten()
+            cost_critic_values = cost_critic_state.apply_fn(
+                cost_critic_params, features
+            ).flatten()
             value_loss = vf_coef * (
-                ((returns - critic_values)**2).mean() +
-                ((cost_returns - cost_critic_values)**2).mean()
+                ((returns - critic_values) ** 2).mean()
+                + ((cost_returns - cost_critic_values) ** 2).mean()
             )
 
             total_loss = total_policy_loss + value_loss
             return total_loss, (total_policy_loss, value_loss)
 
-        (loss, (pg_loss, vf_loss)), grads = jax.value_and_grad(actor_critic_loss, argnums=(0, 1, 2, 3), has_aux=True)(
-            featurizer_state.params, actor_state.params, critic_state.params, cost_critic_state.params
+        (loss, (pg_loss, vf_loss)), grads = jax.value_and_grad(
+            actor_critic_loss, argnums=(0, 1, 2, 3), has_aux=True
+        )(
+            featurizer_state.params,
+            actor_state.params,
+            critic_state.params,
+            cost_critic_state.params,
         )
 
         featurizer_state = featurizer_state.apply_gradients(grads=grads[0])
@@ -111,47 +117,70 @@ class PPOLag(OnPolicyNaiveLagrangeAlgorithm, PPO):
         critic_state = critic_state.apply_gradients(grads=grads[2])
         cost_critic_state = cost_critic_state.apply_gradients(grads=grads[3])
 
-        return (featurizer_state, actor_state, critic_state, cost_critic_state), (pg_loss, vf_loss)
+        return (featurizer_state, actor_state, critic_state, cost_critic_state), (
+            pg_loss,
+            vf_loss,
+        )
 
     def optimize(
-        self,
-        step: int, 
-        logger: Optional[TrainLogger] = None,
-        tqdm_position: int = 1
+        self, step: int, logger: Optional[TrainLogger] = None, tqdm_position: int = 1
     ):
-        
+
         clip_range = self.clip_range_schedule(step)
         current_lr = self.lr_schedule(step)
 
         with tqdm(
-            total=self.n_epochs*self.n_steps//(self.batch_size//self.n_envs),
+            total=self.n_epochs * self.n_steps // (self.batch_size // self.n_envs),
             desc="optimize",
             position=tqdm_position,
             leave=False,
             dynamic_ncols=True,
             colour="cyan",
         ) as pbar:
-
             for _ in range(self.n_epochs):
                 self.key, subkey = jr.split(self.key)
-                for rollout_data in self.rollout_buffer.get(subkey, self.batch_size//self.n_envs):
-
-                    observations, actions, rewards, costs, values, cost_values, returns, cost_returns, reward_advantages, cost_advantages, old_log_probs = rollout_data
+                for rollout_data in self.rollout_buffer.get(
+                    subkey, self.batch_size // self.n_envs
+                ):
+                    (
+                        observations,
+                        actions,
+                        rewards,
+                        costs,
+                        values,
+                        cost_values,
+                        returns,
+                        cost_returns,
+                        reward_advantages,
+                        cost_advantages,
+                        old_log_probs,
+                    ) = rollout_data
 
                     if isinstance(self.action_space, spaces.Discrete):
                         # Convert discrete action from float to int
                         actions = actions.flatten().astype(np.int32)
 
                     if self.normalize_reward_advantages and len(reward_advantages) > 1:
-                        reward_advantages = (reward_advantages - reward_advantages.mean()) / (reward_advantages.std() + 1e-8)
+                        reward_advantages = (
+                            reward_advantages - reward_advantages.mean()
+                        ) / (reward_advantages.std() + 1e-8)
 
                     if self.normalize_cost_advantages:
                         cost_advantages = cost_advantages - cost_advantages.mean()
 
-                    advantages = (reward_advantages - self.lagrangian_multiplier * cost_advantages) / (1.0 + self.lagrangian_multiplier)
+                    advantages = (
+                        reward_advantages - self.lagrangian_multiplier * cost_advantages
+                    ) / (1.0 + self.lagrangian_multiplier)
 
-                    (self.policy.featurizer_state, self.policy.actor_state, self.policy.critic_state, self.policy.cost_critic_state), (pg_loss, vf_loss) = \
-                    self._one_update(
+                    (
+                        (
+                            self.policy.featurizer_state,
+                            self.policy.actor_state,
+                            self.policy.critic_state,
+                            self.policy.cost_critic_state,
+                        ),
+                        (pg_loss, vf_loss),
+                    ) = self._one_update(
                         featurizer_state=self.policy.featurizer_state,
                         actor_state=self.policy.actor_state,
                         critic_state=self.policy.critic_state,
@@ -168,14 +197,17 @@ class PPOLag(OnPolicyNaiveLagrangeAlgorithm, PPO):
                     )
 
                     pbar.update(1)
-                
+
         if logger:
-            logger.add("train/stats", {
-                "policy_loss": float(pg_loss),
-                "value_loss": float(vf_loss),
-                "clip_range": float(clip_range),
-                "lr": float(current_lr),
-                "lagrangian_multiplier": float(self.lagrangian_multiplier),
-                "mean_cost_advantage": float(cost_advantages.mean()),
-                "mean_cost_return": float(cost_returns.mean()),
-            })
+            logger.add(
+                "train/stats",
+                {
+                    "policy_loss": float(pg_loss),
+                    "value_loss": float(vf_loss),
+                    "clip_range": float(clip_range),
+                    "lr": float(current_lr),
+                    "lagrangian_multiplier": float(self.lagrangian_multiplier),
+                    "mean_cost_advantage": float(cost_advantages.mean()),
+                    "mean_cost_return": float(cost_returns.mean()),
+                },
+            )

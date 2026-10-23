@@ -18,8 +18,8 @@ from masa.algorithms.on_policy import TRPO
 from masa.algorithms.on_policy.abstract_classes import OnPolicyNaiveLagrangeAlgorithm
 from masa.common.policies import PPOLagPolicy
 
-class TRPOLag(OnPolicyNaiveLagrangeAlgorithm, TRPO):
 
+class TRPOLag(OnPolicyNaiveLagrangeAlgorithm, TRPO):
     def __init__(
         self,
         *args,
@@ -46,9 +46,7 @@ class TRPOLag(OnPolicyNaiveLagrangeAlgorithm, TRPO):
         self.lambda_lr = lambda_lr
         self.lagrangian_upper_bound = lagrangian_upper_bound
 
-        self.lagrangian_multiplier = float(
-            max(lagrangian_multiplier_init, 0.0)
-        )
+        self.lagrangian_multiplier = float(max(lagrangian_multiplier_init, 0.0))
 
         super().__init__(*args, policy_class=policy_class, **kwargs)
 
@@ -67,15 +65,19 @@ class TRPOLag(OnPolicyNaiveLagrangeAlgorithm, TRPO):
             features = featurizer_state.apply_fn(featurizer_params, observations)
             # Critic loss
             critic_values = critic_state.apply_fn(critic_params, features).flatten()
-            cost_critic_values = cost_critic_state.apply_fn(cost_critic_params, features).flatten()
+            cost_critic_values = cost_critic_state.apply_fn(
+                cost_critic_params, features
+            ).flatten()
             value_loss = vf_coef * (
-                ((returns - critic_values)**2).mean() +
-                ((cost_returns - cost_critic_values)**2).mean()
+                ((returns - critic_values) ** 2).mean()
+                + ((cost_returns - cost_critic_values) ** 2).mean()
             )
             return value_loss
 
         loss, grads = jax.value_and_grad(critic_loss, argnums=(0, 1, 2))(
-            featurizer_state.params, critic_state.params, cost_critic_state.params,
+            featurizer_state.params,
+            critic_state.params,
+            cost_critic_state.params,
         )
 
         featurizer_state = featurizer_state.apply_gradients(grads=grads[0])
@@ -85,27 +87,40 @@ class TRPOLag(OnPolicyNaiveLagrangeAlgorithm, TRPO):
         return (featurizer_state, critic_state, cost_critic_state), loss
 
     def optimize(
-        self,
-        step: int, 
-        logger: Optional[TrainLogger] = None,
-        tqdm_position: int = 1
+        self, step: int, logger: Optional[TrainLogger] = None, tqdm_position: int = 1
     ):
 
         self.key, subkey = jr.split(self.key)
         rollout_data = next(self.rollout_buffer.get(subkey, self.n_steps))
-        observations, actions, rewards, costs, values, cost_values, returns, cost_returns, reward_advantages, cost_advantages, old_log_probs = rollout_data
+        (
+            observations,
+            actions,
+            rewards,
+            costs,
+            values,
+            cost_values,
+            returns,
+            cost_returns,
+            reward_advantages,
+            cost_advantages,
+            old_log_probs,
+        ) = rollout_data
 
         if isinstance(self.action_space, spaces.Discrete):
             # Convert discrete action from float to int
             actions = actions.flatten().astype(np.int32)
 
         if self.normalize_reward_advantages and len(reward_advantages) > 1:
-            reward_advantages = (reward_advantages - reward_advantages.mean()) / (reward_advantages.std() + 1e-8)
+            reward_advantages = (reward_advantages - reward_advantages.mean()) / (
+                reward_advantages.std() + 1e-8
+            )
 
         if self.normalize_cost_advantages:
             cost_advantages = cost_advantages - cost_advantages.mean()
 
-        advantages = (reward_advantages - self.lagrangian_multiplier * cost_advantages) / (1.0 + self.lagrangian_multiplier)
+        advantages = (
+            reward_advantages - self.lagrangian_multiplier * cost_advantages
+        ) / (1.0 + self.lagrangian_multiplier)
 
         old_actor_params = self.policy.actor_state.params
 
@@ -125,7 +140,7 @@ class TRPOLag(OnPolicyNaiveLagrangeAlgorithm, TRPO):
 
         flat_grads = self.flatten_params(grads)
 
-        fvp_observations = observations[::self.fvp_sample_freq]
+        fvp_observations = observations[:: self.fvp_sample_freq]
 
         def fvp(v):
             return self._fisher_vector_product(
@@ -148,9 +163,7 @@ class TRPOLag(OnPolicyNaiveLagrangeAlgorithm, TRPO):
             fvp(step_direction),
         )
 
-        step_size = jnp.sqrt(
-            self.target_kl / (shs + 1e-8)
-        )
+        step_size = jnp.sqrt(self.target_kl / (shs + 1e-8))
 
         full_step = step_direction * step_size
 
@@ -161,7 +174,7 @@ class TRPOLag(OnPolicyNaiveLagrangeAlgorithm, TRPO):
         accepted = False
 
         for i in range(self.line_search_steps):
-            frac = self.line_search_decay ** i
+            frac = self.line_search_decay**i
             candidate = old_flat + frac * full_step
             candidate_params = self.unflatten_params(
                 candidate,
@@ -169,8 +182,8 @@ class TRPOLag(OnPolicyNaiveLagrangeAlgorithm, TRPO):
             )
             loss = actor_loss(candidate_params)
             kl = self._mean_kl(
-                old_actor_params, 
-                candidate_params, 
+                old_actor_params,
+                candidate_params,
                 self.policy.featurizer_state,
                 self.policy.actor_state,
                 observations,
@@ -178,7 +191,9 @@ class TRPOLag(OnPolicyNaiveLagrangeAlgorithm, TRPO):
             improve = loss_before - loss
             last_kl = kl
             if improve > 0 and kl < self.target_kl:
-                self.policy.actor_state = self.policy.actor_state.replace(params=candidate_params)
+                self.policy.actor_state = self.policy.actor_state.replace(
+                    params=candidate_params
+                )
                 accepted = True
                 break
 
@@ -190,11 +205,15 @@ class TRPOLag(OnPolicyNaiveLagrangeAlgorithm, TRPO):
             dynamic_ncols=True,
             colour="cyan",
         ) as pbar:
-
             for _ in range(self.n_critic_updates):
-
-                (self.policy.featurizer_state, self.policy.critic_state, self.policy.cost_critic_state), vf_loss = \
-                self._value_update(
+                (
+                    (
+                        self.policy.featurizer_state,
+                        self.policy.critic_state,
+                        self.policy.cost_critic_state,
+                    ),
+                    vf_loss,
+                ) = self._value_update(
                     featurizer_state=self.policy.featurizer_state,
                     critic_state=self.policy.critic_state,
                     cost_critic_state=self.policy.cost_critic_state,
@@ -208,18 +227,20 @@ class TRPOLag(OnPolicyNaiveLagrangeAlgorithm, TRPO):
 
         if logger:
             logger.add(
-                "train/stats",{
-                "policy_loss": float(loss_before),
-                "value_loss": float(vf_loss),
-                "kl": float(kl),
-                "accepted": float(accepted),
-                "expected_improve": float(expected_improve),
-                "step_size": float(step_size),
-                "grad_norm": float(jnp.linalg.norm(flat_grads)),
-                "xHx": float(shs * 2.0),
-                "final_kl": float(last_kl),
-                "lr": float(self.lr_schedule(step)),
-                "lagrangian_multiplier": float(self.lagrangian_multiplier),
-                "mean_cost_advantage": float(cost_advantages.mean()),
-                "mean_cost_return": float(cost_returns.mean()),
-            })
+                "train/stats",
+                {
+                    "policy_loss": float(loss_before),
+                    "value_loss": float(vf_loss),
+                    "kl": float(kl),
+                    "accepted": float(accepted),
+                    "expected_improve": float(expected_improve),
+                    "step_size": float(step_size),
+                    "grad_norm": float(jnp.linalg.norm(flat_grads)),
+                    "xHx": float(shs * 2.0),
+                    "final_kl": float(last_kl),
+                    "lr": float(self.lr_schedule(step)),
+                    "lagrangian_multiplier": float(self.lagrangian_multiplier),
+                    "mean_cost_advantage": float(cost_advantages.mean()),
+                    "mean_cost_return": float(cost_returns.mean()),
+                },
+            )

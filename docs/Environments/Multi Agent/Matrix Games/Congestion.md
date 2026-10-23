@@ -9,7 +9,7 @@
 - Agents: `player_0` to `player_{N-1}` with `N=6` by default
 - Actions: `RoadA=0`, `RoadB=1`
 - Default parameters:
-  `base_A=1`, `base_B=1`, `slope_A=1`, `slope_B=1`, `jam_threshold=5`, `jam_penalty=5`
+    `base_A=1`, `base_B=1`, `slope_A=1`, `slope_B=1`, `jam_threshold=5`, `jam_penalty=5`
 
 Each agent picks one of two roads. Rewards are the negative congestion costs of the chosen road, with an extra penalty when a road load reaches the jam threshold.
 

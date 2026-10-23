@@ -16,6 +16,7 @@ Each distribution exposes ``sample(seed=...)``, ``log_prob``, ``entropy`` and
 ``mode`` where the original code requires them, using the same keyword
 conventions as TFP so call sites remain unchanged.
 """
+
 from __future__ import annotations
 
 from typing import Sequence
@@ -48,9 +49,7 @@ class Categorical(Distribution):
 
     def log_prob(self, value):
         value = value.astype(jnp.int32)
-        gathered = jnp.take_along_axis(
-            self.log_probs, value[..., None], axis=-1
-        )
+        gathered = jnp.take_along_axis(self.log_probs, value[..., None], axis=-1)
         return gathered[..., 0]
 
     def entropy(self):

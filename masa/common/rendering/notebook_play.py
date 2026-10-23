@@ -81,7 +81,11 @@ class NotebookVideoRecorder:
         self.enabled = bool(enabled)
         self.output_size = (width, height)
         self.fps = int(fps)
-        self.background = background if isinstance(background, str) else tuple(int(channel) for channel in background)
+        self.background = (
+            background
+            if isinstance(background, str)
+            else tuple(int(channel) for channel in background)
+        )
         self.fit = fit
         self.max_idle_gap = float(max_idle_gap)
 
@@ -109,7 +113,10 @@ class NotebookVideoRecorder:
         import pygame
 
         with _VIDEO_RECORDER_LOCK:
-            if _ACTIVE_VIDEO_RECORDER is not None and _ACTIVE_VIDEO_RECORDER is not self:
+            if (
+                _ACTIVE_VIDEO_RECORDER is not None
+                and _ACTIVE_VIDEO_RECORDER is not self
+            ):
                 raise RuntimeError("another notebook video recorder is already active")
             _ACTIVE_VIDEO_RECORDER = self
 
@@ -195,7 +202,9 @@ class NotebookVideoRecorder:
         if (target_width, target_height) == (source_width, source_height):
             scaled = surface
         else:
-            scaled = pygame.transform.smoothscale(surface, (target_width, target_height))
+            scaled = pygame.transform.smoothscale(
+                surface, (target_width, target_height)
+            )
 
         # Negative offsets are how "cover" crops: pygame clips the overflow.
         left = (output_width - target_width) // 2

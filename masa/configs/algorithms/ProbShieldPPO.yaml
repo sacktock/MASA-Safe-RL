@@ -14,41 +14,32 @@ defaults:
   init_safety_bound: 0.01
   theta: 1e-15
   max_vi_steps: 10000
-
 MediaStreaming:
   gamma: 0.95
   init_safety_bound: 0.04
-
 BridgeCrossing:
   gamma: 0.99
   init_safety_bound: 0.05
-
 BridgeCrossingV2:
   gamma: 0.99
   init_safety_bound: 0.01
-
 ColourBombGridWorld:
   gamma: 0.95
   init_safety_bound: 0.05
-
 ColourBombGridWorld_Property2:
   gamma: 0.95
   init_safety_bound: 0.05
-
 ColourBombGridWorldV2:
   gamma: 0.95
   init_safety_bound: 0.025
-
 ColourBombGridWorldV2_Property2:
   gamma: 0.95
   init_safety_bound: 0.025
   policy_kwargs: {log_std_init: -2.0}
-
 ColourBombGridWorldV2_Property3:
   gamma: 0.95
   init_safety_bound: 0.025
   policy_kwargs: {log_std_init: -2.0}
-
 MiniPacman:
   gamma: 0.95
   init_safety_bound: 0.01

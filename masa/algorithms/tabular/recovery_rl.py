@@ -9,11 +9,13 @@ import jax.numpy as jnp
 import jax.random as jr
 from tqdm import tqdm
 
+
 def q_to_boltzmann_policy(Q: np.ndarray, tau: float) -> np.ndarray:
     prefs = Q / tau
     max_prefs = np.max(prefs, axis=1, keepdims=True)
     exp_prefs = np.exp(prefs - max_prefs)
-    return exp_prefs / np.sum(exp_prefs, axis=1, keepdims=True) 
+    return exp_prefs / np.sum(exp_prefs, axis=1, keepdims=True)
+
 
 def q_to_argmax_policy(Q):
     n_states, n_actions = Q.shape
@@ -22,8 +24,8 @@ def q_to_argmax_policy(Q):
     greedy_policy = greedy_mask / greedy_mask.sum(axis=1, keepdims=True)
     return greedy_policy
 
-class RECOVERY_RL(QL):
 
+class RECOVERY_RL(QL):
     def __init__(
         self,
         *args,
@@ -32,7 +34,7 @@ class RECOVERY_RL(QL):
         risk_alpha: float = 0.1,
         risk_gamma: float = 0.99,
         step_wise_risk: float = 0.01,
-        **kwargs
+        **kwargs,
     ):
 
         super().__init__(
@@ -61,42 +63,78 @@ class RECOVERY_RL(QL):
         if len(self.buffer) == 0:
             return
 
-        for (state, action, task_action, reward, cost, violation, next_state, terminal, info) in self.buffer:
-
+        for (
+            state,
+            action,
+            task_action,
+            reward,
+            cost,
+            violation,
+            next_state,
+            terminal,
+            info,
+        ) in self.buffer:
             if hasattr(self.env, "cost_fn") and isinstance(self.env.cost_fn, DFACostFn):
                 cf_exp = self.generate_counter_factuals(
-                    state, action, reward, next_state, terminal, info, getattr(self.env, "cost_fn", None)
+                    state,
+                    action,
+                    reward,
+                    next_state,
+                    terminal,
+                    info,
+                    self.env.cost_fn,
                 )
             else:
-                cf_exp = [(state, action, reward, cost, violation, next_state, terminal)]
+                cf_exp = [
+                    (state, action, reward, cost, violation, next_state, terminal)
+                ]
 
             for exp in cf_exp:
                 cf_state, cf_act, cf_rew, cf_cost, cf_viol, cf_next_state, cf_term = exp
 
-                self.Q[cf_state, task_action] = (
-                    (1 - self.alpha) * self.Q[cf_state, task_action] \
-                    + self.alpha * (cf_rew + (1 - cf_term) * (1 - cf_viol) * self.gamma * np.max(self.Q[cf_next_state]))
+                self.Q[cf_state, task_action] = (1 - self.alpha) * self.Q[
+                    cf_state, task_action
+                ] + self.alpha * (
+                    cf_rew
+                    + (1 - cf_term)
+                    * (1 - cf_viol)
+                    * self.gamma
+                    * np.max(self.Q[cf_next_state])
                 )
-                
 
-                self.Q_rec[cf_state, cf_act] = (
-                    (1 - self.risk_alpha) * self.Q_rec[cf_state, cf_act] \
-                    + self.risk_alpha * (float(cf_viol) + (1 - cf_term) * (1 - cf_viol) * self.risk_gamma * np.min(self.Q_rec[cf_next_state]))
+                self.Q_rec[cf_state, cf_act] = (1 - self.risk_alpha) * self.Q_rec[
+                    cf_state, cf_act
+                ] + self.risk_alpha * (
+                    float(cf_viol)
+                    + (1 - cf_term)
+                    * (1 - cf_viol)
+                    * self.risk_gamma
+                    * np.min(self.Q_rec[cf_next_state])
                 )
-                
-                
+
                 if self.exploration == "boltzmann":
-                    self.task_policy = q_to_boltzmann_policy(self.Q, self.boltzmann_temp)
+                    self.task_policy = q_to_boltzmann_policy(
+                        self.Q, self.boltzmann_temp
+                    )
                 elif self.exploration == "epsilon_greedy":
                     self.task_policy = q_to_argmax_policy(self.Q)
                 else:
-                    raise NotImplementedError(f"Unexpected exploration: {self.exploration}")
+                    raise NotImplementedError(
+                        f"Unexpected exploration: {self.exploration}"
+                    )
 
-                self.Q_risk[cf_state, cf_act] =  (
-                    (1 - self.risk_alpha) * self.Q_risk[cf_state, cf_act] \
-                    + self.risk_alpha * (float(cf_viol) + (1 - cf_term) * (1 - cf_viol) * self.risk_gamma * (self.task_policy[cf_next_state] * self.Q_risk[cf_next_state]).sum())
+                self.Q_risk[cf_state, cf_act] = (1 - self.risk_alpha) * self.Q_risk[
+                    cf_state, cf_act
+                ] + self.risk_alpha * (
+                    float(cf_viol)
+                    + (1 - cf_term)
+                    * (1 - cf_viol)
+                    * self.risk_gamma
+                    * (
+                        self.task_policy[cf_next_state] * self.Q_risk[cf_next_state]
+                    ).sum()
                 )
-                    
+
         self.buffer.clear()
 
         if logger:
@@ -106,7 +144,6 @@ class RECOVERY_RL(QL):
                 logger.add("train/stats", {"temp": self.boltzmann_temp})
             if self.exploration == "epsilon_greedy":
                 logger.add("train/stats", {"epsilon": self._epsilon})
-            
 
     def rollout(self, step: int, logger: Optional[TrainLogger] = None):
 
@@ -120,12 +157,24 @@ class RECOVERY_RL(QL):
         violation = info["constraint"]["step"].get("violation", False)
 
         self.buffer.append(
-            (self._last_obs, action, task_action, reward, cost, violation, next_obs, terminated, info)
+            (
+                self._last_obs,
+                action,
+                task_action,
+                reward,
+                cost,
+                violation,
+                next_obs,
+                terminated,
+                info,
+            )
         )
 
         if terminated or truncated:
             self._last_obs, _ = self.env.reset()
-            info["constraint"]["episode"].update({"override_rate": float(np.mean(self._overrides))})
+            info["constraint"]["episode"].update(
+                {"override_rate": float(np.mean(self._overrides))}
+            )
             self._overrides.clear()
         else:
             self._last_obs = next_obs
@@ -136,7 +185,12 @@ class RECOVERY_RL(QL):
         if logger:
             logger.add("train/rollout", info)
 
-    def eval(self, num_episodes: int, seed: Optional[int] = None, logger: Optional[TrainLogger] = None) -> List[float]:
+    def eval(
+        self,
+        num_episodes: int,
+        seed: Optional[int] = None,
+        logger: Optional[TrainLogger] = None,
+    ) -> List[float]:
         eval_env = self._get_eval_env()
         base = 0 if self.seed is None else int(self.seed)
         eval_seed = base + 10_000 if seed is None else int(seed) + 10_000
@@ -150,22 +204,25 @@ class RECOVERY_RL(QL):
             position=1,
             leave=False,
             dynamic_ncols=True,
-            colour="yellow"
+            colour="yellow",
         ) as pbar:
-
             for ep in range(num_episodes):
                 obs, info = eval_env.reset(seed=eval_seed + ep)
                 done = False
                 ret = 0.0
                 while not done:
                     eval_key, subkey = jr.split(eval_key)
-                    action, _, override = self.act_override(subkey, obs, deterministic=False)
+                    action, _, override = self.act_override(
+                        subkey, obs, deterministic=False
+                    )
                     overrides.append(override)
                     obs, rew, terminated, truncated, info = eval_env.step(action)
                     ret += float(rew)
                     done = terminated or truncated
 
-                info["constraint"]["episode"].update({"override_rate": float(np.mean(overrides))})
+                info["constraint"]["episode"].update(
+                    {"override_rate": float(np.mean(overrides))}
+                )
                 overrides.clear()
 
                 returns.append(ret)
@@ -178,10 +235,14 @@ class RECOVERY_RL(QL):
 
     def act_override(self, key, obs, deterministic=False):
         key, key1, key2 = jr.split(key, 3)
-        action = task_action = self._act(key1, obs, self.Q, deterministic, self.boltzmann_temp, self._epsilon)
+        action = task_action = self._act(
+            key1, obs, self.Q, deterministic, self.boltzmann_temp, self._epsilon
+        )
         override = self.Q_risk[obs, action] > self.step_wise_risk
         if override:
-            action = self._act(key2, obs, self.Q_rec, deterministic, self.boltzmann_temp, 0.01)
+            action = self._act(
+                key2, obs, self.Q_rec, deterministic, self.boltzmann_temp, 0.01
+            )
         return self.prepare_act(action), self.prepare_act(task_action), override
 
     def act(self, key, obs, deterministic=False):
@@ -193,7 +254,9 @@ class RECOVERY_RL(QL):
             return self.select_action(Q[obs])
         else:
             return self.sample_action(
-                key, jnp.asarray(Q[obs], dtype=jnp.float32), boltzmann_temp, epsilon, exploration=self.exploration
+                key,
+                jnp.asarray(Q[obs], dtype=jnp.float32),
+                boltzmann_temp,
+                epsilon,
+                exploration=self.exploration,
             )
-
-

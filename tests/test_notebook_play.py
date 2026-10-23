@@ -177,19 +177,35 @@ def test_selector_notebooks_sync_selected_envs_during_play():
     for notebook_path in _SELECTOR_NOTEBOOK_PATHS:
         source = _notebook_source(notebook_path)
 
-        assert "from masa.common.rendering.notebook_play import make_reset_env, sync_selected_env" in source
+        assert (
+            "from masa.common.rendering.notebook_play import make_reset_env, sync_selected_env"
+            in source
+        )
         assert "follow_selector = env_name is None" in source
         assert "sync_selected_env(" in source
-        assert 'print("switched:", env_name)' in source or 'print("switched:", selected_env_name)' in source
+        assert (
+            'print("switched:", env_name)' in source
+            or 'print("switched:", selected_env_name)' in source
+        )
 
 
 def test_roads_notebook_runs_recorded_play_loop_in_background_thread():
     source = _notebook_source("notebooks/envs/continuous/play_roads.ipynb")
 
-    assert "from masa.common.rendering.notebook_play import start_recorded_play_thread" in source
+    assert (
+        "from masa.common.rendering.notebook_play import start_recorded_play_thread"
+        in source
+    )
     assert "def _run(stop_event):" in source
-    assert "while running and not stop_event.is_set() and not env.human_window_closed:" in source
-    assert 'return start_recorded_play_thread("roads", _run, record_video=RECORD_VIDEO, video_path=VIDEO_PATH)' in source
+    assert (
+        "while running and not stop_event.is_set() and not env.human_window_closed:"
+        in source
+    )
+    compact = "".join(source.split())
+    assert (
+        'start_recorded_play_thread("roads",_run,'
+        "record_video=RECORD_VIDEO,video_path=VIDEO_PATH)" in compact
+    )
 
 
 def test_selector_notebooks_play_off_the_kernel_main_thread():
@@ -197,7 +213,10 @@ def test_selector_notebooks_play_off_the_kernel_main_thread():
     for notebook_path in _SELECTOR_NOTEBOOK_PATHS:
         source = _notebook_source(notebook_path)
 
-        assert "from masa.common.rendering.notebook_play import start_recorded_play_thread" in source
+        assert (
+            "from masa.common.rendering.notebook_play import start_recorded_play_thread"
+            in source
+        )
         assert "def _run(stop_event):" in source
         assert "start_recorded_play_thread(" in source
         assert "stop_event.is_set()" in source

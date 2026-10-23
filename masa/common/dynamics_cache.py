@@ -33,7 +33,11 @@ _CACHE_DIR_ENV_VAR = "MASA_CACHE_DIR"
 
 def cache_enabled() -> bool:
     """Whether caching is switched on (``MASA_DISABLE_DYNAMICS_CACHE`` opts out)."""
-    return os.environ.get(_DISABLE_ENV_VAR, "").strip().lower() not in ("1", "true", "yes")
+    return os.environ.get(_DISABLE_ENV_VAR, "").strip().lower() not in (
+        "1",
+        "true",
+        "yes",
+    )
 
 
 def _repo_root() -> Path | None:

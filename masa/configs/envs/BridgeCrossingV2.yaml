@@ -4,11 +4,9 @@ defaults:
     max_episode_steps: 400
     label_fn: masa.envs.tabular.bridge_crossing_v2:label_fn
     cost_fn: masa.envs.tabular.bridge_crossing_v2:cost_fn
-
   constraint:
     type: PCTL
     alpha: 0.01
-
   run:
     total_timesteps: 2000000
     eval_every: 10000

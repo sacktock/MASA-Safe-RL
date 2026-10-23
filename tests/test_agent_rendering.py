@@ -12,7 +12,9 @@ def test_player_shirt_colours_start_blue_then_red() -> None:
 
 def test_player_shirt_colours_cycle_for_arbitrary_agent_ids() -> None:
     for agent_id in range(1, len(SHIRT_COLOURS) * 3 + 1):
-        assert shirt_colour(agent_id) == SHIRT_COLOURS[(agent_id - 1) % len(SHIRT_COLOURS)]
+        assert (
+            shirt_colour(agent_id) == SHIRT_COLOURS[(agent_id - 1) % len(SHIRT_COLOURS)]
+        )
 
 
 def test_agent_ids_are_one_indexed() -> None:

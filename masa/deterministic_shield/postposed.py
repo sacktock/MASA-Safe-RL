@@ -1,4 +1,5 @@
 """Preserve safe proposals and replace unsafe ones using a selected rule."""
+
 from __future__ import annotations
 
 from masa.common.constraints.ltl_safety import LTLSafetyEnv

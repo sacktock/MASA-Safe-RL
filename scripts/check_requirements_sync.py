@@ -4,6 +4,7 @@ The conda installation flow relies on ``requirements.txt`` while uv/PyPI
 consume ``[project.dependencies]`` in ``pyproject.toml``. This script
 compares the two with strict string equality so the files cannot drift.
 """
+
 from __future__ import annotations
 
 import re
@@ -49,8 +50,7 @@ def parse_pyproject(path: Path) -> dict[str, str]:
         name, remainder = _split_requirement(raw)
         if name in result:
             raise SystemExit(
-                f"Duplicate dependency '{name}' in {path.name} "
-                f"[project.dependencies]"
+                f"Duplicate dependency '{name}' in {path.name} [project.dependencies]"
             )
         result[name] = remainder
     return result

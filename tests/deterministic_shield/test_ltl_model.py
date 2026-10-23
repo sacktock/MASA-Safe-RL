@@ -20,7 +20,10 @@ def test_temporal_memory_and_initial_label(shield_class, make_shield, sparse):
     model[1, :, 0] = 1  # Neither request nor grant.
     model[2, :, 1] = 1  # Grant.
     env = make_shield(
-        shield_class, model=model, dfa=dfa, sparse=sparse,
+        shield_class,
+        model=model,
+        dfa=dfa,
+        sparse=sparse,
         labels=[{"request"}, set(), {"grant"}],
     )
     obs, info = env.reset(seed=0)
@@ -40,9 +43,7 @@ def test_tiny_unsafe_probability_is_not_ignored(shield_class, make_shield, spars
     model[0, 0, 0] = 1
     model[0, 0, 1], model[1, 0, 1] = 1 - 1e-14, 1e-14
     model[1, 1, :] = 1
-    env = make_shield(
-        shield_class, model=model, labels=[set(), {"bad"}], sparse=sparse
-    )
+    env = make_shield(shield_class, model=model, labels=[set(), {"bad"}], sparse=sparse)
     env.reset()
     np.testing.assert_array_equal(env.action_masks(), [True, False])
 

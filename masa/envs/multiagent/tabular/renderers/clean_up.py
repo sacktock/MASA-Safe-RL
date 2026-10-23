@@ -108,8 +108,12 @@ class CleanUpRenderer:
         return "\n".join("".join(row) for row in chars)
 
     def _render_rgb_array(self) -> np.ndarray:
-        cell = max(4, self.env.render_window_size // max(self.env._rows, self.env._cols))
-        frame = np.empty((self.env._rows * cell, self.env._cols * cell, 3), dtype=np.uint8)
+        cell = max(
+            4, self.env.render_window_size // max(self.env._rows, self.env._cols)
+        )
+        frame = np.empty(
+            (self.env._rows * cell, self.env._cols * cell, 3), dtype=np.uint8
+        )
         frame[:] = BLACK
         for y in range(self.env._rows):
             for x in range(self.env._cols):
@@ -205,9 +209,13 @@ class CleanUpRenderer:
         if avatar.orientation == 0:
             frame[y0 + pad : y0 + pad + tip, x0 + mid : x0 + mid + 2] = WHITE
         elif avatar.orientation == 1:
-            frame[y0 + mid : y0 + mid + 2, x0 + cell - pad - tip : x0 + cell - pad] = WHITE
+            frame[y0 + mid : y0 + mid + 2, x0 + cell - pad - tip : x0 + cell - pad] = (
+                WHITE
+            )
         elif avatar.orientation == 2:
-            frame[y0 + cell - pad - tip : y0 + cell - pad, x0 + mid : x0 + mid + 2] = WHITE
+            frame[y0 + cell - pad - tip : y0 + cell - pad, x0 + mid : x0 + mid + 2] = (
+                WHITE
+            )
         else:
             frame[y0 + mid : y0 + mid + 2, x0 + pad : x0 + pad + tip] = WHITE
 

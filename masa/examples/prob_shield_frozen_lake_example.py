@@ -35,7 +35,9 @@ def main():
     action[0] = 2  # right
     action[1] = 1  # down
 
-    safe_actions, bounds, proj_penalty, margin_penalty = env._project_act(*env._parse_act(action))
+    safe_actions, bounds, proj_penalty, margin_penalty = env._project_act(
+        *env._parse_act(action)
+    )
     print("Projected action distribution:", safe_actions)
     print("Projected successor bounds:", bounds)
     print("Projection penalty:", proj_penalty)

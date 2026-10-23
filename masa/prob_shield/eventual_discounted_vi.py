@@ -7,6 +7,7 @@ import numpy as np
 
 jax.config.update("jax_enable_x64", True)
 
+
 @jit
 def ev_vi_one_step(
     q_vals: jnp.ndarray,
@@ -21,6 +22,7 @@ def ev_vi_one_step(
     q_new = jnp.sum(r_next[..., None] * probabilities, axis=0)
     delta = jnp.max(jnp.abs(q_new - q_vals))
     return q_new, delta
+
 
 def jax_ev_value_iteration(
     q_init: jnp.ndarray,
@@ -56,6 +58,7 @@ def jax_ev_value_iteration(
     q_vals_final, _, _ = lax.while_loop(cond_fun, body_fun, init_state)
     return q_vals_final
 
+
 def ev_value_iteration(
     successor_states_matrix: np.ndarray,
     probabilities: np.ndarray,
@@ -78,13 +81,13 @@ def ev_value_iteration(
 
     # Turn unsafe states into absorbing states
     for s in range(n_states):
-        if cost_fn(label_fn(s)): # absorbing unsafe states
+        if cost_fn(label_fn(s)):  # absorbing unsafe states
             unsafe_states[s] = -1.0
             successor_states_abs[:, s] = s
             probabilities_abs[:, s, :] = 0.0
             probabilities_abs[0, s, :] = 1.0
 
-    gammas[unsafe_states==1.0] = gamma
+    gammas[unsafe_states == 1.0] = gamma
 
     successor_states_j = jnp.array(successor_states_abs, dtype=jnp.int64)
     probabilities_j = jnp.array(probabilities_abs, dtype=jnp.float64)

@@ -5,20 +5,25 @@ import numpy as np
 import math
 from masa.common.label_fn import LabelFn
 from masa.envs.continuous.base import ContinuousEnv
-from masa.envs.continuous.renderers.cartpole import CartPoleRenderer, validate_renderer_options
+from masa.envs.continuous.renderers.cartpole import (
+    CartPoleRenderer,
+    validate_renderer_options,
+)
 
-THETA_THESHOLD_RADIANS = 0.2095 # ~ 3/4 pi radians
+THETA_THESHOLD_RADIANS = 0.2095  # ~ 3/4 pi radians
 X_THRESHOLD = 2.4
+
 
 def label_fn(obs):
     x, x_dot, theta, theta_dot = obs
-    if np.abs(theta) <= THETA_THESHOLD_RADIANS \
-            and np.abs(x) <= X_THRESHOLD:
+    if np.abs(theta) <= THETA_THESHOLD_RADIANS and np.abs(x) <= X_THRESHOLD:
         return {"stable"}
     else:
         return set()
 
+
 cost_fn = lambda labels: 0.0 if "stable" in labels else 1.0
+
 
 class ContinuousCartpole(ContinuousEnv):
     metadata = {"render_modes": ["ansi", "rgb_array", "human"], "render_fps": 15}
@@ -48,12 +53,12 @@ class ContinuousCartpole(ContinuousEnv):
 
         high = np.array(
             [
-                self._x_threshold*2,
-                self._x_vel_threshold*2,
-                self._theta_threshold_radians*2,
-                self._theta_vel_threshold*2,
+                self._x_threshold * 2,
+                self._x_vel_threshold * 2,
+                self._theta_threshold_radians * 2,
+                self._theta_vel_threshold * 2,
             ],
-            dtype=np.float32
+            dtype=np.float32,
         )
 
         self.observation_space = spaces.Box(low=-high, high=high, dtype=np.float32)
@@ -80,9 +85,9 @@ class ContinuousCartpole(ContinuousEnv):
             self.np_random = np.random.default_rng(seed)
 
         self._state = self.np_random.uniform(
-            low=np.array([-0.05, -0.05, -0.05, -0.05]), 
-            high=np.array([0.05, 0.05, 0.05, 0.05]), 
-            size=(4,)
+            low=np.array([-0.05, -0.05, -0.05, -0.05]),
+            high=np.array([0.05, 0.05, 0.05, 0.05]),
+            size=(4,),
         )
         self._step_count = 0
         self._last_action = None
@@ -102,10 +107,10 @@ class ContinuousCartpole(ContinuousEnv):
         # For the interested reader:
         # https://coneural.org/florian/papers/05_cart_pole.pdf
         temp = (
-            force + self._polemass_length * theta_dot ** 2 * sintheta
+            force + self._polemass_length * theta_dot**2 * sintheta
         ) / self._total_mass
         thetaacc = (self._gravity * sintheta - costheta * temp) / (
-            self._length * (4.0 / 3.0 - self._masspole * costheta ** 2 / self._total_mass)
+            self._length * (4.0 / 3.0 - self._masspole * costheta**2 / self._total_mass)
         )
         xacc = temp - self._polemass_length * thetaacc * costheta / self._total_mass
 
@@ -124,8 +129,10 @@ class ContinuousCartpole(ContinuousEnv):
         self._step_count += 1
         self._last_action = np.array(action, dtype=np.float32)
 
-        stable = np.abs(theta) <= self._theta_threshold_radians \
+        stable = (
+            np.abs(theta) <= self._theta_threshold_radians
             and np.abs(x) <= self._x_threshold
+        )
 
         if self.render_mode == "human":
             self.render()

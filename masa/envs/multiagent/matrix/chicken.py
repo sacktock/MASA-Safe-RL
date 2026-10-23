@@ -168,9 +168,7 @@ class ChickenMatrix(TabularParallelEnv):
         act0 = int(actions.get(a0, Actions.Swerve))
         act1 = int(actions.get(a1, Actions.Swerve))
 
-        self._last_crash = (
-            act0 == Actions.Straight and act1 == Actions.Straight
-        )
+        self._last_crash = act0 == Actions.Straight and act1 == Actions.Straight
         if act0 == Actions.Straight and act1 == Actions.Swerve:
             r0, r1 = self.T, self.S
             outcome = "Straight-Swerve"
@@ -224,8 +222,7 @@ class ChickenMatrix(TabularParallelEnv):
             return None
         if not self._renderer:
             raise ValueError(
-                "Renderer missing; create env with render_mode='human' or "
-                "'rgb_array'."
+                "Renderer missing; create env with render_mode='human' or 'rgb_array'."
             )
 
         pay = {"T": self.T, "R": self.R, "S": self.S, "P": self.P}
@@ -273,9 +270,7 @@ class ChickenMatrix(TabularParallelEnv):
 
     def observations_from_state(self, state: int) -> dict[str, np.ndarray]:
         observation = self._observation_from_state(state)
-        return {
-            agent: observation.copy() for agent in self.possible_agents
-        }
+        return {agent: observation.copy() for agent in self.possible_agents}
 
     def _obs(self):
         return self._observation_from_state(self.get_state_id())
@@ -358,9 +353,7 @@ class ChickenMatrix(TabularParallelEnv):
                 "ChickenMatrix.set_state: last_actions must have length 2."
             )
         if len(cum_rewards) != 2:
-            raise ValueError(
-                "ChickenMatrix.set_state: cum_rewards must have length 2."
-            )
+            raise ValueError("ChickenMatrix.set_state: cum_rewards must have length 2.")
 
         self.agents = list(agents)
         self._round = int(round_no)

@@ -12,10 +12,10 @@ def read_support(
     Prefer the sparse dictionary. Dense MASA kernels use P[next, current, action].
     Missing/zero-mass actions are disabled, not vacuously safe.
     """
-    if getattr(base, "has_successor_states_dict", False):
+    if hasattr(base, "has_successor_states_dict") and base.has_successor_states_dict:
         successor_dict, probability_dict = base.get_successor_states_dict()
         transition = None
-    elif getattr(base, "has_transition_matrix", False):
+    elif hasattr(base, "has_transition_matrix") and base.has_transition_matrix:
         transition = np.asarray(base.get_transition_matrix())
         if transition.shape != (n_states, n_states, n_actions):
             raise ValueError("Expected transition shape (next_state, state, action).")
@@ -57,6 +57,6 @@ def read_support(
     successors = np.zeros((n_states, width), dtype=np.intp)
     support = np.zeros((n_states, n_actions, width), dtype=bool)
     for s, (ids, positive) in enumerate(rows):
-        successors[s, :len(ids)] = ids
-        support[s, :, :len(ids)] = positive
+        successors[s, : len(ids)] = ids
+        support[s, :, : len(ids)] = positive
     return successors, support

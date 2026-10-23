@@ -1,10 +1,14 @@
-from masa.prob_shield.prob_shield_wrapper_v2 import ProbShieldWrapperCont as ProbShieldWrapperContV2
+from masa.prob_shield.prob_shield_wrapper_v2 import (
+    ProbShieldWrapperCont as ProbShieldWrapperContV2,
+)
 from masa.prob_shield.parameterized_ppo_v2 import ParameterizedPPOV2
+
 
 def main():
     # Import the masa make_env function
     from masa.common.utils import make_env
-    '''
+
+    """
     def make_env(
         env_id: str, 
         constraint: str, 
@@ -19,34 +23,41 @@ def main():
         video_kwargs: Optional[dict[str, Any]] = None,
         **kw
     ) -> gym.Env:
-    '''
+    """
 
     # Import the labelling function for the ColourBombGridWorldV2 environment
     from masa.envs.tabular.colour_bomb_grid_world_v2 import label_fn
-    # Import make_dfa for property 3 
+
+    # Import make_dfa for property 3
     from masa.examples.colour_bomb_grid_world.property_3 import make_dfa
 
-    # We're going to use the LTLSafety constraint, which has key word args: (dfa: DFA, obs_type: str) 
+    # We're going to use the LTLSafety constraint, which has key word args: (dfa: DFA, obs_type: str)
     constraint_kwargs = dict(
-        dfa=make_dfa(), # creates an instance of the dfa
+        dfa=make_dfa(),  # creates an instance of the dfa
     )
 
     # First lets initialize the eval_env (env_id, constraint, max_epsiode_steps)
     # make_env wraps the environment in TimeLimit -> LabelledEnv -> LTLSafetyEnv -> ConstraintMonitor -> RewardMonitor
-    env = make_env("ColourBombGridWorldV2", "LTL_SAFETY", 250, label_fn=label_fn, constraint_kwargs=constraint_kwargs)
+    env = make_env(
+        "ColourBombGridWorldV2",
+        "LTL_SAFETY",
+        250,
+        label_fn=label_fn,
+        constraint_kwargs=constraint_kwargs,
+    )
 
     # Now we're going to wrap our environment in ProbShieldWrapperContV2
     #   the V2 wrapper is designed to prevent margin collapse during early training for better exploration
     # The wrapper takes one arg: env
-    #   and key word args: 
+    #   and key word args:
     #   theta: float = 1e-10,
     #   max_vi_steps: int = 1000,
     #   init_safety_bound: float = 0.5,
     env = ProbShieldWrapperContV2(
-        env, 
-        init_safety_bound=0.01, # safety constraint from the intial state
-        theta=1e-15, # early stopping condition for value iteration
-        max_vi_steps=10_000, # number of value iteration steps
+        env,
+        init_safety_bound=0.01,  # safety constraint from the intial state
+        theta=1e-15,  # early stopping condition for value iteration
+        max_vi_steps=10_000,  # number of value iteration steps
     )
 
     # ParameterizedPPOV2 is a on-policy algorithm that takes one arg: env
@@ -59,7 +70,7 @@ def main():
     #   device: str = "auto",
     #   verbose: int = 0,
     #   env_fn: Optional[Callable[[], gym.Env]] = None,
-    #   eval_env: Optional[gym.Env] = None, 
+    #   eval_env: Optional[gym.Env] = None,
     #   learning_rate: Union[float, optax.Schedule] = 3e-4,
     #   n_steps: int = 2048,
     #   batch_size: int = 64,
@@ -79,7 +90,13 @@ def main():
     # First lets initialize the eval_env
     # We can reuse constraint kwargs here as dfa_to_costfn internally creates a deepcopy of the dfa
     eval_env = ProbShieldWrapperContV2(
-        make_env("ColourBombGridWorldV2", "LTL_SAFETY", 250, label_fn=label_fn, constraint_kwargs=constraint_kwargs),
+        make_env(
+            "ColourBombGridWorldV2",
+            "LTL_SAFETY",
+            250,
+            label_fn=label_fn,
+            constraint_kwargs=constraint_kwargs,
+        ),
         init_safety_bound=0.01,
         theta=1e-15,
         max_vi_steps=10_000,
@@ -88,31 +105,32 @@ def main():
     # We can initialize the policy with a greater log_std as margin collapse is not an issue
     policy_kwargs = dict(
         log_std_init=1.0,
-        conditional_mix_network=True # flag makes the continuous mixing action conditional on an embedding of the discrete actions
+        conditional_mix_network=True,  # flag makes the continuous mixing action conditional on an embedding of the discrete actions
     )
 
     algo = ParameterizedPPOV2(
         env,
-        tensorboard_logdir=None, # ignoring tensorboard logging
+        tensorboard_logdir=None,  # ignoring tensorboard logging
         seed=0,
-        monitor=True, # monitors training progress
-        device="auto", 
-        verbose=0, # verbosity level for monitoring
-        eval_env=eval_env, # separate environment instance for eval
-        policy_kwargs=policy_kwargs
+        monitor=True,  # monitors training progress
+        device="auto",
+        verbose=0,  # verbosity level for monitoring
+        eval_env=eval_env,  # separate environment instance for eval
+        policy_kwargs=policy_kwargs,
         # Using the ParameterizedPPOV2 specific defaults after this
     )
 
     # Now we begin training
     algo.train(
-        num_frames=1_000_000, # total number of frames (environment interactions)
-        num_eval_episodes=10, # total number of evaluation episodes to run
-        eval_freq=10_000, # how frequently to run evaluation (default=0 => never run evaluation)
-        log_freq=10_000, # how frequenntly to log metrics to stdout or tensorboard
+        num_frames=1_000_000,  # total number of frames (environment interactions)
+        num_eval_episodes=10,  # total number of evaluation episodes to run
+        eval_freq=10_000,  # how frequently to run evaluation (default=0 => never run evaluation)
+        log_freq=10_000,  # how frequenntly to log metrics to stdout or tensorboard
         # prefill: Optional[int] = None (not implemented yet)
         # save_freq: int = 0, (not implemented yet)
-        stats_window_size=100, # sliding window size for metrics logging
+        stats_window_size=100,  # sliding window size for metrics logging
     )
+
 
 if __name__ == "__main__":
     main()

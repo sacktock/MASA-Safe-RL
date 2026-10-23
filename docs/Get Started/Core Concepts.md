@@ -9,12 +9,15 @@ At its core, **reinforcement learning** studies how an *agent* learns to make de
 ### The Agent-Environment Loop
 
 The interaction proceeds in discrete time steps:
-1. The environment provides an **observation** $o_t$ describing the current situation.
-2. The agent chooses an **action** $a_t$ based on that observation.
-3. The environment transitions to a new state and returns:
 
-   * a **reward** $r_t$, and
-   * the next observation $o_{t+1}$.
+1. The environment provides an **observation** $o_t$ describing the current situation.
+
+1. The agent chooses an **action** $a_t$ based on that observation.
+
+1. The environment transitions to a new state and returns:
+
+    - a **reward** $r_t$, and
+    - the next observation $o_{t+1}$.
 
 The agent's goal is to learn a *policy* $\pi(a \mid o)$ that maximises expected cumulative reward over time.
 
@@ -32,10 +35,10 @@ Most modern RL code is built around the **Gymnasium** API, which standardises ho
 
 A Gymnasium environment exposes two key methods:
 
-* `reset()`
-  Starts a new episode and returns an initial observation.
-* `step(action)`
-  Advances the environment by one step.
+- `reset()`
+    Starts a new episode and returns an initial observation.
+- `step(action)`
+    Advances the environment by one step.
 
 ### Minimal Example
 
@@ -55,9 +58,9 @@ while not done:
 
 Key points:
 
-* **Observations** are typically arrays, dicts, or tuples.
-* **Actions** live in an `action_space`.
-* Episodes end when `terminated` (task finished/failure) or `truncated` (time limit).
+- **Observations** are typically arrays, dicts, or tuples.
+- **Actions** live in an `action_space`.
+- Episodes end when `terminated` (task finished/failure) or `truncated` (time limit).
 
 MASA is designed to *layer safety concepts on top of this exact interaction pattern*, without changing how agents are written.
 
@@ -67,9 +70,9 @@ In many applications, **maximising reward is not enough**.
 
 Examples:
 
-* A robot must *never* collide with humans.
-* A controller must keep energy consumption below a budget.
-* A system must avoid unsafe states *at all times*, not just on average.
+- A robot must *never* collide with humans.
+- A controller must keep energy consumption below a budget.
+- A system must avoid unsafe states *at all times*, not just on average.
 
 **Safe reinforcement learning** augments the RL objective with **constraints**.
 
@@ -86,20 +89,20 @@ $$
 Example:
 
 ```python
-reward = +1.0          # task progress
-cost   = 0.1           # energy usage
+reward = +1.0  # task progress
+cost = 0.1  # energy usage
 ```
 
 Here:
 
-* Costs accumulate over time.
-* Violations are *soft*: occasional violations may be acceptable if the budget holds.
+- Costs accumulate over time.
+- Violations are *soft*: occasional violations may be acceptable if the budget holds.
 
 This is well-suited for:
 
-* Resource limits
-* Risk-sensitive control
-* Average safety constraints
+- Resource limits
+- Risk-sensitive control
+- Average safety constraints
 
 ### 2. Absolute Safety: Unsafe States
 
@@ -107,8 +110,8 @@ Some settings demand **zero tolerance** for failure.
 
 Example:
 
-* Entering an unsafe region ends the episode immediately.
-* Any policy that reaches such a state is unacceptable.
+- Entering an unsafe region ends the episode immediately.
+- Any policy that reaches such a state is unacceptable.
 
 ```python
 if "unsafe" in labels:
@@ -117,9 +120,9 @@ if "unsafe" in labels:
 
 Characteristics:
 
-* Binary notion of safety.
-* Violations are *hard* and irreversible.
-* Often modeled via absorbing failure states.
+- Binary notion of safety.
+- Violations are *hard* and irreversible.
+- Often modeled via absorbing failure states.
 
 ## MASA's Perspective on Safety
 
@@ -132,9 +135,9 @@ Instead, it provides a **canonical interface** that allows *many* safety formali
 MASA aims to:
 
 1. **Decouple safety from environment dynamics**
-2. **Standardise safety signals across methods**
-3. **Support both simple and expressive constraints**
-4. **Integrate cleanly with Gymnasium and RL libraries**
+1. **Standardise safety signals across methods**
+1. **Support both simple and expressive constraints**
+1. **Integrate cleanly with Gymnasium and RL libraries**
 
 ## The MASA Abstraction Stack
 
@@ -154,7 +157,7 @@ A labelling function extracts *semantic predicates* from observations, such as:
 
 These labels form the **interface between raw observations and safety logic**.
 
----
+______________________________________________________________________
 
 ### 2. Cost Functions
 
@@ -164,9 +167,9 @@ labels -> scalar cost
 
 Cost functions convert semantic events into numeric signals:
 
-* step-wise costs
-* shaped penalties
-* violation indicators
+- step-wise costs
+- shaped penalties
+- violation indicators
 
 This unifies CMDPs, penalties, and safety metrics under one API.
 
@@ -174,17 +177,17 @@ This unifies CMDPs, penalties, and safety metrics under one API.
 
 Constraints are **stateful objects** that:
 
-* update on each step using labels,
-* track safety-relevant internal state,
-* expose *step-level* and *episode-level* metrics.
+- update on each step using labels,
+- track safety-relevant internal state,
+- expose *step-level* and *episode-level* metrics.
 
 MASA constraints can be:
 
-* simple (running cost sums),
-* automaton-based (Safety LTL),
-* probabilistic (bounded PCTL).
+- simple (running cost sums),
+- automaton-based (Safety LTL),
+- probabilistic (bounded PCTL).
 
-### 4. Overview 
+### 4. Overview
 
 <figure markdown="1">
 
@@ -199,19 +202,19 @@ Overview of the abstraction stack used in MASA
 
 Beyond scalar costs, MASA supports **formal temporal specifications**, including:
 
-* **Safety LTL**
+- **Safety LTL**
 
-  > "Something bad never happens."
+    > "Something bad never happens."
 
-* **Bounded PCTL**
+- **Bounded PCTL**
 
-  > "The probability of failure within `T` steps is at most `p`."
+    > "The probability of failure within `T` steps is at most `p`."
 
 These specifications are compiled into **monitors** that:
 
-* evolve alongside the environment,
-* emit costs and metrics,
-* integrate seamlessly with RL training loops.
+- evolve alongside the environment,
+- emit costs and metrics,
+- integrate seamlessly with RL training loops.
 
 ## Next Steps
 

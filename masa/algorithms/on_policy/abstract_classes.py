@@ -10,6 +10,7 @@ from masa.common.on_policy_algorithm import OnPolicyAlgorithm
 from masa.common.buffers import CostRolloutBuffer
 from masa.common.metrics import TrainLogger
 
+
 class OnPolicyCostAlgorithm(OnPolicyAlgorithm, ABC):
     """Abstract cost-aware on-policy algorithm mixin."""
 
@@ -25,10 +26,10 @@ class OnPolicyCostAlgorithm(OnPolicyAlgorithm, ABC):
             )
 
         self.constraint = env._constraint
-        self.constraint_type = str(getattr(self.constraint, "constraint_type", ""))
+        self.constraint_type = str(self.constraint)
 
         if self.constraint_type == "CMDP":
-            budget = getattr(self.constraint, "budget", None)
+            budget = self.constraint.budget
             if budget is not None and self.cost_limit != budget:
                 warnings.warn(
                     f"cost_limit={self.cost_limit} does not match CMDP "
@@ -37,7 +38,7 @@ class OnPolicyCostAlgorithm(OnPolicyAlgorithm, ABC):
                 self.cost_limit = budget
 
         elif self.constraint_type == "PCTL":
-            alpha = getattr(self.constraint, "alpha", None)
+            alpha = self.constraint.alpha
             if alpha is not None and self.cost_limit != alpha:
                 warnings.warn(
                     f"cost_limit={self.cost_limit} does not match PCTL "
@@ -50,7 +51,7 @@ class OnPolicyCostAlgorithm(OnPolicyAlgorithm, ABC):
 
         else:
             warnings.warn(
-                f"Constraint type {constraint_type!r} not recognised; using "
+                f"Constraint type {self.constraint_type} not recognised; using "
                 f"provided cost_limit={self.cost_limit}. Please double-check "
                 "constraint semantics are compatible with cost-style CMDP algorithms.",
             )
@@ -74,7 +75,7 @@ class OnPolicyCostAlgorithm(OnPolicyAlgorithm, ABC):
         self.cost_critic = self.policy.cost_critic  # type: ignore[assignment]
 
     def train(self, *args, **kwargs):
-        self._last_cost_episode_start = [True]*self.n_envs
+        self._last_cost_episode_start = [True] * self.n_envs
         self._cost_accumulator = np.zeros(self.n_envs, dtype=np.float32)
         if not hasattr(self, "_mean_ep_cost"):
             self._mean_ep_cost = None
@@ -90,7 +91,9 @@ class OnPolicyCostAlgorithm(OnPolicyAlgorithm, ABC):
             est = np.clip(est, 0.0, 1.0)
         return float(np.mean(est))
 
-    def _update_mean_ep_cost(self, ep_costs: list, last_cost_value=np.array(0.0)) -> None:
+    def _update_mean_ep_cost(
+        self, ep_costs: list, last_cost_value=np.array(0.0)
+    ) -> None:
         """Update the running per-episode EWMA estimate of the mean episode cost."""
         b = self.cost_ewma_beta
         prev = self._mean_ep_cost
@@ -108,7 +111,7 @@ class OnPolicyCostAlgorithm(OnPolicyAlgorithm, ABC):
         self.mean_ep_cost = prev
 
     def rollout(
-        self, 
+        self,
         step: int,
         logger: Optional[TrainLogger] = None,
         tqdm_position: int = 1,
@@ -130,7 +133,8 @@ class OnPolicyCostAlgorithm(OnPolicyAlgorithm, ABC):
                 dynamic_ncols=True,
                 colour="green",
             )
-            if self.use_tqdm_rollout else nullcontext()
+            if self.use_tqdm_rollout
+            else nullcontext()
         )
 
         with pbar_context as pbar:
@@ -138,40 +142,65 @@ class OnPolicyCostAlgorithm(OnPolicyAlgorithm, ABC):
                 self.policy.reset_noise()
 
                 obs = self.prepare_obs(self._last_obs, n_envs=self.n_envs)
-                actions, log_probs, values, cost_values = self.policy.predict_all(self.policy.noise_key, obs)
+                actions, log_probs, values, cost_values = self.policy.predict_all(
+                    self.policy.noise_key, obs
+                )
 
                 actions = np.array(actions)
                 log_probs = np.array(log_probs)
                 values = np.array(values)
                 cost_values = np.array(cost_values)
 
-                new_obs, rewards, terminated, truncated, infos = self.env.step(self.prepare_act(actions, n_envs=self.n_envs))
+                new_obs, rewards, terminated, truncated, infos = self.env.step(
+                    self.prepare_act(actions, n_envs=self.n_envs)
+                )
 
-                costs = np.array([info["constraint"]["step"].get("cost", 0.0) for info in infos])
-                cost_dones = np.array([info["constraint"]["step"].get("cost_done", False) for info in infos])
+                costs = np.array(
+                    [info["constraint"]["step"].get("cost", 0.0) for info in infos]
+                )
+                cost_dones = np.array(
+                    [
+                        info["constraint"]["step"].get("cost_done", False)
+                        for info in infos
+                    ]
+                )
 
                 self._cost_accumulator += costs
 
                 for info in infos:
                     if "episode" in info["constraint"]:
                         if self.constraint_type == "CMDP":
-                            ep_costs.append(info["constraint"]["episode"].get("cum_cost", 0.0))
+                            ep_costs.append(
+                                info["constraint"]["episode"].get("cum_cost", 0.0)
+                            )
                         elif self.constraint_type == "PCTL":
-                            ep_costs.append(1.0 - info["constraint"]["episode"].get("satisfied", 0.0))
+                            ep_costs.append(
+                                1.0
+                                - info["constraint"]["episode"].get("satisfied", 0.0)
+                            )
                         elif self.constraint_type == "LTL_SAFETY":
-                            ep_costs.append(1.0 - info["constraint"]["episode"].get("satisfied", 0.0))
+                            ep_costs.append(
+                                1.0
+                                - info["constraint"]["episode"].get("satisfied", 0.0)
+                            )
                         elif self.constraint_type == "REACH_AVOID":
-                            ep_costs.append(info["constraint"]["episode"].get("violated", 0.0))
+                            ep_costs.append(
+                                info["constraint"]["episode"].get("violated", 0.0)
+                            )
                         elif self.constraint_type == "PROB":
-                            ep_costs.append(info["constraint"]["episode"].get("cum_unsafe", 0.0))
+                            ep_costs.append(
+                                info["constraint"]["episode"].get("cum_unsafe", 0.0)
+                            )
                         else:
-                            ep_costs.append(info["constraint"]["episode"].get("cum_cost", 0.0))
+                            ep_costs.append(
+                                info["constraint"]["episode"].get("cum_cost", 0.0)
+                            )
 
                 new_obs = np.array(new_obs)
                 rewards = np.array(rewards)
-            
+
                 steps += 1
-                
+
                 if self.use_tqdm_rollout:
                     pbar.update(1)
 
@@ -180,12 +209,14 @@ class OnPolicyCostAlgorithm(OnPolicyAlgorithm, ABC):
                     actions = np.array(actions)
                     actions = actions.reshape(-1, 1)
 
-                dones = np.array([False]*self.n_envs)
+                dones = np.array([False] * self.n_envs)
 
                 for idx, info in enumerate(infos):
                     if truncated[idx]:
                         truncated_obs = new_obs[idx].reshape(1, -1)
-                        feats = self.featurizer.apply(self.policy.featurizer_state.params, truncated_obs)
+                        feats = self.featurizer.apply(
+                            self.policy.featurizer_state.params, truncated_obs
+                        )
                         terminal_value = np.array(
                             self.critic.apply(
                                 self.policy.critic_state.params,
@@ -221,8 +252,10 @@ class OnPolicyCostAlgorithm(OnPolicyAlgorithm, ABC):
                 if np.any(cost_dones):
                     for i, cost_done in enumerate(cost_dones):
                         if self.constraint_type == "REACH_AVOID":
-                            dones[i] = cost_done # terminate the episode if we reach the avoid state
-                        #if self.constraint_type == "LTL_SAFETY":
+                            dones[i] = (
+                                cost_done  # terminate the episode if we reach the avoid state
+                            )
+                        # if self.constraint_type == "LTL_SAFETY":
                         #    self.env.envs[i]._constraint.cost_fn.reset() # reset the DFA const function and continue the episode
 
                 if np.any(dones):
@@ -240,7 +273,7 @@ class OnPolicyCostAlgorithm(OnPolicyAlgorithm, ABC):
                     for info in infos:
                         logger.add("train/rollout", info)
 
-        assert isinstance(self._last_obs, np.ndarray) 
+        assert isinstance(self._last_obs, np.ndarray)
         final_obs = self.prepare_obs(self._last_obs, n_envs=self.n_envs)
         feats = self.featurizer.apply(self.policy.featurizer_state.params, final_obs)
         last_value = np.array(
@@ -262,12 +295,16 @@ class OnPolicyCostAlgorithm(OnPolicyAlgorithm, ABC):
         )
 
         self.rollout_buffer.compute_returns_and_advantages(
-            last_value=last_value, last_cost_value=last_cost_value, done=self._last_episode_start, cost_done=self._last_cost_episode_start
+            last_value=last_value,
+            last_cost_value=last_cost_value,
+            done=self._last_episode_start,
+            cost_done=self._last_cost_episode_start,
         )
 
         self._update_mean_ep_cost(ep_costs, last_cost_value=last_cost_value)
 
         return ep_costs
+
 
 class OnPolicyNaiveLagrangeAlgorithm(OnPolicyCostAlgorithm, ABC):
     """Abstract cost-aware on-policy algorithm with naive Lagrange dual updates."""
@@ -276,8 +313,9 @@ class OnPolicyNaiveLagrangeAlgorithm(OnPolicyCostAlgorithm, ABC):
         self.lagrangian_multiplier += self.lambda_lr * (mean_ep_cost - self.cost_limit)
         self.lagrangian_multiplier = max(0.0, self.lagrangian_multiplier)
         if self.lagrangian_upper_bound is not None:
-            self.lagrangian_multiplier = min(self.lagrangian_multiplier, self.lagrangian_upper_bound)
-
+            self.lagrangian_multiplier = min(
+                self.lagrangian_multiplier, self.lagrangian_upper_bound
+            )
 
     def rollout(
         self,
@@ -292,4 +330,3 @@ class OnPolicyNaiveLagrangeAlgorithm(OnPolicyCostAlgorithm, ABC):
         )
 
         self._update_lagrange_multiplier(self.mean_ep_cost)
-            

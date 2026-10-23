@@ -1,7 +1,7 @@
 from masa.algorithms.tabular.recreg import RECERG
 
-class RECREG_MODEL_BASED(RECERG):
 
+class RECREG_MODEL_BASED(RECERG):
     def __init__(
         self,
         *args,

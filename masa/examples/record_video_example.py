@@ -31,10 +31,12 @@ class RecordNextEpisodeEveryNSteps:
         self.pending_recordings -= 1
         return True
 
+
 def main():
     # Import the masa make_env function
     from masa.common.utils import make_env
-    '''
+
+    """
     def make_env(
         env_id: str, 
         constraint: str, 
@@ -49,12 +51,12 @@ def main():
         video_kwargs: Optional[dict[str, Any]] = None,
         **kw
     ) -> gym.Env:
-    '''
+    """
 
     # Import the labelling and cost functions for the PacmanWithCoins
     from masa.envs.discrete.pacman_with_coins import label_fn, cost_fn
 
-    # We're going to use the PCTL constraint, which has key word args: (cost_fn CostFn: = DummyCostFn, alpha: float = 0.01) 
+    # We're going to use the PCTL constraint, which has key word args: (cost_fn CostFn: = DummyCostFn, alpha: float = 0.01)
     constraint_kwargs = dict(
         cost_fn=cost_fn,
         alpha=0.01,
@@ -63,12 +65,12 @@ def main():
     # Intialize the environment (env_id, constraint, max_epsiode_steps) with video logging
     # make_env wraps the environment in TimeLimit -> LabelledEnv -> PCTLEnv -> ConstraintMonitor -> RewardMonitor -> RecordVideo
     env = make_env(
-        "PacmanWithCoins", 
-        "PCTL", 
-        1000, 
-        label_fn=label_fn, 
+        "PacmanWithCoins",
+        "PCTL",
+        1000,
+        label_fn=label_fn,
         constraint_kwargs=constraint_kwargs,
-        env_kwargs = {"render_mode": "rgb_array"},
+        env_kwargs={"render_mode": "rgb_array"},
         record_video=True,
         record_video_episode_trigger=RecordNextEpisodeEveryNSteps(10_000),
         video_folder="videos/PPO-PacmanWithCoins-Seed-0",
@@ -88,7 +90,7 @@ def main():
     #   device: str = "auto",
     #   verbose: int = 0,
     #   env_fn: Optional[Callable[[], gym.Env]] = None,
-    #   eval_env: Optional[gym.Env] = None, 
+    #   eval_env: Optional[gym.Env] = None,
     #   learning_rate: Union[float, optax.Schedule] = 3e-4,
     #   n_steps: int = 2048,
     #   batch_size: int = 64,
@@ -103,16 +105,18 @@ def main():
     #   policy_class: type[BaseJaxPolicy] = PPOPolicy,
     #   policy_kwargs: Optional[dict[str, Any]] = None,
 
-    # First lets initialize the eval_env with video logging 
+    # First lets initialize the eval_env with video logging
     eval_env = make_env(
-        "PacmanWithCoins", 
-        "PCTL", 
-        1000, 
-        label_fn=label_fn, 
+        "PacmanWithCoins",
+        "PCTL",
+        1000,
+        label_fn=label_fn,
         constraint_kwargs=constraint_kwargs,
-        env_kwargs = {"render_mode": "rgb_array"},
+        env_kwargs={"render_mode": "rgb_array"},
         record_video=True,
-        record_video_episode_trigger=lambda x: x % 10 == 0, # log one evale epsiode every 10 epsiodes
+        record_video_episode_trigger=lambda x: (
+            x % 10 == 0
+        ),  # log one evale epsiode every 10 epsiodes
         video_folder="videos/PPO-PacmanWithCoins-Seed-0",
         video_kwargs={
             "name_prefix": "eval",
@@ -121,27 +125,28 @@ def main():
 
     algo = PPO(
         env,
-        tensorboard_logdir=None, # ignoring tensorboard logging
+        tensorboard_logdir=None,  # ignoring tensorboard logging
         seed=0,
-        monitor=True, # monitors training progress
-        device="auto", 
-        verbose=0, # verbosity level for monitoring
-        eval_env=eval_env, # separate environment instance for eval
+        monitor=True,  # monitors training progress
+        device="auto",
+        verbose=0,  # verbosity level for monitoring
+        eval_env=eval_env,  # separate environment instance for eval
     )
 
     # Now we begin training
     algo.train(
-        num_frames=500_000, # total number of frames (environment interactions)
-        num_eval_episodes=10, # total number of evaluation episodes to run
-        eval_freq=10_000, # how frequently to run evaluation (default=0 => never run evaluation)
-        log_freq=10_000, # how frequenntly to log metrics to stdout or tensorboard
+        num_frames=500_000,  # total number of frames (environment interactions)
+        num_eval_episodes=10,  # total number of evaluation episodes to run
+        eval_freq=10_000,  # how frequently to run evaluation (default=0 => never run evaluation)
+        log_freq=10_000,  # how frequenntly to log metrics to stdout or tensorboard
         # prefill: Optional[int] = None (not implemented yet)
         # save_freq: int = 0, (not implemented yet)
-        stats_window_size=100, # sliding window size for metrics logging
+        stats_window_size=100,  # sliding window size for metrics logging
     )
 
     env.close()
     eval_env.close()
+
 
 if __name__ == "__main__":
     main()

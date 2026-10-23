@@ -44,8 +44,11 @@ def render_spec(spec: PlotSpec, ctx: RenderContext, output_dir: Path) -> Optiona
     if spec.figure_builder is not None:
         figsize = spec.figsize or (10.0, 7.0)
         fig = plt.figure(figsize=figsize)
-        fig.suptitle(spec.suptitle_fmt.format(env_title=env_title),
-                     fontsize=14, fontweight="bold")
+        fig.suptitle(
+            spec.suptitle_fmt.format(env_title=env_title),
+            fontsize=14,
+            fontweight="bold",
+        )
         try:
             spec.figure_builder(fig, ctx, drawn)
         except Exception as e:
@@ -62,14 +65,22 @@ def render_spec(spec: PlotSpec, ctx: RenderContext, output_dir: Path) -> Optiona
             log.info(f"  {spec.id} / {ctx.env}: no panels resolved, skipping.")
             return None
         rows, cols = spec.resolve_grid(panels)
-        figsize = spec.figsize or (DEFAULT_CELL[0] * cols + 1.5, DEFAULT_CELL[1] * rows + 1.0)
+        figsize = spec.figsize or (
+            DEFAULT_CELL[0] * cols + 1.5,
+            DEFAULT_CELL[1] * rows + 1.0,
+        )
         fig, axs = plt.subplots(rows, cols, figsize=figsize, squeeze=False)
         axs_flat = axs.flatten()
-        fig.suptitle(spec.suptitle_fmt.format(env_title=env_title),
-                     fontsize=14, fontweight="bold")
+        fig.suptitle(
+            spec.suptitle_fmt.format(env_title=env_title),
+            fontsize=14,
+            fontweight="bold",
+        )
         for i, panel in enumerate(panels):
             if i >= len(axs_flat):
-                log.warning(f"  {spec.id}: panel #{i} ({panel.title}) exceeds grid {rows}x{cols}")
+                log.warning(
+                    f"  {spec.id}: panel #{i} ({panel.title}) exceeds grid {rows}x{cols}"
+                )
                 break
             ax = axs_flat[i]
             try:
@@ -86,7 +97,11 @@ def render_spec(spec: PlotSpec, ctx: RenderContext, output_dir: Path) -> Optiona
 
     plt.tight_layout(rect=[0, 0.04, 1, 0.96])
 
-    out_dir = ensure_dir(output_dir / spec.out_subdir) if spec.out_subdir else ensure_dir(output_dir)
+    out_dir = (
+        ensure_dir(output_dir / spec.out_subdir)
+        if spec.out_subdir
+        else ensure_dir(output_dir)
+    )
     out_path = out_dir / f"{spec.id}_{ctx.env}.png"
     fig.savefig(out_path, dpi=200, bbox_inches="tight")
     plt.close(fig)
@@ -132,7 +147,9 @@ def _draw_aggregated(ax, panel: Panel, ctx: RenderContext, drawn: set[str]) -> N
             if band.lower in sub.columns and band.upper in sub.columns:
                 lo = _maybe_smooth(sub[band.lower].values, panel.smooth_alpha)
                 hi = _maybe_smooth(sub[band.upper].values, panel.smooth_alpha)
-                ax.fill_between(steps, lo, hi, color=v.colour, alpha=band.alpha, linewidth=0)
+                ax.fill_between(
+                    steps, lo, hi, color=v.colour, alpha=band.alpha, linewidth=0
+                )
         drawn.add(v.name)
 
 
@@ -152,13 +169,20 @@ def _draw_per_seed(ax, panel: Panel, ctx: RenderContext, drawn: set[str]) -> Non
                 continue
             steps = sub["step"].values / STEP_SCALE
             values = _maybe_smooth(sub["value"].values, panel.smooth_alpha)
-            ax.plot(steps, values, color=v.colour, linewidth=1.6,
-                    alpha=0.95 if i == 0 else 0.55,
-                    linestyle="-" if i == 0 else "--")
+            ax.plot(
+                steps,
+                values,
+                color=v.colour,
+                linewidth=1.6,
+                alpha=0.95 if i == 0 else 0.55,
+                linestyle="-" if i == 0 else "--",
+            )
         drawn.add(v.name)
 
 
-def _draw_logged_quantile(ax, panel: Panel, ctx: RenderContext, drawn: set[str]) -> None:
+def _draw_logged_quantile(
+    ax, panel: Panel, ctx: RenderContext, drawn: set[str]
+) -> None:
     seed = ctx.seed_for_logged_quantiles
     df = ctx.long_df
     df = df[(df["env"] == ctx.env) & (df["seed"] == seed)]
@@ -175,7 +199,9 @@ def _draw_logged_quantile(ax, panel: Panel, ctx: RenderContext, drawn: set[str])
             continue
         steps = central_sub["step"].values / STEP_SCALE
         central_vals = _maybe_smooth(central_sub["value"].values, panel.smooth_alpha)
-        ax.plot(steps, central_vals, color=v.colour, linewidth=1.6, linestyle=v.linestyle)
+        ax.plot(
+            steps, central_vals, color=v.colour, linewidth=1.6, linestyle=v.linestyle
+        )
         for band in panel.bands:
             lo_col = f"{base}_{band.lower}"
             hi_col = f"{base}_{band.upper}"
@@ -183,7 +209,9 @@ def _draw_logged_quantile(ax, panel: Panel, ctx: RenderContext, drawn: set[str])
             hi_sub = sub_v[sub_v["metric"] == hi_col][["step", "value"]]
             if lo_sub.empty or hi_sub.empty:
                 continue
-            merged = lo_sub.merge(hi_sub, on="step", suffixes=("_lo", "_hi")).sort_values("step")
+            merged = lo_sub.merge(
+                hi_sub, on="step", suffixes=("_lo", "_hi")
+            ).sort_values("step")
             if merged.empty:
                 continue
             s = merged["step"].values / STEP_SCALE
@@ -202,8 +230,13 @@ def _finalise_panel(ax, panel: Panel) -> None:
     if panel.ylim is not None:
         ax.set_ylim(*panel.ylim)
     for hl in panel.hlines:
-        ax.axhline(hl.y, color=hl.colour, linestyle=hl.style,
-                   linewidth=hl.linewidth, alpha=hl.alpha)
+        ax.axhline(
+            hl.y,
+            color=hl.colour,
+            linestyle=hl.style,
+            linewidth=hl.linewidth,
+            alpha=hl.alpha,
+        )
     ax.set_xlim(left=0)
     ax.tick_params(axis="x", direction="in", top=True)
     ax.tick_params(axis="y", direction="in", right=True)
@@ -211,12 +244,20 @@ def _finalise_panel(ax, panel: Panel) -> None:
 
 def _draw_legend(fig, variants: Sequence[VariantStyle], drawn: set[str]) -> None:
     ordered = [v for v in sorted(variants, key=lambda x: x.order) if v.name in drawn]
-    handles = [Line2D([0], [0], color=v.colour, linewidth=2.0, linestyle=v.linestyle) for v in ordered]
+    handles = [
+        Line2D([0], [0], color=v.colour, linewidth=2.0, linestyle=v.linestyle)
+        for v in ordered
+    ]
     labels = [v.label for v in ordered]
-    fig.legend(handles, labels,
-               loc="lower center", ncol=min(4, max(1, len(ordered))),
-               bbox_to_anchor=(0.5, -0.02),
-               fontsize=11, handlelength=2.5)
+    fig.legend(
+        handles,
+        labels,
+        loc="lower center",
+        ncol=min(4, max(1, len(ordered))),
+        bbox_to_anchor=(0.5, -0.02),
+        fontsize=11,
+        handlelength=2.5,
+    )
 
 
 def _filter_variants(panel: Panel, ctx: RenderContext) -> list[VariantStyle]:

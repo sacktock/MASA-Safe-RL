@@ -1,4 +1,5 @@
 """Base class for finite PettingZoo parallel environments."""
+
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
@@ -82,10 +83,7 @@ class TabularParallelEnv(ParallelEnv):
 
     @property
     def has_successor_states_dict(self) -> bool:
-        return (
-            self._successor_states is not None
-            and self._transition_probs is not None
-        )
+        return self._successor_states is not None and self._transition_probs is not None
 
     def get_transition_matrix(self) -> np.ndarray | None:
         """Return ``P[next_state, state, joint_action_index]``, when available."""
@@ -93,10 +91,13 @@ class TabularParallelEnv(ParallelEnv):
 
     def get_successor_states_dict(
         self,
-    ) -> tuple[
-        Mapping[int, Sequence[int]],
-        Mapping[tuple[int, int], Sequence[float]],
-    ] | None:
+    ) -> (
+        tuple[
+            Mapping[int, Sequence[int]],
+            Mapping[tuple[int, int], Sequence[float]],
+        ]
+        | None
+    ):
         """Return the sparse state-successor/probability representation.
 
         Probability vectors are aligned with ``successor_states[state]`` and
@@ -113,9 +114,7 @@ class TabularParallelEnv(ParallelEnv):
             raise TypeError(f"State ID must be an integer, got {state!r}.")
         state = int(state)
         if not 0 <= state < self.n_states:
-            raise ValueError(
-                f"State ID {state} is outside [0, {self.n_states})."
-            )
+            raise ValueError(f"State ID {state} is outside [0, {self.n_states}).")
         return state
 
     def _joint_action_tuple(
@@ -156,9 +155,7 @@ class TabularParallelEnv(ParallelEnv):
             result.append(primitive)
         return tuple(result)
 
-    def encode_joint_action(
-        self, actions: Mapping[str, int] | Sequence[int]
-    ) -> int:
+    def encode_joint_action(self, actions: Mapping[str, int] | Sequence[int]) -> int:
         """Encode a full joint action in canonical Cartesian-product order."""
         action = self._joint_action_tuple(actions)
         index = 0

@@ -8,12 +8,12 @@ Runnable notebook: [notebooks/tutorials/08_create_a_new_environment.ipynb](https
 
 You will build a deterministic 2x2 delivery task:
 
-| State | Meaning | Label | Cost |
-| --- | --- | --- | --- |
-| `0` | start | `start` | `0.0` |
-| `1` | spill | `spill` | `1.0` |
-| `2` | safe lane | none | `0.0` |
-| `3` | goal | `goal` | `0.0` |
+| State | Meaning   | Label   | Cost  |
+| ----- | --------- | ------- | ----- |
+| `0`   | start     | `start` | `0.0` |
+| `1`   | spill     | `spill` | `1.0` |
+| `2`   | safe lane | none    | `0.0` |
+| `3`   | goal      | `goal`  | `0.0` |
 
 The raw environment is a normal Gymnasium `Env` with:
 
@@ -84,21 +84,21 @@ The raw observation remains the same, but `info` now contains:
 
 The safe route goes down then right:
 
-| actions | final obs | terminated | truncated | cum cost | satisfied |
-| --- | --- | --- | --- | --- | --- |
-| `[1, 0]` | `3` | `True` | `False` | `0.0` | `1.0` |
+| actions  | final obs | terminated | truncated | cum cost | satisfied |
+| -------- | --------- | ---------- | --------- | -------- | --------- |
+| `[1, 0]` | `3`       | `True`     | `False`   | `0.0`    | `1.0`     |
 
 The unsafe route goes right through the spill, then down to the same goal:
 
-| actions | spill step cost | spill violation | final obs | cum cost | satisfied |
-| --- | --- | --- | --- | --- | --- |
-| `[0, 1]` | `1.0` | `1.0` | `3` | `1.0` | `0.0` |
+| actions  | spill step cost | spill violation | final obs | cum cost | satisfied |
+| -------- | --------------- | --------------- | --------- | -------- | --------- |
+| `[0, 1]` | `1.0`           | `1.0`           | `3`       | `1.0`    | `0.0`     |
 
 The truncation route stays at the start until `TimeLimit` ends the episode:
 
-| actions | max episode steps | terminated | truncated | cum cost |
-| --- | --- | --- | --- | --- |
-| `[2, 2, 2]` | `3` | `False` | `True` | `0.0` |
+| actions     | max episode steps | terminated | truncated | cum cost |
+| ----------- | ----------------- | ---------- | --------- | -------- |
+| `[2, 2, 2]` | `3`               | `False`    | `True`    | `0.0`    |
 
 ## Promoting the Example
 

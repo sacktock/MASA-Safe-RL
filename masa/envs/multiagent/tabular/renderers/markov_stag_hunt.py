@@ -95,7 +95,9 @@ class MarkovStagHuntRenderer:
         for agent, position in self.env.agent_positions.items():
             cells[position].append(agent)
         for (row, col), agents in cells.items():
-            chars[row][col] = str(len(agents)) if len(agents) > 1 else agents[0].split("_")[-1]
+            chars[row][col] = (
+                str(len(agents)) if len(agents) > 1 else agents[0].split("_")[-1]
+            )
         return "\n".join(" ".join(row) for row in chars)
 
     def _render_rgb_array(self) -> np.ndarray:
@@ -156,7 +158,9 @@ class MarkovStagHuntRenderer:
         self._clock.tick(self.env.metadata["render_fps"])
 
     @staticmethod
-    def _draw_ground_texture(surface: Any, rect: Any, cell: int, row: int, col: int) -> None:
+    def _draw_ground_texture(
+        surface: Any, rect: Any, cell: int, row: int, col: int
+    ) -> None:
         import pygame
 
         radius = max(1, cell // 60)
@@ -180,12 +184,28 @@ class MarkovStagHuntRenderer:
             SHADOW,
             pygame.Rect(cx - radius, cy + radius // 2, radius * 2, radius),
         )
-        pygame.draw.line(surface, PLANT_DARK, (cx, cy + radius), (cx, cy - radius), max(2, cell // 28))
-        for dx, dy in ((-radius, -radius // 2), (radius, -radius // 3), (-radius // 2, radius // 3), (radius // 2, radius // 2)):
+        pygame.draw.line(
+            surface,
+            PLANT_DARK,
+            (cx, cy + radius),
+            (cx, cy - radius),
+            max(2, cell // 28),
+        )
+        for dx, dy in (
+            (-radius, -radius // 2),
+            (radius, -radius // 3),
+            (-radius // 2, radius // 3),
+            (radius // 2, radius // 2),
+        ):
             pygame.draw.ellipse(
                 surface,
                 PLANT,
-                pygame.Rect(cx + dx - radius // 2, cy + dy - radius // 3, radius, 2 * radius // 3),
+                pygame.Rect(
+                    cx + dx - radius // 2,
+                    cy + dy - radius // 3,
+                    radius,
+                    2 * radius // 3,
+                ),
             )
         pygame.draw.circle(surface, PLANT_LIGHT, (cx, cy - radius), max(4, radius // 2))
 
@@ -269,7 +289,9 @@ class MarkovStagHuntRenderer:
         hoof_y = cy + int(cell * 0.32)
         for leg_x in (body.left + int(cell * 0.10), body.right - int(cell * 0.10)):
             knee = (leg_x + int(cell * 0.02), cy + int(cell * 0.20))
-            pygame.draw.line(surface, STAG_DARK, (leg_x, body.bottom - 2), knee, leg_width)
+            pygame.draw.line(
+                surface, STAG_DARK, (leg_x, body.bottom - 2), knee, leg_width
+            )
             pygame.draw.line(surface, STAG_DARK, knee, (leg_x, hoof_y), leg_width)
             pygame.draw.line(
                 surface,

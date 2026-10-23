@@ -3,7 +3,7 @@
 This module provides a **Gymnasium-compatible implementation of Probabilistic Shielding**
 for Safe Reinforcement Learning, based on the state-augmentation framework introduced in:
 
-**Probabilistic Shielding for Safe Reinforcement Learning**  
+**Probabilistic Shielding for Safe Reinforcement Learning**\
 Edwin Hamel-De le Court, Francesco Belardinelli, Alexander W. Goodall
 arXiv: https://arxiv.org/abs/2503.07671
 
@@ -19,7 +19,7 @@ Probabilistic Shielding addresses reinforcement learning problems of the form:
 Safety is expressed as an **avoidance property**:
 
 $$
-    \mathbb{P}(\text{reach unsafe}) \le p
+\mathbb{P}(\text{reach unsafe}) \le p
 $$
 
 Rather than constraining the policy directly, the method constructs a
@@ -31,25 +31,24 @@ Any standard RL algorithm (e.g. PPO) can then be trained on the shielded environ
 
 Given an environment with known **safety dynamics**:
 
-1. **Compute safety bounds**  
-   Use sound value iteration (interval iteration) to compute an *inductive upper bound*
-   $\beta(s)$ on the minimal probability of reaching an unsafe state from each state.
+1. **Compute safety bounds**\
+    Use sound value iteration (interval iteration) to compute an *inductive upper bound*
+    $\beta(s)$ on the minimal probability of reaching an unsafe state from each state.
 
-2. **Augment the MDP**  
-   Each state is augmented with a *remaining safety budget*
-   $q \in [\beta(s), 1]$.
+1. **Augment the MDP**\
+    Each state is augmented with a *remaining safety budget*
+    $q \in [\beta(s), 1]$.
 
-3. **Restrict actions via a shield**  
-   At each augmented state $(s, q)$, only actions that **provably preserve the safety
-   bound** are allowed. This is enforced by projecting agent-selected actions onto a safe
-   probability simplex.
+1. **Restrict actions via a shield**\
+    At each augmented state $(s, q)$, only actions that **provably preserve the safety
+    bound** are allowed. This is enforced by projecting agent-selected actions onto a safe
+    probability simplex.
 
-4. **Train normally**  
-   Train any RL algorithm on the shielded MDP.  
-   Safety is guaranteed **by construction**, not by penalties or Lagrangians.
+1. **Train normally**\
+    Train any RL algorithm on the shielded MDP.\
+    Safety is guaranteed **by construction**, not by penalties or Lagrangians.
 
-
-## The ``ProbShieldWrapperDisc``
+## The `ProbShieldWrapperDisc`
 
 The main entry point is the Gymnasium wrapper:
 
@@ -83,7 +82,7 @@ The wrapper:
 - Projects actions to satisfy the probabilistic safety constraint
 - Is compatible with **any on-policy or off-policy RL algorithm**
 
-Implementation details can be found in ``prob_shield_wrapper_disc.py``.
+Implementation details can be found in `prob_shield_wrapper_disc.py`.
 
 ## Usage Examples
 
@@ -110,7 +109,7 @@ For environments with discrete state spaces and PCTL safety constraints:
     )
 ```
 
-See the full example in ``prob_shield_example.py``.
+See the full example in `prob_shield_example.py`.
 
 ## Probabilistic Shielding with a Safety Abstraction
 
@@ -129,7 +128,7 @@ that preserves only safety-relevant dynamics.
 
 This enables scalable safety verification even when the full state space is very large.
 
-See ``prob_shield_safety_abstraction_example.py``.
+See `prob_shield_safety_abstraction_example.py`.
 
 ### Probabilistic Shielding for Safety-LTL (DFA–MDP Product)
 
@@ -151,7 +150,7 @@ Safety properties expressed in **Safety-LTL** are handled by constructing the
 The shield is built over the **DFA–MDP product**, ensuring probabilistic satisfaction
 of the LTL safety property.
 
-See ``prob_shield_ltl_example.py``.
+See `prob_shield_ltl_example.py`.
 
 ## When to Use
 

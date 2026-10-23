@@ -2,7 +2,10 @@ import numpy as np
 import pytest
 
 from masa.deterministic_shield import (
-    DeterministicLTLShield, PostposedLTLShield, highest_score, random_safe,
+    DeterministicLTLShield,
+    PostposedLTLShield,
+    highest_score,
+    random_safe,
 )
 from masa.deterministic_shield.deterministic_shield import (
     DeterministicLTLShield as LegacyShield,
@@ -41,9 +44,11 @@ def test_replacement_strategies(make_shield, rule):
 
 def test_callback_only_runs_for_unsafe_proposals(make_shield):
     calls = []
+
     def replacement(state, proposed, mask):
         calls.append((state, proposed, mask.copy()))
         return 3
+
     env = make_shield(PostposedLTLShield, replacement=replacement)
     obs, _ = env.reset()
     env.step(0)
@@ -72,6 +77,7 @@ def test_callback_cannot_change_internal_mask(make_shield):
     def replacement(state, proposed, mask):
         mask[:] = True
         return 2  # Still unsafe, regardless of the mutated copy.
+
     env = make_shield(PostposedLTLShield, replacement=replacement)
     env.reset()
     with pytest.raises(ValueError, match="not safe"):
@@ -83,6 +89,7 @@ def test_callback_cannot_change_internal_mask(make_shield):
 def test_callback_exception_does_not_advance_episode(make_shield):
     def replacement(state, proposed, mask):
         raise LookupError("policy unavailable")
+
     env = make_shield(PostposedLTLShield, replacement=replacement)
     env.reset()
     with pytest.raises(LookupError, match="policy unavailable"):

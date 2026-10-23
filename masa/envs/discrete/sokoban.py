@@ -25,7 +25,9 @@ WALLS = (
 
 
 def calculate_wall_penalty(box_x: int, box_y: int) -> int:
-    adjacent = [(box_x + dx, box_y + dy) for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]]
+    adjacent = [
+        (box_x + dx, box_y + dy) for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]
+    ]
     walls_adjacent = [pos in WALLS for pos in adjacent]
 
     if (
@@ -64,13 +66,17 @@ cost_fn = lambda labels: 1.0 if "box_corner" in labels else 0.0
 class Sokoban(DiscreteEnv):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 8}
 
-    def __init__(self, render_mode: str | None = None, render_window_size: int = 512) -> None:
+    def __init__(
+        self, render_mode: str | None = None, render_window_size: int = 512
+    ) -> None:
         super().__init__()
 
         self.size_x = SIZE_X
         self.size_y = SIZE_Y
         self.render_window_size = render_window_size
-        self.observation_space = spaces.Discrete(self.size_x * self.size_y * self.size_x * self.size_y)
+        self.observation_space = spaces.Discrete(
+            self.size_x * self.size_y * self.size_x * self.size_y
+        )
         self.action_space = spaces.Discrete(4)
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
@@ -129,7 +135,11 @@ class Sokoban(DiscreteEnv):
         )
 
     def _get_info(self) -> dict[str, int]:
-        return {"box_wall_penalty": calculate_wall_penalty(int(self._box_location[0]), int(self._box_location[1]))}
+        return {
+            "box_wall_penalty": calculate_wall_penalty(
+                int(self._box_location[0]), int(self._box_location[1])
+            )
+        }
 
     def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None):
         del options
@@ -151,8 +161,12 @@ class Sokoban(DiscreteEnv):
         new_agent_location = np.array([new_x, new_y], dtype=int)
 
         if np.array_equal(new_agent_location, self._box_location):
-            new_box_x = int(np.clip(self._box_location[0] + direction[0], 0, self.size_x - 1))
-            new_box_y = int(np.clip(self._box_location[1] + direction[1], 0, self.size_y - 1))
+            new_box_x = int(
+                np.clip(self._box_location[0] + direction[0], 0, self.size_x - 1)
+            )
+            new_box_y = int(
+                np.clip(self._box_location[1] + direction[1], 0, self.size_y - 1)
+            )
 
             if (new_box_x, new_box_y) not in WALLS:
                 self._box_location = np.array([new_box_x, new_box_y], dtype=int)
@@ -221,7 +235,11 @@ class SokobanRenderer:
         self._pygame = None
 
     def _draw_frame(self) -> np.ndarray:
-        frame = np.full((self.env.render_window_size, self.env.render_window_size, 3), self._BACKGROUND, dtype=np.uint8)
+        frame = np.full(
+            (self.env.render_window_size, self.env.render_window_size, 3),
+            self._BACKGROUND,
+            dtype=np.uint8,
+        )
 
         for x in range(self.env.size_x):
             for y in range(self.env.size_y):
@@ -237,9 +255,13 @@ class SokobanRenderer:
             frame,
             int(self.env._box_location[0]),
             int(self.env._box_location[1]),
-            calculate_wall_penalty(int(self.env._box_location[0]), int(self.env._box_location[1])),
+            calculate_wall_penalty(
+                int(self.env._box_location[0]), int(self.env._box_location[1])
+            ),
         )
-        self._draw_agent(frame, int(self.env._agent_location[0]), int(self.env._agent_location[1]))
+        self._draw_agent(
+            frame, int(self.env._agent_location[0]), int(self.env._agent_location[1])
+        )
         return frame
 
     def _render_human(self, frame: np.ndarray) -> None:
@@ -256,34 +278,54 @@ class SokobanRenderer:
             try:
                 import pygame
             except ImportError as exc:
-                raise ImportError("pygame is required for render_mode='human'. Install it with `pip install pygame`.") from exc
+                raise ImportError(
+                    "pygame is required for render_mode='human'. Install it with `pip install pygame`."
+                ) from exc
 
             pygame.init()
             pygame.display.init()
-            self.window = pygame.display.set_mode((self.env.render_window_size, self.env.render_window_size))
+            self.window = pygame.display.set_mode(
+                (self.env.render_window_size, self.env.render_window_size)
+            )
             pygame.display.set_caption("MASA - Sokoban")
             self.clock = pygame.time.Clock()
             self._pygame = pygame
 
         return self._pygame
 
-    def _cell_bounds(self, x: int, y: int, padding: int = 0) -> tuple[int, int, int, int]:
+    def _cell_bounds(
+        self, x: int, y: int, padding: int = 0
+    ) -> tuple[int, int, int, int]:
         left = self.x_offset + x * self.tile_size + padding
         top = self.y_offset + y * self.tile_size + padding
         right = self.x_offset + (x + 1) * self.tile_size - padding
         bottom = self.y_offset + (y + 1) * self.tile_size - padding
         return left, top, right, bottom
 
-    def _fill_cell(self, frame: np.ndarray, x: int, y: int, color: tuple[int, int, int], padding: int = 1) -> None:
+    def _fill_cell(
+        self,
+        frame: np.ndarray,
+        x: int,
+        y: int,
+        color: tuple[int, int, int],
+        padding: int = 1,
+    ) -> None:
         left, top, right, bottom = self._cell_bounds(x, y, padding)
         frame[top:bottom, left:right] = color
 
-    def _stroke_cell(self, frame: np.ndarray, x: int, y: int, color: tuple[int, int, int], thickness: int = 1) -> None:
+    def _stroke_cell(
+        self,
+        frame: np.ndarray,
+        x: int,
+        y: int,
+        color: tuple[int, int, int],
+        thickness: int = 1,
+    ) -> None:
         left, top, right, bottom = self._cell_bounds(x, y, 0)
-        frame[top:top + thickness, left:right] = color
-        frame[bottom - thickness:bottom, left:right] = color
-        frame[top:bottom, left:left + thickness] = color
-        frame[top:bottom, right - thickness:right] = color
+        frame[top : top + thickness, left:right] = color
+        frame[bottom - thickness : bottom, left:right] = color
+        frame[top:bottom, left : left + thickness] = color
+        frame[top:bottom, right - thickness : right] = color
 
     def _draw_goal(self, frame: np.ndarray, x: int, y: int) -> None:
         self._fill_cell(frame, x, y, self._GOAL, padding=6)
@@ -308,7 +350,7 @@ class SokobanRenderer:
         self._fill_cell(frame, x, y, color, padding=self.tile_size // 6)
         left, top, right, bottom = self._cell_bounds(x, y, self.tile_size // 6)
         thickness = max(3, self.tile_size // 16)
-        frame[top:top + thickness, left:right] = self._BOX_EDGE
-        frame[bottom - thickness:bottom, left:right] = self._BOX_EDGE
-        frame[top:bottom, left:left + thickness] = self._BOX_EDGE
-        frame[top:bottom, right - thickness:right] = self._BOX_EDGE
+        frame[top : top + thickness, left:right] = self._BOX_EDGE
+        frame[bottom - thickness : bottom, left:right] = self._BOX_EDGE
+        frame[top:bottom, left : left + thickness] = self._BOX_EDGE
+        frame[top:bottom, right - thickness : right] = self._BOX_EDGE

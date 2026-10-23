@@ -24,6 +24,7 @@ class VariantStyle:
 @dataclass(frozen=True)
 class RunSchema:
     """Regex extracting (env, variant, seed) named groups from a W&B run name."""
+
     pattern: str = r"^(?P<env>.+?)_(?P<variant>[a-z]+_v\d+)_seed(?P<seed>\d+)$"
 
     def compile(self) -> re.Pattern:
@@ -84,7 +85,9 @@ def load_config(path: str | Path) -> Config:
     ]
     variants = _fill_palette(variants, raw.get("palette", "colorblind"))
 
-    source_kind, wandb_entity, wandb_project, tb_logdir = _resolve_source(path, raw, _resolve)
+    source_kind, wandb_entity, wandb_project, tb_logdir = _resolve_source(
+        path, raw, _resolve
+    )
 
     schema_raw = raw.get("run_schema") or {}
     if "pattern" in schema_raw:
@@ -135,24 +138,31 @@ def _resolve_source(
         if kind == "tensorboard":
             logdir = src.get("logdir")
             if not logdir:
-                raise ValueError(f"{path}: source.kind=tensorboard requires source.logdir.")
+                raise ValueError(
+                    f"{path}: source.kind=tensorboard requires source.logdir."
+                )
             return "tensorboard", None, None, resolve(logdir)
         raise ValueError(
             f"{path}: unknown source.kind={kind!r}; expected 'wandb' or 'tensorboard'."
         )
     project = raw.get("wandb_project")
     if not project:
-        raise ValueError(f"{path}: provide a 'source:' block, or top-level 'wandb_project'.")
+        raise ValueError(
+            f"{path}: provide a 'source:' block, or top-level 'wandb_project'."
+        )
     return "wandb", raw.get("wandb_entity"), project, None
 
 
-def _fill_palette(variants: list[VariantStyle], palette_name: str) -> list[VariantStyle]:
+def _fill_palette(
+    variants: list[VariantStyle], palette_name: str
+) -> list[VariantStyle]:
     """Assign colours from a seaborn palette to any variant where colour is None."""
     missing_idx = [i for i, v in enumerate(variants) if v.colour is None]
     if not missing_idx:
         return variants
 
     import seaborn as sns
+
     palette = sns.color_palette(palette_name, n_colors=len(variants))
     palette_hex = [_to_hex(c) for c in palette]
     out = list(variants)
