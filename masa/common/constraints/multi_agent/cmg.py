@@ -224,6 +224,12 @@ class ConstrainedMarkovGameEnv(ParallelEnv):
         self._constraint.update(self._labels_by_agent(infos))
         return obs, rewards, terminations, truncations, infos
 
+    def __getattr__(self, name: str):
+        """Delegate unknown attributes (render_mode, render_fps, ...) to the wrapped env."""
+        if name.startswith("__") and name.endswith("__"):
+            raise AttributeError(name)
+        return getattr(self.env, name)
+
     def state(self):
         return self.env.state()
 

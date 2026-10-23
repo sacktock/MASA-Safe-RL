@@ -174,7 +174,7 @@ def run_with_config(config, algo):
     except AttributeError:
         label_fn = load_callable("masa.common.dummy:label_fn")
     try:
-        cost_fn = laod_callable(config.env.cost_fn)
+        cost_fn = load_callable(config.env.cost_fn)
     except AttributeError:
         cost_fn = load_callable("masa.common.dummy:cost_fn")
     try:
