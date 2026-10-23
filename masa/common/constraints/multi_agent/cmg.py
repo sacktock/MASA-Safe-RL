@@ -192,6 +192,10 @@ class ConstrainedMarkovGameEnv(ParallelEnv):
             self.metadata = {}
         self.possible_agents = tuple(env.possible_agents)
         try:
+            self.render_mode = env.render_mode
+        except AttributeError:
+            self.render_mode = None
+        try:
             self.agents = list(env.agents)
         except AttributeError:
             self.agents = list(self.possible_agents)
@@ -223,12 +227,6 @@ class ConstrainedMarkovGameEnv(ParallelEnv):
             self.agents = list(self.possible_agents)
         self._constraint.update(self._labels_by_agent(infos))
         return obs, rewards, terminations, truncations, infos
-
-    def __getattr__(self, name: str):
-        """Delegate unknown attributes (render_mode, render_fps, ...) to the wrapped env."""
-        if name.startswith("__") and name.endswith("__"):
-            raise AttributeError(name)
-        return getattr(self.env, name)
 
     def state(self):
         return self.env.state()

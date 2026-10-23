@@ -24,6 +24,10 @@ class LabelledParallelEnv(ParallelEnv):
             self.cost_fn = env.cost_fn
         except AttributeError:
             self.cost_fn = None
+        try:
+            self.render_mode = env.render_mode
+        except AttributeError:
+            self.render_mode = None
 
     def reset(self, seed: int | None = None, options: Dict[str, Any] | None = None):
         obs, info = self.env.reset(seed=seed, options=options)

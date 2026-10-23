@@ -194,7 +194,7 @@ class RecordVideoParallel(BaseParallelWrapper):
             gc.collect()
 
     def __del__(self):
-        if len(self.recorded_frames) > 0:
+        if self.__dict__.get("recorded_frames"):
             gymnasium.logger.warn("Unable to save last video! Did you call close()?")
 
 
@@ -364,7 +364,7 @@ class RecordVideoAEC(BaseWrapper):
             gc.collect()
 
     def __del__(self):
-        if len(self.recorded_frames) > 0:
+        if self.__dict__.get("recorded_frames"):
             gymnasium.logger.warn("Unable to save last video! Did you call close()?")
 
 
