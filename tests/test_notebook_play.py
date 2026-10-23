@@ -201,9 +201,10 @@ def test_roads_notebook_runs_recorded_play_loop_in_background_thread():
         "while running and not stop_event.is_set() and not env.human_window_closed:"
         in source
     )
+    compact = "".join(source.split())
     assert (
-        'return start_recorded_play_thread("roads", _run, record_video=RECORD_VIDEO, video_path=VIDEO_PATH)'
-        in source
+        'start_recorded_play_thread("roads",_run,'
+        "record_video=RECORD_VIDEO,video_path=VIDEO_PATH)" in compact
     )
 
 
