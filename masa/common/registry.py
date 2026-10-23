@@ -22,7 +22,11 @@ class Registry:
         ctor = self._items[name]
         if isinstance(ctor, str):
             mod, obj = ctor.split(":", 1)
-            ctor = getattr(importlib.import_module(mod), obj)
+            try:
+                module = importlib.import_module(mod)
+                ctor = module.obj
+            except AttributeError:
+                raise AttributeError(f"{module.__name__} has no attribute {obj}")
             self._items[name] = ctor
         return ctor
 

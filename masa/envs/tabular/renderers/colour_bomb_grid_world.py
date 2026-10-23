@@ -231,26 +231,24 @@ class ColourBombGridWorldRenderer:
             self.env._start_state if self.env._state is None else self.env._state
         )
         zone = state // grid_area
-        active_colour = getattr(self.env, "_active_colour_dict", {}).get(zone)
+        active_colour = self.env._active_colour_dict.get(zone)
 
         return _ColourBombSnapshot(
             grid_size=grid_size,
             agent_position=_state_position(state % grid_area, grid_size),
-            wall_cells=_base_cells(getattr(self.env, "_wall_states", []), grid_area),
+            wall_cells=_base_cells(self.env._wall_states, grid_area),
             start_cells=_base_cells(_start_states(self.env), grid_area),
-            bomb_cells=_base_cells(getattr(self.env, "_bomb_states", []), grid_area),
-            medic_cells=_base_cells(getattr(self.env, "_medic_states", []), grid_area),
+            bomb_cells=_base_cells(self.env._bomb_states, grid_area),
+            medic_cells=_base_cells(self.env._medic_states, grid_area),
             colour_cells={
-                "green": _base_cells(getattr(self.env, "_green_states", []), grid_area),
-                "yellow": _base_cells(
-                    getattr(self.env, "_yellow_states", []), grid_area
-                ),
-                "red": _base_cells(getattr(self.env, "_red_states", []), grid_area),
-                "blue": _base_cells(getattr(self.env, "_blue_states", []), grid_area),
-                "pink": _base_cells(getattr(self.env, "_pink_states", []), grid_area),
+                "green": _base_cells(self.env._green_states, grid_area),
+                "yellow": _base_cells(self.env._yellow_states, grid_area),
+                "red": _base_cells(self.env._red_states, grid_area),
+                "blue": _base_cells(self.env._blue_states, grid_area),
+                "pink": _base_cells(self.env._pink_states, grid_area),
             },
             active_colour=active_colour,
-            step_count=int(getattr(self.env, "_step_count", 0)),
+            step_count=int(self.env._step_count),
         )
 
     def _draw_floor_tile(

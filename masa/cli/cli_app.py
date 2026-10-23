@@ -169,20 +169,25 @@ def print_config(config: Config, algo: str) -> None:
 def run_with_config(config, algo):
     print_config(config, algo)
 
-    label_fn = load_callable(
-        getattr(config.env, "label_fn", "masa.common.dummy:label_fn")
-    )
-    cost_fn = load_callable(getattr(config.env, "cost_fn", "masa.common.dummy:cost_fn"))
-    make_dfa = load_callable(
-        getattr(config.constraint, "dfa", "masa.common.dummy:make_dfa")
-    )
+    try:
+        label_fn = load_callable(config.env.label_fn)
+    except AttributeError:
+        label_fn = load_callable("masa.common.dummy:label_fn")
+    try:
+        cost_fn = laod_callable(config.env.cost_fn)
+    except AttributeError:
+        cost_fn = load_callable("masa.common.dummy:cost_fn")
+    try:
+        make_dfa = load_callable(config.constraint.dfa)
+    except AttributeError:
+        make_dfa = load_callable("masa.common.dummy:make_dfa")
 
     constraint_kwargs = {
         "cost_fn": cost_fn,
-        "budget": getattr(config.constraint, "cost_budget", None),
-        "alpha": getattr(config.constraint, "alpha", None),
-        "avoid_label": getattr(config.constraint, "avoid_label", None),
-        "reach_label": getattr(config.constraint, "reach_label", None),
+        "budget": config.constraint.budget,
+        "alpha": config.constraint.alpha,
+        "avoid_label": config.constraint.avoid_label,
+        "reach_label": config.constraint.reach_label,
         "dfa": make_dfa(),
     }
 
@@ -201,18 +206,22 @@ def run_with_config(config, algo):
     # Optional potential-based reward shaping, threaded through the config.
     # The wrapper is applied as the outermost env wrapper (downstream of make_env),
     # so algorithms read the shaped cost via env.cost_fn / info["constraint"]["step"]["cost"].
-    reward_shaping = config.reward_shaping if "reward_shaping" in config else None
-    reward_shaping_impl = (
-        getattr(reward_shaping, "impl", "none")
-        if reward_shaping is not None
-        else "none"
-    )
-    reward_shaping_gamma = (
-        getattr(reward_shaping, "gamma", 0.99) if reward_shaping is not None else 0.99
-    )
+    if "reward_shaping" in config:
+        reward_shaping = config.reward_shaping
+        try:
+            reward_shaping_impl = reward_shaping.impl
+        except AttributeError:
+            raise ValueError("reward_shaping.impl is required")
+        try:
+            reward_shaping_gamma = reward_shaping.gamma
+        except AttributeError:
+            warnings.warn("reward_shaping.gamma is not set, using default value 0.99")
+            reward_shaping_gamma = 0.99
+    else:
+        reward_shaping = None
 
     def _apply_reward_shaping(env):
-        if reward_shaping_impl and reward_shaping_impl != "none":
+        if reward_shaping is not None and reward_shaping_impl != "none":
             return RewardShapingWrapper(
                 env, gamma=reward_shaping_gamma, impl=reward_shaping_impl
             )

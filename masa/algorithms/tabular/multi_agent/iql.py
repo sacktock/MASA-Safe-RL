@@ -158,7 +158,9 @@ class IQL:
         self.horizon = index(horizon)
         if self.horizon < 1:
             raise ValueError("horizon must be a positive integer.")
-        if getattr(env, "constraint_type", None) != "CMG":
+        try:
+            assert env.constraint_type == "CMG"
+        except AttributeError, AssertionError:
             raise TypeError("IQL expects a MASA CMG ParallelEnv.")
 
         self.env = env

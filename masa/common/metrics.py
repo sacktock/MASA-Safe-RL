@@ -925,7 +925,7 @@ class TrainLogger(BaseLogger):
 
         for key, logger in self.loggers.items():
             # Sub-loggers populate stats_to_log in _create_logs().
-            stats = getattr(logger, "stats_to_log", {})
+            stats = logger.stats_to_log
             stats_to_print[key] = {k: "{0:.4g}".format(v) for k, v in stats.items()}
 
         max_key_len = 0

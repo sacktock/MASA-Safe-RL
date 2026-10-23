@@ -465,7 +465,7 @@ class RECREG(QL):
                     next_state,
                     terminal,
                     info,
-                    getattr(self.env, "cost_fn", None),
+                    self.env.cost_fn,
                 )
             else:
                 # no DFA: treat the actual transition as the only "cf" experience

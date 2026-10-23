@@ -186,10 +186,16 @@ class ConstrainedMarkovGameEnv(ParallelEnv):
                 f"{self.__class__.__name__} must wrap a LabelledParallelEnv, but got {type(env).__name__}."
             )
         self.env = env
-        self.metadata = getattr(env, "metadata", {})
+        try:
+            self.metadata = env.metadata
+        except AttributeError:
+            self.metadata = {}
         self.possible_agents = tuple(env.possible_agents)
-        self.agents = list(getattr(env, "agents", self.possible_agents))
-        self.label_fn = getattr(env, "label_fn", None)
+        try:
+            self.agents = list(env.agents)
+        except AttributeError:
+            self.agents = list(self.possible_agents)
+        self.label_fn = env.label_fn
         self.cost_fn = cost_fn
         self._constraint = ConstrainedMarkovGame(
             possible_agents=self.possible_agents,
@@ -197,13 +203,13 @@ class ConstrainedMarkovGameEnv(ParallelEnv):
             cost_fn=cost_fn,
         )
 
-    def __getattr__(self, name: str):
-        return getattr(self.env, name)
-
     def reset(self, seed: int | None = None, options: dict[str, Any] | None = None):
         """Reset the wrapped env and seed the constraint from initial agent labels."""
         obs, infos = self.env.reset(seed=seed, options=options)
-        self.agents = list(getattr(self.env, "agents", self.possible_agents))
+        try:
+            self.agents = list(self.env.agents)
+        except AttributeError:
+            self.agents = list(self.possible_agents)
         self._constraint.reset()
         self._constraint.update(self._labels_by_agent(infos))
         return obs, infos
@@ -211,7 +217,10 @@ class ConstrainedMarkovGameEnv(ParallelEnv):
     def step(self, actions):
         """Step the wrapped env and update the constraint from per-agent labels."""
         obs, rewards, terminations, truncations, infos = self.env.step(actions)
-        self.agents = list(getattr(self.env, "agents", self.possible_agents))
+        try:
+            self.agents = list(self.env.agents)
+        except AttributeError:
+            self.agents = list(self.possible_agents)
         self._constraint.update(self._labels_by_agent(infos))
         return obs, rewards, terminations, truncations, infos
 

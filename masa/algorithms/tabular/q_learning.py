@@ -114,7 +114,7 @@ class QL(TabularAlgorithm):
                 next_obs,
                 terminated,
                 info,
-                getattr(self.env, "cost_fn", None),
+                self.env.cost_fn,
             )
         else:
             cost = info["constraint"]["step"].get("cost", 0.0)

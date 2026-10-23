@@ -186,7 +186,7 @@ class BridgeCrossingRenderer:
             start_state=int(self.env._start_state),
             goal_states={int(goal) for goal in self.env._goal_states},
             lava_states={int(lava) for lava in self.env._lava_states},
-            step_count=int(getattr(self.env, "_step_count", 0)),
+            step_count=int(self.env._step_count),
         )
 
     def _draw_floor_tile(

@@ -240,9 +240,10 @@ class BaseConstraintEnv(gym.Wrapper, Constraint):
             The underlying cost function if present on the wrapped stack, else
             ``None``.
         """
-        if self._constraint is not None:
-            return getattr(self.env._constraint, "cost_fn", None)
-        return None
+        try:
+            return self.env._constraint.cost_fn
+        except AttributeError:
+            return None
 
     @property
     def label_fn(self):
@@ -251,7 +252,10 @@ class BaseConstraintEnv(gym.Wrapper, Constraint):
         Returns:
             The environment labelling function if present, else ``None``.
         """
-        return getattr(self.env, "label_fn", None)
+        try:
+            return self.env.label_fn
+        except AttributeError:
+            return None
 
     @property
     def constraint_type(self) -> str:

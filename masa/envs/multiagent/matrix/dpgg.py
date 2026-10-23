@@ -417,9 +417,11 @@ class DPGGMatrix(ParallelEnv):
             rng_state: object
           )
         """
-        agents = (
-            tuple(self.agents) if getattr(self, "agents", None) is not None else tuple()
-        )
+        try:
+            agents = tuple(self.agents)
+        except AttributeError:
+            agents = tuple()
+
         a0, a1 = self.possible_agents
         last = (self._last_actions.get(a0, None), self._last_actions.get(a1, None))
         cum = (

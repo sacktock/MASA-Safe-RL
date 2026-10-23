@@ -119,26 +119,22 @@ class ConstraintPersistentWrapper(gym.Wrapper):
         The underlying constraint object, if present.
 
         Returns:
-            The object stored in ``self.env._constraint`` if it exists, otherwise
-            ``None``.
+            The object stored in ``self.env._constraint``
         """
-        return getattr(self.env, "_constraint", None)
+        return self.env._constraint
 
     @property
     def cost_fn(self):
         """
         Cost function exposed by the underlying constraint, if available.
 
-        If ``self._constraint`` exists and it exposes ``cost_fn``, this returns
-        that callable-like object (often a :class:`masa.common.ltl.DFACostFn`).
-        Otherwise returns ``None``.
-
         Returns:
-            A cost function-like object or ``None``.
+            The underlying cost function if present on the wrapped stack, else
+            ``None``.
         """
-        if self._constraint is not None:
-            return getattr(self.env._constraint, "cost_fn", None)
-        else:
+        try:
+            return self.env._constraint.cost_fn
+        except AttributeError:
             return None
 
     @property
@@ -150,7 +146,10 @@ class ConstraintPersistentWrapper(gym.Wrapper):
             The object stored in ``self.env.label_fn`` if it exists, otherwise
             ``None``.
         """
-        return getattr(self.env, "label_fn", None)
+        try:
+            return self.env.label_fn
+        except AttributeError:
+            return None
 
 
 class ConstraintPersistentObsWrapper(ConstraintPersistentWrapper):
@@ -245,8 +244,10 @@ class ConstraintPersistentGymnasiumWrapper(ConstraintPersistentWrapper):
 
     @property
     def cost_fn(self):
-        constraint = self._constraint
-        return getattr(constraint, "cost_fn", None) if constraint is not None else None
+        try:
+            return self._constraint.cost_fn
+        except AttributeError:
+            return None
 
     @property
     def label_fn(self):
@@ -262,7 +263,7 @@ class ConstraintPersistentGymnasiumWrapper(ConstraintPersistentWrapper):
             visited.add(id(current))
 
             if hasattr(current, name):
-                return getattr(current, name)
+                return current.name
 
             if hasattr(current, "venv"):
                 current = current.venv
@@ -592,7 +593,7 @@ class RewardShapingWrapper(ConstraintPersistentWrapper):
             assert hasattr(self._constraint, "cost_fn"), (
                 "RewardShapingWrapper requires env to implement a BaseConstraintEnv that exposes a cost_fn"
             )
-            assert isinstance(getattr(self._constraint, "cost_fn", None), DFACostFn), (
+            assert isinstance(self._constraint.cost_fn, DFACostFn), (
                 "RewardShapingWrapper requires env to implement a LTLSafetyEnv with cost_fn class: DFACostFn"
             )
 

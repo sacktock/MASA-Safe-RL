@@ -642,10 +642,8 @@ class LTLSafetyEnv(BaseConstraintEnv):
                 if isinstance(obs, np.ndarray)
                 else np.asarray(obs, dtype=self._box_dtype)
             )
-            if arr.ndim != 1:
-                raise TypeError(
-                    f"Expected 1-D Box observation, got shape {getattr(arr, 'shape', None)}"
-                )
+            if arr.shape is None or arr.ndim != 1:
+                raise TypeError(f"Expected 1-D Box observation, got shape {arr.shape}")
             arr = arr.astype(self._box_dtype, copy=False)
             if obs_type == "box":
                 return np.concatenate(

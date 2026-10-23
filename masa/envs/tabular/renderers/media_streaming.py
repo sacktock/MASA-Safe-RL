@@ -178,7 +178,7 @@ class MediaStreamingRenderer:
             fast_rate=float(self.env._fast_rate),
             out_rate=float(self.env._out_rate),
             last_action=self.env._last_action,
-            step_count=int(getattr(self.env, "_step_count", 0)),
+            step_count=int(self.env._step_count),
         )
 
     def _draw_panel(

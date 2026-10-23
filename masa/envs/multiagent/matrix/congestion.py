@@ -443,9 +443,11 @@ class CongestionMatrix(ParallelEnv):
             rng_state: object                    # np.random.RandomState.get_state()
           )
         """
-        agents = (
-            tuple(self.agents) if getattr(self, "agents", None) is not None else tuple()
-        )
+        try:
+            agents = tuple(self.agents)
+        except AttributeError:
+            agents = tuple()
+
         last_actions = tuple(
             self._last_actions.get(a, None) for a in self.possible_agents
         )

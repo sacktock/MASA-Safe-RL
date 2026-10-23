@@ -156,7 +156,7 @@ class CartPoleRenderer:
 
     def _snapshot(self) -> "_CartPoleSnapshot":
         state = np.zeros(4, dtype=np.float32)
-        if getattr(self.env, "_state", None) is not None:
+        if self.env._state is not None:
             state = np.asarray(self.env._state, dtype=np.float32)
         x, x_dot, theta, theta_dot = (float(v) for v in state)
         stable = abs(theta) <= float(self.env._theta_threshold_radians) and abs(
@@ -170,8 +170,8 @@ class CartPoleRenderer:
             x_threshold=float(self.env._x_threshold),
             theta_threshold=float(self.env._theta_threshold_radians),
             force_mag=float(self.env._force_mag),
-            last_action=getattr(self.env, "_last_action", None),
-            step_count=int(getattr(self.env, "_step_count", 0)),
+            last_action=self.env._last_action,
+            step_count=int(self.env._step_count),
             stable=stable,
         )
 

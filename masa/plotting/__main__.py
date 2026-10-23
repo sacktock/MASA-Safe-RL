@@ -89,7 +89,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     args = parse_args(argv)
     setup_logging(logging.DEBUG if args.verbose else logging.INFO)
 
-    _preload_spec_modules(getattr(args, "specs_from", []))
+    _preload_spec_modules(args.specs_from)
 
     cfg = load_config(args.config)
     if args.force_download:

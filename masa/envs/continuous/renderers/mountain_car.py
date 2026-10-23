@@ -157,7 +157,7 @@ class MountainCarRenderer:
 
     def _snapshot(self) -> "_MountainCarSnapshot":
         state = np.zeros(2, dtype=np.float32)
-        if getattr(self.env, "_state", None) is not None:
+        if self.env._state is not None:
             state = np.asarray(self.env._state, dtype=np.float32)
         position, velocity = (float(v) for v in state)
         min_position = float(self.env._min_position)
@@ -173,8 +173,8 @@ class MountainCarRenderer:
             max_speed=max_speed,
             goal_position=goal_position,
             power=float(self.env._power),
-            last_action=getattr(self.env, "_last_action", None),
-            step_count=int(getattr(self.env, "_step_count", 0)),
+            last_action=self.env._last_action,
+            step_count=int(self.env._step_count),
             status=status,
         )
 

@@ -82,7 +82,7 @@ class RECOVERY_RL(QL):
                     next_state,
                     terminal,
                     info,
-                    getattr(self.env, "cost_fn", None),
+                    self.env.cost_fn,
                 )
             else:
                 cf_exp = [

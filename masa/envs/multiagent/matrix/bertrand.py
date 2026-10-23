@@ -361,9 +361,10 @@ class BertrandMatrix(ParallelEnv):
             rng_state: object                         # np.random.RandomState.get_state()
           )
         """
-        agents = (
-            tuple(self.agents) if getattr(self, "agents", None) is not None else tuple()
-        )
+        try:
+            agents = tuple(self.agents)
+        except AttributeError:
+            agents = tuple()
 
         p0, p1 = self.possible_agents
         last_actions = (

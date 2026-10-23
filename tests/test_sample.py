@@ -683,7 +683,7 @@ def test_colour_bomb_wall_states_are_impassable_under_slip():
 
     for env_cls in (ColourBombGridWorld, ColourBombGridWorldV2, ColourBombGridWorldV3):
         env = env_cls()
-        wall_states = sorted(getattr(env, "_wall_states", []))
+        wall_states = sorted(env._wall_states)
         non_wall_states = [
             state for state in range(env._n_states) if state not in wall_states
         ]

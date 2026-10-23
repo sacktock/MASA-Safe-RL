@@ -102,9 +102,15 @@ class CoalitionLTLShield(ParallelEnv):
             coalition = Coalition(tuple(coalition))
 
         self.env = env
-        self.metadata = getattr(env, "metadata", self.metadata)
+        try:
+            self.metadata = env.metadata
+        except AttributeError:
+            self.metadata = self.metadata
         self.possible_agents = list(env.possible_agents)
-        self.agents = list(getattr(env, "agents", self.possible_agents))
+        try:
+            self.agents = list(env.agents)
+        except AttributeError:
+            self.agents = list(self.possible_agents)
         if not isinstance(env.env, TabularParallelEnv):
             raise TypeError(
                 "CoalitionLTLShield requires LabelledParallelEnv to wrap a "
@@ -337,11 +343,6 @@ class CoalitionLTLShield(ParallelEnv):
             agent: replacement for agent in self.coalition_agents
         }
 
-    def __getattr__(self, name: str):
-        if name == "env":
-            raise AttributeError(name)
-        return getattr(self.env, name)
-
     def observation_space(self, agent: str):
         return self.env.observation_space(agent)
 
@@ -461,7 +462,10 @@ class CoalitionLTLShield(ParallelEnv):
     def reset(self, seed=None, options=None):
         self._clear_runtime_state()
         observations, infos = self.env.reset(seed=seed, options=options)
-        self.agents = list(getattr(self.env, "agents", self.possible_agents))
+        try:
+            self.agents = list(self.env.agents)
+        except AttributeError:
+            self.agents = list(self.possible_agents)
         if tuple(self.agents) != tuple(self.possible_agents):
             raise RuntimeError(
                 "CoalitionLTLShield requires every possible agent to be active at reset."
@@ -528,7 +532,10 @@ class CoalitionLTLShield(ParallelEnv):
                 "finish the modeled game simultaneously."
             )
         done = all(done_by_agent.values())
-        self.agents = list(getattr(self.env, "agents", self.possible_agents))
+        try:
+            self.agents = list(self.env.agents)
+        except AttributeError:
+            self.agents = list(self.possible_agents)
         if not done and tuple(self.agents) != expected_agents:
             raise RuntimeError(
                 "Dynamic agent populations are not supported by this shield."

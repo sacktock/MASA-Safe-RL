@@ -212,7 +212,7 @@ class ColourGridWorldRenderer:
             blue_state=int(self.env._blue_state),
             green_state=int(self.env._green_state),
             purple_state=int(self.env._purple_state),
-            step_count=int(getattr(self.env, "_step_count", 0)),
+            step_count=int(self.env._step_count),
         )
 
     def _draw_floor_tile(

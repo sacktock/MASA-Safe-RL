@@ -41,10 +41,10 @@ class BaseAlgorithm(ABC):
         self.supported_action_spaces = supported_action_spaces
         self.supported_observation_spaces = supported_observation_spaces
 
-        act_sp = getattr(env, "action_space", None)
-        obs_sp = getattr(env, "observation_space", None)
-
-        if act_sp is None or obs_sp is None:
+        try:
+            act_sp = env.action_space
+            obs_sp = env.observation_space
+        except AttributeError:
             raise ValueError(
                 f"{self.__class__.__name__}: env is missing action_space/observation_space."
             )

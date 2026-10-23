@@ -168,7 +168,7 @@ class ObstacleRenderer:
 
     def _snapshot(self) -> "_ObstacleSnapshot":
         state = np.zeros(4, dtype=np.float32)
-        if getattr(self.env, "_state", None) is not None:
+        if self.env._state is not None:
             state = np.asarray(self.env._state, dtype=np.float32)
         min_position = float(self.env._min_position)
         max_position = float(self.env._max_position)
@@ -179,10 +179,13 @@ class ObstacleRenderer:
         obstacles = tuple(
             np.asarray(obstacle, dtype=np.float32) for obstacle in self.env._obstacles
         )
-        boundaries = tuple(
-            np.asarray(boundary, dtype=np.float32)
-            for boundary in getattr(self.env, "_boundaries", ())
-        )
+        if hasattr(self.env, "_boundaries"):
+            boundaries = tuple(
+                np.asarray(boundary, dtype=np.float32)
+                for boundary in self.env._boundaries
+            )
+        else:
+            boundaries = ()
         obstacle_hit = _obstacle_hit(position, obstacles)
         boundary_hit = _boundary_hit(position, min_position, max_position, boundaries)
         status = _status(
@@ -206,8 +209,8 @@ class ObstacleRenderer:
             boundaries=boundaries,
             obstacle_hit=obstacle_hit,
             boundary_hit=boundary_hit,
-            last_action=getattr(self.env, "_last_action", None),
-            step_count=int(getattr(self.env, "_step_count", 0)),
+            last_action=self.env._last_action,
+            step_count=int(self.env._step_count),
             status=status,
         )
 

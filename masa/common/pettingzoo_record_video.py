@@ -61,7 +61,10 @@ class RecordVideoParallel(BaseParallelWrapper):
         os.makedirs(self.video_folder, exist_ok=True)
 
         if fps is None:
-            fps = int(getattr(env, "metadata", {}).get("render_fps", 30))
+            try:
+                fps = int(env.metadata["render_fps"])
+            except (AttributeError, KeyError):
+                fps = 30
         self.frames_per_sec: int = fps
         self.name_prefix: str = name_prefix
         self._video_name: str | None = None
@@ -191,7 +194,7 @@ class RecordVideoParallel(BaseParallelWrapper):
             gc.collect()
 
     def __del__(self):
-        if len(getattr(self, "recorded_frames", [])) > 0:
+        if len(self.recorded_frames) > 0:
             gymnasium.logger.warn("Unable to save last video! Did you call close()?")
 
 
@@ -242,7 +245,10 @@ class RecordVideoAEC(BaseWrapper):
         os.makedirs(self.video_folder, exist_ok=True)
 
         if fps is None:
-            fps = int(getattr(env, "metadata", {}).get("render_fps", 30))
+            try:
+                fps = int(env.metadata["render_fps"])
+            except (AttributeError, KeyError):
+                fps = 30
         self.frames_per_sec: int = fps
         self.name_prefix: str = name_prefix
         self._video_name: str | None = None
@@ -358,7 +364,7 @@ class RecordVideoAEC(BaseWrapper):
             gc.collect()
 
     def __del__(self):
-        if len(getattr(self, "recorded_frames", [])) > 0:
+        if len(self.recorded_frames) > 0:
             gymnasium.logger.warn("Unable to save last video! Did you call close()?")
 
 

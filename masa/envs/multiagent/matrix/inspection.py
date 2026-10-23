@@ -387,9 +387,11 @@ class InspectionMatrix(ParallelEnv):
             rng_state: object
           )
         """
-        agents = (
-            tuple(self.agents) if getattr(self, "agents", None) is not None else tuple()
-        )
+        try:
+            agents = tuple(self.agents)
+        except AttributeError:
+            agents = tuple()
+
         p0, p1 = self.possible_agents
         last = (self._last_actions.get(p0, None), self._last_actions.get(p1, None))
         cum = (

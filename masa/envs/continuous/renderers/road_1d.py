@@ -162,7 +162,7 @@ class Road1DRenderer:
 
     def _snapshot(self) -> "_Road1DSnapshot":
         state = np.zeros(2, dtype=np.float32)
-        if getattr(self.env, "_state", None) is not None:
+        if self.env._state is not None:
             state = np.asarray(self.env._state, dtype=np.float32)
         position = float(state[0])
         velocity = float(state[1])
@@ -188,8 +188,8 @@ class Road1DRenderer:
             max_speed=max_speed,
             speed_limit=speed_limit,
             goal_position=goal_position,
-            last_action=getattr(self.env, "_last_action", None),
-            step_count=int(getattr(self.env, "_step_count", 0)),
+            last_action=self.env._last_action,
+            step_count=int(self.env._step_count),
             status=status,
         )
 

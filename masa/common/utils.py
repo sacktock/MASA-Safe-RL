@@ -60,8 +60,8 @@ def load_callable(path: str):
         raise ValueError("Expected 'module:callable' for --label-fn/--cost-fn")
     mod, name = path.split(":", 1)
     try:
-        return getattr(importlib.import_module(mod), name)
-    except AttributeError:
+        return importlib.import_module(mod).name
+    except (AttributeError, ModuleNotFoundError):
         warnings.warn(f"Could not load object from path: {path}")
         return None
 
@@ -178,14 +178,21 @@ def make_env(
     env = env_ctor(**dict(env_kwargs or {}))
     # must wrap time limit first
     env = TimeLimit(env, max_episode_steps)
-    label_fn = label_fn if label_fn is not None else getattr(env, "label_fn", None)
-    if label_fn is not None:
-        env = LabelledEnv(env, label_fn)
+    if label_fn is None:
+        try:
+            label_fn = env.label_fn
+        except AttributeError:
+            raise ValueError(
+                f"Env '{env_id}' does not expose a default label_fn. "
+                "Pass label_fn=... to make_env."
+            )
+    env = LabelledEnv(env, label_fn)
     constraint_kwargs = dict(constraint_kwargs or {})
     if "cost_fn" not in constraint_kwargs:
-        cost_fn = getattr(env, "cost_fn", None)
-        if cost_fn is None:
-            cost_fn = getattr(env.unwrapped, "cost_fn", None)
+        try:
+            cost_fn = env.cost_fn
+        except AttributeError:
+            cost_fn = None
         if cost_fn is not None:
             constraint_kwargs["cost_fn"] = cost_fn
     env = constraint_ctor(env, **constraint_kwargs)
@@ -274,20 +281,23 @@ def make_marl_env(
     env_ctor = registry.get_marl_env(env_id)
     constraint_ctor = registry.get_marl_constraint(constraint)
     raw_env = env_ctor(**dict(env_kwargs or {}))
-    resolved_label_fn = (
-        label_fn if label_fn is not None else getattr(raw_env, "label_fn", None)
-    )
-    if resolved_label_fn is None:
-        raise ValueError(
-            f"MARL env '{env_id}' does not expose a default label_fn. "
-            "Pass label_fn=... to make_marl_env."
-        )
+    if label_fn is None:
+        try:
+            label_fn = raw_env.label_fn
+        except AttributeError:
+            raise ValueError(
+                f"MARL env '{env_id}' does not expose a default label_fn. "
+                "Pass label_fn=... to make_marl_env."
+            )
     constraint_kwargs = dict(constraint_kwargs or {})
     if "cost_fn" not in constraint_kwargs:
-        cost_fn = getattr(raw_env, "cost_fn", None)
+        try:
+            cost_fn = raw_env.cost_fn
+        except AttributeError:
+            cost_fn = None
         if cost_fn is not None:
             constraint_kwargs["cost_fn"] = cost_fn
-    env = LabelledParallelEnv(raw_env, resolved_label_fn)
+    env = LabelledParallelEnv(raw_env, label_fn)
     env = constraint_ctor(env, **constraint_kwargs)
     if record_video:
         env = RecordVideoParallel(
