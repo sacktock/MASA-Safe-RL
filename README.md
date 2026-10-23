@@ -11,10 +11,9 @@
   <!-- · <a href="https://paper-url">Paper</a> -->
 </p>
 
---------------------------------------------------------------------------------
+______________________________________________________________________
 
-
-Welcome to MASA-Safe-RL, the Multi and Single Agent (MASA) Safe Reinforcement Learning library. The primary goal of this library is to develop a set of common constraints and environments for safe reinforcement learning research, built on top of the popular [gymnasium](https://gymnasium.farama.org/) interface. We span, CMPDs, probabilistic constraints, Reach-Avoid and LTL-Safety (DFA) properties.  
+Welcome to MASA-Safe-RL, the Multi and Single Agent (MASA) Safe Reinforcement Learning library. The primary goal of this library is to develop a set of common constraints and environments for safe reinforcement learning research, built on top of the popular [gymnasium](https://gymnasium.farama.org/) interface. We span, CMPDs, probabilistic constraints, Reach-Avoid and LTL-Safety (DFA) properties.
 
 The library is in very early stage development and we greatly appreciate and encourage feedback from the community about what they would like to see implemented. Currently we provide a set of basic tabular algroithms for safe RL, but we provide a modular and resuable framework for developing more complex algorithms and constraints.
 
@@ -38,24 +37,31 @@ If you use MASA-Safe-RL in your research please cite it in your publications.
 
 Python 3.13+ is required (3.13 recommended).
 
-#### Installation with conda 
+#### Installation with conda
+
 - Install conda, e.g., via [anaconda](https://anaconda.org/channels/anaconda/packages/conda/overview).
 - Clone the repo:
+
 ```bash
 git clone https://github.com/sacktock/MASA-Safe-RL.git
 cd MASA-Safe-RL
 ```
+
 - Create a conda virtual environment:
+
 ```bash
 conda env create --name masa --file conda-environment.yaml
 conda activate masa
 ```
+
 - Install dependencies:
+
 ```bash
 pip install -e .
 ```
 
 #### Installation with uv
+
 `uv sync` installs only base dependency package from the repository root.
 
 **Easiest way to install all dependencies:** All dependency groups (docs and GPU support for CUDA13): `uv sync --all-groups --no-group cuda12`.
@@ -63,12 +69,13 @@ pip install -e .
 Alternatively, `uv sync --all-groups --no-group cuda13` if your system only supports CUDA 12.
 
 More minimal ways of installing dependency groups:
-* For building docs, use `uv sync --group docs` from the repository root.
-* Adding GPU support for Jax: `uv sync --group cuda13` (or `cuda12` if CUDA 13 is not supported by your device)
+
+- For building docs, use `uv sync --group docs` from the repository root.
+- Adding GPU support for Jax: `uv sync --group cuda13` (or `cuda12` if CUDA 13 is not supported by your device)
 
 #### Installation with PyPI
 
-MASA-Safe-RL is now available on PyPI: [MASA-Safe-RL](https://pypi.org/project/MASA-Safe-RL/). 
+MASA-Safe-RL is now available on PyPI: [MASA-Safe-RL](https://pypi.org/project/MASA-Safe-RL/).
 
 ```bash
 pip install -U MASA-Safe-RL
@@ -79,32 +86,43 @@ pip install -U MASA-Safe-RL
 MASA-Safe-RL relies on [JAX](https://docs.jax.dev/) for GPU acceleration. If you are only interested in the gymnasium wrappers and constraints API then you do not need to complete the following steps.
 
 ## Mac and Windows
+
 **MAC** and **Windows**: we recommend JAX with CPU. No further action is required if you correctly followed the earlier steps.
 
-#### pip 
-- **Linux x86_64/aarch64** and **Windows WSL2 x86_64**: W+we strongly recommend using [Ubuntu 22.04](https://apps.microsoft.com/detail/9pn20msr04dw?hl=en-GB&gl=BE) or similar, jax and jaxlib should already be installed via the `requirements.txt`. You need to reinstall [JAX](https://docs.jax.dev/) based on your cuda driver compatibility. Do not use the ```-U``` option here as it may break earlier dependencies!
+#### pip
+
+- **Linux x86_64/aarch64** and **Windows WSL2 x86_64**: W+we strongly recommend using [Ubuntu 22.04](https://apps.microsoft.com/detail/9pn20msr04dw?hl=en-GB&gl=BE) or similar, jax and jaxlib should already be installed via the `requirements.txt`. You need to reinstall [JAX](https://docs.jax.dev/) based on your cuda driver compatibility. Do not use the `-U` option here as it may break earlier dependencies!
+
 ```bash
 pip install "jax[cuda13]"
 ```
+
 ```bash
 pip install "jax[cuda12]"
 ```
 
 #### uv
+
 Alternatively with `uv`,
+
 ```bash
 uv sync --group cuda12
 ```
+
 ```bash
 uv sync --group cuda13
 ```
 
 ## How to run MASA
+
 - You can run masa with the prebuilt CLI:
+
 ```bash
 masa run --env-id bridge_crossing --algo ppo --seed 0
 ```
-- You can run examples from the ```\examples``` folder via:
+
+- You can run examples from the `\examples` folder via:
+
 ```bash
 masa example prob_shield_example
 ```
@@ -126,10 +144,24 @@ uv run zensical serve
 ```
 
 ## Local storage
+
 The project currently uses the following directories for local storage:
-* `.cache/` - for persisting transition matrices to avoid recomputation
-* `videos/` - stores recorded videos from training runs at configured intervals or played runs using notebooks/
-* `runs/` - persisted data and metrics of training runs
+
+- `.cache/` - for persisting transition matrices to avoid recomputation
+- `videos/` - stores recorded videos from training runs at configured intervals or played runs using notebooks/
+- `runs/` - persisted data and metrics of training runs
+- `benchmarks/` - stores results from `masa benchmark` runs (e.g. `benchmarks/masa/<benchmark_id>/<algo>_<seed>/`)
+
+## Contributing
+
+We use [`pre-commit`](https://pre-commit.com/) for formatting and linting (Ruff, yamlfmt, taplo, mdformat, plus local checks). Install the git hook once per clone:
+
+```bash
+pip install pre-commit   # or: uv tool install pre-commit
+pre-commit install
+```
+
+It then runs automatically on every `git commit` (run manually with `pre-commit run --all-files`). CI runs the same pinned hooks on changed files via `pre-commit/action`, alongside the test suite.
 
 ## Getting in Touch
 
