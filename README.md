@@ -1,15 +1,8 @@
 # MASA-Safe-RL
 
-<p align="center">
-  <a href="https://sacktock.github.io/MASA-Safe-RL/">
-    <img src="images/logo_large.png" alt="MASA-Safe-RL" />
-  </a>
-</p>
+![MASA-Safe-RL](images/logo_large.png)
 
-<p align="center">
-  <a href="https://sacktock.github.io/MASA-Safe-RL">View Documentation</a>
-  <!-- · <a href="https://paper-url">Paper</a> -->
-</p>
+[View Documentation](https://sacktock.github.io/MASA-Safe-RL)
 
 ______________________________________________________________________
 
@@ -150,7 +143,7 @@ The project currently uses the following directories for local storage:
 - `.cache/` - for persisting transition matrices to avoid recomputation
 - `videos/` - stores recorded videos from training runs at configured intervals or played runs using notebooks/
 - `runs/` - persisted data and metrics of training runs
-- `benchmarks/` - stores results from `masa benchmark` runs (e.g. `benchmarks/masa/<benchmark_id>/<algo>_<seed>/`)
+- `benchmarks/` - stores results from `masa benchmark` runs
 
 ## Contributing
 
