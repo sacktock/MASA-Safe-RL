@@ -1,0 +1,58 @@
+# Pre-commit hooks for MASA-Safe-RL.
+#
+# Scope: source, docs and config only. Hooks run on files under
+#   masa/ scripts/ .github/ docs/ notebooks/ tests/ tutorial/
+# plus any *top-level* .yaml/.yml/.md/.toml file. Top-level .py/.ipynb files
+# are rejected outright (see the `block-top-level-scripts` hook below), so they
+# are only included in this glob to let that guard see (and fail on) them.
+#
+# Local and CI run the exact same pinned hooks (CI uses pre-commit/action@v3;). 
+# CI lints only the files changed in a push/PR
+# To refresh pins: `pre-commit autoupdate`.
+files: '^((masa|scripts|docs|notebooks|tests|tutorial|\.github)/|[^/]+\.(ya?ml|md|toml|py|ipynb)$)'
+repos:
+  # Ruff -- formatter only (no lint hook for now).
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.2
+    hooks:
+      - id: ruff-format
+  # basedpyright -- static type checking. Commented out for now; enable in a
+  # follow-up once the type backlog is triaged.
+  # - repo: https://github.com/DetachHead/basedpyright-prek-mirror
+  #   rev: 1.40.2
+  #   hooks:
+  #     - id: basedpyright
+  # YAML formatting.
+  - repo: https://github.com/google/yamlfmt
+    rev: v0.21.0
+    hooks:
+      - id: yamlfmt
+  # TOML formatting.
+  - repo: https://github.com/ComPWA/taplo-pre-commit
+    rev: v0.9.3
+    hooks:
+      - id: taplo-format
+  # Markdown formatting (GFM + MkDocs admonition/tab syntax).
+  - repo: https://github.com/hukkin/mdformat
+    rev: 1.0.0
+    hooks:
+      - id: mdformat
+        additional_dependencies:
+          - mdformat-gfm
+          - mdformat-mkdocs
+  # Local, bespoke checks.
+  - repo: local
+    hooks:
+      # Fail loudly on any use of `getattr`; use direct attribute access so the
+      # type checker can catch typos (this is what motivated the hook).
+      - id: no-getattr
+        name: ban getattr (use direct attribute access so typos fail loudly)
+        entry: '\bgetattr\s*\('
+        language: pygrep
+        types: [python]
+      # Reject any top-level .py/.ipynb file; source belongs in a package dir.
+      - id: block-top-level-scripts
+        name: block top-level .py/.ipynb files
+        entry: 'top-level .py/.ipynb files are not allowed; move them under masa/, scripts/, tests/, notebooks/, or tutorial/'
+        language: fail
+        files: '^[^/]+\.(py|ipynb)$'

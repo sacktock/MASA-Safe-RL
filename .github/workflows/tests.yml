@@ -1,35 +1,64 @@
-name: ci
-
-on: 
+name: CI
+on:
   push:
-    branches: 
+    branches:
       - "**"
   pull_request:
     branches:
       - "**"
     types: [opened, synchronize, edited, reopened, labeled, ready_for_review]
-
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+          fetch-depth: 0 # full history so we can diff against the base ref
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      # Lint only the files changed in this push/PR (not the whole tree), so the
+      # pre-existing backlog is adopted incrementally -- only new violations fail.
+      - name: Determine changed-file range
+        id: range
+        shell: bash
+        run: |
+          zero=0000000000000000000000000000000000000000
+          default="${{ github.event.repository.default_branch }}"
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "from=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
+            echo "to=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.before }}" != "$zero" ] && git cat-file -e "${{ github.event.before }}" 2>/dev/null; then
+            echo "from=${{ github.event.before }}" >> "$GITHUB_OUTPUT"
+            echo "to=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            # New branch (or unknown base): diff against the default branch.
+            git fetch --no-tags --depth=1 origin "$default" 2>/dev/null || true
+            echo "from=origin/$default" >> "$GITHUB_OUTPUT"
+            echo "to=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          fi
+      # Runs the exact pinned hooks from .pre-commit-config.yaml on changed files.
+      - uses: pre-commit/action@v3.0.1
+        with:
+          extra_args: >-
+            --from-ref ${{ steps.range.outputs.from }} --to-ref ${{ steps.range.outputs.to }}
   tests:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
         python-version: ["3.13"]
-
     steps:
-    - uses: actions/checkout@v5
-      with:
-        submodules: recursive
-
-    - name: Install uv
-      uses: astral-sh/setup-uv@v7
-      with:
-        enable-cache: true
-        python-version: ${{ matrix.python-version }}
-
-    - name: Install the project
-      run: uv sync --group dev
-
-    - name: Run tests
-      run: uv run pytest -v
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
+      - name: Install the project
+        run: uv sync --group dev
+      - name: Run tests
+        run: uv run pytest -v
