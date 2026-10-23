@@ -263,7 +263,7 @@ class ConstraintPersistentGymnasiumWrapper(ConstraintPersistentWrapper):
             visited.add(id(current))
 
             if hasattr(current, name):
-                return current.name
+                return getattr(current, name)
 
             if hasattr(current, "venv"):
                 current = current.venv

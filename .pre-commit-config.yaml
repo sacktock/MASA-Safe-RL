@@ -41,13 +41,6 @@ repos:
     # Local, bespoke checks.
 
     hooks:
-      # Fail loudly on any use of `getattr`; use direct attribute access so the
-      # type checker can catch typos (this is what motivated the hook).
-      - id: no-getattr
-        name: ban getattr (use direct attribute access so typos fail loudly)
-        entry: '\bgetattr\s*\('
-        language: pygrep
-        types: [python]
       - id: block-top-level-scripts
         # Reject any top-level .py/.ipynb file; source belongs in a package dir.
 

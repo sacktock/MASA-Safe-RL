@@ -59,11 +59,11 @@ def load_callable(path: str):
     if ":" not in path:
         raise ValueError("Expected 'module:callable' for --label-fn/--cost-fn")
     mod, name = path.split(":", 1)
+    module = importlib.import_module(mod)
     try:
-        return importlib.import_module(mod).name
-    except (AttributeError, ModuleNotFoundError):
-        warnings.warn(f"Could not load object from path: {path}")
-        return None
+        return getattr(module, name)
+    except AttributeError:
+        raise AttributeError(f"{module.__name__} has no attribute {name!r}") from None
 
 
 def _resolve_video_kwargs(

@@ -44,6 +44,12 @@ Documentation = "https://sacktock.github.io/MASA-Safe-RL/"
 [tool.setuptools]
 include-package-data = true
 
+[tool.ruff]
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
 [project.scripts]
 masa = "masa.cli.cli_app:app"
 
