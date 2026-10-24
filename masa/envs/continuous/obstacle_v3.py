@@ -131,7 +131,7 @@ class ObstacleV3(ContinuousEnv):
     def reset(self, *, seed: int | None = None, options: Dict[str, Any] | None = None):
         super().reset(seed=seed)
 
-        if seed:
+        if seed is not None:
             self.np_random = np.random.default_rng(seed)
 
         if self.np_random is None:
