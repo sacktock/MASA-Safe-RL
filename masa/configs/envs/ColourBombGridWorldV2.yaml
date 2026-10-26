@@ -6,7 +6,7 @@ defaults:
     cost_fn: masa.envs.tabular.colour_bomb_grid_world_v2:cost_fn
   constraint:
     type: PCTL
-    cost_budget: 0.025
+    alpha: 0.025
   run:
     total_timesteps: 500000
     eval_every: 10000
