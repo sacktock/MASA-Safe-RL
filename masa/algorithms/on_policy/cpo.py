@@ -1,4 +1,5 @@
 from __future__ import annotations
+import warnings
 import jax.random as jr
 import jax.numpy as jnp
 import optax
@@ -30,7 +31,6 @@ class CPO(OnPolicyCostAlgorithm, TRPO):
         cost_limit: float = 25.0,
         cost_gamma: float = 0.99,
         cost_gae_lambda: float = 0.95,
-        cost_ewma_beta: float = 0.05,
         **kwargs,
     ):
         self.normalize_reward_advantages = normalize_reward_advantages
@@ -39,9 +39,27 @@ class CPO(OnPolicyCostAlgorithm, TRPO):
         self.cost_limit = cost_limit
         self.cost_gamma = cost_gamma
         self.cost_gae_lambda = cost_gae_lambda
-        self.cost_ewma_beta = cost_ewma_beta
+
+        # Current-rollout estimate of the mean episode cost, refreshed in
+        # ``rollout`` and consumed directly as the CPO constraint value.
+        self.mean_ep_cost = 0.0
+        # Running count of updates where the current policy is infeasible
+        # (optim_case 0/1, i.e. c >= 0). Logged for diagnostics.
+        self._cumulative_infeasible_updates = 0
 
         super().__init__(*args, policy_class=policy_class, **kwargs)
+
+    def rollout(
+        self,
+        step: int,
+        logger: Optional[TrainLogger] = None,
+        tqdm_position: int = 1,
+    ):
+        self.mean_ep_cost = super().rollout(
+            step=step,
+            logger=logger,
+            tqdm_position=tqdm_position,
+        )
 
     @staticmethod
     @jit
@@ -218,6 +236,18 @@ class CPO(OnPolicyCostAlgorithm, TRPO):
 
         optim_case, A, B = self._determine_case(cost_grads, c, q, r, s)
 
+        if optim_case in (0, 1):
+            # Current policy is infeasible (c >= 0): the constraint is active.
+            self._cumulative_infeasible_updates += 1
+        elif optim_case in (3, 4) and self.mean_ep_cost > self.cost_limit:
+            warnings.warn(
+                f"CPO took a feasible step (optim_case={optim_case}) but the mean "
+                f"episode cost {float(self.mean_ep_cost):.4f} exceeds cost_limit "
+                f"{float(self.cost_limit):.4f}; the reward-only step will not reduce "
+                "cost. Check the mean episode cost estimate for staleness.",
+                stacklevel=2,
+            )
+
         if optim_case in (3, 4):
             # feasible use usual TRPO step
             step_direction = alpha * x
@@ -347,5 +377,10 @@ class CPO(OnPolicyCostAlgorithm, TRPO):
                     "lr": float(self.lr_schedule(step)),
                     "mean_cost_advantage": float(cost_advantages.mean()),
                     "mean_cost_return": float(cost_returns.mean()),
+                    "mean_ep_cost": float(self.mean_ep_cost),
+                    "optim_case": float(optim_case),
+                    "cumulative_infeasible_updates": float(
+                        self._cumulative_infeasible_updates
+                    ),
                 },
             )

@@ -19,7 +19,6 @@ defaults:
   cost_limit: 25.0
   cost_gamma: 0.99
   cost_gae_lambda: 0.95
-  cost_ewma_beta: 0.05
 MediaStreaming:
   gamma: 0.95
   cost_limit: 0.04
