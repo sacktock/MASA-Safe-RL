@@ -14,9 +14,6 @@ from masa.common.metrics import TrainLogger
 class OnPolicyCostAlgorithm(OnPolicyAlgorithm, ABC):
     """Abstract cost-aware on-policy algorithm mixin."""
 
-    # Smoothing for the running (EWMA) estimate of ``mean_ep_cost``.
-    cost_ewma_beta: float = 0.05
-
     def _wrap_env(self, env: gym.Env):
         env = super()._wrap_env(env)
 
@@ -77,9 +74,6 @@ class OnPolicyCostAlgorithm(OnPolicyAlgorithm, ABC):
     def train(self, *args, **kwargs):
         self._last_cost_episode_start = [True] * self.n_envs
         self._cost_accumulator = np.zeros(self.n_envs, dtype=np.float32)
-        if not hasattr(self, "_mean_ep_cost"):
-            self._mean_ep_cost = None
-            self.mean_ep_cost = 0.0
         super().train(*args, **kwargs)
 
     def _bootstrap_inflight_cost(self, last_cost_value=np.array(0.0)) -> float:
@@ -93,22 +87,12 @@ class OnPolicyCostAlgorithm(OnPolicyAlgorithm, ABC):
 
     def _update_mean_ep_cost(
         self, ep_costs: list, last_cost_value=np.array(0.0)
-    ) -> None:
-        """Update the running per-episode EWMA estimate of the mean episode cost."""
-        b = self.cost_ewma_beta
-        prev = self._mean_ep_cost
-
+    ) -> Optional[float]:
+        """Unbiased current-rollout estimate of the mean episode cost."""
         if len(ep_costs) > 0:
-            # Per-episode cost expoentially-weighted moving average update
-            for c in ep_costs:
-                prev = float(c) if prev is None else (1.0 - b) * prev + b * float(c)
-        elif prev is None:
-            # Fall-back to a (biased, undercounting) in-flight bootstrap to avoid a spurious 0.0.
-            prev = self._bootstrap_inflight_cost(last_cost_value)
-        # If nothing terminated just use the current estimate to avoid double counting episodes
-
-        self._mean_ep_cost = prev
-        self.mean_ep_cost = prev
+            return float(np.mean(ep_costs))
+        # If no episodes have terminated yet, use the inflight cost estimate
+        return self._bootstrap_inflight_cost(last_cost_value)
 
     def rollout(
         self,
@@ -301,13 +285,17 @@ class OnPolicyCostAlgorithm(OnPolicyAlgorithm, ABC):
             cost_done=self._last_cost_episode_start,
         )
 
-        self._update_mean_ep_cost(ep_costs, last_cost_value=last_cost_value)
-
-        return ep_costs
+        return self._update_mean_ep_cost(ep_costs, last_cost_value=last_cost_value)
 
 
 class OnPolicyNaiveLagrangeAlgorithm(OnPolicyCostAlgorithm, ABC):
     """Abstract cost-aware on-policy algorithm with naive Lagrange dual updates."""
+
+    def _bootstrap_inflight_cost(
+        self, last_cost_value=np.array(0.0)
+    ) -> Optional[float]:
+        # Don't feed inflight cost estimate to the dual update
+        return None
 
     def _update_lagrange_multiplier(self, mean_ep_cost: float):
         self.lagrangian_multiplier += self.lambda_lr * (mean_ep_cost - self.cost_limit)
@@ -323,10 +311,11 @@ class OnPolicyNaiveLagrangeAlgorithm(OnPolicyCostAlgorithm, ABC):
         logger: Optional[TrainLogger] = None,
         tqdm_position: int = 1,
     ):
-        super().rollout(
+        mean_ep_cost = super().rollout(
             step=step,
             logger=logger,
             tqdm_position=tqdm_position,
         )
 
-        self._update_lagrange_multiplier(self.mean_ep_cost)
+        if mean_ep_cost is not None:
+            self._update_lagrange_multiplier(mean_ep_cost)

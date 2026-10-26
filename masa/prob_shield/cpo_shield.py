@@ -632,7 +632,9 @@ class CPOShield(CPO):
             cost_done=self._last_cost_episode_start,
         )
 
-        self._update_mean_ep_cost(ep_costs, last_cost_value=last_cost_value)
+        self.mean_ep_cost = self._update_mean_ep_cost(
+            ep_costs, last_cost_value=last_cost_value
+        )
 
     @staticmethod
     @jit
