@@ -23,7 +23,7 @@ class OnPolicyCostAlgorithm(OnPolicyAlgorithm, ABC):
             )
 
         self.constraint = env._constraint
-        self.constraint_type = str(self.constraint)
+        self.constraint_type = str(self.constraint.constraint_type)
 
         if self.constraint_type == "CMDP":
             budget = self.constraint.budget
