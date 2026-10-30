@@ -80,11 +80,11 @@ MASA-Safe-RL relies on [JAX](https://docs.jax.dev/) for GPU acceleration. If you
 
 ## Mac and Windows
 
-**MAC** and **Windows**: we recommend JAX with CPU. No further action is required if you correctly followed the earlier steps.
+**macOS** and **Windows**: we recommend JAX with CPU. No further action is required if you correctly followed the earlier steps.
 
 #### pip
 
-- **Linux x86_64/aarch64** and **Windows WSL2 x86_64**: W+we strongly recommend using [Ubuntu 22.04](https://apps.microsoft.com/detail/9pn20msr04dw?hl=en-GB&gl=BE) or similar, jax and jaxlib should already be installed via the `requirements.txt`. You need to reinstall [JAX](https://docs.jax.dev/) based on your cuda driver compatibility. Do not use the `-U` option here as it may break earlier dependencies!
+- **Linux x86_64/aarch64** and **Windows WSL2 x86_64**: We strongly recommend using [Ubuntu 22.04](https://apps.microsoft.com/detail/9pn20msr04dw?hl=en-GB&gl=BE) or similar, jax and jaxlib should already be installed. You need to reinstall [JAX](https://docs.jax.dev/) based on your cuda driver compatibility. Do not use the `-U` option here as it may break earlier dependencies!
 
 ```bash
 pip install "jax[cuda13]"
