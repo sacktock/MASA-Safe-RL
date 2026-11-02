@@ -2,7 +2,7 @@
 
 ## Installation
 
-Python 3.13+ is required (3.13 recommended).
+Python 3.12+ is required (3.13 recommended).
 
 ### Installation with conda
 
