@@ -240,10 +240,11 @@ def test_continuous_safe_rl_baselines_notebook_is_valid_and_executable():
         "PPO",
         "CPO",
         "PPO Lagrangian",
-        "PPO_STUB_CONFIG",
+        "ALGORITHM_CONFIGS",
         "make_continuous_safe_env",
-        "BASELINE_STATUS",
-        "stub",
+        "run_ablation",
+        "evaluate_policy",
+        "RESULTS",
         "constraint",
     ):
         assert token in source, f"{token} missing"
