@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.resources as resources
 import sys
 from pathlib import Path
 
@@ -115,6 +116,20 @@ def test_run_command_accepts_every_registered_environment(monkeypatch, env_id):
     assert algo == "QL"
 
 
+@pytest.mark.parametrize("env_id", sorted(registry.ENV_REGISTRY.keys()))
+def test_parse_config_loads_every_registered_environment_yaml(env_id):
+    # Exact-name check: case-insensitive filesystems (Windows, macOS) would
+    # otherwise resolve e.g. Sokoban.yaml to sokoban.yaml and hide the mismatch.
+    config_names = {
+        path.name for path in resources.files("masa.configs.envs").iterdir()
+    }
+    assert f"{env_id}.yaml" in config_names
+
+    config = cli_app.parse_config(env_id, [], "QL", [])
+
+    assert config.env.id == env_id
+
+
 @pytest.mark.parametrize("algo", sorted(registry.ALGO_REGISTRY.keys()))
 def test_run_command_accepts_every_registered_algorithm(monkeypatch, algo):
     captured = []
@@ -135,6 +150,20 @@ def test_run_command_accepts_every_registered_algorithm(monkeypatch, algo):
     _, selected_algo = captured[0]
     assert parse_calls == [("MediaStreaming", [], algo, [])]
     assert selected_algo == algo
+
+
+@pytest.mark.parametrize("algo", sorted(registry.ALGO_REGISTRY.keys()))
+def test_parse_config_loads_every_registered_algorithm_yaml(algo):
+    # Exact-name check: case-insensitive filesystems (Windows, macOS) would
+    # otherwise resolve e.g. PPO.yaml to ppo.yaml and hide the mismatch.
+    config_names = {
+        path.name for path in resources.files("masa.configs.algorithms").iterdir()
+    }
+    assert f"{algo}.yaml" in config_names
+
+    config = cli_app.parse_config("MediaStreaming", [], algo, [])
+
+    assert config[algo]
 
 
 @pytest.mark.parametrize("constraint", sorted(registry.CONSTRAINT_REGISTRY.keys()))
