@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, Any, List
+from typing import Optional, Any, Iterable, List
 import sys
 import importlib.resources as resources
 import argparse
@@ -35,6 +35,37 @@ app = typer.Typer(
     }
 )
 console = Console()
+
+# Maps ``constraint.*`` config keys to constraint wrapper keyword arguments.
+CONSTRAINT_CONFIG_KEYS = {
+    "cost_budget": "budget",
+    "alpha": "alpha",
+    "avoid_label": "avoid_label",
+    "reach_label": "reach_label",
+    "dfa": "dfa",
+}
+
+
+def collect_constraint_keys(
+    args: Iterable[str], custom_config: dict[str, Any]
+) -> set[str]:
+    """Return the ``constraint.*`` keys set explicitly by the user.
+
+    Keys come from the custom config YAML's ``constraint`` section and from
+    ``--constraint.X`` / ``--constraint.X=value`` flags. ``type`` selects the
+    constraint rather than parameterising it, so it is excluded.
+    """
+    keys = set((custom_config.get("constraint") or {}).keys())
+    prefix = "--constraint."
+    for arg in args:
+        if arg.startswith(prefix):
+            keys.add(arg[len(prefix) :].split("=", 1)[0])
+    keys.discard("type")
+    return keys
+
+
+def _format_constraint_keys(keys: Iterable[str]) -> str:
+    return ", ".join(f"constraint.{key}" for key in keys)
 
 
 def resolve_id(
@@ -168,7 +199,40 @@ def print_config(config: Config, algo: str) -> None:
     console.print("[bold green]Beginning training ...[/]")
 
 
-def run_with_config(config, algo):
+def run_with_config(config, algo, constraint_keys: Iterable[str] = ()):
+    constraint_keys = set(constraint_keys)
+    unsupported = sorted(constraint_keys - CONSTRAINT_CONFIG_KEYS.keys())
+    if unsupported:
+        raise typer.BadParameter(
+            f"{_format_constraint_keys(unsupported)} not supported by any "
+            "constraint in the CLI. Check the spelling, or if you added a new "
+            "constraint parameter, wire it into CONSTRAINT_CONFIG_KEYS in "
+            f"masa/cli/cli_app.py. Supported: "
+            f"{_format_constraint_keys(CONSTRAINT_CONFIG_KEYS)}."
+        )
+
+    constraint_id = resolve_registered_id(
+        config.constraint.type,
+        set(registry.CONSTRAINT_REGISTRY.keys()),
+        format_constraint_id,
+        "constraint",
+    )
+    constraint_ctor = registry.get_constraint(constraint_id)
+
+    accepted = [
+        key
+        for key, kwarg in CONSTRAINT_CONFIG_KEYS.items()
+        if accepts_kwarg(constraint_ctor, kwarg)
+    ]
+    ignored = sorted(constraint_keys - set(accepted))
+    if ignored:
+        accepted_text = _format_constraint_keys(accepted) or "none"
+        raise typer.BadParameter(
+            f"{_format_constraint_keys(ignored)} would be ignored by constraint "
+            f"'{constraint_id}'. Remove it, or select a constraint that uses it. "
+            f"'{constraint_id}' accepts: {accepted_text}."
+        )
+
     print_config(config, algo)
 
     try:
@@ -184,30 +248,18 @@ def run_with_config(config, algo):
     except AttributeError:
         make_dfa = load_callable("masa.common.dummy:make_dfa")
 
-    constraint_id = resolve_registered_id(
-        config.constraint.type,
-        set(registry.CONSTRAINT_REGISTRY.keys()),
-        format_constraint_id,
-        "constraint",
-    )
-    constraint_ctor = registry.get_constraint(constraint_id)
-
     # The config carries parameters for every constraint type; each wrapper
     # rejects keys it does not accept, so keep only the ones that apply.
-    constraint_kwargs = {
-        "cost_fn": cost_fn,
-        "budget": config.constraint.cost_budget,
-        "alpha": config.constraint.alpha,
-        "avoid_label": config.constraint.avoid_label,
-        "reach_label": config.constraint.reach_label,
-        "dfa": make_dfa(),
-    }
-
-    constraint_kwargs = {
-        key: value
-        for key, value in constraint_kwargs.items()
-        if value is not None and accepts_kwarg(constraint_ctor, key)
-    }
+    constraint_kwargs = {}
+    if accepts_kwarg(constraint_ctor, "cost_fn"):
+        constraint_kwargs["cost_fn"] = cost_fn
+    for config_key in accepted:
+        if config_key == "dfa":
+            value = make_dfa()
+        else:
+            value = getattr(config.constraint, config_key, None)
+        if value is not None:
+            constraint_kwargs[CONSTRAINT_CONFIG_KEYS[config_key]] = value
 
     if config.run.record_video and config.run.record_every == 0:
         warnings.warn(
@@ -399,7 +451,11 @@ def run(
         config = config.update({"run.total_timesteps": total_timesteps})
     config = config.update({"run.seed": seed})
 
-    run_with_config(config, algo)
+    run_with_config(
+        config,
+        algo,
+        constraint_keys=collect_constraint_keys(ctx.args, custom_config),
+    )
 
 
 @app.command()

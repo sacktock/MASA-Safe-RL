@@ -55,7 +55,7 @@ QL:
     monkeypatch.setattr(
         cli_app,
         "run_with_config",
-        lambda config, algo: captured.append((config, algo)),
+        lambda config, algo, **kwargs: captured.append((config, algo)),
     )
 
     result = runner.invoke(
@@ -102,7 +102,7 @@ def test_run_command_accepts_every_registered_environment(monkeypatch, env_id):
     monkeypatch.setattr(
         cli_app,
         "run_with_config",
-        lambda config, algo: captured.append((config, algo)),
+        lambda config, algo, **kwargs: captured.append((config, algo)),
     )
 
     result = runner.invoke(
@@ -138,7 +138,9 @@ def test_run_command_accepts_every_registered_algorithm(monkeypatch, algo):
     monkeypatch.setattr(
         cli_app,
         "run_with_config",
-        lambda config, selected_algo: captured.append((config, selected_algo)),
+        lambda config, selected_algo, **kwargs: captured.append(
+            (config, selected_algo)
+        ),
     )
 
     result = runner.invoke(
@@ -174,7 +176,7 @@ def test_run_command_accepts_every_registered_constraint(monkeypatch, constraint
     monkeypatch.setattr(
         cli_app,
         "run_with_config",
-        lambda config, algo: captured.append((config, algo)),
+        lambda config, algo, **kwargs: captured.append((config, algo)),
     )
 
     result = runner.invoke(
@@ -200,7 +202,7 @@ def test_run_command_accepts_every_registered_constraint(monkeypatch, constraint
 def test_run_rejects_unknown_registered_ids(monkeypatch):
     called = False
 
-    def fail_if_called(config, algo):
+    def fail_if_called(config, algo, **kwargs):
         nonlocal called
         called = True
 
@@ -343,12 +345,110 @@ def test_run_with_config_passes_only_keys_the_constraint_accepts(
     monkeypatch.setattr(cli_app, "make_env", recording_make_env)
     monkeypatch.setattr(cli_app.registry, "get_algorithm", lambda algo: FakeAlgorithm)
 
-    cli_app.run_with_config(config, "QL")
+    explicit_keys = {
+        key
+        for key, kwarg in cli_app.CONSTRAINT_CONFIG_KEYS.items()
+        if kwarg in expected_keys
+    }
+    cli_app.run_with_config(config, "QL", constraint_keys=explicit_keys)
 
     assert len(make_env_calls) == 1
     assert set(make_env_calls[0]) == expected_keys
     for env in built_envs:
         env.close()
+
+
+def test_run_collects_constraint_keys_from_flags_and_custom_config(
+    monkeypatch, tmp_path
+):
+    captured = []
+    custom_config = tmp_path / "custom.yaml"
+    custom_config.write_text(
+        """
+constraint:
+  type: PCTL
+  cost_budget: 3
+""".lstrip(),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        cli_app,
+        "run_with_config",
+        lambda config, algo, constraint_keys: captured.append(constraint_keys),
+    )
+
+    result = runner.invoke(
+        cli_app.app,
+        [
+            "run",
+            "--env-id",
+            "MediaStreaming",
+            "--algo",
+            "QL",
+            "--custom-cfgs",
+            str(custom_config),
+            "--constraint.alpha",
+            "0.05",
+            "--constraint.reach_label=goal",
+            "--QL.gamma",
+            "0.8",
+        ],
+    )
+
+    assert_cli_success(result)
+    assert captured == [{"cost_budget", "alpha", "reach_label"}]
+
+
+def test_run_with_config_rejects_keys_not_wired_into_cli(monkeypatch):
+    def fail_make_env(*args, **kwargs):
+        raise AssertionError("make_env should not be called")
+
+    monkeypatch.setattr(cli_app, "make_env", fail_make_env)
+    config = cli_app.parse_config("ColourGridWorld", [], "QL", [])
+
+    with pytest.raises(
+        cli_app.typer.BadParameter,
+        match=r"constraint\.obs_type not supported by any constraint",
+    ):
+        cli_app.run_with_config(config, "QL", constraint_keys={"obs_type", "alpha"})
+
+
+def test_run_with_config_rejects_keys_ignored_by_constraint(monkeypatch):
+    def fail_make_env(*args, **kwargs):
+        raise AssertionError("make_env should not be called")
+
+    monkeypatch.setattr(cli_app, "make_env", fail_make_env)
+    config = cli_app.parse_config("ColourGridWorld", [], "QL", [])
+
+    with pytest.raises(
+        cli_app.typer.BadParameter,
+        match=r"constraint\.alpha would be ignored by constraint 'CMDP'",
+    ):
+        cli_app.run_with_config(config, "QL", constraint_keys={"alpha", "cost_budget"})
+
+
+def test_run_fails_on_constraint_flag_ignored_by_selected_constraint(monkeypatch):
+    def fail_make_env(*args, **kwargs):
+        raise AssertionError("make_env should not be called")
+
+    monkeypatch.setattr(cli_app, "make_env", fail_make_env)
+
+    result = runner.invoke(
+        cli_app.app,
+        [
+            "run",
+            "--env-id",
+            "ColourGridWorld",
+            "--algo",
+            "QL",
+            "--constraint.alpha",
+            "0.05",
+        ],
+    )
+
+    assert result.exit_code == 2
+    output = " ".join(result.output.replace("│", " ").split())
+    assert "constraint.alpha would be ignored by constraint 'CMDP'" in output
 
 
 def test_example_inventory_is_not_empty():
