@@ -32,11 +32,11 @@ MediaStreaming:
   risk_alpha: 0.1
   mode: model_free
   horizon: 10
-  margin_init: 1.0
-  margin_decay_slack: 0.001
   safety_prob: 0.04
   cost_coef: 100.0
   r_min: -1.0
+  margin_init: 1.0
+  margin_decay_slack: 0.001
   task_lr_decay: 0.0001
   risk_lr_decay: 0.001
 BridgeCrossing:
@@ -97,6 +97,8 @@ ColourBombGridWorldV2:
   horizon: 3
   safety_prob: 0.025
   cost_coef: 1.0
+  safe_lr_decay: 0.05
+  risk_lr_decay: 0.01
 ColourBombGridWorldV2_Property2:
   task_alpha: 0.05
   task_gamma: 0.95
@@ -107,6 +109,8 @@ ColourBombGridWorldV2_Property2:
   horizon: 9
   safety_prob: 0.025
   cost_coef: 1.0
+  safe_lr_decay: 0.05
+  risk_lr_decay: 0.01
 ColourBombGridWorldV2_Property3:
   task_alpha: 0.05
   task_gamma: 0.95

@@ -19,8 +19,11 @@ defaults:
   epsilon_decay: linear
   epsilon_decay_frames: 10000
   n_bins: 1001
+  margin_init: 1.0
+  margin_decay_slack: 0.01
   task_lr_decay: 0.001
   safe_lr_decay: 0.01
+  risk_lr_decay: 0.005
 MediaStreaming:
   task_alpha: 0.1
   task_gamma: 0.95
@@ -28,20 +31,24 @@ MediaStreaming:
   safe_gamma: 0.95
   mode: model_based
   model_checking: finite
-  horizon: 5
+  horizon: 10
   safety_prob: 0.04
   cost_coef: 100.0
   r_min: -1.0
+  margin_init: 1.0
+  margin_decay_slack: 0.001
+  task_lr_decay: 0.0001
 BridgeCrossing:
   task_alpha: 0.05
   task_gamma: 0.99
-  safe_alpha: 0.05
+  safe_alpha: 0.1
   safe_gamma: 0.95
   mode: model_based
   model_checking: finite
   horizon: 4
   safety_prob: 0.05
-  cost_coef: 10.0
+  cost_coef: 1.0
+  safe_lr_decay: 0.1
 BridgeCrossingV2:
   task_alpha: 0.1
   task_gamma: 0.99
@@ -51,47 +58,52 @@ BridgeCrossingV2:
   model_checking: finite
   horizon: 4
   safety_prob: 0.01
-  cost_coef: 10.0
+  cost_coef: 1.0
+  safe_lr_decay: 0.1
 ColourBombGridWorld:
   task_alpha: 0.05
-  task_gamma: 0.95
-  safe_alpha: 0.05
+  task_gamma: 0.99
+  safe_alpha: 0.1
   safe_gamma: 0.95
   mode: model_based
   model_checking: finite
   horizon: 2
   safety_prob: 0.05
-  cost_coef: 10.0
+  cost_coef: 1.0
+  safe_lr_decay: 0.1
 ColourBombGridWorld_Property2:
   task_alpha: 0.05
-  task_gamma: 0.95
-  safe_alpha: 0.05
+  task_gamma: 0.99
+  safe_alpha: 0.1
   safe_gamma: 0.95
   mode: model_based
   model_checking: finite
   horizon: 2
   safety_prob: 0.05
-  cost_coef: 10.0
+  cost_coef: 1.0
+  safe_lr_decay: 0.1
 ColourBombGridWorldV2:
   task_alpha: 0.05
   task_gamma: 0.95
-  safe_alpha: 0.05
+  safe_alpha: 0.1
   safe_gamma: 0.95
   mode: model_based
   model_checking: finite
   horizon: 3
   safety_prob: 0.025
-  cost_coef: 10.0
+  cost_coef: 1.0
+  safe_lr_decay: 0.05
 ColourBombGridWorldV2_Property2:
   task_alpha: 0.05
   task_gamma: 0.95
-  safe_alpha: 0.05
+  safe_alpha: 0.1
   safe_gamma: 0.95
   mode: model_based
   model_checking: finite
   horizon: 9
   safety_prob: 0.025
-  cost_coef: 10.0
+  cost_coef: 1.0
+  safe_lr_decay: 0.05
 ColourBombGridWorldV2_Property3:
   task_alpha: 0.05
   task_gamma: 0.95
@@ -101,7 +113,7 @@ ColourBombGridWorldV2_Property3:
   model_checking: finite
   horizon: 12
   safety_prob: 0.025
-  cost_coef: 10.0
+  cost_coef: 1.0
 ColourBombGridWorldV2_Property3Cycle:
   task_alpha: 0.05
   task_gamma: 0.95
@@ -111,7 +123,7 @@ ColourBombGridWorldV2_Property3Cycle:
   model_checking: finite
   horizon: 12
   safety_prob: 0.025
-  cost_coef: 10.0
+  cost_coef: 1.0
 ColourBombGridWorldV2_Property3Potential:
   task_alpha: 0.05
   task_gamma: 0.95
@@ -121,7 +133,7 @@ ColourBombGridWorldV2_Property3Potential:
   model_checking: finite
   horizon: 12
   safety_prob: 0.025
-  cost_coef: 10.0
+  cost_coef: 1.0
 ColourBombGridWorldV2_Property3NoCfe:
   task_alpha: 0.05
   task_gamma: 0.95
@@ -131,7 +143,7 @@ ColourBombGridWorldV2_Property3NoCfe:
   model_checking: finite
   horizon: 12
   safety_prob: 0.025
-  cost_coef: 10.0
+  cost_coef: 1.0
   use_counter_factual_experiences: false
 MiniPacman:
   task_alpha: 0.1
