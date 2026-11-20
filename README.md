@@ -1,31 +1,39 @@
 # MASA-Safe-RL
 
 ![MASA-Safe-RL](images/logo_large.png)
+[![PyPI](https://img.shields.io/pypi/v/MASA-Safe-RL)](https://pypi.org/project/MASA-Safe-RL/)
+[![DOI](https://zenodo.org/badge/1076133328.svg)](https://doi.org/10.5281/zenodo.24396240)
+[![Docs](https://img.shields.io/badge/docs-online-blue)](https://sacktock.github.io/MASA-Safe-RL)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 
 [View Documentation](https://sacktock.github.io/MASA-Safe-RL)
 
 ______________________________________________________________________
 
-Welcome to MASA-Safe-RL, the Multi and Single Agent (MASA) Safe Reinforcement Learning library. The primary goal of this library is to develop a set of common constraints and environments for safe reinforcement learning research, built on top of the popular [gymnasium](https://gymnasium.farama.org/) interface. We span, CMPDs, probabilistic constraints, Reach-Avoid and LTL-Safety (DFA) properties.
+MASA-Safe-RL (Multi- and Single-Agent Safe RL) is a modular library for safe reinforcement learning, built on the [Gymnasium](https://gymnasium.farama.org/) and [PettingZoo](https://pettingzoo.farama.org/) interfaces. You supply an environment plus a labelling function and a cost function. MASA wraps the environment in a stateful constraint monitor and, optionally, a shield, and trains it with algorithm-agnostic learners. Safety specifications live outside the environment, so the same environment can be evaluated under different constraints without modification.
 
-The library is in very early stage development and we greatly appreciate and encourage feedback from the community about what they would like to see implemented. Currently we provide a set of basic tabular algroithms for safe RL, but we provide a modular and resuable framework for developing more complex algorithms and constraints.
+- **Constraints:** CMDPs, constrained Markov games (per-coalition budgets), LTL safety (DFA), PCTL, probabilistic safety and reach-avoid.
+- **Shielding:** deterministic shields from LTL safety games (preemptive or post-posed, including coalitional shields for multi-agent settings) and probabilistic shielding.
+- **Algorithms:** tabular safe RL baselines; JAX implementations of PPO, A2C, TRPO, CPO and Lagrangian variants; and multi-agent independent Q-learning variants.
+- **Environments:** 35 single- and multi-agent benchmarks, from gridworlds and matrix games to continuous control.
+- **Tooling:** a `masa` command-line interface, TensorBoard and W&B logging, plotting utilities and [tutorial notebooks](notebooks/tutorials).
 
-If you use MASA-Safe-RL in your research please cite it in your publications.
+MASA-Safe-RL is under active development (pre-1.0), so APIs may still change. We'd love to hear what you'd like to see implemented; see [Getting in Touch](#getting-in-touch).
+
+## Citing MASA-Safe-RL
+
+If you use MASA-Safe-RL in your research please cite our release archive on Zenodo. The DOI here resolves the latest release, if you want to cite a specific version please see each release's own version DOI on its Zenodo page.
 
 ```bibtex
-@software{alex_goodall_2026_24396241,
-  author       = {Alex Goodall and Omar Adalat and Terence Fernandes and Max},
-  title        = {sacktock/MASA-Safe-RL: MASA-Safe-RL v0.3.14 (first archived release)},
-  month        = nov,
-  year         = 2026,
-  publisher    = {Zenodo},
-  version      = {v0.3.14},
-  doi          = {10.5281/zenodo.24396241},
-  url          = {https://doi.org/10.5281/zenodo.24396241},
+@software{goodall2026masa,
+  author    = {Goodall, Alexander W. and Adalat, Omar and {Hamel-De le Court}, Edwin and Belardinelli, Francesco},
+  title     = {{MASA-Safe-RL}: A Modular Library for Single- and Multi-Agent Safe Reinforcement Learning},
+  year      = {2026},
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.24396240},
+  url       = {https://doi.org/10.5281/zenodo.24396240}
 }
 ```
-
-[![DOI](https://zenodo.org/badge/1076133328.svg)](https://doi.org/10.5281/zenodo.24396240)
 
 ## Quick Start
 
