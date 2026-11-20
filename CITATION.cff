@@ -1,0 +1,35 @@
+cff-version: 1.2.0
+message: "If you use MASA-Safe-RL, please cite it using these metadata."
+title: "MASA-Safe-RL: A Modular Library for Single- and Multi-Agent Safe Reinforcement Learning"
+type: software
+authors:
+  - given-names: Alexander W.
+    family-names: Goodall
+    affiliation: Imperial College London
+  - given-names: Omar
+    family-names: Adalat
+    affiliation: Imperial College London
+  - given-names: Edwin
+    family-names: Hamel-De le Court
+    affiliation: University of Manchester
+  - given-names: Francesco
+    family-names: Belardinelli
+    affiliation: Imperial College London
+version: 0.3.14
+date-released: 2026-11-20
+license: Apache-2.0
+repository-code: "https://github.com/sacktock/MASA-Safe-RL"
+url: "https://sacktock.github.io/MASA-Safe-RL/"
+abstract: >-
+  A modular Python library for safe reinforcement learning in single- and
+  multi-agent settings. MASA-Safe-RL wraps Gymnasium and PettingZoo
+  environments with user-defined labelling and cost functions, stateful
+  constraint monitors and optional shields, and provides tabular, JAX-based
+  and multi-agent learners, benchmark environments and a command-line interface.
+keywords:
+  - safe reinforcement learning
+  - multi-agent reinforcement learning
+  - constrained Markov decision processes
+  - shielding
+  - temporal logic
+  - JAX
