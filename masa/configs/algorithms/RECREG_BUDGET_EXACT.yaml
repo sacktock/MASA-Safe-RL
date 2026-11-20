@@ -18,7 +18,11 @@ defaults:
   epsilon_decay: linear
   epsilon_decay_frames: 10000
   n_bins: 1001
+  margin_init: 1.0
+  margin_decay_slack: 0.01
   task_lr_decay: 0.001
+  safe_lr_decay: 0.01
+  risk_lr_decay: 0.005
 MediaStreaming:
   task_alpha: 0.1
   task_gamma: 0.95
@@ -26,20 +30,21 @@ MediaStreaming:
   safe_gamma: 0.95
   mode: exact
   model_checking: exact
-  horizon: 5
+  horizon: 10
   safety_prob: 0.04
   cost_coef: 100.0
   r_min: -1.0
+  task_lr_decay: 0.0001
 BridgeCrossing:
   task_alpha: 0.05
   task_gamma: 0.99
-  safe_alpha: 0.05
+  safe_alpha: 0.1
   safe_gamma: 0.95
   mode: exact
   model_checking: exact
   horizon: 4
   safety_prob: 0.05
-  cost_coef: 10.0
+  cost_coef: 1.0
 BridgeCrossingV2:
   task_alpha: 0.1
   task_gamma: 0.99
@@ -49,57 +54,57 @@ BridgeCrossingV2:
   model_checking: exact
   horizon: 4
   safety_prob: 0.01
-  cost_coef: 10.0
+  cost_coef: 1.0
 ColourBombGridWorld:
   task_alpha: 0.05
   task_gamma: 0.95
-  safe_alpha: 0.05
+  safe_alpha: 0.1
   safe_gamma: 0.95
   mode: exact
   model_checking: exact
   horizon: 2
   safety_prob: 0.05
-  cost_coef: 10.0
+  cost_coef: 1.0
 ColourBombGridWorld_Property2:
   task_alpha: 0.05
-  task_gamma: 0.95
-  safe_alpha: 0.05
+  task_gamma: 0.99
+  safe_alpha: 0.1
   safe_gamma: 0.95
   mode: exact
   model_checking: exact
   horizon: 2
   safety_prob: 0.05
-  cost_coef: 10.0
+  cost_coef: 1.0
 ColourBombGridWorldV2:
   task_alpha: 0.05
   task_gamma: 0.95
-  safe_alpha: 0.05
+  safe_alpha: 0.1
   safe_gamma: 0.95
   mode: exact
   model_checking: exact
   horizon: 3
   safety_prob: 0.025
-  cost_coef: 10.0
+  cost_coef: 1.0
 ColourBombGridWorldV2_Property2:
   task_alpha: 0.05
   task_gamma: 0.95
-  safe_alpha: 0.05
+  safe_alpha: 0.1
   safe_gamma: 0.95
   mode: exact
   model_checking: exact
   horizon: 9
   safety_prob: 0.025
-  cost_coef: 10.0
+  cost_coef: 1.0
 ColourBombGridWorldV2_Property3:
   task_alpha: 0.05
   task_gamma: 0.95
-  safe_alpha: 0.05
+  safe_alpha: 0.1
   safe_gamma: 0.99
   mode: exact
   model_checking: exact
   horizon: 12
   safety_prob: 0.025
-  cost_coef: 10.0
+  cost_coef: 1.0
 MiniPacman:
   task_alpha: 0.1
   task_gamma: 0.95
@@ -109,4 +114,4 @@ MiniPacman:
   model_checking: exact
   horizon: 20
   safety_prob: 0.01
-  cost_coef: 10.0
+  cost_coef: 1.0
