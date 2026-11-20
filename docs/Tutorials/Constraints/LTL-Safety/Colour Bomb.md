@@ -70,8 +70,7 @@ env = make_env(
     "ltl_safety",
     30,
     label_fn=label_fn,
-    dfa=make_never_bomb_dfa(),
-    obs_type="dict",
+    constraint_kwargs={"dfa": make_never_bomb_dfa(), "obs_type": "dict"},
 )
 ```
 

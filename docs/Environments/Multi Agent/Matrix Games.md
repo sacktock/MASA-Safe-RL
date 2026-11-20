@@ -28,7 +28,9 @@ from masa.common.utils import make_marl_env
 env = make_marl_env(
     "chicken_matrix",
     "cmg",
-    budgets=[Budget(amount=10.0, agents=("player_0", "player_1"), name="shared")],
+    constraint_kwargs={
+        "budgets": [Budget(amount=10.0, agents=("player_0", "player_1"), name="shared")]
+    },
 )
 ```
 

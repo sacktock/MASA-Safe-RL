@@ -43,8 +43,7 @@ env = make_env(
     "cmdp",
     300,
     label_fn=label_fn,
-    cost_fn=cost_fn,
-    budget=0.0,
+    constraint_kwargs={"cost_fn": cost_fn, "budget": 0.0},
 )
 ```
 

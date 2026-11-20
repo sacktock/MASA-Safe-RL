@@ -93,7 +93,6 @@ def make_env(
     record_video_episode_trigger: Optional[Callable[[int], bool]] = None,
     video_folder: str = "videos",
     video_kwargs: Optional[dict[str, Any]] = None,
-    **kw,
 ) -> gym.Env:
     r"""
     Construct a fully wrapped MASA environment using the canonical wrapper order.
@@ -219,7 +218,6 @@ def make_marl_env(
     record_video_episode_trigger: Optional[Callable[[int], bool]] = None,
     video_folder: str = "videos",
     video_kwargs: Optional[dict[str, Any]] = None,
-    **kw,
 ) -> ParallelEnv:
     r"""
     Construct a fully wrapped MASA multi-agent environment.

@@ -27,8 +27,7 @@ env = make_env(
     "cmdp",
     5,
     label_fn=colour_grid_label_fn,
-    cost_fn=colour_grid_cost_fn,
-    budget=0.0,
+    constraint_kwargs={"cost_fn": colour_grid_cost_fn, "budget": 0.0},
 )
 ```
 
@@ -59,7 +58,7 @@ The result lists have one entry per environment.
 
 ## Normalization
 
-`NormWrapper` is for a single `Box`-observation environment. The tutorial uses `cont_cartpole` with `pctl`:
+`NormWrapper` is for a single `Box`-observation environment. The tutorial uses `ContinuousCartpole` with `pctl`:
 
 ```python
 env = NormWrapper(

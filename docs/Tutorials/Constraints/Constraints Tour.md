@@ -20,12 +20,9 @@ Import the shared environment, the central factory, and the small LTL helpers:
 ```python
 from pprint import pprint
 
-from masa.plugins.helpers import load_plugins
 from masa.common.ltl import Atom, DFA
 from masa.common.utils import make_env
 from masa.envs.tabular.colour_grid_world import cost_fn, label_fn
-
-load_plugins()
 ```
 
 ## Shared Environment and Scripts
@@ -114,8 +111,7 @@ def build_constraint_env(name, max_episode_steps=40):
             "cmdp",
             max_episode_steps,
             label_fn=label_fn,
-            cost_fn=cost_fn,
-            budget=0.0,
+            constraint_kwargs={"cost_fn": cost_fn, "budget": 0.0},
         )
     if name == "prob":
         return make_env(
@@ -123,8 +119,7 @@ def build_constraint_env(name, max_episode_steps=40):
             "prob",
             max_episode_steps,
             label_fn=label_fn,
-            cost_fn=cost_fn,
-            alpha=0.1,
+            constraint_kwargs={"cost_fn": cost_fn, "alpha": 0.1},
         )
     if name == "pctl":
         return make_env(
@@ -132,8 +127,7 @@ def build_constraint_env(name, max_episode_steps=40):
             "pctl",
             max_episode_steps,
             label_fn=label_fn,
-            cost_fn=cost_fn,
-            alpha=0.01,
+            constraint_kwargs={"cost_fn": cost_fn, "alpha": 0.01},
         )
     if name == "reach_avoid":
         return make_env(
@@ -141,8 +135,7 @@ def build_constraint_env(name, max_episode_steps=40):
             "reach_avoid",
             max_episode_steps,
             label_fn=label_fn,
-            avoid_label="blue",
-            reach_label="goal",
+            constraint_kwargs={"avoid_label": "blue", "reach_label": "goal"},
         )
     if name == "ltl_safety":
         return make_env(
@@ -150,8 +143,7 @@ def build_constraint_env(name, max_episode_steps=40):
             "ltl_safety",
             max_episode_steps,
             label_fn=label_fn,
-            dfa=make_never_blue_dfa(),
-            obs_type="dict",
+            constraint_kwargs={"dfa": make_never_blue_dfa(), "obs_type": "dict"},
         )
     raise ValueError(f"unknown constraint: {name}")
 ```

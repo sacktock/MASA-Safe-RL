@@ -14,7 +14,7 @@ Runnable notebook: [notebooks/tutorials/07_continuous_safe_rl_baselines.ipynb](h
 
 ## Continuous Cartpole Scaffold
 
-`cont_cartpole` is the tiny continuous-control environment for this tutorial family. It uses:
+`ContinuousCartpole` is the tiny continuous-control environment for this tutorial family. It uses:
 
 - observation space `Box(4,)`,
 - action space `Box(1,)`,
@@ -28,12 +28,11 @@ from masa.common.utils import make_env
 from masa.envs.continuous.cartpole import cost_fn, label_fn
 
 env = make_env(
-    "cont_cartpole",
+    "ContinuousCartpole",
     "cmdp",
     200,
     label_fn=label_fn,
-    cost_fn=cost_fn,
-    budget=0.0,
+    constraint_kwargs={"cost_fn": cost_fn, "budget": 0.0},
 )
 ```
 

@@ -2,8 +2,8 @@
 
 MASA provides two single-agent Cartpole environments:
 
-- `disc_cartpole`: discrete actions.
-- `cont_cartpole`: continuous actions.
+- `DiscreteCartpole`: discrete actions.
+- `ContinuousCartpole`: continuous actions.
 
 Both variants implement the same dynamics and state representation. They differ only in how the control input is specified.
 
@@ -40,7 +40,7 @@ internally truncate episodes, so practical runs usually apply `TimeLimit` on top
 
 ## Variant Differences
 
-### `disc_cartpole`
+### `DiscreteCartpole`
 
 - Action space: `Discrete(2)`.
 - Action `0` applies force `-10.0`.
@@ -48,7 +48,7 @@ internally truncate episodes, so practical runs usually apply `TimeLimit` on top
 
 This is the most direct fit for discrete-action safe RL methods.
 
-### `cont_cartpole`
+### `ContinuousCartpole`
 
 - Action space: `Box(low=-1.0, high=1.0, shape=(1,))`.
 - The scalar action is scaled by the force magnitude, so the applied force is `10.0 * action[0]`.
@@ -64,14 +64,13 @@ from masa.common.utils import make_env
 from masa.envs.discrete.cartpole import label_fn, cost_fn
 
 env = make_env(
-    "disc_cartpole",
+    "DiscreteCartpole",
     "cmdp",
     500,
     label_fn=label_fn,
-    cost_fn=cost_fn,
-    budget=0.0,
+    constraint_kwargs={"cost_fn": cost_fn, "budget": 0.0},
 )
 ```
 
-For the continuous variant, replace the environment id and import path with `cont_cartpole` and
+For the continuous variant, replace the environment id and import path with `ContinuousCartpole` and
 `masa.envs.continuous.cartpole`.

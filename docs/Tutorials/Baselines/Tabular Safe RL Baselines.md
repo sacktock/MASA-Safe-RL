@@ -28,8 +28,7 @@ def make_train_env():
         "cmdp",
         40,
         label_fn=label_fn,
-        cost_fn=cost_fn,
-        budget=0.0,
+        constraint_kwargs={"cost_fn": cost_fn, "budget": 0.0},
     )
 ```
 

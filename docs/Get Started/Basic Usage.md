@@ -30,7 +30,7 @@ from masa.common.wrappers import TimeLimit, ConstraintMonitor, RewardMonitor
 from masa.common.labelled_env import LabelledEnv
 
 # Simple Media Streaming environment
-from masa.env.tabular.media_streaming import MediaStreaming
+from masa.envs.tabular.media_streaming import MediaStreaming
 
 # Example constraint wrapper (a BaseConstraintEnv implementation)
 from masa.common.constraints.cmdp import CumulativeCostEnv
@@ -63,7 +63,7 @@ def cost_fn(labels):
 
 
 # --- 1.5) Or use default label_fn and cost_fn supplied by the environment (recommended)
-from masa.env.tabular.media_streaming import label_fn, cost_fn
+from masa.envs.tabular.media_streaming import label_fn, cost_fn
 
 # --- 2) Build the environment and wrap in the correct order ---
 
@@ -77,7 +77,7 @@ env = LabelledEnv(env, label_fn)
 
 # Apply a constraint wrapper (example: cumulative cost/budget style constraint).
 # Typical kwargs are shown; consult the constraint's docstring / Constraints API reference.
-env = CumulativeConstraintEnv(env, cost_fn=cost_fn, budget=25.0)
+env = CumulativeCostEnv(env, cost_fn=cost_fn, budget=25.0)
 
 # Finally, attach monitoring wrappers for constraints and reward logging.
 env = ConstraintMonitor(env)
@@ -115,7 +115,7 @@ for ep in range(num_episodes):
         constraint = info.get("constraint", {})
         if isinstance(constraint, dict) and "step" in constraint:
             step_cost = constraint["step"].get("cost", 0.0)
-            violated = constraint["step"].get("violated", False)
+            violated = constraint["step"].get("violation", False)
 
         if violated:
             print(f"  step={ep_len:04d} VIOLATION labels={labels} cost={step_cost}")
@@ -148,7 +148,7 @@ def make_eval_env():
     eval_env = MediaStreaming()
     eval_env = TimeLimit(eval_env, max_episode_steps=1_000)
     eval_env = LabelledEnv(eval_env, label_fn)
-    eval_env = CumulativeConstraintEnv(eval_env, cost_fn=cost_fn, budget=25.0)
+    eval_env = CumulativeCostEnv(eval_env, cost_fn=cost_fn, budget=25.0)
     eval_env = ConstraintMonitor(eval_env)
     eval_env = RewardMonitor(eval_env)
     return eval_env
@@ -169,7 +169,7 @@ algo = PPO(
 
 # Train PPO. MASA algorithms automatically support eval/log frequencies and windowed stats.
 algo.train(
-    total_timesteps=200_000,
+    num_frames=200_000,
     num_eval_episodes=10,  # optional
     eval_freq=10_000,  # optional
     log_freq=2_000,  # optional
@@ -197,8 +197,7 @@ env = make_env(
     "cmdp",
     100,
     label_fn=label_fn,
-    cost_fn=cost_fn,
-    budget=10.0,
+    constraint_kwargs={"cost_fn": cost_fn, "budget": 10.0},
     env_kwargs={"render_mode": "rgb_array"},
     record_video=True,
     record_video_episode_trigger=record_every_episode,
@@ -219,9 +218,11 @@ def record_every_episode(episode_id):
 
 
 env = make_marl_env(
-    "renderable_marl_env",
+    "markov_stag_hunt",
     "cmg",
-    budgets=[Budget(amount=10.0, agents=("player_0", "player_1"), name="shared")],
+    constraint_kwargs={
+        "budgets": [Budget(amount=10.0, agents=("player_0", "player_1"), name="shared")]
+    },
     env_kwargs={"render_mode": "rgb_array"},
     record_video=True,
     record_video_episode_trigger=record_every_episode,

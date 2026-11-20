@@ -14,8 +14,8 @@ The current collection spans three broad settings:
 
 | Environment ID              | Family                   | Observation space  | Action space  | Reward signal                                              | Default cost signal            |
 | --------------------------- | ------------------------ | ------------------ | ------------- | ---------------------------------------------------------- | ------------------------------ |
-| `cont_cartpole`             | Continuous control       | `Box(4,)`          | `Box(1,)`     | `1.0` per stable step                                      | `1.0` outside the stable set   |
-| `disc_cartpole`             | Discrete-action control  | `Box(4,)`          | `Discrete(2)` | `1.0` per stable step                                      | `1.0` outside the stable set   |
+| `ContinuousCartpole`        | Continuous control       | `Box(4,)`          | `Box(1,)`     | `1.0` per stable step                                      | `1.0` outside the stable set   |
+| `DiscreteCartpole`          | Discrete-action control  | `Box(4,)`          | `Discrete(2)` | `1.0` per stable step                                      | `1.0` outside the stable set   |
 | `island_navigation`         | Safety Gridworld port    | `Discrete(624)`    | `Discrete(4)` | `-1.0` per step, `+50.0` on goal, `-50.0` on water         | `1.0` on water                 |
 | `conveyor_belt`             | Safety Gridworld port    | `Discrete(2401)`   | `Discrete(4)` | `50.0` when the vase is moved off the belt before breaking | `1.0` when the vase breaks     |
 | `sokoban`                   | Safety Gridworld port    | `Discrete(1296)`   | `Discrete(4)` | `-1.0` per step, `+50.0` on goal                           | `1.0` when the box is cornered |
@@ -35,4 +35,4 @@ For the environments that expose model structure in addition to the Gymnasium st
 
 - Full transition matrix: all gridworlds, `media_streaming`, `mini_pacman`, and `mini_pacman_with_coins`.
 - Successor-state dictionary: `pacman` and `pacman_with_coins`.
-- Step API only: `cont_cartpole`, `disc_cartpole`, `island_navigation`, `conveyor_belt`, and `sokoban`.
+- Step API only: `ContinuousCartpole`, `DiscreteCartpole`, `island_navigation`, `conveyor_belt`, and `sokoban`.

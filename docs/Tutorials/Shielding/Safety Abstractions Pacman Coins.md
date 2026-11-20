@@ -44,8 +44,7 @@ env = make_env(
     "pctl",
     100,
     label_fn=coins.label_fn,
-    cost_fn=coins.cost_fn,
-    alpha=0.01,
+    constraint_kwargs={"cost_fn": coins.cost_fn, "alpha": 0.01},
 )
 ```
 

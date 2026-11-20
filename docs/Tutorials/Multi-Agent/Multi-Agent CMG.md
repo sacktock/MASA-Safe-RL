@@ -55,11 +55,13 @@ env = make_marl_env(
     "chicken_matrix",
     "cmg",
     env_kwargs={"max_moves": 3},
-    budgets=[
-        Budget(amount=1.0, agents=("player_0",), name="player_0_budget"),
-        Budget(amount=1.0, agents=("player_1",), name="player_1_budget"),
-        Budget(amount=1.5, agents=("player_0", "player_1"), name="shared"),
-    ],
+    constraint_kwargs={
+        "budgets": [
+            Budget(amount=1.0, agents=("player_0",), name="player_0_budget"),
+            Budget(amount=1.0, agents=("player_1",), name="player_1_budget"),
+            Budget(amount=1.5, agents=("player_0", "player_1"), name="shared"),
+        ]
+    },
 )
 ```
 
