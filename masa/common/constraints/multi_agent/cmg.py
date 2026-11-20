@@ -179,7 +179,6 @@ class ConstrainedMarkovGameEnv(ParallelEnv):
         env: ParallelEnv,
         budgets: Sequence[Budget],
         cost_fn: CostFn = dummy_cost_fn,
-        **kw: Any,
     ):
         if not isinstance(env, LabelledParallelEnv):
             raise TypeError(

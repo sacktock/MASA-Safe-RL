@@ -441,7 +441,6 @@ class LTLSafetyEnv(BaseConstraintEnv):
         dfa: DFA for safety monitoring. Defaults to a dummy DFA.
         obs_type: One of ``{"discrete", "box", "dict"}``, controlling the product
             observation representation.
-        **kw: Extra keyword arguments forwarded to :class:`BaseConstraintEnv`.
 
     Raises:
         ValueError: If ``dfa.num_automaton_states`` is non-positive.
@@ -457,14 +456,13 @@ class LTLSafetyEnv(BaseConstraintEnv):
         env: gym.Env,
         dfa: "DFA" = make_dummy_dfa(),
         obs_type: str = "discrete",
-        **kw: Any,
     ):
         if obs_type not in ("discrete", "box", "dict"):
             raise ValueError(
                 f"obs_type must be one of ['discrete', 'box', 'dict'], got {obs_type!r}"
             )
 
-        super().__init__(env, LTLSafety(dfa=dfa), **kw)
+        super().__init__(env, LTLSafety(dfa=dfa))
         self._num_automaton_states = int(dfa.num_automaton_states)
         if self._num_automaton_states < 1:
             raise ValueError("dfa.num_automaton_states must be non-zero and positive")

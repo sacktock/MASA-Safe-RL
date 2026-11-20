@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Any, Callable, Optional
 import importlib
+import inspect
 import warnings
 import gymnasium as gym
 from gymnasium.wrappers import RecordVideo as GymnasiumRecordVideo
@@ -66,6 +67,18 @@ def load_callable(path: str):
         raise AttributeError(f"{module.__name__} has no attribute {name!r}") from None
 
 
+def accepts_kwarg(ctor: Callable, name: str) -> bool:
+    """Return whether ``ctor`` can be called with keyword argument ``name``."""
+    params = inspect.signature(ctor).parameters
+    if any(p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values()):
+        return True
+    param = params.get(name)
+    return param is not None and param.kind in (
+        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        inspect.Parameter.KEYWORD_ONLY,
+    )
+
+
 def _resolve_video_kwargs(
     video_kwargs: Optional[dict[str, Any]],
     record_video_episode_trigger: Optional[Callable[[int], bool]],
@@ -125,7 +138,8 @@ def make_env(
             ``label_fn`` attribute is used.
         constraint_kwargs:
            Optional keyword arguments forwarded to the constraint wrapper
-           constructor. If ``cost_fn`` is omitted and the base environment
+           constructor. Unknown keys raise ``TypeError``. If ``cost_fn`` is
+           omitted, the constraint accepts one, and the base environment
            exposes one, it is forwarded automatically.
         env_kwargs:
             Optional keyword arguments forwarded to the base environment
@@ -187,7 +201,7 @@ def make_env(
             )
     env = LabelledEnv(env, label_fn)
     constraint_kwargs = dict(constraint_kwargs or {})
-    if "cost_fn" not in constraint_kwargs:
+    if "cost_fn" not in constraint_kwargs and accepts_kwarg(constraint_ctor, "cost_fn"):
         try:
             cost_fn = env.cost_fn
         except AttributeError:
@@ -240,7 +254,8 @@ def make_marl_env(
             is used.
         constraint_kwargs:
             Optional keyword arguments forwarded to the constraint wrapper
-            constructor. If ``cost_fn`` is omitted and the base environment
+            constructor. Unknown keys raise ``TypeError``. If ``cost_fn`` is
+            omitted, the constraint accepts one, and the base environment
             exposes one, it is forwarded automatically.
         env_kwargs:
             Optional keyword arguments forwarded to the base environment
@@ -288,7 +303,7 @@ def make_marl_env(
                 "Pass label_fn=... to make_marl_env."
             )
     constraint_kwargs = dict(constraint_kwargs or {})
-    if "cost_fn" not in constraint_kwargs:
+    if "cost_fn" not in constraint_kwargs and accepts_kwarg(constraint_ctor, "cost_fn"):
         try:
             cost_fn = raw_env.cost_fn
         except AttributeError:
