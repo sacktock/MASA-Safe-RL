@@ -53,11 +53,8 @@ For this first experiment, use the PCTL constraint with the default Bridge Cross
 ```python
 from pprint import pprint
 
-from masa.plugins.helpers import load_plugins
 from masa.common.utils import make_env
 from masa.envs.tabular.bridge_crossing import cost_fn, label_fn
-
-load_plugins()
 
 
 def build_masa_env():
@@ -66,8 +63,7 @@ def build_masa_env():
         "pctl",
         400,
         label_fn=label_fn,
-        cost_fn=cost_fn,
-        alpha=0.01,
+        constraint_kwargs={"cost_fn": cost_fn, "alpha": 0.01},
     )
 
 

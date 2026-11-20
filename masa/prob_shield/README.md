@@ -17,7 +17,13 @@ For technical details please see the [docs](https://sacktock.github.io/MASA-Safe
 For environments with discrete state spaces and PCTL safety constraints:
 
 ```python
-env = make_env("pacman", "pctl", 1000, label_fn=label_fn, cost_fn=cost_fn, alpha=0.01)
+env = make_env(
+    "pacman",
+    "pctl",
+    1000,
+    label_fn=label_fn,
+    constraint_kwargs={"cost_fn": cost_fn, "alpha": 0.01},
+)
 
 env = ProbShieldWrapperDisc(
     env,
@@ -57,10 +63,10 @@ Safety properties expressed in **Safety-LTL** are handled by constructing the **
 ```python
 env = make_env(
     "colour_bomb_grid_world_v2",
-    "ltl_dfa",
+    "ltl_safety",
     250,
     label_fn=label_fn,
-    dfa=make_dfa(),
+    constraint_kwargs={"dfa": make_dfa()},
 )
 
 env = ProbShieldWrapperDisc(env, init_safety_bound=0.01)

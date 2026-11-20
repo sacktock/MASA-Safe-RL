@@ -29,7 +29,6 @@ from shutil import rmtree
 
 from gymnasium.wrappers import RecordVideo
 
-from masa.plugins.helpers import load_plugins
 from masa.common.constraints.cmdp import CumulativeCostEnv
 from masa.common.labelled_env import LabelledEnv
 from masa.common.utils import make_env
@@ -41,8 +40,6 @@ from masa.common.wrappers import (
     is_wrapped,
 )
 from masa.envs.tabular.colour_grid_world import ColourGridWorld, cost_fn, label_fn
-
-load_plugins()
 ```
 
 ## Build with `make_env`
@@ -56,8 +53,7 @@ def build_factory_env():
         "cmdp",
         5,
         label_fn=label_fn,
-        cost_fn=cost_fn,
-        budget=0.0,
+        constraint_kwargs={"cost_fn": cost_fn, "budget": 0.0},
     )
 ```
 
@@ -246,8 +242,7 @@ video_env = make_env(
     "cmdp",
     len(actions),
     label_fn=label_fn,
-    cost_fn=cost_fn,
-    budget=0.0,
+    constraint_kwargs={"cost_fn": cost_fn, "budget": 0.0},
     env_kwargs={
         "render_mode": "rgb_array",
         "render_window_size": 96,

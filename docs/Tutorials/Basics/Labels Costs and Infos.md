@@ -75,10 +75,7 @@ The important convention is that labels describe what is true about the current 
 Use a CMDP-style cumulative cost constraint with a zero budget. That makes a single blue-state visit immediately visible in the metrics.
 
 ```python
-from masa.plugins.helpers import load_plugins
 from masa.common.utils import make_env
-
-load_plugins()
 
 
 def build_colour_env(max_episode_steps=20, budget=0.0):
@@ -87,8 +84,7 @@ def build_colour_env(max_episode_steps=20, budget=0.0):
         "cmdp",
         max_episode_steps,
         label_fn=label_fn,
-        cost_fn=cost_fn,
-        budget=budget,
+        constraint_kwargs={"cost_fn": cost_fn, "budget": budget},
     )
 
 
