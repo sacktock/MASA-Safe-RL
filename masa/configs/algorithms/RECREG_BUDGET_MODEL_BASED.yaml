@@ -5,7 +5,7 @@ defaults:
   safe_gamma: 0.95
   risk_alpha: 0.1
   mode: model_based
-  model_checking: exact
+  model_checking: finite
   samples: 8192
   horizon: 5
   safety_prob: 0.01
@@ -27,7 +27,7 @@ MediaStreaming:
   safe_alpha: 0.1
   safe_gamma: 0.95
   mode: model_based
-  model_checking: exact
+  model_checking: finite
   horizon: 5
   safety_prob: 0.04
   cost_coef: 100.0
@@ -38,7 +38,7 @@ BridgeCrossing:
   safe_alpha: 0.05
   safe_gamma: 0.95
   mode: model_based
-  model_checking: exact
+  model_checking: finite
   horizon: 4
   safety_prob: 0.05
   cost_coef: 10.0
@@ -48,7 +48,7 @@ BridgeCrossingV2:
   safe_alpha: 0.1
   safe_gamma: 0.95
   mode: model_based
-  model_checking: exact
+  model_checking: finite
   horizon: 4
   safety_prob: 0.01
   cost_coef: 10.0
@@ -58,7 +58,7 @@ ColourBombGridWorld:
   safe_alpha: 0.05
   safe_gamma: 0.95
   mode: model_based
-  model_checking: exact
+  model_checking: finite
   horizon: 2
   safety_prob: 0.05
   cost_coef: 10.0
@@ -68,7 +68,7 @@ ColourBombGridWorld_Property2:
   safe_alpha: 0.05
   safe_gamma: 0.95
   mode: model_based
-  model_checking: exact
+  model_checking: finite
   horizon: 2
   safety_prob: 0.05
   cost_coef: 10.0
@@ -78,7 +78,7 @@ ColourBombGridWorldV2:
   safe_alpha: 0.05
   safe_gamma: 0.95
   mode: model_based
-  model_checking: exact
+  model_checking: finite
   horizon: 3
   safety_prob: 0.025
   cost_coef: 10.0
@@ -88,7 +88,7 @@ ColourBombGridWorldV2_Property2:
   safe_alpha: 0.05
   safe_gamma: 0.95
   mode: model_based
-  model_checking: exact
+  model_checking: finite
   horizon: 9
   safety_prob: 0.025
   cost_coef: 10.0
@@ -98,7 +98,7 @@ ColourBombGridWorldV2_Property3:
   safe_alpha: 0.05
   safe_gamma: 0.99
   mode: model_based
-  model_checking: exact
+  model_checking: finite
   horizon: 12
   safety_prob: 0.025
   cost_coef: 10.0
@@ -108,7 +108,7 @@ ColourBombGridWorldV2_Property3Cycle:
   safe_alpha: 0.05
   safe_gamma: 0.99
   mode: model_based
-  model_checking: exact
+  model_checking: finite
   horizon: 12
   safety_prob: 0.025
   cost_coef: 10.0
@@ -118,7 +118,7 @@ ColourBombGridWorldV2_Property3Potential:
   safe_alpha: 0.05
   safe_gamma: 0.99
   mode: model_based
-  model_checking: exact
+  model_checking: finite
   horizon: 12
   safety_prob: 0.025
   cost_coef: 10.0
@@ -128,7 +128,7 @@ ColourBombGridWorldV2_Property3NoCfe:
   safe_alpha: 0.05
   safe_gamma: 0.99
   mode: model_based
-  model_checking: exact
+  model_checking: finite
   horizon: 12
   safety_prob: 0.025
   cost_coef: 10.0
@@ -139,7 +139,7 @@ MiniPacman:
   safe_alpha: 0.1
   safe_gamma: 0.95
   mode: model_based
-  model_checking: exact
+  model_checking: finite
   horizon: 20
   safety_prob: 0.01
   cost_coef: 10.0
