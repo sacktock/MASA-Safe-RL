@@ -274,8 +274,10 @@ def test_run_with_config_builds_training_and_evaluation_environments(monkeypatch
     assert train_args == ("MediaStreaming", "PCTL", 40)
     assert eval_args == train_args
     assert train_kwargs["label_fn"] is label_fn
-    assert train_kwargs["constraint_kwargs"]["cost_fn"] is cost_fn
-    assert train_kwargs["constraint_kwargs"]["dfa"] is dfa
+    assert train_kwargs["constraint_kwargs"] == {
+        "cost_fn": cost_fn,
+        "alpha": config.constraint.alpha,
+    }
     assert train_kwargs["record_video"] is True
     assert train_kwargs["video_folder"] == "test-runs/videos"
     assert train_kwargs["video_kwargs"]["step_trigger"](5) is True
@@ -303,6 +305,50 @@ def test_run_with_config_builds_training_and_evaluation_environments(monkeypatch
             },
         )
     ]
+
+
+@pytest.mark.parametrize(
+    "constraint, expected_keys",
+    [
+        ("CMDP", {"cost_fn", "budget"}),
+        ("PROB", {"cost_fn", "alpha"}),
+        ("PCTL", {"cost_fn", "alpha"}),
+        ("REACH_AVOID", {"avoid_label", "reach_label"}),
+        ("LTL_SAFETY", {"dfa"}),
+    ],
+)
+def test_run_with_config_passes_only_keys_the_constraint_accepts(
+    monkeypatch, constraint, expected_keys
+):
+    make_env_calls = []
+    built_envs = []
+    real_make_env = cli_app.make_env
+
+    def recording_make_env(*args, **kwargs):
+        make_env_calls.append(kwargs["constraint_kwargs"])
+        env = real_make_env(*args, **kwargs)
+        built_envs.append(env)
+        return env
+
+    class FakeAlgorithm:
+        def __init__(self, env, **kwargs):
+            pass
+
+        def train(self, *args, **kwargs):
+            pass
+
+    config = cli_app.parse_config("ColourGridWorld", [], "QL", [])
+    config = config.update({"constraint.type": constraint})
+
+    monkeypatch.setattr(cli_app, "make_env", recording_make_env)
+    monkeypatch.setattr(cli_app.registry, "get_algorithm", lambda algo: FakeAlgorithm)
+
+    cli_app.run_with_config(config, "QL")
+
+    assert len(make_env_calls) == 1
+    assert set(make_env_calls[0]) == expected_keys
+    for env in built_envs:
+        env.close()
 
 
 def test_example_inventory_is_not_empty():

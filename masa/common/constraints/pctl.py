@@ -112,11 +112,10 @@ class PCTLEnv(BaseConstraintEnv):
         env: Base environment (must be a :class:`~masa.common.labelled_env.LabelledEnv`).
         cost_fn: Cost function mapping labels to a scalar.
         alpha: Threshold parameter stored on the monitor (see :class:`PCTL`).
-        **kw: Extra keyword arguments forwarded to :class:`BaseConstraintEnv`.
 
     """
 
     def __init__(
-        self, env: gym.Env, cost_fn: CostFn = dummy_cost_fn, alpha: float = 0.01, **kw
+        self, env: gym.Env, cost_fn: CostFn = dummy_cost_fn, alpha: float = 0.01
     ):
-        super().__init__(env, PCTL(cost_fn=cost_fn, alpha=alpha), **kw)
+        super().__init__(env, PCTL(cost_fn=cost_fn, alpha=alpha))

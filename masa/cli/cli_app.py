@@ -16,6 +16,8 @@ from masa.common.configs import Config, Flags, Path
 from masa.common.utils import (
     make_env,
     load_callable,
+    accepts_kwarg,
+    resolve_registered_id,
     format_algo_id,
     format_constraint_id,
     format_env_id,
@@ -182,6 +184,16 @@ def run_with_config(config, algo):
     except AttributeError:
         make_dfa = load_callable("masa.common.dummy:make_dfa")
 
+    constraint_id = resolve_registered_id(
+        config.constraint.type,
+        set(registry.CONSTRAINT_REGISTRY.keys()),
+        format_constraint_id,
+        "constraint",
+    )
+    constraint_ctor = registry.get_constraint(constraint_id)
+
+    # The config carries parameters for every constraint type; each wrapper
+    # rejects keys it does not accept, so keep only the ones that apply.
     constraint_kwargs = {
         "cost_fn": cost_fn,
         "budget": config.constraint.cost_budget,
@@ -192,7 +204,9 @@ def run_with_config(config, algo):
     }
 
     constraint_kwargs = {
-        key: value for key, value in constraint_kwargs.items() if value is not None
+        key: value
+        for key, value in constraint_kwargs.items()
+        if value is not None and accepts_kwarg(constraint_ctor, key)
     }
 
     if config.run.record_video and config.run.record_every == 0:
@@ -230,7 +244,7 @@ def run_with_config(config, algo):
     train_env = _apply_reward_shaping(
         make_env(
             config.env.id,
-            config.constraint.type,
+            constraint_id,
             config.env.max_episode_steps,
             label_fn=label_fn,
             constraint_kwargs=constraint_kwargs,
@@ -252,7 +266,7 @@ def run_with_config(config, algo):
     eval_env_fn = lambda: _apply_reward_shaping(
         make_env(
             config.env.id,
-            config.constraint.type,
+            constraint_id,
             config.env.max_episode_steps,
             label_fn=label_fn,
             constraint_kwargs=constraint_kwargs,

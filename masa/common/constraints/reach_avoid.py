@@ -132,7 +132,6 @@ class ReachAvoidEnv(BaseConstraintEnv):
         env: Base environment (must be a :class:`~masa.common.labelled_env.LabelledEnv`).
         avoid_label: Atomic proposition name for unsafe/avoid condition.
         reach_label: Atomic proposition name for target condition.
-        **kw: Extra keyword arguments forwarded to :class:`BaseConstraintEnv`.
 
     """
 
@@ -141,8 +140,7 @@ class ReachAvoidEnv(BaseConstraintEnv):
         env: gym.Env,
         avoid_label: str = "unsafe",
         reach_label: str = "target",
-        **kw,
     ):
         super().__init__(
-            env, ReachAvoid(avoid_label=avoid_label, reach_label=reach_label), **kw
+            env, ReachAvoid(avoid_label=avoid_label, reach_label=reach_label)
         )

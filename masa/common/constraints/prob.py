@@ -127,11 +127,10 @@ class ProbabilisticSafetyEnv(BaseConstraintEnv):
         env: Base environment (must be a :class:`~masa.common.labelled_env.LabelledEnv`).
         cost_fn: Cost function mapping labels to a scalar.
         alpha: Allowed maximum unsafe-step fraction.
-        **kw: Extra keyword arguments forwarded to :class:`BaseConstraintEnv`.
 
     """
 
     def __init__(
-        self, env: gym.Env, cost_fn: CostFn = dummy_cost_fn, alpha: float = 0.01, **kw
+        self, env: gym.Env, cost_fn: CostFn = dummy_cost_fn, alpha: float = 0.01
     ):
-        super().__init__(env, ProbabilisticSafety(cost_fn=cost_fn, alpha=alpha), **kw)
+        super().__init__(env, ProbabilisticSafety(cost_fn=cost_fn, alpha=alpha))

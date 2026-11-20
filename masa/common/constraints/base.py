@@ -156,7 +156,7 @@ class BaseConstraintEnv(gym.Wrapper, Constraint):
         may be ``None``.
     """
 
-    def __init__(self, env: gym.Env, constraint: Constraint, **kw):
+    def __init__(self, env: gym.Env, constraint: Constraint):
         """Initialize the wrapper.
 
         Args:
@@ -164,7 +164,6 @@ class BaseConstraintEnv(gym.Wrapper, Constraint):
                 :class:`~masa.common.labelled_env.LabelledEnv` so that step/reset
                 provide label sets in ``info["labels"]``.
             constraint: A constraint monitor implementing :class:`Constraint`.
-            **kw: Unused extra keyword arguments (kept for wrapper compatibility).
 
         Raises:
             TypeError: If ``env`` is not a :class:`LabelledEnv`.

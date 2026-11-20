@@ -127,11 +127,10 @@ class CumulativeCostEnv(BaseConstraintEnv):
         env: Base environment (must be a :class:`~masa.common.labelled_env.LabelledEnv`).
         cost_fn: Cost function mapping label sets to float cost.
         budget: Cumulative cost budget :math:`B`.
-        **kw: Extra keyword arguments forwarded to :class:`BaseConstraintEnv`.
 
     """
 
     def __init__(
-        self, env: gym.Env, cost_fn: CostFn = dummy_cost_fn, budget: float = 20.0, **kw
+        self, env: gym.Env, cost_fn: CostFn = dummy_cost_fn, budget: float = 20.0
     ):
-        super().__init__(env, CumulativeCost(cost_fn=cost_fn, budget=budget), **kw)
+        super().__init__(env, CumulativeCost(cost_fn=cost_fn, budget=budget))
