@@ -14,13 +14,8 @@ If you use MASA-Safe-RL in your research please cite it in your publications.
 
 ```bibtex
 @software{alex_goodall_2026_24396241,
-  author       = {Alex Goodall and
-                  Omar Adalat and
-                  Terence Fernandes and
-                  Max},
-  title        = {sacktock/MASA-Safe-RL: MASA-Safe-RL v0.3.14 (first
-                   archived release)
-                  },
+  author       = {Alex Goodall and Omar Adalat and Terence Fernandes and Max},
+  title        = {sacktock/MASA-Safe-RL: MASA-Safe-RL v0.3.14 (first archived release)},
   month        = nov,
   year         = 2026,
   publisher    = {Zenodo},
