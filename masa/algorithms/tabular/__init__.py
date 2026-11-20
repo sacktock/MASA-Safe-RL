@@ -2,6 +2,11 @@ from masa.algorithms.tabular.q_learning import QL
 from masa.algorithms.tabular.q_learning_lambda import QL_LAMBDA
 from masa.algorithms.tabular.recovery_rl import RECOVERY_RL
 from masa.algorithms.tabular.recreg import RECREG, RECREG_EXACT, RECREG_MODEL_BASED
+from masa.algorithms.tabular.recreg_budget import (
+    RECREG_BUDGET,
+    RECREG_BUDGET_EXACT,
+    RECREG_BUDGET_MODEL_BASED,
+)
 from masa.algorithms.tabular.sem import SEM
 from masa.algorithms.tabular.lcrl import LCRL
 
@@ -12,6 +17,9 @@ __all__ = [
     "RECREG",
     "RECREG_MODEL_BASED",
     "RECREG_EXACT",
+    "RECREG_BUDGET",
+    "RECREG_BUDGET_MODEL_BASED",
+    "RECREG_BUDGET_EXACT",
     "SEM",
     "LCRL",
 ]
