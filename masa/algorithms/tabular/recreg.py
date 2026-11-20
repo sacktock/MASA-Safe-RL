@@ -155,7 +155,7 @@ class RECREG(QL):
         task_gamma: float = 0.95,
         safe_alpha: float = 0.1,
         safe_gamma: float = 0.95,
-        model_free_alpha: float = 0.1,
+        risk_alpha: float = 0.1,
         mode: str = "model_free",
         model_checking: str = "exact",
         samples: int = 8192,
@@ -186,7 +186,7 @@ class RECREG(QL):
 
         self.safe_alpha = safe_alpha
         self.safe_gamma = safe_gamma
-        self.model_free_alpha = model_free_alpha
+        self.risk_alpha = risk_alpha
         self.mode = mode
         self.model_checking = model_checking
         self.samples = samples
@@ -506,9 +506,9 @@ class RECREG(QL):
                                 + (1 - cf_term)
                                 * self.S[t + 1, cf_next_state, np.argmax(next_b)],
                             )
-                        self.S[t, cf_state, cf_act] = (
-                            1 - self.model_free_alpha
-                        ) * self.S[t, cf_state, cf_act] + self.model_free_alpha * next_S
+                        self.S[t, cf_state, cf_act] = (1 - self.risk_alpha) * self.S[
+                            t, cf_state, cf_act
+                        ] + self.risk_alpha * next_S
 
                 # --- update backup policy B with cf exp ---
                 if self.mode in ["model_free", "model_based"]:
