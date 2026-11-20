@@ -20,7 +20,7 @@ from masa.common.wrappers import is_wrapped, get_wrapped
 
 def build_pctl_formula(
     env: gym.Env,
-    bound_param: int,
+    bound_param: Optional[int],
     prob: float,
     label_fn: Optional[LabelFn] = None,
     cost_fn: Optional[CostFn] = None,
@@ -51,7 +51,10 @@ def build_pctl_formula(
 
     new_label_fn = lambda obs: unsafe_dict[obs]
 
-    formula = pctl.Always(1.0 - prob, bound_param, pctl.Neg(pctl.Atom("unsafe")))
+    if bound_param is None:
+        formula = pctl.UnboundedAlways(1.0 - prob, pctl.Neg(pctl.Atom("unsafe")))
+    else:
+        formula = pctl.Always(1.0 - prob, bound_param, pctl.Neg(pctl.Atom("unsafe")))
 
     return formula, new_label_fn
 
@@ -188,11 +191,19 @@ class RECREG_BUDGET(QL):
         assert mode in ["exact", "model_based", "model_free"], (
             f"Unsupported model implementation {mode}"
         )
-        assert model_checking in ["exact", "statistical", "none"], (
+        assert model_checking in ["exact", "finite", "statistical", "none"], (
             f"Unsupported model-checking type {model_checking}"
         )
         assert not model_checking == "none" or mode == "model_free", (
             f"Must specify a model checking type when using mode: {mode}"
+        )
+        assert not (mode == "model_based" and model_checking == "exact"), (
+            "model_checking='exact' (unbounded) is not supported for mode='model_based'; "
+            "use 'finite' or 'statistical'"
+        )
+        assert not (mode == "exact" and model_checking == "statistical"), (
+            "model_checking='statistical' is not supported for mode='exact'; "
+            "use 'exact' or 'finite'"
         )
         assert samples > 0, "Number of samples must be greater than 0"
 
@@ -268,7 +279,7 @@ class RECREG_BUDGET(QL):
 
             formula, pctl_label_fn = build_pctl_formula(
                 self.env,
-                self.horizon,
+                None if self.model_checking == "exact" else self.horizon,
                 self.safety_prob,
                 label_fn=label_fn,
                 cost_fn=cost_fn,
@@ -369,7 +380,7 @@ class RECREG_BUDGET(QL):
                 self.successor_index = [{int(s): 0} for s in range(self.n_states)]
                 self.next_free = np.ones(self.n_states, dtype=np.int32)
 
-                if self.model_checking == "exact":
+                if self.model_checking == "finite":
                     model_checker_cls = pctl.ExactModelChecker
                 elif self.model_checking == "statistical":
                     model_checker_cls = pctl.StatisticalModelChecker
@@ -827,7 +838,7 @@ class RECREG_BUDGET(QL):
 
             self.backup_policy = self._backup_policy_matrix(deterministic)
 
-            if self.model_checking == "exact":
+            if self.model_checking == "finite":
                 self.S = (
                     1.0
                     - self.model_checker.check_state_action(None, self.backup_policy)[
@@ -903,7 +914,7 @@ class RECREG_BUDGET_MODEL_BASED(RECREG_BUDGET):
         self,
         *args,
         mode: str = "model_based",
-        model_checking: str = "exact",
+        model_checking: str = "finite",
         **kwargs,
     ):
 
