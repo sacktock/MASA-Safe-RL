@@ -13,14 +13,24 @@ The library is in very early stage development and we greatly appreciate and enc
 If you use MASA-Safe-RL in your research please cite it in your publications.
 
 ```bibtex
-@misc{Goodall2025MASASafeRL,
-  title        = {{MASA-Safe-RL}: Multi and Single Agent Safe Reinforcement Learning},
-  author       = {Goodall, Alexander W. and Adalat, Omar and Hamel De-le Court, Edwin and Belardinelli, Francesco},
-  year         = {2025},
-  howpublished = {\url{https://github.com/sacktock/MASA-Safe-RL/}},
-  note         = {GitHub repository}
+@software{alex_goodall_2026_24396241,
+  author       = {Alex Goodall and
+                  Omar Adalat and
+                  Terence Fernandes and
+                  Max},
+  title        = {sacktock/MASA-Safe-RL: MASA-Safe-RL v0.3.14 (first
+                   archived release)
+                  },
+  month        = nov,
+  year         = 2026,
+  publisher    = {Zenodo},
+  version      = {v0.3.14},
+  doi          = {10.5281/zenodo.24396241},
+  url          = {https://doi.org/10.5281/zenodo.24396241},
 }
 ```
+
+[![DOI](https://zenodo.org/badge/1076133328.svg)](https://doi.org/10.5281/zenodo.24396240)
 
 ## Quick Start
 
