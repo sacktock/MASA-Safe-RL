@@ -106,7 +106,7 @@ def main():
         task_gamma=0.95,  # discount factor for the task policy
         safe_alpha=0.05,  # learning rate for the safe (backup) policy
         safe_gamma=0.99,  # discount factor for the safe (backup) policy
-        model_free_alpha=0.05,  # learning rate for safety Bellman update
+        risk_alpha=0.05,  # learning rate for safety Bellman update
         mode="model_free",  # using model_free mode as it is much quicker
         horizon=9,  # recoverability horizon for RECREG
         safety_prob=0.01,  # safety constraint from the initial state

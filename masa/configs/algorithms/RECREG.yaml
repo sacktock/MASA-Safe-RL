@@ -3,7 +3,7 @@ defaults:
   task_gamma: 0.95
   safe_alpha: 0.1
   safe_gamma: 0.95
-  model_free_alpha: 0.1
+  risk_alpha: 0.1
   mode: model_free
   model_checking: exact
   samples: 8192
@@ -23,7 +23,7 @@ MediaStreaming:
   task_gamma: 0.95
   safe_alpha: 0.1
   safe_gamma: 0.95
-  model_free_alpha: 0.1
+  risk_alpha: 0.1
   mode: model_free
   horizon: 5
   safety_prob: 0.04
@@ -34,7 +34,7 @@ BridgeCrossing:
   task_gamma: 0.99
   safe_alpha: 0.05
   safe_gamma: 0.95
-  model_free_alpha: 0.05
+  risk_alpha: 0.05
   mode: model_free
   horizon: 4
   safety_prob: 0.05
@@ -44,7 +44,7 @@ BridgeCrossingV2:
   task_gamma: 0.99
   safe_alpha: 0.1
   safe_gamma: 0.95
-  model_free_alpha: 0.1
+  risk_alpha: 0.1
   mode: model_free
   horizon: 4
   safety_prob: 0.01
@@ -54,7 +54,7 @@ ColourBombGridWorld:
   task_gamma: 0.95
   safe_alpha: 0.05
   safe_gamma: 0.95
-  model_free_alpha: 0.05
+  risk_alpha: 0.05
   mode: model_free
   horizon: 2
   safety_prob: 0.05
@@ -64,7 +64,7 @@ ColourBombGridWorld_Property2:
   task_gamma: 0.95
   safe_alpha: 0.05
   safe_gamma: 0.95
-  model_free_alpha: 0.05
+  risk_alpha: 0.05
   mode: model_free
   horizon: 2
   safety_prob: 0.05
@@ -74,7 +74,7 @@ ColourBombGridWorldV2:
   task_gamma: 0.95
   safe_alpha: 0.05
   safe_gamma: 0.95
-  model_free_alpha: 0.05
+  risk_alpha: 0.05
   mode: model_free
   horizon: 3
   safety_prob: 0.025
@@ -84,7 +84,7 @@ ColourBombGridWorldV2_Property2:
   task_gamma: 0.95
   safe_alpha: 0.05
   safe_gamma: 0.95
-  model_free_alpha: 0.05
+  risk_alpha: 0.05
   mode: model_free
   horizon: 9
   safety_prob: 0.025
@@ -94,7 +94,7 @@ ColourBombGridWorldV2_Property3:
   task_gamma: 0.95
   safe_alpha: 0.05
   safe_gamma: 0.99
-  model_free_alpha: 0.05
+  risk_alpha: 0.05
   mode: model_free
   horizon: 12
   safety_prob: 0.025
@@ -104,7 +104,7 @@ ColourBombGridWorldV2_Property3Cycle:
   task_gamma: 0.95
   safe_alpha: 0.05
   safe_gamma: 0.99
-  model_free_alpha: 0.05
+  risk_alpha: 0.05
   mode: model_free
   horizon: 12
   safety_prob: 0.025
@@ -114,7 +114,7 @@ ColourBombGridWorldV2_Property3Potential:
   task_gamma: 0.95
   safe_alpha: 0.05
   safe_gamma: 0.99
-  model_free_alpha: 0.05
+  risk_alpha: 0.05
   mode: model_free
   horizon: 12
   safety_prob: 0.025
@@ -124,7 +124,7 @@ ColourBombGridWorldV2_Property3NoCfe:
   task_gamma: 0.95
   safe_alpha: 0.05
   safe_gamma: 0.99
-  model_free_alpha: 0.05
+  risk_alpha: 0.05
   mode: model_free
   horizon: 12
   safety_prob: 0.025
@@ -135,7 +135,7 @@ MiniPacman:
   task_gamma: 0.95
   safe_alpha: 0.1
   safe_gamma: 0.95
-  model_free_alpha: 0.1
+  risk_alpha: 0.1
   mode: model_free
   horizon: 20
   safety_prob: 0.01

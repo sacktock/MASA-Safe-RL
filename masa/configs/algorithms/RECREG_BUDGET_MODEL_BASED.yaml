@@ -3,7 +3,7 @@ defaults:
   task_gamma: 0.95
   safe_alpha: 0.1
   safe_gamma: 0.95
-  model_free_alpha: 0.1
+  risk_alpha: 0.1
   mode: model_based
   model_checking: exact
   samples: 8192
@@ -19,6 +19,8 @@ defaults:
   epsilon_decay: linear
   epsilon_decay_frames: 10000
   n_bins: 1001
+  task_lr_decay: 0.001
+  safe_lr_decay: 0.01
 MediaStreaming:
   task_alpha: 0.1
   task_gamma: 0.95

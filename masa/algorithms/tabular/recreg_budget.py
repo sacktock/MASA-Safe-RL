@@ -155,7 +155,7 @@ class RECREG_BUDGET(QL):
         task_gamma: float = 0.95,
         safe_alpha: float = 0.1,
         safe_gamma: float = 0.95,
-        model_free_alpha: float = 0.1,
+        risk_alpha: float = 0.1,
         mode: str = "model_free",
         model_checking: str = "exact",
         samples: int = 8192,
@@ -164,6 +164,11 @@ class RECREG_BUDGET(QL):
         r_min: float = 0.0,
         cost_coef: float = 10.0,
         n_bins: int = 1001,
+        margin_init: float = 1.0,
+        margin_decay_slack: float = 0.01,
+        task_lr_decay: float = 1e-3,
+        safe_lr_decay: float = 1e-2,
+        risk_lr_decay: float = 5e-3,
         **kwargs,
     ):
 
@@ -193,7 +198,7 @@ class RECREG_BUDGET(QL):
 
         self.safe_alpha = safe_alpha
         self.safe_gamma = safe_gamma
-        self.model_free_alpha = model_free_alpha
+        self.risk_alpha = risk_alpha
         self.mode = mode
         self.model_checking = model_checking
         self.samples = samples
@@ -201,13 +206,42 @@ class RECREG_BUDGET(QL):
         self.safety_prob = safety_prob
         self.r_min = r_min
         self.cost_coef = cost_coef
+        self.margin_init = margin_init
+        self.margin_decay_slack = margin_decay_slack
+        self.task_lr_decay = task_lr_decay
+        self.safe_lr_decay = safe_lr_decay
+        self.risk_lr_decay = risk_lr_decay
 
         self._setup_models()
+        self._setup_learning_rates()
+        self._setup_margins()
 
     def _setup_q_table(self):
         self.Q = np.zeros(
             (self.n_states, self.n_bins, self.n_actions), dtype=np.float32
         )
+
+    def _setup_margins(self):
+        # Error bound on the learned risk critic S[0], so only needed in model_free mode.
+        init = self.margin_init if self.mode in ["model_free", "model_based"] else 0.0
+        self.margins = np.full((self.n_states, self.n_actions), init, dtype=np.float64)
+
+    def _setup_learning_rates(self):
+        shape = (self.n_states, self.n_actions)
+        self.task_lr = np.full(shape, self.alpha, dtype=np.float64)
+        self.safe_lr = np.full(shape, self.safe_alpha, dtype=np.float64)
+        if self.mode == "model_free":
+            self.risk_lr = np.full(shape, self.risk_alpha, dtype=np.float64)
+
+    @staticmethod
+    def _harmonic_step(lr: np.ndarray, idx, alpha0: float, decay: float) -> None:
+        """alpha_n = alpha0 / (1 + decay * n), advanced one visit in place via
+        1 / alpha_{n+1} = 1 / alpha_n + decay / alpha0."""
+        if alpha0 > 0.0:
+            lr[idx] = lr[idx] / (1.0 + decay * lr[idx] / alpha0)
+
+    def _backup_margin_state(self, s: int, deterministic: bool = False) -> float:
+        return float(np.dot(self._backup_row(s, deterministic), self.margins[s]))
 
     def _budget_bin(self, budget):
         """Floor budget(s) in [0, 1] onto the grid (the 1e-9 absorbs float error at grid points)."""
@@ -414,9 +448,11 @@ class RECREG_BUDGET(QL):
         deltas: np.ndarray,
         override: bool = False,
         deterministic: bool = False,
+        optimistic: bool = False,
     ) -> np.ndarray:
         """Recovery-aware residual budget (Theorem 4.4, with the 1/(1-p) factor so its a true Martingale),
-        vectorized over current budgets `deltas`."""
+        vectorized over current budgets `deltas`. `optimistic` shifts the risk estimates by their
+        margins in the direction that enlarges the next budget."""
         deltas = np.asarray(deltas, dtype=np.float64)
         if self.unsafe_mask[next_obs]:
             return np.zeros_like(deltas)
@@ -426,6 +462,16 @@ class RECREG_BUDGET(QL):
         else:
             tail = float(self._risk_table(deterministic)[0, s, a])
         rho_next = self._backup_tail_risk_state(next_obs, deterministic)
+
+        if optimistic:
+            if override:
+                tail_margin = self._backup_margin_state(s, deterministic)
+            else:
+                tail_margin = float(self.margins[s, a])
+            tail = max(tail - tail_margin, 0.0)
+            rho_next = min(
+                rho_next + self._backup_margin_state(next_obs, deterministic), 1.0
+            )
 
         p = min(max(self._immediate_risk(s, a), 0.0), 1.0)
         scale = 1.0 / (1.0 - p) if p < 1.0 - 1e-6 else 1.0
@@ -489,11 +535,17 @@ class RECREG_BUDGET(QL):
         ) in self.buffer:
             # r_min-return update for the risky action if overridden (all modes), for every
             # bin at or below the rejecting budget's bin; higher bins were never observed.
-            if override:
+            if override and (
+                self.S[0, state, action] - self.margins[state, action] > budget
+            ):
                 k = int(self._budget_bin(budget)) + 1
-                self.Q[state, :k, action] = (1 - self.alpha) * self.Q[
+                lr = self.task_lr[state, action]
+                self.Q[state, :k, action] = (1 - lr) * self.Q[
                     state, :k, action
-                ] + self.alpha * penalty
+                ] + lr * penalty
+                self._harmonic_step(
+                    self.task_lr, (state, action), self.alpha, self.task_lr_decay
+                )
 
             # Generate (real + counterfactual) experiences
             if (
@@ -539,6 +591,7 @@ class RECREG_BUDGET(QL):
                 # --- model-free: update satisfaction relation S with cf exp ---
                 if self.mode == "model_free":
                     next_b = self.B[cf_next_state]
+                    lr = self.risk_lr[cf_state, cf_act]
                     for t in reversed(range(self.horizon)):
                         if t == self.horizon - 1:
                             next_S = min(1.0, float(cf_viol))
@@ -549,9 +602,20 @@ class RECREG_BUDGET(QL):
                                 + (1 - cf_term)
                                 * self.S[t + 1, cf_next_state, np.argmax(next_b)],
                             )
-                        self.S[t, cf_state, cf_act] = (
-                            1 - self.model_free_alpha
-                        ) * self.S[t, cf_state, cf_act] + self.model_free_alpha * next_S
+                        self.S[t, cf_state, cf_act] = (1 - lr) * self.S[
+                            t, cf_state, cf_act
+                        ] + lr * next_S
+                    # Slightly slower than the (1 - lr) contraction of this S update, since
+                    # the bootstrapped target only settles once the backup policy has stabilised.
+                    self.margins[cf_state, cf_act] *= min(
+                        1.0 - lr + self.margin_decay_slack, 1.0
+                    )
+                    self._harmonic_step(
+                        self.risk_lr,
+                        (cf_state, cf_act),
+                        self.risk_alpha,
+                        self.risk_lr_decay,
+                    )
 
                 # --- update backup policy B with cf exp ---
                 if self.mode in ["model_free", "model_based"]:
@@ -559,33 +623,55 @@ class RECREG_BUDGET(QL):
                     cf_gamma = self.safe_gamma if cf_viol else 1.0
                     next_b = self.B[cf_next_state]
                     target_b = cf_pen + (1 - cf_term) * cf_gamma * np.max(next_b)
-                    self.B[cf_state, cf_act] = (1 - self.safe_alpha) * self.B[
+                    lr = self.safe_lr[cf_state, cf_act]
+                    self.B[cf_state, cf_act] = (1 - lr) * self.B[
                         cf_state, cf_act
-                    ] + self.safe_alpha * target_b
+                    ] + lr * target_b
+                    self._harmonic_step(
+                        self.safe_lr,
+                        (cf_state, cf_act),
+                        self.safe_alpha,
+                        self.safe_lr_decay,
+                    )
 
                 # --- update task policy Q with cf exp, for every budget bin at once ---
                 if self.mode in ["model_free", "exact", "model_based"]:
                     next_bins = self._budget_bin(
                         self._next_budgets(
-                            cf_state, cf_act, cf_next_state, self._budget_grid
+                            cf_state,
+                            cf_act,
+                            cf_next_state,
+                            self._budget_grid,
+                            optimistic=True,
                         )
                     )
                     # V(s', k') = max over bins <= k' and actions (more budget never hurts)
                     next_v = np.maximum.accumulate(self.Q[cf_next_state].max(axis=1))
                     target_q = np.where(
-                        self.S[0, cf_state, cf_act] > self._budget_grid,
+                        self.S[0, cf_state, cf_act] - self.margins[cf_state, cf_act]
+                        > self._budget_grid,
                         penalty,
                         cf_rew + (1 - cf_term) * self.gamma * next_v[next_bins],
                     )
-                    self.Q[cf_state, :, cf_act] = (1 - self.alpha) * self.Q[
+                    lr = self.task_lr[cf_state, cf_act]
+                    self.Q[cf_state, :, cf_act] = (1 - lr) * self.Q[
                         cf_state, :, cf_act
-                    ] + self.alpha * target_q
+                    ] + lr * target_q
+                    self._harmonic_step(
+                        self.task_lr,
+                        (cf_state, cf_act),
+                        self.alpha,
+                        self.task_lr_decay,
+                    )
 
         self.buffer.clear()
 
         if logger:
-            logger.add("train/stats", {"alpha": self.alpha})
-            logger.add("train/stats", {"safe_alpha": self.safe_alpha})
+            logger.add("train/stats", {"alpha": float(self.task_lr.mean())})
+            logger.add("train/stats", {"safe_alpha": float(self.safe_lr.mean())})
+            if self.mode == "model_free":
+                logger.add("train/stats", {"risk_alpha": float(self.risk_lr.mean())})
+                logger.add("train/stats", {"mean_margin": float(self.margins.mean())})
             if self.exploration == "boltzmann":
                 logger.add("train/stats", {"temp": self.boltzmann_temp})
             if self.exploration == "epsilon_greedy":
@@ -723,7 +809,9 @@ class RECREG_BUDGET(QL):
 
         return returns
 
-    def act_override(self, key, obs, step_wise_prob, deterministic=False):
+    def act_override(
+        self, key, obs, step_wise_prob, deterministic=False, optimistic=False
+    ):
         key, key1, key2, key3 = jr.split(key, 4)
 
         k = int(self._budget_bin(step_wise_prob))
@@ -751,12 +839,16 @@ class RECREG_BUDGET(QL):
                     f"Model checker class: {self.model_checking} currently not supported"
                 )
 
-            override = self.S[0, obs, act] > step_wise_prob
+            risk = self.S[0, obs, act]
 
         elif self.mode in ["model_free", "exact"]:
-            override = self._risk_table(deterministic)[0, obs, act] > step_wise_prob
+            risk = self._risk_table(deterministic)[0, obs, act]
         else:
             raise NotImplementedError(f"Unexpected mode: {self.mode}")
+
+        if optimistic:
+            risk = risk - self.margins[obs, act]
+        override = risk > step_wise_prob
 
         if override:
             # Use boltzmann temperature=0.01 or epsilon=0.001 for backup policy

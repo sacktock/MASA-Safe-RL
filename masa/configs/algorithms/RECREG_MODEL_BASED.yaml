@@ -3,7 +3,7 @@ defaults:
   task_gamma: 0.95
   safe_alpha: 0.1
   safe_gamma: 0.95
-  model_free_alpha: 0.1
+  risk_alpha: 0.1
   mode: model_based
   model_checking: exact
   samples: 8192
