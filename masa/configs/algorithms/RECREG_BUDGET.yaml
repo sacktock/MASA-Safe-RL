@@ -35,22 +35,25 @@ MediaStreaming:
   safety_prob: 0.04
   cost_coef: 100.0
   r_min: -1.0
-  margin_init: 1.0
-  margin_decay_slack: 0.001
+  margin_init: 0.0
+  margin_decay_slack: 0.0
   task_lr_decay: 0.0001
   risk_lr_decay: 0.001
 BridgeCrossing:
   task_alpha: 0.05
   task_gamma: 0.99
-  safe_alpha: 0.1
+  safe_alpha: 0.05
   safe_gamma: 0.95
-  risk_alpha: 0.1
+  risk_alpha: 0.05
   mode: model_free
   horizon: 4
   safety_prob: 0.05
-  cost_coef: 1.0
-  safe_lr_decay: 0.1
-  risk_lr_decay: 0.05
+  cost_coef: 10.0
+  margin_init: 0.0
+  margin_decay_slack: 0.0
+  task_lr_decay: 0.0
+  safe_lr_decay: 0.0
+  risk_lr_decay: 0.0
 BridgeCrossingV2:
   task_alpha: 0.1
   task_gamma: 0.99
@@ -60,11 +63,15 @@ BridgeCrossingV2:
   mode: model_free
   horizon: 4
   safety_prob: 0.01
-  cost_coef: 1.0
-  safe_lr_decay: 0.1
-  risk_lr_decay: 0.05
+  cost_coef: 10.0
+  boltzmann_temp: 0.02
+  margin_init: 0.0
+  margin_decay_slack: 0.0
+  task_lr_decay: 0.0
+  safe_lr_decay: 0.0
+  risk_lr_decay: 0.0
 ColourBombGridWorld:
-  task_alpha: 0.05
+  task_alpha: 0.1
   task_gamma: 0.99
   safe_alpha: 0.1
   safe_gamma: 0.95
@@ -72,11 +79,15 @@ ColourBombGridWorld:
   mode: model_free
   horizon: 2
   safety_prob: 0.05
-  cost_coef: 1.0
-  safe_lr_decay: 0.1
-  risk_lr_decay: 0.05
+  cost_coef: 10.0
+  boltzmann_temp: 0.02
+  margin_init: 0.0
+  margin_decay_slack: 0.0
+  task_lr_decay: 0.0
+  safe_lr_decay: 0.005
+  risk_lr_decay: 0.001
 ColourBombGridWorld_Property2:
-  task_alpha: 0.05
+  task_alpha: 0.1
   task_gamma: 0.99
   safe_alpha: 0.1
   safe_gamma: 0.95
@@ -84,73 +95,103 @@ ColourBombGridWorld_Property2:
   mode: model_free
   horizon: 2
   safety_prob: 0.05
-  cost_coef: 1.0
-  safe_lr_decay: 0.1
-  risk_lr_decay: 0.05
+  cost_coef: 10.0
+  boltzmann_temp: 0.02
+  margin_init: 0.0
+  margin_decay_slack: 0.0
+  task_lr_decay: 0.0
+  safe_lr_decay: 0.005
+  risk_lr_decay: 0.001
 ColourBombGridWorldV2:
   task_alpha: 0.05
   task_gamma: 0.95
-  safe_alpha: 0.1
+  safe_alpha: 0.05
   safe_gamma: 0.95
-  risk_alpha: 0.1
+  risk_alpha: 0.05
   mode: model_free
   horizon: 3
   safety_prob: 0.025
-  cost_coef: 1.0
-  safe_lr_decay: 0.05
-  risk_lr_decay: 0.01
+  cost_coef: 10.0
+  margin_init: 0.0
+  margin_decay_slack: 0.0
+  task_lr_decay: 0.0
+  safe_lr_decay: 0.005
+  risk_lr_decay: 0.001
 ColourBombGridWorldV2_Property2:
   task_alpha: 0.05
   task_gamma: 0.95
-  safe_alpha: 0.1
+  safe_alpha: 0.05
   safe_gamma: 0.95
-  risk_alpha: 0.1
+  risk_alpha: 0.05
   mode: model_free
   horizon: 9
   safety_prob: 0.025
-  cost_coef: 1.0
+  cost_coef: 10.0
+  margin_init: 0.0
+  margin_decay_slack: 0.0
+  task_lr_decay: 0.0
   safe_lr_decay: 0.05
   risk_lr_decay: 0.01
 ColourBombGridWorldV2_Property3:
   task_alpha: 0.05
   task_gamma: 0.95
-  safe_alpha: 0.1
+  safe_alpha: 0.05
   safe_gamma: 0.99
-  risk_alpha: 0.1
+  risk_alpha: 0.05
   mode: model_free
   horizon: 12
   safety_prob: 0.025
-  cost_coef: 1.0
+  cost_coef: 10.0
+  margin_init: 0.0
+  margin_decay_slack: 0.0
+  task_lr_decay: 0.0
+  safe_lr_decay: 0.001
+  risk_lr_decay: 0.0005
 ColourBombGridWorldV2_Property3Cycle:
   task_alpha: 0.05
   task_gamma: 0.95
-  safe_alpha: 0.1
+  safe_alpha: 0.05
   safe_gamma: 0.99
-  risk_alpha: 0.1
+  risk_alpha: 0.05
   mode: model_free
   horizon: 12
   safety_prob: 0.025
-  cost_coef: 1.0
+  cost_coef: 10.0
+  margin_init: 0.0
+  margin_decay_slack: 0.0
+  task_lr_decay: 0.0
+  safe_lr_decay: 0.001
+  risk_lr_decay: 0.0005
 ColourBombGridWorldV2_Property3Potential:
   task_alpha: 0.05
   task_gamma: 0.95
-  safe_alpha: 0.1
+  safe_alpha: 0.05
   safe_gamma: 0.99
-  risk_alpha: 0.1
+  risk_alpha: 0.05
   mode: model_free
   horizon: 12
   safety_prob: 0.025
-  cost_coef: 1.0
+  cost_coef: 10.0
+  margin_init: 0.0
+  margin_decay_slack: 0.0
+  task_lr_decay: 0.0
+  safe_lr_decay: 0.001
+  risk_lr_decay: 0.0005
 ColourBombGridWorldV2_Property3NoCfe:
   task_alpha: 0.05
   task_gamma: 0.95
-  safe_alpha: 0.1
+  safe_alpha: 0.05
   safe_gamma: 0.99
-  risk_alpha: 0.1
+  risk_alpha: 0.05
   mode: model_free
   horizon: 12
   safety_prob: 0.025
-  cost_coef: 1.0
+  cost_coef: 10.0
+  margin_init: 0.0
+  margin_decay_slack: 0.0
+  task_lr_decay: 0.0
+  safe_lr_decay: 0.001
+  risk_lr_decay: 0.0005
   use_counter_factual_experiences: false
 MiniPacman:
   task_alpha: 0.1
@@ -161,4 +202,9 @@ MiniPacman:
   mode: model_free
   horizon: 20
   safety_prob: 0.01
-  cost_coef: 1.0
+  cost_coef: 10.0
+  margin_init: 0.0
+  margin_decay_slack: 0.0
+  task_lr_decay: 0.0
+  safe_lr_decay: 0.001
+  risk_lr_decay: 0.0005

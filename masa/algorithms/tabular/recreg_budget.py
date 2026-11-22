@@ -598,6 +598,11 @@ class RECREG_BUDGET(QL):
                         a=cf_act,
                         s_next=cf_next_state,
                     )
+                    # Slightly slower than the (1 - lr) contraction of this S update, since
+                    # the bootstrapped target only settles once the backup policy has stabilised.
+                    self.margins[cf_state, cf_act] *= min(
+                        1.0 - lr + self.margin_decay_slack, 1.0
+                    )
 
                 # --- model-free: update satisfaction relation S with cf exp ---
                 if self.mode == "model_free":
@@ -692,7 +697,7 @@ class RECREG_BUDGET(QL):
 
         self.key, subkey = jr.split(self.key)
         safe_act, act, override = self.act_override(
-            subkey, self._last_obs, self._step_wise_prob
+            subkey, self._last_obs, self._step_wise_prob, optimistic=True
         )
         next_obs, reward, terminated, truncated, info = self.env.step(safe_act)
 
@@ -783,7 +788,11 @@ class RECREG_BUDGET(QL):
                 while not done:
                     eval_key, subkey = jr.split(eval_key)
                     action, _, override = self.act_override(
-                        subkey, obs, self._eval_step_wise_prob, deterministic=True
+                        subkey,
+                        obs,
+                        self._eval_step_wise_prob,
+                        deterministic=True,
+                        optimistic=True,
                     )
                     next_obs, rew, terminated, truncated, info = eval_env.step(action)
 
