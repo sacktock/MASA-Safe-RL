@@ -83,7 +83,7 @@ ColourBombGridWorld:
   horizon: 2
   safety_prob: 0.05
   cost_coef: 10.0
-  boltzmann_temp: 0.01
+  boltzmann_temp: 0.005
   margin_init: 0.0
   margin_decay_slack: 0.0
   task_lr_decay: 0.0
