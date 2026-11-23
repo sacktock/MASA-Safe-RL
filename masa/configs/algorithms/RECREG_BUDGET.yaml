@@ -67,12 +67,12 @@ BridgeCrossingV2:
   horizon: 4
   safety_prob: 0.01
   cost_coef: 10.0
-  boltzmann_temp: 0.01
+  boltzmann_temp: 0.02
   margin_init: 0.0
   margin_decay_slack: 0.0
   task_lr_decay: 0.0
-  safe_lr_decay: 0.001
-  risk_lr_decay: 0.0005
+  safe_lr_decay: 0.0
+  risk_lr_decay: 0.0
 ColourBombGridWorld:
   task_alpha: 0.05
   task_gamma: 0.95
@@ -103,8 +103,8 @@ ColourBombGridWorld_Property2:
   margin_init: 0.0
   margin_decay_slack: 0.0
   task_lr_decay: 0.0
-  safe_lr_decay: 0.001
-  risk_lr_decay: 0.0005
+  safe_lr_decay: 0.0
+  risk_lr_decay: 0.0
 ColourBombGridWorldV2:
   task_alpha: 0.05
   task_gamma: 0.95
