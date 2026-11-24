@@ -166,6 +166,9 @@ class RECREG(QL):
         safety_prob: float = 0.01,
         r_min: float = 0.0,
         cost_coef: float = 10.0,
+        task_lr_decay: float = 0.0,
+        safe_lr_decay: float = 0.0,
+        risk_lr_decay: float = 0.0,
         **kwargs,
     ):
 
@@ -205,8 +208,26 @@ class RECREG(QL):
         self.safety_prob = safety_prob
         self.r_min = r_min
         self.cost_coef = cost_coef
+        self.task_lr_decay = task_lr_decay
+        self.safe_lr_decay = safe_lr_decay
+        self.risk_lr_decay = risk_lr_decay
 
         self._setup_models()
+        self._setup_learning_rates()
+
+    def _setup_learning_rates(self):
+        shape = (self.n_states, self.n_actions)
+        self.task_lr = np.full(shape, self.alpha, dtype=np.float64)
+        self.safe_lr = np.full(shape, self.safe_alpha, dtype=np.float64)
+        if self.mode == "model_free":
+            self.risk_lr = np.full(shape, self.risk_alpha, dtype=np.float64)
+
+    @staticmethod
+    def _harmonic_step(lr: np.ndarray, idx, alpha0: float, decay: float) -> None:
+        """alpha_n = alpha0 / (1 + decay * n), advanced one visit in place via
+        1 / alpha_{n+1} = 1 / alpha_n + decay / alpha0."""
+        if alpha0 > 0.0:
+            lr[idx] = lr[idx] / (1.0 + decay * lr[idx] / alpha0)
 
     def _setup_models(self):
 
@@ -444,6 +465,8 @@ class RECREG(QL):
         if len(self.buffer) == 0:
             return
 
+        penalty = self.r_min / (1 - self.gamma)
+
         for (
             state,
             safe_action,
@@ -458,10 +481,12 @@ class RECREG(QL):
         ) in self.buffer:
             # 0-return update for the risky action if overridden (all modes)
             if override:
-                targ = self.r_min / (1 - self.gamma)
-                self.Q[state, action] = (1 - self.alpha) * self.Q[
-                    state, action
-                ] + self.alpha * targ
+                # Python float keeps the float32 table arithmetic in float32 (NEP 50).
+                lr = float(self.task_lr[state, action])
+                self.Q[state, action] = (1 - lr) * self.Q[state, action] + lr * penalty
+                self._harmonic_step(
+                    self.task_lr, (state, action), self.alpha, self.task_lr_decay
+                )
 
             # Generate (real + counterfactual) experiences
             if (
@@ -507,6 +532,7 @@ class RECREG(QL):
                 # --- model-free: update satisfaction relation S with cf exp ---
                 if self.mode == "model_free":
                     next_b = self.B[cf_next_state]
+                    lr = float(self.risk_lr[cf_state, cf_act])
                     for t in reversed(range(self.horizon)):
                         if t == self.horizon - 1:
                             next_S = min(1.0, float(cf_viol))
@@ -517,9 +543,15 @@ class RECREG(QL):
                                 + (1 - cf_term)
                                 * self.S[t + 1, cf_next_state, np.argmax(next_b)],
                             )
-                        self.S[t, cf_state, cf_act] = (1 - self.risk_alpha) * self.S[
+                        self.S[t, cf_state, cf_act] = (1 - lr) * self.S[
                             t, cf_state, cf_act
-                        ] + self.risk_alpha * next_S
+                        ] + lr * next_S
+                    self._harmonic_step(
+                        self.risk_lr,
+                        (cf_state, cf_act),
+                        self.risk_alpha,
+                        self.risk_lr_decay,
+                    )
 
                 # --- update backup policy B with cf exp ---
                 if self.mode in ["model_free", "model_based"]:
@@ -527,9 +559,16 @@ class RECREG(QL):
                     cf_gamma = self.safe_gamma if cf_viol else 1.0
                     next_b = self.B[cf_next_state]
                     target_b = cf_pen + (1 - cf_term) * cf_gamma * np.max(next_b)
-                    self.B[cf_state, cf_act] = (1 - self.safe_alpha) * self.B[
+                    lr = float(self.safe_lr[cf_state, cf_act])
+                    self.B[cf_state, cf_act] = (1 - lr) * self.B[
                         cf_state, cf_act
-                    ] + self.safe_alpha * target_b
+                    ] + lr * target_b
+                    self._harmonic_step(
+                        self.safe_lr,
+                        (cf_state, cf_act),
+                        self.safe_alpha,
+                        self.safe_lr_decay,
+                    )
 
                 # --- update task policy Q with cf exp ---
                 if self.mode in ["model_free", "exact", "model_based"]:
@@ -537,16 +576,25 @@ class RECREG(QL):
                     if self.S[0, cf_state, cf_act] <= self.safety_prob:
                         target_q = cf_rew + (1 - cf_term) * self.gamma * np.max(next_q)
                     else:
-                        target_q = self.r_min / (1 - self.gamma)
-                    self.Q[cf_state, cf_act] = (1 - self.alpha) * self.Q[
+                        target_q = penalty
+                    lr = float(self.task_lr[cf_state, cf_act])
+                    self.Q[cf_state, cf_act] = (1 - lr) * self.Q[
                         cf_state, cf_act
-                    ] + self.alpha * target_q
+                    ] + lr * target_q
+                    self._harmonic_step(
+                        self.task_lr,
+                        (cf_state, cf_act),
+                        self.alpha,
+                        self.task_lr_decay,
+                    )
 
         self.buffer.clear()
 
         if logger:
-            logger.add("train/stats", {"alpha": self.alpha})
-            logger.add("train/stats", {"safe_alpha": self.safe_alpha})
+            logger.add("train/stats", {"alpha": float(self.task_lr.mean())})
+            logger.add("train/stats", {"safe_alpha": float(self.safe_lr.mean())})
+            if self.mode == "model_free":
+                logger.add("train/stats", {"risk_alpha": float(self.risk_lr.mean())})
             if self.exploration == "boltzmann":
                 logger.add("train/stats", {"temp": self.boltzmann_temp})
             if self.exploration == "epsilon_greedy":

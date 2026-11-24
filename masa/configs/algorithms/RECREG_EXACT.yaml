@@ -17,6 +17,9 @@ defaults:
   final_epsilon: 0.1
   epsilon_decay: linear
   epsilon_decay_frames: 10000
+  task_lr_decay: 0.0
+  safe_lr_decay: 0.0
+  risk_lr_decay: 0.0
 MediaStreaming:
   task_alpha: 0.1
   task_gamma: 0.95

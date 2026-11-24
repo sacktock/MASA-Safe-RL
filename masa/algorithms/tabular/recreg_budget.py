@@ -167,9 +167,9 @@ class RECREG_BUDGET(QL):
         r_min: float = 0.0,
         cost_coef: float = 10.0,
         n_bins: int = 1001,
-        task_lr_decay: float = 1e-3,
-        safe_lr_decay: float = 1e-2,
-        risk_lr_decay: float = 5e-3,
+        task_lr_decay: float = 0.0,
+        safe_lr_decay: float = 0.0,
+        risk_lr_decay: float = 0.0,
         **kwargs,
     ):
 

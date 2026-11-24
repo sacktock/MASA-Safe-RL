@@ -19,9 +19,9 @@ defaults:
   epsilon_decay: linear
   epsilon_decay_frames: 10000
   n_bins: 1001
-  task_lr_decay: 0.001
-  safe_lr_decay: 0.01
-  risk_lr_decay: 0.005
+  task_lr_decay: 0.0
+  safe_lr_decay: 0.0
+  risk_lr_decay: 0.0
 MediaStreaming:
   task_alpha: 0.1
   task_gamma: 0.95
@@ -34,7 +34,6 @@ MediaStreaming:
   cost_coef: 100.0
   boltzmann_temp: 0.02
   r_min: -1.0
-  task_lr_decay: 0.0
 BridgeCrossing:
   task_alpha: 0.05
   task_gamma: 0.99
@@ -46,7 +45,6 @@ BridgeCrossing:
   safety_prob: 0.05
   cost_coef: 10.0
   boltzmann_temp: 0.01
-  task_lr_decay: 0.0
 BridgeCrossingV2:
   task_alpha: 0.1
   task_gamma: 0.99
@@ -58,7 +56,6 @@ BridgeCrossingV2:
   safety_prob: 0.01
   cost_coef: 10.0
   boltzmann_temp: 0.02
-  task_lr_decay: 0.0
 ColourBombGridWorld:
   task_alpha: 0.05
   task_gamma: 0.95
@@ -70,7 +67,6 @@ ColourBombGridWorld:
   safety_prob: 0.05
   cost_coef: 10.0
   boltzmann_temp: 0.005
-  task_lr_decay: 0.0
 ColourBombGridWorld_Property2:
   task_alpha: 0.05
   task_gamma: 0.95
@@ -82,7 +78,6 @@ ColourBombGridWorld_Property2:
   safety_prob: 0.05
   cost_coef: 10.0
   boltzmann_temp: 0.01
-  task_lr_decay: 0.0
 ColourBombGridWorldV2:
   task_alpha: 0.05
   task_gamma: 0.95
@@ -94,7 +89,6 @@ ColourBombGridWorldV2:
   safety_prob: 0.025
   cost_coef: 10.0
   boltzmann_temp: 0.01
-  task_lr_decay: 0.0
 ColourBombGridWorldV2_Property2:
   task_alpha: 0.05
   task_gamma: 0.95
@@ -106,7 +100,6 @@ ColourBombGridWorldV2_Property2:
   safety_prob: 0.025
   cost_coef: 10.0
   boltzmann_temp: 0.01
-  task_lr_decay: 0.0
 ColourBombGridWorldV2_Property3:
   task_alpha: 0.05
   task_gamma: 0.95
@@ -118,7 +111,6 @@ ColourBombGridWorldV2_Property3:
   safety_prob: 0.025
   cost_coef: 10.0
   boltzmann_temp: 0.01
-  task_lr_decay: 0.0
 MiniPacman:
   task_alpha: 0.1
   task_gamma: 0.95
@@ -130,4 +122,3 @@ MiniPacman:
   safety_prob: 0.01
   cost_coef: 10.0
   boltzmann_temp: 0.01
-  task_lr_decay: 0.0
