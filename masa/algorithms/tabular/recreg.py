@@ -20,7 +20,7 @@ from masa.common.wrappers import is_wrapped, get_wrapped
 
 def build_pctl_formula(
     env: gym.Env,
-    bound_param: int,
+    bound_param: Optional[int],
     prob: float,
     label_fn: Optional[LabelFn] = None,
     cost_fn: Optional[CostFn] = None,
@@ -51,7 +51,10 @@ def build_pctl_formula(
 
     new_label_fn = lambda obs: unsafe_dict[obs]
 
-    formula = pctl.Always(1.0 - prob, bound_param, pctl.Neg(pctl.Atom("unsafe")))
+    if bound_param is None:
+        formula = pctl.UnboundedAlways(1.0 - prob, pctl.Neg(pctl.Atom("unsafe")))
+    else:
+        formula = pctl.Always(1.0 - prob, bound_param, pctl.Neg(pctl.Atom("unsafe")))
 
     return formula, new_label_fn
 
@@ -155,7 +158,7 @@ class RECREG(QL):
         task_gamma: float = 0.95,
         safe_alpha: float = 0.1,
         safe_gamma: float = 0.95,
-        model_free_alpha: float = 0.1,
+        risk_alpha: float = 0.1,
         mode: str = "model_free",
         model_checking: str = "exact",
         samples: int = 8192,
@@ -163,6 +166,9 @@ class RECREG(QL):
         safety_prob: float = 0.01,
         r_min: float = 0.0,
         cost_coef: float = 10.0,
+        task_lr_decay: float = 0.0,
+        safe_lr_decay: float = 0.0,
+        risk_lr_decay: float = 0.0,
         **kwargs,
     ):
 
@@ -176,17 +182,25 @@ class RECREG(QL):
         assert mode in ["exact", "model_based", "model_free"], (
             f"Unsupported model implementation {mode}"
         )
-        assert model_checking in ["exact", "statistical", "none"], (
-            f"Unsupported model-checking type {rollout}"
+        assert model_checking in ["exact", "finite", "statistical", "none"], (
+            f"Unsupported model-checking type {model_checking}"
         )
         assert not model_checking == "none" or mode == "model_free", (
             f"Must specify a model checking type when using mode: {mode}"
+        )
+        assert not (mode == "model_based" and model_checking == "exact"), (
+            "model_checking='exact' (unbounded) is not supported for mode='model_based'; "
+            "use 'finite' or 'statistical'"
+        )
+        assert not (mode == "exact" and model_checking == "statistical"), (
+            "model_checking='statistical' is not supported for mode='exact'; "
+            "use 'exact' or 'finite'"
         )
         assert samples > 0, "Number of samples must be greater than 0"
 
         self.safe_alpha = safe_alpha
         self.safe_gamma = safe_gamma
-        self.model_free_alpha = model_free_alpha
+        self.risk_alpha = risk_alpha
         self.mode = mode
         self.model_checking = model_checking
         self.samples = samples
@@ -194,8 +208,26 @@ class RECREG(QL):
         self.safety_prob = safety_prob
         self.r_min = r_min
         self.cost_coef = cost_coef
+        self.task_lr_decay = task_lr_decay
+        self.safe_lr_decay = safe_lr_decay
+        self.risk_lr_decay = risk_lr_decay
 
         self._setup_models()
+        self._setup_learning_rates()
+
+    def _setup_learning_rates(self):
+        shape = (self.n_states, self.n_actions)
+        self.task_lr = np.full(shape, self.alpha, dtype=np.float64)
+        self.safe_lr = np.full(shape, self.safe_alpha, dtype=np.float64)
+        if self.mode == "model_free":
+            self.risk_lr = np.full(shape, self.risk_alpha, dtype=np.float64)
+
+    @staticmethod
+    def _harmonic_step(lr: np.ndarray, idx, alpha0: float, decay: float) -> None:
+        """alpha_n = alpha0 / (1 + decay * n), advanced one visit in place via
+        1 / alpha_{n+1} = 1 / alpha_n + decay / alpha0."""
+        if alpha0 > 0.0:
+            lr[idx] = lr[idx] / (1.0 + decay * lr[idx] / alpha0)
 
     def _setup_models(self):
 
@@ -217,7 +249,7 @@ class RECREG(QL):
 
             formula, pctl_label_fn = build_pctl_formula(
                 self.env,
-                self.horizon,
+                None if self.model_checking == "exact" else self.horizon,
                 self.safety_prob,
                 label_fn=label_fn,
                 cost_fn=cost_fn,
@@ -318,7 +350,7 @@ class RECREG(QL):
                 self.successor_index = [{int(s): 0} for s in range(self.n_states)]
                 self.next_free = np.ones(self.n_states, dtype=np.int32)
 
-                if self.model_checking == "exact":
+                if self.model_checking == "finite":
                     model_checker_cls = pctl.ExactModelChecker
                 elif self.model_checking == "statistical":
                     model_checker_cls = pctl.StatisticalModelChecker
@@ -433,6 +465,8 @@ class RECREG(QL):
         if len(self.buffer) == 0:
             return
 
+        penalty = self.r_min / (1 - self.gamma)
+
         for (
             state,
             safe_action,
@@ -447,10 +481,12 @@ class RECREG(QL):
         ) in self.buffer:
             # 0-return update for the risky action if overridden (all modes)
             if override:
-                targ = self.r_min / (1 - self.gamma)
-                self.Q[state, action] = (1 - self.alpha) * self.Q[
-                    state, action
-                ] + self.alpha * targ
+                # Python float keeps the float32 table arithmetic in float32 (NEP 50).
+                lr = float(self.task_lr[state, action])
+                self.Q[state, action] = (1 - lr) * self.Q[state, action] + lr * penalty
+                self._harmonic_step(
+                    self.task_lr, (state, action), self.alpha, self.task_lr_decay
+                )
 
             # Generate (real + counterfactual) experiences
             if (
@@ -496,6 +532,7 @@ class RECREG(QL):
                 # --- model-free: update satisfaction relation S with cf exp ---
                 if self.mode == "model_free":
                     next_b = self.B[cf_next_state]
+                    lr = float(self.risk_lr[cf_state, cf_act])
                     for t in reversed(range(self.horizon)):
                         if t == self.horizon - 1:
                             next_S = min(1.0, float(cf_viol))
@@ -506,9 +543,15 @@ class RECREG(QL):
                                 + (1 - cf_term)
                                 * self.S[t + 1, cf_next_state, np.argmax(next_b)],
                             )
-                        self.S[t, cf_state, cf_act] = (
-                            1 - self.model_free_alpha
-                        ) * self.S[t, cf_state, cf_act] + self.model_free_alpha * next_S
+                        self.S[t, cf_state, cf_act] = (1 - lr) * self.S[
+                            t, cf_state, cf_act
+                        ] + lr * next_S
+                    self._harmonic_step(
+                        self.risk_lr,
+                        (cf_state, cf_act),
+                        self.risk_alpha,
+                        self.risk_lr_decay,
+                    )
 
                 # --- update backup policy B with cf exp ---
                 if self.mode in ["model_free", "model_based"]:
@@ -516,9 +559,16 @@ class RECREG(QL):
                     cf_gamma = self.safe_gamma if cf_viol else 1.0
                     next_b = self.B[cf_next_state]
                     target_b = cf_pen + (1 - cf_term) * cf_gamma * np.max(next_b)
-                    self.B[cf_state, cf_act] = (1 - self.safe_alpha) * self.B[
+                    lr = float(self.safe_lr[cf_state, cf_act])
+                    self.B[cf_state, cf_act] = (1 - lr) * self.B[
                         cf_state, cf_act
-                    ] + self.safe_alpha * target_b
+                    ] + lr * target_b
+                    self._harmonic_step(
+                        self.safe_lr,
+                        (cf_state, cf_act),
+                        self.safe_alpha,
+                        self.safe_lr_decay,
+                    )
 
                 # --- update task policy Q with cf exp ---
                 if self.mode in ["model_free", "exact", "model_based"]:
@@ -526,16 +576,25 @@ class RECREG(QL):
                     if self.S[0, cf_state, cf_act] <= self.safety_prob:
                         target_q = cf_rew + (1 - cf_term) * self.gamma * np.max(next_q)
                     else:
-                        target_q = self.r_min / (1 - self.gamma)
-                    self.Q[cf_state, cf_act] = (1 - self.alpha) * self.Q[
+                        target_q = penalty
+                    lr = float(self.task_lr[cf_state, cf_act])
+                    self.Q[cf_state, cf_act] = (1 - lr) * self.Q[
                         cf_state, cf_act
-                    ] + self.alpha * target_q
+                    ] + lr * target_q
+                    self._harmonic_step(
+                        self.task_lr,
+                        (cf_state, cf_act),
+                        self.alpha,
+                        self.task_lr_decay,
+                    )
 
         self.buffer.clear()
 
         if logger:
-            logger.add("train/stats", {"alpha": self.alpha})
-            logger.add("train/stats", {"safe_alpha": self.safe_alpha})
+            logger.add("train/stats", {"alpha": float(self.task_lr.mean())})
+            logger.add("train/stats", {"safe_alpha": float(self.safe_lr.mean())})
+            if self.mode == "model_free":
+                logger.add("train/stats", {"risk_alpha": float(self.risk_lr.mean())})
             if self.exploration == "boltzmann":
                 logger.add("train/stats", {"temp": self.boltzmann_temp})
             if self.exploration == "epsilon_greedy":
@@ -686,7 +745,7 @@ class RECREG(QL):
 
             self.backup_policy = self._backup_policy_matrix(deterministic)
 
-            if self.model_checking == "exact":
+            if self.model_checking == "finite":
                 self.S = (
                     1.0
                     - self.model_checker.check_state_action(None, self.backup_policy)[
@@ -758,7 +817,7 @@ class RECREG_MODEL_BASED(RECREG):
         self,
         *args,
         mode: str = "model_based",
-        model_checking: str = "exact",
+        model_checking: str = "finite",
         **kwargs,
     ):
 

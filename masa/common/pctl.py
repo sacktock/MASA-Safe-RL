@@ -5,6 +5,8 @@ import jax.numpy as jnp
 from jax import jit
 from functools import partial
 import numpy as np
+import scipy.sparse as sp
+import scipy.sparse.linalg as spla
 
 jax.config.update("jax_enable_x64", True)
 
@@ -44,6 +46,113 @@ def kernel_n_states(kernel: Kernel) -> int:
         succ, p = kernel
         return succ.shape[1]
     return kernel.shape[1]
+
+
+LINEAR_SOLVERS = ("lu", "gauss")
+
+
+def _kernel_to_sparse(kernel: Kernel) -> sp.csr_matrix:
+    """Convert a Markov-chain kernel to a row-stochastic ``A[s, s'] = P(s' | s)``."""
+    if isinstance(kernel, tuple):
+        succ, p = kernel
+        succ = np.asarray(succ, dtype=np.int64)
+        p = np.asarray(p, dtype=np.float64)
+        K, S = succ.shape
+        valid = (succ >= 0) & (p > 0.0)
+        rows = np.broadcast_to(np.arange(S, dtype=np.int64), (K, S))[valid]
+        # Duplicate (row, col) entries are summed by the COO -> CSR conversion.
+        return sp.coo_matrix((p[valid], (rows, succ[valid])), shape=(S, S)).tocsr()
+    m = np.asarray(kernel, dtype=np.float64)
+    return sp.csr_matrix(m.T)
+
+
+def _backward_reach(
+    adj: sp.csr_matrix, seeds: np.ndarray, allowed: np.ndarray
+) -> np.ndarray:
+    """States that reach ``seeds`` along edges of ``adj`` while staying in ``allowed``.
+
+    Args:
+        adj: Boolean/float adjacency ``(S, S)``; ``adj[s, s'] > 0`` iff ``s -> s'``.
+        seeds: Boolean mask of target states (always included in the result).
+        allowed: Boolean mask of states that may be traversed before hitting ``seeds``.
+
+    Returns:
+        Boolean mask of shape ``(S,)``.
+    """
+    reached = seeds.copy()
+    frontier = seeds.copy()
+    adj_T = adj.T.tocsr()
+    while frontier.any():
+        preds = np.asarray(adj_T[frontier].sum(axis=0)).ravel() > 0
+        frontier = preds & allowed & ~reached
+        reached |= frontier
+    return reached
+
+
+def solve_until_probabilities(
+    kernel: Kernel,
+    sat1: np.ndarray,
+    sat2: np.ndarray,
+    method: str = "lu",
+) -> np.ndarray:
+    r"""Exact unbounded until probabilities :math:`P(\Phi_1\ U\ \Phi_2)` on a Markov chain.
+
+    Follows the standard PCTL model-checking pipeline:
+
+    1. **Prob0** (graph): states that cannot reach :math:`\Phi_2` through
+       :math:`\Phi_1`-states get probability 0.
+    2. **Prob1** (graph): states that cannot reach a Prob0 state through
+       :math:`\Phi_1 \land \neg\Phi_2`-states get probability 1.
+    3. **Linear solve** on the remaining states :math:`M`:
+
+       .. math::
+
+          (I - A_{MM})\,x_M = A_{M,\mathrm{yes}}\,\mathbf{1}.
+
+    Removing the Prob0 states makes :math:`I - A_{MM}` nonsingular, since every
+    remaining state reaches the target with positive probability.
+
+    Args:
+        kernel: Markov-chain kernel, dense ``(S, S)`` (column ``s`` is the
+            next-state distribution from ``s``) or compact ``(succ, p)``.
+        sat1: Satisfaction mask for :math:`\Phi_1`, shape ``(S,)``.
+        sat2: Satisfaction mask for :math:`\Phi_2`, shape ``(S,)``.
+        method: ``"lu"`` for sparse LU decomposition (``scipy.sparse.linalg.splu``)
+            or ``"gauss"`` for dense Gaussian elimination with partial pivoting
+            (``numpy.linalg.solve``).
+
+    Returns:
+        Float64 array of shape ``(S,)`` with values in ``[0, 1]``.
+
+    Raises:
+        ValueError: If ``method`` is not one of :data:`LINEAR_SOLVERS`.
+    """
+    if method not in LINEAR_SOLVERS:
+        raise ValueError(
+            f"Unknown linear solver {method!r}; expected one of {LINEAR_SOLVERS}"
+        )
+
+    A = _kernel_to_sparse(kernel)
+    sat1 = np.asarray(sat1) > 0.5
+    sat2 = np.asarray(sat2) > 0.5
+    cont = sat1 & ~sat2
+
+    no = ~_backward_reach(A, sat2, cont)
+    one = ~_backward_reach(A, no, cont)
+    maybe = ~no & ~one
+
+    x = one.astype(np.float64)
+    if maybe.any():
+        idx = np.flatnonzero(maybe)
+        A_m = A[idx]
+        b = A_m @ x
+        M = sp.identity(idx.size, format="csc") - A_m[:, idx].tocsc()
+        if method == "lu":
+            x[idx] = spla.splu(M).solve(b)
+        else:
+            x[idx] = np.linalg.solve(M.toarray(), b)
+
+    return np.clip(x, 0.0, 1.0)
 
 
 class BoundedPCTLFormula:
@@ -619,6 +728,198 @@ class Eventually(BoundedPCTLFormula):
         return self._inner.sat(kernel, vec_label_fn, atom_dict)
 
 
+class UnboundedUntil(BoundedPCTLFormula):
+    r"""Unbounded PCTL *until* operator :math:`U` with probability threshold.
+
+    This represents:
+
+    .. math::
+
+       \mathbb{P}_{\ge p}[\Phi_1\ U\ \Phi_2].
+
+    Probabilities are computed exactly by :func:`solve_until_probabilities`
+    (graph precomputation followed by a linear solve). The probability is
+    time-invariant, so :meth:`_prob_seq` repeats the same vector at every step;
+    this keeps the operator composable with :class:`Neg`, :class:`And`,
+    :class:`Or` and with the bounded temporal operators.
+
+    Args:
+        prob: Probability threshold :math:`p \in [0,1]`.
+        subformula_1: Continuation condition :math:`\Phi_1`.
+        subformula_2: Target condition :math:`\Phi_2`.
+        method: Linear solver, ``"lu"`` (sparse LU) or ``"gauss"`` (dense
+            Gaussian elimination). :class:`ExactModelChecker` overrides this
+            with its ``linear_solver`` argument.
+
+    Attributes:
+        prob: Probability threshold.
+        subformula_1: Continuation formula.
+        subformula_2: Target formula.
+        method: Linear solver used by :meth:`_prob_vector`.
+    """
+
+    def __init__(
+        self,
+        prob: float,
+        subformula_1: BoundedPCTLFormula,
+        subformula_2: BoundedPCTLFormula,
+        method: str = "lu",
+    ):
+        super().__init__()
+        self.prob = float(prob)
+        self.subformula_1 = subformula_1
+        self.subformula_2 = subformula_2
+        self.method = method
+
+    @property
+    def _bound(self) -> int:
+        """Bound of the nested subformulas (the operator itself adds none)."""
+        return max(self.subformula_1.bound, self.subformula_2.bound)
+
+    def _prob_vector(
+        self,
+        kernel: Kernel,
+        vec_label_fn: np.ndarray,
+        atom_dict: Dict[str, int],
+    ) -> np.ndarray:
+        r"""Exact :math:`P(\Phi_1\ U\ \Phi_2)` for every state.
+
+        Returns:
+            Float64 array of shape ``(n_states,)``.
+        """
+        sat1 = self.subformula_1.sat(kernel, vec_label_fn, atom_dict)
+        sat2 = self.subformula_2.sat(kernel, vec_label_fn, atom_dict)
+        return solve_until_probabilities(kernel, sat1, sat2, method=self.method)
+
+    def _prob_seq(self, kernel, vec_label_fn, atom_dict, max_k=None):
+        """Repeat :meth:`_prob_vector` across ``max_k + 1`` time steps."""
+        if max_k is None:
+            max_k = self.bound
+        v = self._prob_vector(kernel, vec_label_fn, atom_dict)
+        return np.repeat(v[None, :], max_k + 1, axis=0)
+
+    def sat(self, kernel, vec_label_fn, atom_dict):
+        r"""Threshold :math:`\mathbb{P}_{\ge p}[\Phi_1\ U\ \Phi_2]`.
+
+        Returns:
+            Float64 array of shape ``(n_states,)`` in ``{0.0, 1.0}``.
+        """
+        probs = self._prob_vector(kernel, vec_label_fn, atom_dict)
+        return (probs >= self.prob).astype(np.float64)
+
+
+class UnboundedEventually(BoundedPCTLFormula):
+    r"""Unbounded PCTL *eventually* operator :math:`F` with probability threshold.
+
+    This represents :math:`\mathbb{P}_{\ge p}[F\,\Phi]`, implemented as
+    :math:`\top\ U\ \Phi`.
+
+    Args:
+        prob: Probability threshold :math:`p \in [0,1]`.
+        subformula: Subformula :math:`\Phi`.
+        method: Linear solver forwarded to :class:`UnboundedUntil`.
+
+    Attributes:
+        prob: Probability threshold.
+        subformula: Nested formula.
+        _inner: Desugared :class:`UnboundedUntil`.
+    """
+
+    def __init__(self, prob: float, subformula: BoundedPCTLFormula, method: str = "lu"):
+        super().__init__()
+        self.prob = float(prob)
+        self.subformula = subformula
+        self._inner = UnboundedUntil(
+            prob=self.prob,
+            subformula_1=Truth(),
+            subformula_2=self.subformula,
+            method=method,
+        )
+
+    @property
+    def _bound(self) -> int:
+        """Bound delegated to the desugared inner formula."""
+        return self._inner.bound
+
+    def _prob_vector(self, kernel, vec_label_fn, atom_dict):
+        r"""Exact :math:`P(F\,\Phi)` for every state."""
+        return self._inner._prob_vector(kernel, vec_label_fn, atom_dict)
+
+    def _prob_seq(self, kernel, vec_label_fn, atom_dict, max_k=None):
+        """Delegate probability-sequence computation to :attr:`_inner`."""
+        return self._inner._prob_seq(kernel, vec_label_fn, atom_dict, max_k)
+
+    def sat(self, kernel, vec_label_fn, atom_dict):
+        """Delegate satisfaction evaluation to :attr:`_inner`."""
+        return self._inner.sat(kernel, vec_label_fn, atom_dict)
+
+
+class UnboundedAlways(BoundedPCTLFormula):
+    r"""Unbounded PCTL *always* operator :math:`G` with probability threshold.
+
+    This represents :math:`\mathbb{P}_{\ge p}[G\,\Phi]`, implemented via duality
+    as :math:`\neg(\top\ U\ \neg\Phi)` with the inner threshold :math:`1-p`,
+    mirroring :class:`Always`.
+
+    Args:
+        prob: Probability threshold :math:`p \in [0,1]`.
+        subformula: Subformula :math:`\Phi`.
+        method: Linear solver forwarded to :class:`UnboundedUntil`.
+
+    Attributes:
+        prob: Probability threshold.
+        subformula: Nested formula.
+        _inner: Desugared formula built from :class:`Neg`,
+            :class:`UnboundedUntil` and :class:`Truth`.
+    """
+
+    def __init__(self, prob: float, subformula: BoundedPCTLFormula, method: str = "lu"):
+        super().__init__()
+        self.prob = float(prob)
+        self.subformula = subformula
+        self._until = UnboundedUntil(
+            prob=1.0 - self.prob,
+            subformula_1=Truth(),
+            subformula_2=Neg(self.subformula),
+            method=method,
+        )
+        self._inner = Neg(self._until)
+
+    @property
+    def _bound(self) -> int:
+        """Bound delegated to the desugared inner formula."""
+        return self._inner.bound
+
+    def _prob_vector(self, kernel, vec_label_fn, atom_dict):
+        r"""Exact :math:`P(G\,\Phi) = 1 - P(F\,\neg\Phi)` for every state."""
+        return 1.0 - self._until._prob_vector(kernel, vec_label_fn, atom_dict)
+
+    def _prob_seq(self, kernel, vec_label_fn, atom_dict, max_k=None):
+        """Delegate probability-sequence computation to :attr:`_inner`."""
+        return self._inner._prob_seq(kernel, vec_label_fn, atom_dict, max_k)
+
+    def sat(self, kernel, vec_label_fn, atom_dict):
+        """Delegate satisfaction evaluation to :attr:`_inner`."""
+        return self._inner.sat(kernel, vec_label_fn, atom_dict)
+
+
+UNBOUNDED_OPERATORS = (UnboundedUntil, UnboundedEventually, UnboundedAlways)
+
+
+def _iter_formula_tree(formula: BoundedPCTLFormula):
+    """Yield every node of a formula tree, including desugared inner formulas."""
+    yield formula
+    for attr in ("subformula", "subformula_1", "subformula_2", "_inner"):
+        child = getattr(formula, attr, None)
+        if isinstance(child, BoundedPCTLFormula):
+            yield from _iter_formula_tree(child)
+
+
+def contains_unbounded(formula: BoundedPCTLFormula) -> bool:
+    """Return True if ``formula`` contains any unbounded temporal operator."""
+    return any(isinstance(f, UNBOUNDED_OPERATORS) for f in _iter_formula_tree(formula))
+
+
 class Truth(BoundedPCTLFormula):
     r"""Boolean constant :math:`\top` (true)."""
 
@@ -1009,16 +1310,25 @@ class BoundedPCTLModelChecker:
 
 
 class ExactModelChecker(BoundedPCTLModelChecker):
-    r"""Exact model checker for bounded PCTL under a fixed policy.
+    r"""Exact model checker for PCTL under a fixed policy.
 
     The exact checker collapses an MDP into a Markov chain by applying a
-    stochastic policy, then evaluates the bounded formula on the resulting
-    Markov chain using the formula's internal recurrences.
+    stochastic policy, then evaluates the formula on the resulting Markov chain.
+    Bounded operators use the formula's internal recurrences; unbounded
+    operators (:class:`UnboundedUntil`, :class:`UnboundedEventually`,
+    :class:`UnboundedAlways`) are solved exactly with
+    :func:`solve_until_probabilities`.
 
     - :meth:`check_state` returns per-state satisfaction for the policy-induced
       chain.
     - :meth:`check_state_action` returns a state-action value-like array derived
-      from the formula probability sequence (using the vector at horizon ``B-1``).
+      from the formula probability sequence (using the vector at horizon ``B-1``),
+      or from the exact probability vector for a top-level unbounded operator.
+
+    Args:
+        linear_solver: Linear solver for unbounded operators, ``"lu"`` (sparse
+            LU) or ``"gauss"`` (dense Gaussian elimination). Applied to every
+            unbounded operator in ``formula``.
 
     See Also:
         :class:`StatisticalModelChecker`: Sampling-based estimation of satisfaction.
@@ -1032,6 +1342,7 @@ class ExactModelChecker(BoundedPCTLModelChecker):
         transition_matrix: Optional[np.ndarray] = None,
         successor_states: Optional[np.ndarray] = None,
         probabilities: Optional[np.ndarray] = None,
+        linear_solver: str = "lu",
     ):
 
         super().__init__(
@@ -1042,6 +1353,46 @@ class ExactModelChecker(BoundedPCTLModelChecker):
             successor_states=successor_states,
             probabilities=probabilities,
         )
+
+        if linear_solver not in LINEAR_SOLVERS:
+            raise ValueError(
+                f"Unknown linear solver {linear_solver!r}; expected one of {LINEAR_SOLVERS}"
+            )
+        self.linear_solver = linear_solver
+        for node in _iter_formula_tree(self.formula):
+            if isinstance(node, UnboundedUntil):
+                node.method = linear_solver
+
+    def _policy_kernel(self, policy: np.ndarray) -> Kernel:
+        """Collapse the stored MDP kernel into a Markov chain under ``policy``.
+
+        Args:
+            policy: Stochastic policy probabilities, either ``(A, S)`` or ``(S, A)``.
+
+        Returns:
+            Dense ``(S, S)`` kernel in ``"full"`` mode, else compact ``(succ, p)``.
+
+        Raises:
+            ValueError: If ``policy`` has an unexpected shape.
+        """
+        policy = np.asarray(policy, dtype=np.float64)
+
+        if policy.shape == (self.n_actions, self.n_states):
+            policy_sa = policy.T
+        elif policy.shape == (self.n_states, self.n_actions):
+            policy_sa = policy
+        else:
+            raise ValueError(
+                f"Unexpected policy shape {policy.shape}; expected "
+                f"(n_actions, n_states) or (n_states, n_actions)"
+            )
+
+        if self.mode == "full":
+            return np.einsum("nsa,sa->ns", self.transition_matrix, policy_sa).astype(
+                np.float64
+            )
+        p_pi = np.einsum("ksa,sa->ks", self.probabilities, policy_sa).astype(np.float64)
+        return (self.successor_states, p_pi)
 
     def check_state(self, key: jax.Array, policy: np.array) -> np.ndarray:
         """Evaluate the stored formula on the policy-induced Markov chain.
@@ -1059,34 +1410,7 @@ class ExactModelChecker(BoundedPCTLModelChecker):
         Raises:
             ValueError: If ``policy`` has an unexpected shape.
         """
-
-        policy = np.asarray(policy, dtype=np.float64)
-
-        tm = self.transition_matrix
-
-        if policy.shape == (A, S):
-            policy_sa = policy.T
-            m_pi = np.einsum("ija,ai->ij", tm, policy)
-        elif policy.shape == (S, A):
-            policy_sa = policy
-            m_pi = np.einsum("ija,ia->ij", tm, policy)
-        else:
-            raise ValueError(
-                f"Unexpected policy shape {policy.shape}; expected "
-                f"(n_actions, n_states) or (n_states, n_actions)"
-            )
-
-        if self.mode == "full":
-            tm = self.transition_matrix
-            m_pi = np.einsum("nsa,sa->ns", tm, policy_sa).astype(np.float64)
-            kernel: Kernel = m_pi
-
-        else:
-            succ = self.successor_states
-            probs = self.probabilities
-            p_pi = np.einsum("ksa,sa->ks", probs, policy_sa).astype(np.float64)
-            kernel = (succ, p_pi)
-
+        kernel = self._policy_kernel(policy)
         return self.formula.sat(kernel, self.vec_label_fn, self.atom_dict)
 
     def check_state_action(
@@ -1099,7 +1423,8 @@ class ExactModelChecker(BoundedPCTLModelChecker):
         This method:
         1) Builds the policy-induced Markov chain kernel,
         2) Computes the formula sequence up to bound ``B = formula.bound``,
-        3) Uses the vector at time ``max(B-1, 0)`` as a value function,
+        3) Uses the vector at time ``max(B-1, 0)`` as a value function (for a
+           top-level unbounded operator, the exact probability vector instead),
         4) Computes one-step expectations under each action to produce ``Q``.
 
         Args:
@@ -1115,40 +1440,24 @@ class ExactModelChecker(BoundedPCTLModelChecker):
         Raises:
             ValueError: If ``policy`` has an unexpected shape.
         """
+        kernel = self._policy_kernel(policy)
 
-        policy = np.asarray(policy, dtype=np.float64)
-
-        if policy.shape == (self.n_actions, self.n_states):
-            policy_sa = policy.T
-        elif policy.shape == (self.n_states, self.n_actions):
-            policy_sa = policy
+        if isinstance(self.formula, UNBOUNDED_OPERATORS):
+            V = self.formula._prob_vector(kernel, self.vec_label_fn, self.atom_dict)
         else:
-            raise ValueError(
-                f"Unexpected policy shape {policy.shape}; expected "
-                f"(n_actions, n_states) or (n_states, n_actions)"
+            B = self.formula.bound
+            seq = self.formula._prob_seq(
+                kernel, self.vec_label_fn, self.atom_dict, max_k=B
             )
+            V = seq[max(B - 1, 0)]
 
         if self.mode == "full":
             tm = self.transition_matrix
-            m_pi = np.einsum("nsa,sa->ns", tm, policy_sa)
-            kernel: Kernel = m_pi
+            Q = np.einsum("nsa,n->sa", tm, V).astype(np.float64)
         else:
             succ = self.successor_states
             probs = self.probabilities
-            p_pi = np.einsum("ksa,sa->ks", probs, policy_sa).astype(np.float64)
-            kernel = (succ, p_pi)
-
-        B = self.formula.bound
-        seq = self.formula._prob_seq(kernel, self.vec_label_fn, self.atom_dict, max_k=B)
-        V_Bm1 = seq[max(B - 1, 0)]
-
-        if self.mode == "full":
-            tm = self.transition_matrix
-            Q = np.einsum("nsa,n->sa", tm, V_Bm1).astype(np.float64)
-        else:
-            succ = self.successor_states
-            probs = self.probabilities
-            V_succ = V_Bm1[succ]
+            V_succ = V[succ]
             Q = np.sum(probs * V_succ[:, :, None], axis=0).astype(np.float64)
 
         return Q
@@ -1180,6 +1489,12 @@ class StatisticalModelChecker(BoundedPCTLModelChecker):
         successor_states: Optional[np.ndarray] = None,
         probabilities: Optional[np.ndarray] = None,
     ):
+        if contains_unbounded(formula):
+            raise NotImplementedError(
+                "StatisticalModelChecker only supports bounded formulas; use "
+                "ExactModelChecker for unbounded operators."
+            )
+
         super().__init__(
             formula,
             label_fn,

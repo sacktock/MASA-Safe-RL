@@ -31,6 +31,21 @@ registry.ALGO_REGISTRY.register(
 )
 
 registry.ALGO_REGISTRY.register(
+    "RECREG_BUDGET",
+    "masa.algorithms.tabular:RECREG_BUDGET",
+)
+
+registry.ALGO_REGISTRY.register(
+    "RECREG_BUDGET_MODEL_BASED",
+    "masa.algorithms.tabular:RECREG_BUDGET_MODEL_BASED",
+)
+
+registry.ALGO_REGISTRY.register(
+    "RECREG_BUDGET_EXACT",
+    "masa.algorithms.tabular:RECREG_BUDGET_EXACT",
+)
+
+registry.ALGO_REGISTRY.register(
     "SEM",
     "masa.algorithms.tabular:SEM",
 )
