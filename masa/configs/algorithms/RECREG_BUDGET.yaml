@@ -19,8 +19,6 @@ defaults:
   epsilon_decay: linear
   epsilon_decay_frames: 10000
   n_bins: 1001
-  margin_init: 1.0
-  margin_decay_slack: 0.01
   task_lr_decay: 0.001
   safe_lr_decay: 0.01
   risk_lr_decay: 0.005
@@ -36,8 +34,6 @@ MediaStreaming:
   cost_coef: 100.0
   boltzmann_temp: 0.02
   r_min: -1.0
-  margin_init: 0.0
-  margin_decay_slack: 0.0
   task_lr_decay: 0.0
   safe_lr_decay: 0.005
   risk_lr_decay: 0.001
@@ -52,8 +48,6 @@ BridgeCrossing:
   safety_prob: 0.05
   cost_coef: 10.0
   boltzmann_temp: 0.01
-  margin_init: 0.0
-  margin_decay_slack: 0.0
   task_lr_decay: 0.0
   safe_lr_decay: 0.001
   risk_lr_decay: 0.0005
@@ -68,8 +62,6 @@ BridgeCrossingV2:
   safety_prob: 0.01
   cost_coef: 10.0
   boltzmann_temp: 0.02
-  margin_init: 0.0
-  margin_decay_slack: 0.0
   task_lr_decay: 0.0
   safe_lr_decay: 0.0
   risk_lr_decay: 0.0
@@ -84,8 +76,6 @@ ColourBombGridWorld:
   safety_prob: 0.05
   cost_coef: 10.0
   boltzmann_temp: 0.005
-  margin_init: 0.0
-  margin_decay_slack: 0.0
   task_lr_decay: 0.0
   safe_lr_decay: 0.001
   risk_lr_decay: 0.0005
@@ -100,8 +90,6 @@ ColourBombGridWorld_Property2:
   safety_prob: 0.05
   cost_coef: 10.0
   boltzmann_temp: 0.01
-  margin_init: 0.0
-  margin_decay_slack: 0.0
   task_lr_decay: 0.0
   safe_lr_decay: 0.0
   risk_lr_decay: 0.0
@@ -116,8 +104,6 @@ ColourBombGridWorldV2:
   safety_prob: 0.025
   cost_coef: 10.0
   boltzmann_temp: 0.01
-  margin_init: 0.0
-  margin_decay_slack: 0.0
   task_lr_decay: 0.0
   safe_lr_decay: 0.001
   risk_lr_decay: 0.0005
@@ -132,8 +118,6 @@ ColourBombGridWorldV2_Property2:
   safety_prob: 0.025
   cost_coef: 10.0
   boltzmann_temp: 0.01
-  margin_init: 0.0
-  margin_decay_slack: 0.0
   task_lr_decay: 0.0
   safe_lr_decay: 0.001
   risk_lr_decay: 0.0005
@@ -148,8 +132,6 @@ ColourBombGridWorldV2_Property3:
   safety_prob: 0.025
   cost_coef: 10.0
   boltzmann_temp: 0.01
-  margin_init: 0.0
-  margin_decay_slack: 0.0
   task_lr_decay: 0.0
   safe_lr_decay: 0.001
   risk_lr_decay: 0.0005
@@ -164,8 +146,6 @@ ColourBombGridWorldV2_Property3Cycle:
   safety_prob: 0.025
   cost_coef: 10.0
   boltzmann_temp: 0.01
-  margin_init: 0.0
-  margin_decay_slack: 0.0
   task_lr_decay: 0.0
   safe_lr_decay: 0.001
   risk_lr_decay: 0.0005
@@ -180,8 +160,6 @@ ColourBombGridWorldV2_Property3Potential:
   safety_prob: 0.025
   cost_coef: 10.0
   boltzmann_temp: 0.01
-  margin_init: 0.0
-  margin_decay_slack: 0.0
   task_lr_decay: 0.0
   safe_lr_decay: 0.001
   risk_lr_decay: 0.0005
@@ -196,8 +174,6 @@ ColourBombGridWorldV2_Property3NoCfe:
   safety_prob: 0.025
   cost_coef: 10.0
   boltzmann_temp: 0.01
-  margin_init: 0.0
-  margin_decay_slack: 0.0
   task_lr_decay: 0.0
   safe_lr_decay: 0.001
   risk_lr_decay: 0.0005
@@ -213,8 +189,6 @@ MiniPacman:
   safety_prob: 0.01
   cost_coef: 10.0
   boltzmann_temp: 0.01
-  margin_init: 0.0
-  margin_decay_slack: 0.0
   task_lr_decay: 0.0
   safe_lr_decay: 0.001
   risk_lr_decay: 0.0005
