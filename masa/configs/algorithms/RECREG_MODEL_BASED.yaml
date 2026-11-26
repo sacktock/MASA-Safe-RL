@@ -62,6 +62,8 @@ ColourBombGridWorld:
   horizon: 2
   safety_prob: 0.05
   cost_coef: 10.0
+  boltzmann_temp: 0.01
+  safe_lr_decay: 0.001
 ColourBombGridWorld_Property2:
   task_alpha: 0.05
   task_gamma: 0.95
@@ -72,6 +74,8 @@ ColourBombGridWorld_Property2:
   horizon: 2
   safety_prob: 0.05
   cost_coef: 10.0
+  boltzmann_temp: 0.01
+  safe_lr_decay: 0.001
 ColourBombGridWorldV2:
   task_alpha: 0.05
   task_gamma: 0.95
