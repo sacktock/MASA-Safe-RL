@@ -76,7 +76,9 @@ class TRPO(OnPolicyAlgorithm):
         idx = 0
         for leaf in leaves:
             size = leaf.size
-            new_leaf = flat_params[idx : idx + size].reshape(leaf.shape)
+            new_leaf = flat_params[idx : idx + size].reshape(leaf.shape).astype(
+                leaf.dtype
+            )
             new_leaves.append(new_leaf)
             idx += size
         return jax.tree_util.tree_unflatten(treedef, new_leaves)
