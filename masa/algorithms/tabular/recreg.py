@@ -169,6 +169,7 @@ class RECREG(QL):
         task_lr_decay: float = 0.0,
         safe_lr_decay: float = 0.0,
         risk_lr_decay: float = 0.0,
+        backup_temp: float = 0.01,
         **kwargs,
     ):
 
@@ -197,6 +198,9 @@ class RECREG(QL):
             "use 'exact' or 'finite'"
         )
         assert samples > 0, "Number of samples must be greater than 0"
+        assert backup_temp >= 0.0, (
+            "backup_temp must be non-negative (0 = argmax backup)"
+        )
 
         self.safe_alpha = safe_alpha
         self.safe_gamma = safe_gamma
@@ -211,6 +215,7 @@ class RECREG(QL):
         self.task_lr_decay = task_lr_decay
         self.safe_lr_decay = safe_lr_decay
         self.risk_lr_decay = risk_lr_decay
+        self.backup_temp = backup_temp
 
         self._setup_models()
         self._setup_learning_rates()
@@ -379,16 +384,20 @@ class RECREG(QL):
             raise NotImplementedError(f"Unexpected mode: {self.mode}")
 
     def _deterministic_backup(self, deterministic: bool) -> bool:
-        # act_overrid executes argmax(B) when deterministic or under epsilon-greedy,
-        # and a Boltzmann(B, 0.01) sample otherwise.
-        return bool(deterministic or self.exploration == "epsilon_greedy")
+        # act_override executes argmax(B) when deterministic, under epsilon-greedy or
+        # when backup_temp == 0, and a Boltzmann(B, backup_temp) sample otherwise.
+        return bool(
+            deterministic
+            or self.exploration == "epsilon_greedy"
+            or self.backup_temp <= 0.0
+        )
 
     def _backup_policy_matrix(self, deterministic: bool) -> np.ndarray:
         if self.exploration not in ("boltzmann", "epsilon_greedy"):
             raise NotImplementedError(f"Unexpected exploration: {self.exploration}")
         if self._deterministic_backup(deterministic):
             return q_to_argmax_policy(self.B)
-        return q_to_boltzmann_policy(self.B, 0.01)
+        return q_to_boltzmann_policy(self.B, self.backup_temp)
 
     def _backup_row(self, s: int, deterministic: bool) -> np.ndarray:
         q = np.asarray(self.B[s], dtype=np.float64)
@@ -396,7 +405,7 @@ class RECREG(QL):
             p = np.zeros_like(q)
             p[int(np.argmax(q))] = 1.0
             return p
-        z = np.exp((q - q.max()) / 0.01)
+        z = np.exp((q - q.max()) / self.backup_temp)
         return z / z.sum()
 
     def _risk_table(self, deterministic: bool) -> np.ndarray:
@@ -765,13 +774,15 @@ class RECREG(QL):
             raise NotImplementedError(f"Unexpected mode: {self.mode}")
 
         if override:
-            # Use boltzmann temperature=0.01 or epsilon=0.001 for backup policy
-            if self.exploration == "boltzmann":
-                safe_act = self._act(key3, obs, self.B, deterministic, 0.01, 0.001)
-            elif self.exploration == "epsilon_greedy":
-                safe_act = self._act(key3, obs, self.B, True, 0.01, 0.001)
-            else:
-                raise NotImplementedError(f"Unexpected exploration: {self.exploration}")
+            # Must match the backup assumed by the risk table (_backup_policy_matrix)
+            safe_act = self._act(
+                key3,
+                obs,
+                self.B,
+                self._deterministic_backup(deterministic),
+                self.backup_temp,
+                0.001,
+            )
 
         return self.prepare_act(safe_act), self.prepare_act(act), override
 
